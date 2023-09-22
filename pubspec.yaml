@@ -4,7 +4,7 @@ description: Burgan Flutter Core Project
 # pub.dev using `flutter pub publish`. This is preferred for private packages.
 publish_to: 'none' # Remove this line if you wish to publish to pub.dev
 
-version: 1.0.0+1
+version: 0.0.1
 
 environment:
   sdk: '>=3.0.5 <4.0.0'
@@ -13,6 +13,10 @@ dependencies:
   flutter:
     sdk: flutter
 
+  # Core
+  rxdart: ^0.27.7
+
+  # UI Related
   cupertino_icons: ^1.0.2
 
 dev_dependencies:
