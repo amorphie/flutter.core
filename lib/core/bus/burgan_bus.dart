@@ -10,5 +10,5 @@
  * Any reproduction of this material must contain this notice.
  */
 
-export 'core/bus/burgan_bus.dart';
-export 'core/util/burgan_util.dart';
+export 'widget_event_bus/brg_widget_event.dart';
+export 'widget_event_bus/brg_widget_event_bus.dart';
