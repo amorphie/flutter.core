@@ -10,6 +10,6 @@
  * Any reproduction of this material must contain this notice.
  */
 
-export 'core/bus/burgan_bus.dart';
-export 'core/network/burgan_network.dart';
-export 'core/util/burgan_util.dart';
+abstract class HTTPQueryProvider {
+  Future<Map<String, String>> get queries;
+}

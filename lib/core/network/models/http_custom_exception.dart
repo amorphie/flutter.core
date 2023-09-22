@@ -10,6 +10,13 @@
  * Any reproduction of this material must contain this notice.
  */
 
-export 'core/bus/burgan_bus.dart';
-export 'core/network/burgan_network.dart';
-export 'core/util/burgan_util.dart';
+import 'package:burgan_core/core/network/models/brg_error.dart';
+
+class HTTPCustomException implements Exception {
+  final BrgError error;
+
+  HTTPCustomException({required this.error});
+
+  @override
+  String toString() => error.toString();
+}

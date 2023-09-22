@@ -10,6 +10,9 @@
  * Any reproduction of this material must contain this notice.
  */
 
-export 'core/bus/burgan_bus.dart';
-export 'core/network/burgan_network.dart';
-export 'core/util/burgan_util.dart';
+export 'managers/network_manager.dart';
+export 'managers/signalr_connection_manager.dart';
+export 'models/brg_error.dart';
+export 'models/brg_signalr_transition.dart';
+export 'models/http_custom_exception.dart';
+export 'query_providers/http_query_provider.dart';
