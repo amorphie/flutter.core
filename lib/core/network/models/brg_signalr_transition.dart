@@ -23,6 +23,9 @@ class BrgSignalRTransition extends Equatable {
   @JsonKey(name: "page", defaultValue: {})
   final Map<String, dynamic> pageDetails;
 
+  @JsonKey(name: "additionalData", defaultValue: null)
+  final Map<String, dynamic>? additionalData;
+
   @JsonKey(name: "message", defaultValue: "")
   final String errorMessage;
 
@@ -30,6 +33,7 @@ class BrgSignalRTransition extends Equatable {
     required this.transitionId,
     required this.pageDetails,
     required this.errorMessage,
+    this.additionalData,
   });
 
   @override
