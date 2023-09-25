@@ -11,5 +11,6 @@ BrgSignalRTransition _$BrgSignalRTransitionFromJson(
     BrgSignalRTransition(
       transitionId: json['transition'] as String,
       pageDetails: json['page'] as Map<String, dynamic>? ?? {},
-      errorMessage: json['message'] as String,
+      errorMessage: json['message'] as String? ?? '',
+      additionalData: json['additionalData'] as Map<String, dynamic>?,
     );

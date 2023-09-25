@@ -7,6 +7,8 @@ class BrgTransitionListenerWidget extends StatefulWidget {
   final String signalRServerUrl;
   final String signalRMethodName;
   final Function(String navigationPath) onPageNavigation;
+  final Function(String token)? onTokenRetrieved;
+  final Function(String errorMessage)? onError;
 
   const BrgTransitionListenerWidget({
     Key? key,
@@ -15,6 +17,8 @@ class BrgTransitionListenerWidget extends StatefulWidget {
     required this.signalRServerUrl,
     required this.signalRMethodName,
     required this.onPageNavigation,
+    this.onTokenRetrieved,
+    this.onError,
   }) : super(key: key);
 
   @override
@@ -34,6 +38,8 @@ class _BrgTransitionListenerWidgetState extends State<BrgTransitionListenerWidge
     signalrConnectionManager.listenForTransitionEvents(
       transitionId: widget.transitionId,
       onPageNavigation: widget.onPageNavigation,
+      onTokenRetrieved: widget.onTokenRetrieved,
+      onError: widget.onError,
     );
   }
 
