@@ -10,17 +10,19 @@
  * Any reproduction of this material must contain this notice.
  */
 
+import 'dart:async';
+
 import 'package:burgan_core/core/bus/widget_event_bus/brg_widget_event.dart';
 import 'package:rxdart/rxdart.dart';
 
 class BrgWidgetEventBus {
   final _eventBus = BehaviorSubject<BrgWidgetEvent>();
 
-  listen({
+  StreamSubscription<BrgWidgetEvent> listen({
     required String eventId,
     required Function(BrgWidgetEvent) onEventReceived,
   }) {
-    _eventBus.stream.listen((event) {
+    return _eventBus.stream.listen((event) {
       if (event.eventId == eventId) {
         onEventReceived(event);
       }

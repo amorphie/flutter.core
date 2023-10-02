@@ -21,18 +21,18 @@ class BrgError extends Equatable {
   final int? httpStatusCode;
 
   @JsonKey(required: true)
-  final String? errorCode;
+  final String errorCode;
 
   @JsonKey(required: true)
-  final String? message;
+  final String message;
 
   @override
   List<Object?> get props => [errorCode, message];
 
   @override
-  String toString() => message ?? "";
+  String toString() => message;
 
-  const BrgError({this.httpStatusCode, this.errorCode, this.message});
+  const BrgError({this.httpStatusCode, required this.errorCode, required this.message});
 
   BrgError copyWith({
     int? httpStatusCode,
