@@ -1,4 +1,4 @@
-package com.commencis.burgan_core
+package com.example.burgan_core
 
 import io.flutter.embedding.android.FlutterActivity
 
