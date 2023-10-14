@@ -2,7 +2,7 @@
 name: 'Core Feature Request '
 about: Suggest an idea for this project
 title: ''
-labels: core, enhancement
+labels: core, enhancement, need-documentation
 assignees: ''
 
 ---
@@ -16,10 +16,18 @@ A clear and concise description of what you want to happen.
 **Describe alternatives you've considered**
 A clear and concise description of any alternative solutions or features you've considered.
 
-- [ ] Accepted
-- [ ] Planned
-- [ ] Released
 - [ ] Documentation in https://amorphie.github.io
 
 **Additional context**
 Add any other context or screenshots about the feature request here.
+
+
+## Release Note
+<!-- How should this new feature be announced in our release notes? It can be populated later. -->
+<!-- Keep it as a single line. Examples: -->
+
+<!-- RELEASE NOTE: **ADD** New feature in flutter.core. -->
+<!-- RELEASE NOTE: **FIX** Bug in runtime. -->
+<!-- RELEASE NOTE: **UPDATE** Runtime dependency. -->
+
+RELEASE NOTE:
