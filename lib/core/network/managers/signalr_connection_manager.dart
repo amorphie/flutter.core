@@ -11,9 +11,11 @@
  */
 
 import 'dart:convert';
+import 'dart:developer';
 
 import 'package:burgan_core/core/network/models/brg_signalr_transition.dart';
 import 'package:collection/collection.dart';
+import 'package:flutter/foundation.dart';
 import 'package:signalr_netcore/signalr_client.dart';
 
 class SignalrConnectionManager {
@@ -30,9 +32,21 @@ class SignalrConnectionManager {
     _hubConnection = HubConnectionBuilder()
         .withUrl(serverUrl)
         .withAutomaticReconnect(retryDelays: [2000, 5000, 10000, 20000]).build();
-    _hubConnection.onclose(({error}) => print('onclose called'));
-    _hubConnection.onreconnecting(({error}) => print("onreconnecting called"));
-    _hubConnection.onreconnected(({connectionId}) => print("onreconnected called"));
+    _hubConnection.onclose(({error}) {
+      if (kDebugMode) {
+        log('SignalrConnectionManager: onclose called');
+      }
+    });
+    _hubConnection.onreconnecting(({error}) {
+      if (kDebugMode) {
+        log('SignalrConnectionManager: onreconnecting called');
+      }
+    });
+    _hubConnection.onreconnected(({connectionId}) {
+      if (kDebugMode) {
+        log('SignalrConnectionManager: onreconnected called');
+      }
+    });
 
     if (_hubConnection.state != HubConnectionState.Connected) {
       await _hubConnection.start();
@@ -46,6 +60,9 @@ class SignalrConnectionManager {
     Function(String errorMessage)? onError,
   }) {
     _hubConnection.on(methodName, (List<Object?>? transitions) {
+      if (kDebugMode) {
+        log('SignalrConnectionManager: Incoming transitions: $transitions');
+      }
       if (transitions == null) {
         return;
       }
