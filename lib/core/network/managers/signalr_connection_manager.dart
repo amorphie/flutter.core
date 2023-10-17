@@ -13,7 +13,6 @@
 import 'dart:convert';
 
 import 'package:burgan_core/core/network/models/brg_signalr_transition.dart';
-import 'package:burgan_core/core/util/extensions/string_extensions.dart';
 import 'package:collection/collection.dart';
 import 'package:signalr_netcore/signalr_client.dart';
 
@@ -45,61 +44,36 @@ class SignalrConnectionManager {
     required Function(String navigationPath) onPageNavigation,
     Function(String token)? onTokenRetrieved,
     Function(String errorMessage)? onError,
-    Function()? onConnectionClosed,
-    Function()? onReconnecting,
-    Function(String connectionId)? onReconnected,
   }) {
-    _hubConnection.onclose(({error}) => onConnectionClosed?.call());
-    _hubConnection.onreconnecting(({error}) => onReconnecting?.call());
-    _hubConnection.onreconnected(({connectionId}) => onReconnected?.call(connectionId.orEmpty));
-
     _hubConnection.on(methodName, (List<Object?>? transitions) {
       if (transitions == null) {
         return;
       }
+      final ongoingTransition = transitions
+          .map((transition) {
+            try {
+              return BrgSignalRTransition.fromJson(jsonDecode(transition as String));
+            } catch (e) {
+              return null;
+            }
+          })
+          .where((element) => element != null)
+          .toList()
+          .firstWhereOrNull((transition) => transition?.transitionId == transitionId);
 
-      final ongoingTransition =
-          parseTransitions(transitions).firstWhereOrNull((transition) => transition.transitionId == transitionId);
+      final String? token = ongoingTransition?.additionalData?["access_token"];
+      if (onTokenRetrieved != null && token != null && token.isNotEmpty) {
+        onTokenRetrieved(token);
+      }
 
-      handleTransition(ongoingTransition, onPageNavigation, onTokenRetrieved, onError);
+      final isNavigationAllowed = ongoingTransition?.pageDetails["operation"] == "Open";
+      final navigationPath = ongoingTransition?.pageDetails["pageRoute"]?["label"] as String?;
+      if (isNavigationAllowed && navigationPath != null) {
+        onPageNavigation(navigationPath);
+      } else if ((ongoingTransition?.errorMessage.isNotEmpty ?? false) && onError != null) {
+        onError(ongoingTransition!.errorMessage);
+      }
     });
-  }
-
-  List<BrgSignalRTransition> parseTransitions(List<Object?> transitions) {
-    return transitions
-        .map((transition) {
-          try {
-            return BrgSignalRTransition.fromJson(jsonDecode(transition as String));
-          } catch (e) {
-            return null;
-          }
-        })
-        .whereType<BrgSignalRTransition>()
-        .toList();
-  }
-
-  void handleTransition(
-    BrgSignalRTransition? ongoingTransition,
-    Function(String navigationPath) onPageNavigation,
-    Function(String token)? onTokenRetrieved,
-    Function(String errorMessage)? onError,
-  ) {
-    if (ongoingTransition == null) {
-      return;
-    }
-
-    final String? token = ongoingTransition.additionalData?["access_token"];
-    if (onTokenRetrieved != null && token != null && token.isNotEmpty) {
-      onTokenRetrieved(token);
-    }
-
-    final isNavigationAllowed = ongoingTransition.pageDetails["operation"] == "Open";
-    final navigationPath = ongoingTransition.pageDetails["pageRoute"]?["label"] as String?;
-    if (isNavigationAllowed && navigationPath != null) {
-      onPageNavigation(navigationPath);
-    } else if (ongoingTransition.errorMessage.isNotEmpty && onError != null) {
-      onError(ongoingTransition.errorMessage);
-    }
   }
 
   void stop() {
