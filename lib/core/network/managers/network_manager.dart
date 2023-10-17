@@ -12,9 +12,8 @@
 
 import 'dart:convert';
 
-import 'package:burgan_core/core/network/models/brg_error.dart';
-import 'package:burgan_core/core/network/models/http_custom_exception.dart';
-import 'package:burgan_core/core/network/query_providers/http_query_provider.dart';
+import 'package:burgan_core/burgan_core.dart';
+import 'package:burgan_core/core/storage/shared_preferences_helper.dart';
 import 'package:http/http.dart' as http;
 import 'package:json_annotation/json_annotation.dart';
 import 'package:uuid/uuid.dart';
@@ -22,9 +21,22 @@ import 'package:uuid/uuid.dart';
 class NetworkManager {
   final String baseURL;
 
-  Map<String, String> get _defaultGetHeaders => {
-        'Accept-Language': 'en-EN',
-      };
+  Map<String, String> get _defaultGetHeaders {
+    final sharedPreferencesHelper = SharedPreferencesHelper.shared;
+    final languageCode = sharedPreferencesHelper.getLanguageCode().orEmpty;
+    final authToken = sharedPreferencesHelper.getAuthToken();
+
+    return {
+      'Accept-Language': '$languageCode-${languageCode.toUpperCase()}',
+      'X-Application': 'burgan-mobile-app',
+      'X-Deployment': DeviceUtil().getPlatformName(),
+      'X-Device-Id': sharedPreferencesHelper.getDeviceId().orEmpty,
+      'X-Token-Id': sharedPreferencesHelper.getTokenId().orEmpty,
+      'X-Request-Id': const Uuid().v1(),
+      'X-Device-Info': sharedPreferencesHelper.getDeviceInfo().orEmpty,
+      'Authorization': authToken == null ? '' : 'Bearer ${sharedPreferencesHelper.getAuthToken()}'
+    };
+  }
 
   Map<String, String> get _defaultPostHeaders => <String, String>{}
     ..addAll(_defaultGetHeaders)

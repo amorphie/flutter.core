@@ -10,6 +10,7 @@
  * Any reproduction of this material must contain this notice.
  */
 
+export 'device_util.dart';
 export 'extensions/boolean_extensions.dart';
 export 'extensions/form_field_validator_extensions.dart';
 export 'extensions/string_extensions.dart';

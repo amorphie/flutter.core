@@ -31,21 +31,16 @@ class _BrgTransitionListenerWidgetState extends State<BrgTransitionListenerWidge
   @override
   void initState() {
     super.initState();
-    try {
-      signalrConnectionManager = SignalrConnectionManager(
-        serverUrl: widget.signalRServerUrl,
-        methodName: widget.signalRMethodName,
-      )..init();
-
-      signalrConnectionManager.listenForTransitionEvents(
-        transitionId: widget.transitionId,
-        onPageNavigation: widget.onPageNavigation,
-        onTokenRetrieved: widget.onTokenRetrieved,
-        onError: widget.onError,
-      );
-    } catch (e) {
-      widget.onError?.call(e.toString());
-    }
+    signalrConnectionManager = SignalrConnectionManager(
+      serverUrl: widget.signalRServerUrl,
+      methodName: widget.signalRMethodName,
+    )..init();
+    signalrConnectionManager.listenForTransitionEvents(
+      transitionId: widget.transitionId,
+      onPageNavigation: widget.onPageNavigation,
+      onTokenRetrieved: widget.onTokenRetrieved,
+      onError: widget.onError,
+    );
   }
 
   @override

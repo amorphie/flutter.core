@@ -12,7 +12,7 @@ BrgError _$BrgErrorFromJson(Map<String, dynamic> json) {
     requiredKeys: const ['errorCode', 'message'],
   );
   return BrgError(
-    errorCode: json['errorCode'] as String,
-    message: json['message'] as String,
+    errorCode: json['errorCode'] as String?,
+    message: json['message'] as String?,
   );
 }

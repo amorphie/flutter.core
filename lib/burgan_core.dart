@@ -10,7 +10,15 @@
  * Any reproduction of this material must contain this notice.
  */
 
+import 'package:burgan_core/core/storage/shared_preferences_helper.dart';
+
 export 'core/bus/burgan_bus.dart';
 export 'core/network/burgan_network.dart';
 export 'core/util/burgan_util.dart';
 export 'core/widgets/burgan_widgets.dart';
+
+class BurganCore {
+  static init() async {
+    await SharedPreferencesHelper.init();
+  }
+}
