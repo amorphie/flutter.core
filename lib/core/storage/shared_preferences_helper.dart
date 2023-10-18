@@ -17,6 +17,9 @@ class SharedPreferencesHelper {
   static SharedPreferences? _preferences;
 
   static init() async {
+    if (_preferences != null) {
+      return;
+    }
     _preferences ??= await SharedPreferences.getInstance();
     await _setInitialParameters();
   }
