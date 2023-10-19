@@ -21,20 +21,23 @@ import 'package:json_annotation/json_annotation.dart';
 import 'package:uuid/uuid.dart';
 
 abstract class _Constants {
-  static const endpointHttpClientConfig = "/http-client-config";
+  // STOPSHIP: Replace this dummy endpoint with real http client config's endpoint
+  static const endpointHttpClientConfig = "http://10.0.2.2:3000/http-client-config";
 }
 
 class NeoNetworkManager {
-  final String httpConfigBaseUrl;
   final bool useHttps;
 
-  late HttpClientConfig? httpClientConfig;
+  static HttpClientConfig? _httpClientConfig;
 
-  NeoNetworkManager(this.httpConfigBaseUrl, {this.useHttps = true});
+  NeoNetworkManager({this.useHttps = true});
 
-  init() async {
+  static Future init() async {
+    if (_httpClientConfig != null) {
+      return;
+    }
     try {
-      httpClientConfig = await _fetchHttpClientConfig();
+      _httpClientConfig = await _fetchHttpClientConfig();
     } on Exception catch (_) {
       rethrow;
     }
@@ -46,8 +49,8 @@ class NeoNetworkManager {
     Map<String, String>? pathParameters,
     List<HTTPQueryProvider> queryProviders = const [],
   }) async {
-    final fullPath = httpClientConfig?.getServiceUrlByKey(endpoint, parameters: pathParameters, useHttps: useHttps);
-    final method = httpClientConfig?.getServiceMethodByKey(endpoint);
+    final fullPath = _httpClientConfig?.getServiceUrlByKey(endpoint, parameters: pathParameters, useHttps: useHttps);
+    final method = _httpClientConfig?.getServiceMethodByKey(endpoint);
     if (fullPath == null || method == null) {
       return {};
     }
@@ -61,7 +64,7 @@ class NeoNetworkManager {
     }
   }
 
-  Map<String, String> get _defaultHeaders {
+  static Map<String, String> get _defaultHeaders {
     final sharedPreferencesHelper = SharedPreferencesHelper.shared;
     final languageCode = sharedPreferencesHelper.getLanguageCode().orEmpty;
     final authToken = sharedPreferencesHelper.getAuthToken();
@@ -86,7 +89,7 @@ class NeoNetworkManager {
       'Behalf-Of-User': const Uuid().v1(), // TODO: Get it from storage
     });
 
-  Future<Map<String, dynamic>> _requestGet(
+  static Future<Map<String, dynamic>> _requestGet(
     String fullPath, {
     List<HTTPQueryProvider> queryProviders = const [],
   }) async {
@@ -128,7 +131,7 @@ class NeoNetworkManager {
     return _createResponseMap(response);
   }
 
-  Future<Map<String, dynamic>> _createResponseMap(http.Response? response) async {
+  static Future<Map<String, dynamic>> _createResponseMap(http.Response? response) async {
     Map<String, dynamic>? responseJSON;
     if (response?.body != null) {
       try {
@@ -170,9 +173,9 @@ class NeoNetworkManager {
     }
   }
 
-  Future<HttpClientConfig?> _fetchHttpClientConfig() async {
+  static Future<HttpClientConfig?> _fetchHttpClientConfig() async {
     try {
-      final responseJson = await _requestGet("$httpConfigBaseUrl${_Constants.endpointHttpClientConfig}");
+      final responseJson = await _requestGet(_Constants.endpointHttpClientConfig);
       return HttpClientConfig.fromJson(responseJson);
     } on Exception catch (_) {
       return null;

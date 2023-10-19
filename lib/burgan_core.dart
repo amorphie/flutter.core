@@ -10,6 +10,7 @@
  * Any reproduction of this material must contain this notice.
  */
 
+import 'package:burgan_core/core/network/managers/neo_network_manager.dart';
 import 'package:burgan_core/core/storage/shared_preferences_helper.dart';
 
 export 'core/bus/burgan_bus.dart';
@@ -20,5 +21,6 @@ export 'core/widgets/burgan_widgets.dart';
 class BurganCore {
   static init() async {
     await SharedPreferencesHelper.init();
+    await NeoNetworkManager.init();
   }
 }
