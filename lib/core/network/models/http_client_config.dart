@@ -34,8 +34,8 @@ class HttpClientConfig {
     return _findServiceByKey(key)?.method;
   }
 
-  String? getServiceUrlByKey(String key, {Map<String, String>? parameters}) {
-    const prefix = "https://";
+  String? getServiceUrlByKey(String key, {Map<String, String>? parameters, bool useHttps = true}) {
+    String prefix = useHttps ? "https://" : "http://";
     final service = _findServiceByKey(key);
     if (service == null) {
       return null;

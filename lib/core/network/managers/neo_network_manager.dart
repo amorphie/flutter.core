@@ -26,9 +26,11 @@ abstract class _Constants {
 
 class NeoNetworkManager {
   final String httpConfigBaseUrl;
+  final bool useHttps;
+
   late HttpClientConfig? httpClientConfig;
 
-  NeoNetworkManager(this.httpConfigBaseUrl);
+  NeoNetworkManager(this.httpConfigBaseUrl, {this.useHttps = true});
 
   init() async {
     try {
@@ -44,18 +46,18 @@ class NeoNetworkManager {
     Map<String, String>? pathParameters,
     List<HTTPQueryProvider> queryProviders = const [],
   }) async {
-    final fullPath = httpClientConfig?.getServiceUrlByKey(endpoint, parameters: pathParameters);
+    final fullPath = httpClientConfig?.getServiceUrlByKey(endpoint, parameters: pathParameters, useHttps: useHttps);
     final method = httpClientConfig?.getServiceMethodByKey(endpoint);
     if (fullPath == null || method == null) {
       return {};
     }
     switch (method) {
       case HttpMethod.get:
-        return _requestGet(fullPath, queryProviders: queryProviders);
+        return await _requestGet(fullPath, queryProviders: queryProviders);
       case HttpMethod.post:
-        return _requestPost(fullPath, body);
+        return await _requestPost(fullPath, body, queryProviders: queryProviders);
       case HttpMethod.delete:
-        return _requestDelete(fullPath);
+        return await _requestDelete(fullPath);
     }
   }
 
