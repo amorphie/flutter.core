@@ -10,6 +10,7 @@
  * Any reproduction of this material must contain this notice.
  */
 
+import 'package:burgan_core/core/network/models/http_method.dart';
 import 'package:json_annotation/json_annotation.dart';
 
 part 'http_service.g.dart';
@@ -19,8 +20,8 @@ class HttpService {
   @JsonKey(name: 'key', defaultValue: "")
   final String key;
 
-  @JsonKey(name: 'method', defaultValue: "")
-  final String method;
+  @JsonKey(name: 'method', defaultValue: HttpMethod.get)
+  final HttpMethod method;
 
   @JsonKey(name: 'host', defaultValue: "")
   final String host;

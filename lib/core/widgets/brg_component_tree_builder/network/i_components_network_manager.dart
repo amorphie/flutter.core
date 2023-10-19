@@ -1,9 +1,5 @@
-import 'package:burgan_core/burgan_core.dart';
-
-abstract class IComponentsNetworkManager extends NetworkManager {
-  final String baseUrl;
-
-  IComponentsNetworkManager({required this.baseUrl}) : super(baseURL: baseUrl);
+abstract class IComponentsNetworkManager {
+  IComponentsNetworkManager();
 
   Future<Map<String, dynamic>> fetchPageComponentsByPageId(String pageId);
 }

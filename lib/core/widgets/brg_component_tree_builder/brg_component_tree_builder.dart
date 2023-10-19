@@ -1,5 +1,4 @@
-import 'package:burgan_core/core/widgets/brg_component_tree_builder/bloc/brg_component_tree_builder_bloc.dart';
-import 'package:burgan_core/core/widgets/brg_component_tree_builder/network/i_components_network_manager.dart';
+import 'package:burgan_core/burgan_core.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:json_dynamic_widget/json_dynamic_widget.dart';

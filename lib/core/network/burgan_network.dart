@@ -10,6 +10,7 @@
  * Any reproduction of this material must contain this notice.
  */
 
+export 'managers/neo_network_manager.dart';
 export 'managers/network_manager.dart';
 export 'managers/signalr_connection_manager.dart';
 export 'models/brg_error.dart';

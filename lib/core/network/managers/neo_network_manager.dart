@@ -1,7 +1,7 @@
 /*
- * burgan_core
+ * burgan_core_github
  *
- * Created on 22/9/2023.
+ * Created on 19/10/2023.
  * Copyright (c) 2023 Commencis. All rights reserved.
  *
  * Save to the extent permitted by law, you may not use, copy, modify,
@@ -13,17 +13,53 @@
 import 'dart:convert';
 
 import 'package:burgan_core/burgan_core.dart';
+import 'package:burgan_core/core/network/models/http_client_config.dart';
+import 'package:burgan_core/core/network/models/http_method.dart';
 import 'package:burgan_core/core/storage/shared_preferences_helper.dart';
 import 'package:http/http.dart' as http;
 import 'package:json_annotation/json_annotation.dart';
 import 'package:uuid/uuid.dart';
 
-// TODO: Delete it after migrating to NeoNetworkManager
-@Deprecated('Use NeoNetworkManager instead!')
-class NetworkManager {
-  final String baseURL;
+abstract class _Constants {
+  static const endpointHttpClientConfig = "/http-client-config";
+}
 
-  Map<String, String> get _defaultGetHeaders {
+class NeoNetworkManager {
+  final String httpConfigBaseUrl;
+  late HttpClientConfig? httpClientConfig;
+
+  NeoNetworkManager(this.httpConfigBaseUrl);
+
+  init() async {
+    try {
+      httpClientConfig = await _fetchHttpClientConfig();
+    } on Exception catch (_) {
+      rethrow;
+    }
+  }
+
+  Future<Map<String, dynamic>> call(
+    String endpoint, {
+    Object body = const {},
+    Map<String, String>? pathParameters,
+    List<HTTPQueryProvider> queryProviders = const [],
+  }) async {
+    final fullPath = httpClientConfig?.getServiceUrlByKey(endpoint, parameters: pathParameters);
+    final method = httpClientConfig?.getServiceMethodByKey(endpoint);
+    if (fullPath == null || method == null) {
+      return {};
+    }
+    switch (method) {
+      case HttpMethod.get:
+        return _requestGet(fullPath, queryProviders: queryProviders);
+      case HttpMethod.post:
+        return _requestPost(fullPath, body);
+      case HttpMethod.delete:
+        return _requestDelete(fullPath);
+    }
+  }
+
+  Map<String, String> get _defaultHeaders {
     final sharedPreferencesHelper = SharedPreferencesHelper.shared;
     final languageCode = sharedPreferencesHelper.getLanguageCode().orEmpty;
     final authToken = sharedPreferencesHelper.getAuthToken();
@@ -41,32 +77,30 @@ class NetworkManager {
   }
 
   Map<String, String> get _defaultPostHeaders => <String, String>{}
-    ..addAll(_defaultGetHeaders)
+    ..addAll(_defaultHeaders)
     ..addAll({
       'Content-Type': 'application/json',
       'User': const Uuid().v1(), // TODO: Get it from storage
       'Behalf-Of-User': const Uuid().v1(), // TODO: Get it from storage
     });
 
-  NetworkManager({required this.baseURL});
-
-  Future<Map<String, dynamic>> requestGet(
-    String path, {
+  Future<Map<String, dynamic>> _requestGet(
+    String fullPath, {
     List<HTTPQueryProvider> queryProviders = const [],
   }) async {
-    var headers = _defaultGetHeaders;
+    var headers = _defaultHeaders;
     for (var provider in queryProviders) {
       headers.addAll(await provider.queries);
     }
     final response = await http.get(
-      Uri.parse('$baseURL/$path'),
+      Uri.parse(fullPath),
       headers: headers,
     );
-    return createResponseMap(response);
+    return _createResponseMap(response);
   }
 
-  Future<Map<String, dynamic>> requestPost(
-    String path,
+  Future<Map<String, dynamic>> _requestPost(
+    String fullPath,
     Object body, {
     List<HTTPQueryProvider> queryProviders = const [],
   }) async {
@@ -75,24 +109,24 @@ class NetworkManager {
       headers.addAll(await provider.queries);
     }
     final response = await http.post(
-      Uri.parse('$baseURL/$path'),
+      Uri.parse(fullPath),
       headers: headers,
       body: json.encode(body),
     );
-    return createResponseMap(response);
+    return _createResponseMap(response);
   }
 
-  Future<Map<String, dynamic>> requestDelete(String path) async {
-    var headers = _defaultGetHeaders;
+  Future<Map<String, dynamic>> _requestDelete(String fullPath) async {
+    var headers = _defaultHeaders;
 
     final response = await http.delete(
-      Uri.parse('$baseURL/$path'),
+      Uri.parse(fullPath),
       headers: headers,
     );
-    return createResponseMap(response);
+    return _createResponseMap(response);
   }
 
-  Future<Map<String, dynamic>> createResponseMap(http.Response? response) async {
+  Future<Map<String, dynamic>> _createResponseMap(http.Response? response) async {
     Map<String, dynamic>? responseJSON;
     if (response?.body != null) {
       try {
@@ -131,6 +165,15 @@ class NetworkManager {
           ),
         );
       }
+    }
+  }
+
+  Future<HttpClientConfig?> _fetchHttpClientConfig() async {
+    try {
+      final responseJson = await _requestGet("$httpConfigBaseUrl${_Constants.endpointHttpClientConfig}");
+      return HttpClientConfig.fromJson(responseJson);
+    } on Exception catch (_) {
+      return null;
     }
   }
 }

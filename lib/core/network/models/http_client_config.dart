@@ -11,6 +11,7 @@
  */
 
 import 'package:burgan_core/core/network/models/http_host_details.dart';
+import 'package:burgan_core/core/network/models/http_method.dart';
 import 'package:burgan_core/core/network/models/http_service.dart';
 import 'package:collection/collection.dart';
 import 'package:json_annotation/json_annotation.dart';
@@ -29,7 +30,11 @@ class HttpClientConfig {
 
   factory HttpClientConfig.fromJson(Map<String, dynamic> json) => _$HttpClientConfigFromJson(json);
 
-  String? getServiceUrlByKey(String key, {Map<String, String>? params}) {
+  HttpMethod? getServiceMethodByKey(String key) {
+    return _findServiceByKey(key)?.method;
+  }
+
+  String? getServiceUrlByKey(String key, {Map<String, String>? parameters}) {
     const prefix = "https://";
     final service = _findServiceByKey(key);
     if (service == null) {
@@ -40,7 +45,7 @@ class HttpClientConfig {
       return null;
     }
     String fullUrl = prefix + baseUrl + service.name;
-    params?.forEach((key, value) {
+    parameters?.forEach((key, value) {
       fullUrl = fullUrl.replaceAll('{$key}', value);
     });
     return fullUrl;
