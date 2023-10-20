@@ -42,7 +42,7 @@ class NeoNetworkManager {
     String endpoint, {
     Object body = const {},
     Map<String, String>? pathParameters,
-    List<HTTPQueryProvider> queryProviders = const [],
+    List<HttpQueryProvider> queryProviders = const [],
   }) async {
     final fullPath = _httpClientConfig?.getServiceUrlByKey(endpoint, parameters: pathParameters, useHttps: useHttps);
     final method = _httpClientConfig?.getServiceMethodByKey(endpoint);
@@ -86,15 +86,12 @@ class NeoNetworkManager {
 
   static Future<Map<String, dynamic>> _requestGet(
     String fullPath, {
-    List<HTTPQueryProvider> queryProviders = const [],
+    List<HttpQueryProvider> queryProviders = const [],
   }) async {
-    var headers = _defaultHeaders;
-    for (var provider in queryProviders) {
-      headers.addAll(await provider.queries);
-    }
+    String fullPathWithQueries = _getFullPathWithQueries(fullPath, queryProviders);
     final response = await http.get(
-      Uri.parse(fullPath),
-      headers: headers,
+      Uri.parse(fullPathWithQueries),
+      headers: _defaultHeaders,
     );
     return _createResponseMap(response);
   }
@@ -102,28 +99,46 @@ class NeoNetworkManager {
   Future<Map<String, dynamic>> _requestPost(
     String fullPath,
     Object body, {
-    List<HTTPQueryProvider> queryProviders = const [],
+    List<HttpQueryProvider> queryProviders = const [],
   }) async {
-    var headers = _defaultPostHeaders;
-    for (var provider in queryProviders) {
-      headers.addAll(await provider.queries);
-    }
+    String fullPathWithQueries = _getFullPathWithQueries(fullPath, queryProviders);
     final response = await http.post(
-      Uri.parse(fullPath),
-      headers: headers,
+      Uri.parse(fullPathWithQueries),
+      headers: _defaultPostHeaders,
       body: json.encode(body),
     );
     return _createResponseMap(response);
   }
 
-  Future<Map<String, dynamic>> _requestDelete(String fullPath) async {
-    var headers = _defaultHeaders;
-
+  Future<Map<String, dynamic>> _requestDelete(
+    String fullPath, {
+    Object? body,
+    List<HttpQueryProvider> queryProviders = const [],
+  }) async {
+    String fullPathWithQueries = _getFullPathWithQueries(fullPath, queryProviders);
     final response = await http.delete(
-      Uri.parse(fullPath),
-      headers: headers,
+      Uri.parse(fullPathWithQueries),
+      headers: _defaultHeaders,
+      body: json.encode(body),
     );
     return _createResponseMap(response);
+  }
+
+  static String _getFullPathWithQueries(String fullPath, List<HttpQueryProvider> queryProviders) {
+    if (queryProviders.isEmpty) {
+      return fullPath;
+    }
+    String fullPathWithQueries = fullPath;
+    fullPathWithQueries += "?";
+    for (final provider in queryProviders) {
+      provider.queryParameters.forEach((key, value) {
+        fullPathWithQueries += "$key=$value";
+      });
+      if (queryProviders.indexOf(provider) != queryProviders.length - 1) {
+        fullPathWithQueries += "&";
+      }
+    }
+    return fullPathWithQueries;
   }
 
   static Future<Map<String, dynamic>> _createResponseMap(http.Response? response) async {

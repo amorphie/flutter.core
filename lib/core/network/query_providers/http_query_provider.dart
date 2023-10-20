@@ -10,6 +10,8 @@
  * Any reproduction of this material must contain this notice.
  */
 
-abstract class HTTPQueryProvider {
-  Future<Map<String, String>> get queries;
+class HttpQueryProvider {
+  final Map<String, String> queryParameters;
+
+  HttpQueryProvider(this.queryParameters);
 }
