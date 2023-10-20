@@ -20,11 +20,6 @@ import 'package:http/http.dart' as http;
 import 'package:json_annotation/json_annotation.dart';
 import 'package:uuid/uuid.dart';
 
-abstract class _Constants {
-  // STOPSHIP: Replace this dummy endpoint with real http client config's endpoint
-  static const endpointHttpClientConfig = "http://10.0.2.2:3000/http-client-config";
-}
-
 class NeoNetworkManager {
   final bool useHttps;
 
@@ -32,12 +27,12 @@ class NeoNetworkManager {
 
   NeoNetworkManager({this.useHttps = true});
 
-  static Future init() async {
+  static Future init(String httpConfigEndpoint) async {
     if (_httpClientConfig != null) {
       return;
     }
     try {
-      _httpClientConfig = await _fetchHttpClientConfig();
+      _httpClientConfig = await _fetchHttpClientConfig(httpConfigEndpoint);
     } on Exception catch (_) {
       rethrow;
     }
@@ -173,9 +168,9 @@ class NeoNetworkManager {
     }
   }
 
-  static Future<HttpClientConfig?> _fetchHttpClientConfig() async {
+  static Future<HttpClientConfig?> _fetchHttpClientConfig(String httpConfigEndpoint) async {
     try {
-      final responseJson = await _requestGet(_Constants.endpointHttpClientConfig);
+      final responseJson = await _requestGet(httpConfigEndpoint);
       return HttpClientConfig.fromJson(responseJson);
     } on Exception catch (_) {
       return null;
