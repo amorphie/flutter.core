@@ -1,5 +1,5 @@
 /*
- * burgan_core_github
+ * burgan_core
  *
  * Created on 19/10/2023.
  * Copyright (c) 2023 Commencis. All rights reserved.

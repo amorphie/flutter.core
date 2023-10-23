@@ -15,6 +15,7 @@ import 'package:json_annotation/json_annotation.dart';
 
 part 'brg_error.g.dart';
 
+// STOPSHIP: Rename as NeoError and update error model
 @JsonSerializable(createToJson: false)
 class BrgError extends Equatable {
   @JsonKey(ignore: true)
@@ -47,4 +48,9 @@ class BrgError extends Equatable {
   }
 
   factory BrgError.fromJson(Map<String, dynamic> json) => _$BrgErrorFromJson(json);
+
+  // STOPSHIP: Update default error model with localized text
+  factory BrgError.defaultError() => const BrgError(
+        message: "Teknik bir hata meydana geldi!",
+      );
 }

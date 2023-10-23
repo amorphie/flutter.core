@@ -1,5 +1,5 @@
 /*
- * burgan_core_github
+ * burgan_core
  *
  * Created on 19/10/2023.
  * Copyright (c) 2023 Commencis. All rights reserved.
@@ -13,8 +13,10 @@
 import 'dart:convert';
 
 import 'package:burgan_core/burgan_core.dart';
+import 'package:burgan_core/core/network/models/base_response.dart';
 import 'package:burgan_core/core/network/models/http_client_config.dart';
 import 'package:burgan_core/core/network/models/http_method.dart';
+import 'package:burgan_core/core/network/models/neo_response.dart';
 import 'package:burgan_core/core/storage/shared_preferences_helper.dart';
 import 'package:http/http.dart' as http;
 import 'package:json_annotation/json_annotation.dart';
@@ -38,7 +40,7 @@ class NeoNetworkManager {
     }
   }
 
-  Future<Map<String, dynamic>> call(
+  Future<NeoResponse<T>> call<T extends BaseResponse>(
     String endpoint, {
     Object body = const {},
     Map<String, String>? pathParameters,
@@ -47,15 +49,15 @@ class NeoNetworkManager {
     final fullPath = _httpClientConfig?.getServiceUrlByKey(endpoint, parameters: pathParameters, useHttps: useHttps);
     final method = _httpClientConfig?.getServiceMethodByKey(endpoint);
     if (fullPath == null || method == null) {
-      return {};
+      return NeoResponse.error(BrgError.defaultError());
     }
     switch (method) {
       case HttpMethod.get:
-        return await _requestGet(fullPath, queryProviders: queryProviders);
+        return await _requestGet<T>(fullPath, queryProviders: queryProviders);
       case HttpMethod.post:
-        return await _requestPost(fullPath, body, queryProviders: queryProviders);
+        return await _requestPost<T>(fullPath, body, queryProviders: queryProviders);
       case HttpMethod.delete:
-        return await _requestDelete(fullPath);
+        return await _requestDelete<T>(fullPath);
     }
   }
 
@@ -84,7 +86,7 @@ class NeoNetworkManager {
       'Behalf-Of-User': const Uuid().v1(), // TODO: Get it from storage
     });
 
-  static Future<Map<String, dynamic>> _requestGet(
+  static Future<NeoResponse<T>> _requestGet<T extends BaseResponse>(
     String fullPath, {
     List<HttpQueryProvider> queryProviders = const [],
   }) async {
@@ -93,10 +95,10 @@ class NeoNetworkManager {
       Uri.parse(fullPathWithQueries),
       headers: _defaultHeaders,
     );
-    return _createResponseMap(response);
+    return _createResponseMap<T>(response);
   }
 
-  Future<Map<String, dynamic>> _requestPost(
+  Future<NeoResponse<T>> _requestPost<T extends BaseResponse>(
     String fullPath,
     Object body, {
     List<HttpQueryProvider> queryProviders = const [],
@@ -107,10 +109,10 @@ class NeoNetworkManager {
       headers: _defaultPostHeaders,
       body: json.encode(body),
     );
-    return _createResponseMap(response);
+    return _createResponseMap<T>(response);
   }
 
-  Future<Map<String, dynamic>> _requestDelete(
+  Future<NeoResponse<T>> _requestDelete<T extends BaseResponse>(
     String fullPath, {
     Object? body,
     List<HttpQueryProvider> queryProviders = const [],
@@ -121,7 +123,7 @@ class NeoNetworkManager {
       headers: _defaultHeaders,
       body: json.encode(body),
     );
-    return _createResponseMap(response);
+    return _createResponseMap<T>(response);
   }
 
   static String _getFullPathWithQueries(String fullPath, List<HttpQueryProvider> queryProviders) {
@@ -141,7 +143,7 @@ class NeoNetworkManager {
     return fullPathWithQueries;
   }
 
-  static Future<Map<String, dynamic>> _createResponseMap(http.Response? response) async {
+  static Future<NeoResponse<T>> _createResponseMap<T extends BaseResponse>(http.Response? response) async {
     Map<String, dynamic>? responseJSON;
     if (response?.body != null) {
       try {
@@ -154,26 +156,20 @@ class NeoNetworkManager {
     }
 
     if (response!.statusCode >= 200 && response.statusCode < 300) {
-      return responseJSON ?? {};
+      return NeoResponse.success((T as BaseResponse).fromJson(responseJSON ?? {}) as T);
     } else {
       try {
-        final error = BrgError.fromJson(responseJSON ?? {}).copyWith(
-          httpStatusCode: response.statusCode,
-        );
-        throw HTTPCustomException(error: error);
+        return NeoResponse.error(BrgError.fromJson(responseJSON ?? {}));
       } on MissingRequiredKeysException {
         final error = BrgError(
           httpStatusCode: response.statusCode,
           errorCode: '${response.statusCode}',
           message: "Teknik bir hata meydana geldi, lütfen daha sonra tekrar deneyiniz.",
         );
-        throw HTTPCustomException(error: error);
+        return NeoResponse.error(error);
       } on Exception catch (e) {
-        if (e is HTTPCustomException) {
-          rethrow;
-        }
-        throw HTTPCustomException(
-          error: BrgError(
+        return NeoResponse.error(
+          BrgError(
             httpStatusCode: -1,
             errorCode: '-1',
             message: e.toString(),
@@ -186,7 +182,10 @@ class NeoNetworkManager {
   static Future<HttpClientConfig?> _fetchHttpClientConfig(String httpConfigEndpoint) async {
     try {
       final responseJson = await _requestGet(httpConfigEndpoint);
-      return HttpClientConfig.fromJson(responseJson);
+      if (responseJson.isSuccess) {
+        return HttpClientConfig.fromJson((responseJson as NeoSuccess).data);
+      }
+      return null;
     } on Exception catch (_) {
       return null;
     }
