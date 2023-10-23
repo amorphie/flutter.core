@@ -13,22 +13,24 @@
 import 'package:burgan_core/core/network/models/http_host_details.dart';
 import 'package:burgan_core/core/network/models/http_method.dart';
 import 'package:burgan_core/core/network/models/http_service.dart';
+import 'package:burgan_core/core/network/models/neo_base_response.dart';
 import 'package:collection/collection.dart';
 import 'package:json_annotation/json_annotation.dart';
 
 part 'http_client_config.g.dart';
 
 @JsonSerializable(createToJson: false)
-class HttpClientConfig {
+class HttpClientConfig extends NeoBaseResponse {
   @JsonKey(name: 'hosts', defaultValue: [])
   final List<HttpHostDetails> hosts;
 
   @JsonKey(name: 'services', defaultValue: [])
   final List<HttpService> services;
 
-  const HttpClientConfig({required this.hosts, required this.services});
+  HttpClientConfig({required this.hosts, required this.services});
 
-  factory HttpClientConfig.fromJson(Map<String, dynamic> json) => _$HttpClientConfigFromJson(json);
+  @override
+  HttpClientConfig fromJson(Map<String, dynamic> json) => _$HttpClientConfigFromJson(json);
 
   HttpMethod? getServiceMethodByKey(String key) {
     return _findServiceByKey(key)?.method;

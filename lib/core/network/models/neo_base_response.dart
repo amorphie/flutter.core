@@ -10,6 +10,6 @@
  * Any reproduction of this material must contain this notice.
  */
 
-abstract class BaseResponse {
-  BaseResponse fromJson(Map<String, dynamic> json);
+abstract class NeoBaseResponse {
+  NeoBaseResponse fromJson(Map<String, dynamic> json);
 }
