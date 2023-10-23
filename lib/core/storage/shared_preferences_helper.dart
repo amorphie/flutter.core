@@ -71,15 +71,15 @@ class SharedPreferencesHelper {
     return _preferences!.getString(_Constants.sharedPrefKeyTokenId);
   }
 
-  Future<bool> setAuthToken(String? token) async {
-    if (token == null) {
-      if (_preferences!.containsKey(_Constants.sharedPrefKeyAuthToken)) {
-        return await _preferences!.remove(_Constants.sharedPrefKeyAuthToken);
-      }
-      return true;
-    } else {
-      return await _preferences!.setString(_Constants.sharedPrefKeyAuthToken, token);
+  Future<bool> setAuthToken(String token) async {
+    return await _preferences!.setString(_Constants.sharedPrefKeyAuthToken, token);
+  }
+
+  Future<bool> deleteAuthToken() async {
+    if (_preferences!.containsKey(_Constants.sharedPrefKeyAuthToken)) {
+      return await _preferences!.remove(_Constants.sharedPrefKeyAuthToken);
     }
+    return true;
   }
 
   String? getAuthToken() {
