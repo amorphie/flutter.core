@@ -12,6 +12,7 @@
 
 import 'package:burgan_core/core/network/models/neo_error_display_method.dart';
 import 'package:burgan_core/core/network/models/neo_error_message.dart';
+import 'package:collection/collection.dart';
 import 'package:equatable/equatable.dart';
 import 'package:json_annotation/json_annotation.dart';
 
@@ -53,4 +54,8 @@ class NeoError extends Equatable {
         displayMode: _Constants.defaultErrorDisplayMode,
         messages: _Constants.defaultErrorMessages,
       );
+
+  NeoErrorMessage? getErrorMessageByLanguageCode(String languageCode) {
+    return messages.firstWhereOrNull((errorMessage) => errorMessage.language == languageCode);
+  }
 }
