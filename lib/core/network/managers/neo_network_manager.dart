@@ -160,13 +160,8 @@ class NeoNetworkManager {
       } on MissingRequiredKeysException {
         final error = NeoError(responseCode: response.statusCode);
         return NeoResponse.error(error);
-      } on Exception catch (e) {
-        return NeoResponse.error(
-          NeoError(
-            responseCode: -1,
-            message: e.toString(),
-          ),
-        );
+      } on Exception catch (_) {
+        return NeoResponse.error(const NeoError(responseCode: -1));
       }
     }
   }

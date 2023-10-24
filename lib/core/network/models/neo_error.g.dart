@@ -11,7 +11,10 @@ NeoError _$NeoErrorFromJson(Map<String, dynamic> json) => NeoError(
       displayMode: $enumDecodeNullable(
               _$NeoErrorDisplayMethodEnumMap, json['display-mode']) ??
           _Constants.defaultErrorDisplayMode,
-      message: json['messages'] as String?,
+      messages: (json['messages'] as List<dynamic>?)
+              ?.map((e) => NeoErrorMessage.fromJson(e as Map<String, dynamic>))
+              .toList() ??
+          _Constants.defaultErrorMessages,
     );
 
 const _$NeoErrorDisplayMethodEnumMap = {
