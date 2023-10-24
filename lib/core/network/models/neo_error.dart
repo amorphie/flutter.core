@@ -18,7 +18,7 @@ import 'package:json_annotation/json_annotation.dart';
 part 'neo_error.g.dart';
 
 abstract class _Constants {
-  static const defaultErrorCode = 400;
+  static const defaultErrorCode = "400";
   static const List<NeoErrorMessage> defaultErrorMessages = [
     NeoErrorMessage.defaultErrorTurkish,
     NeoErrorMessage.defaultErrorEnglish
@@ -29,7 +29,7 @@ abstract class _Constants {
 @JsonSerializable(createToJson: false)
 class NeoError extends Equatable {
   @JsonKey(name: "response-code", defaultValue: _Constants.defaultErrorCode)
-  final int responseCode;
+  final String responseCode;
 
   @JsonKey(name: "display-mode")
   final NeoErrorDisplayMethod displayMode;

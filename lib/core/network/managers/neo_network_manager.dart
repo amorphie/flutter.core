@@ -158,10 +158,10 @@ class NeoNetworkManager {
       try {
         return NeoResponse.error(NeoError.fromJson(responseJSON ?? {}));
       } on MissingRequiredKeysException {
-        final error = NeoError(responseCode: response.statusCode);
+        final error = NeoError(responseCode: response.statusCode.toString());
         return NeoResponse.error(error);
       } on Exception catch (_) {
-        return NeoResponse.error(const NeoError(responseCode: -1));
+        return NeoResponse.error(const NeoError(responseCode: "-1"));
       }
     }
   }
