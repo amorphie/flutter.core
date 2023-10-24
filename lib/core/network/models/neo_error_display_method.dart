@@ -1,7 +1,7 @@
 /*
  * burgan_core
  *
- * Created on 22/9/2023.
+ * Created on 24/10/2023.
  * Copyright (c) 2023 Commencis. All rights reserved.
  *
  * Save to the extent permitted by law, you may not use, copy, modify,
@@ -9,11 +9,12 @@
  * of it without the prior written consent of Commencis.
  * Any reproduction of this material must contain this notice.
  */
+import 'package:json_annotation/json_annotation.dart';
 
-export 'managers/neo_network_manager.dart';
-export 'managers/signalr_connection_manager.dart';
-export 'models/brg_signalr_transition.dart';
-export 'models/http_client_config.dart';
-export 'models/neo_error.dart';
-export 'models/neo_response.dart';
-export 'query_providers/http_query_provider.dart';
+@JsonEnum()
+enum NeoErrorDisplayMethod {
+  @JsonValue('popup')
+  popup,
+  @JsonValue('inline')
+  inline,
+}

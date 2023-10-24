@@ -13,9 +13,7 @@
 import 'dart:convert';
 
 import 'package:burgan_core/burgan_core.dart';
-import 'package:burgan_core/core/network/models/http_client_config.dart';
 import 'package:burgan_core/core/network/models/http_method.dart';
-import 'package:burgan_core/core/network/models/neo_response.dart';
 import 'package:burgan_core/core/storage/shared_preferences_helper.dart';
 import 'package:http/http.dart' as http;
 import 'package:json_annotation/json_annotation.dart';
@@ -48,7 +46,7 @@ class NeoNetworkManager {
     final fullPath = _httpClientConfig?.getServiceUrlByKey(endpoint, parameters: pathParameters, useHttps: useHttps);
     final method = _httpClientConfig?.getServiceMethodByKey(endpoint);
     if (fullPath == null || method == null) {
-      return NeoResponse.error(BrgError.defaultError());
+      return NeoResponse.error(NeoError.defaultError());
     }
     switch (method) {
       case HttpMethod.get:
@@ -158,19 +156,14 @@ class NeoNetworkManager {
       return NeoResponse.success(responseJSON ?? {});
     } else {
       try {
-        return NeoResponse.error(BrgError.fromJson(responseJSON ?? {}));
+        return NeoResponse.error(NeoError.fromJson(responseJSON ?? {}));
       } on MissingRequiredKeysException {
-        final error = BrgError(
-          httpStatusCode: response.statusCode,
-          errorCode: '${response.statusCode}',
-          message: "Teknik bir hata meydana geldi, lütfen daha sonra tekrar deneyiniz.",
-        );
+        final error = NeoError(responseCode: response.statusCode);
         return NeoResponse.error(error);
       } on Exception catch (e) {
         return NeoResponse.error(
-          BrgError(
-            httpStatusCode: -1,
-            errorCode: '-1',
+          NeoError(
+            responseCode: -1,
             message: e.toString(),
           ),
         );
@@ -182,7 +175,7 @@ class NeoNetworkManager {
     try {
       final responseJson = await _requestGet(httpConfigEndpoint);
       if (responseJson.isSuccess) {
-        return HttpClientConfig.fromJson((responseJson as NeoSuccess).data);
+        return HttpClientConfig.fromJson((responseJson as NeoSuccessResponse).data);
       }
       // TODO: Handle error case
       return null;

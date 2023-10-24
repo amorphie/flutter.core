@@ -17,9 +17,9 @@ class BrgComponentTreeBuilderBloc extends Bloc<BrgComponentTreeBuilderEvent, Brg
           event.pageId,
         );
         if (response.isSuccess) {
-          emit(BrgComponentTreeBuilderStateLoaded(componentsMap: ((response as NeoSuccess).data)));
+          emit(BrgComponentTreeBuilderStateLoaded(componentsMap: ((response as NeoSuccessResponse).data)));
         } else {
-          emit(BrgComponentTreeBuilderStateError(errorMessage: (response as NeoError).error.message.orEmpty));
+          emit(BrgComponentTreeBuilderStateError(errorMessage: (response as NeoErrorResponse).error.message.orEmpty));
         }
       } on Exception catch (e) {
         emit(BrgComponentTreeBuilderStateError(errorMessage: e.toString()));

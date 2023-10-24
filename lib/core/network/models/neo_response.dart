@@ -10,33 +10,33 @@
  * Any reproduction of this material must contain this notice.
  */
 
-import 'package:burgan_core/core/network/models/brg_error.dart';
+import 'package:burgan_core/core/network/models/neo_error.dart';
 
 sealed class NeoResponse {
   const NeoResponse();
 
   bool get isSuccess {
     return switch (this) {
-      NeoError(error: final _) => false,
-      NeoSuccess(data: final _) => true,
+      NeoErrorResponse(error: final _) => false,
+      NeoSuccessResponse(data: final _) => true,
     };
   }
 
   bool get isError => !isSuccess;
 
-  factory NeoResponse.success(Map<String, dynamic> response) => NeoSuccess(response);
+  factory NeoResponse.success(Map<String, dynamic> response) => NeoSuccessResponse(response);
 
-  factory NeoResponse.error(BrgError response) => NeoError(response);
+  factory NeoResponse.error(NeoError response) => NeoErrorResponse(response);
 }
 
-final class NeoSuccess extends NeoResponse {
-  const NeoSuccess(this.data);
+final class NeoSuccessResponse extends NeoResponse {
+  const NeoSuccessResponse(this.data);
 
   final Map<String, dynamic> data;
 }
 
-final class NeoError extends NeoResponse {
-  const NeoError(this.error);
+final class NeoErrorResponse extends NeoResponse {
+  const NeoErrorResponse(this.error);
 
-  final BrgError error;
+  final NeoError error;
 }
