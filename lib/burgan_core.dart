@@ -19,8 +19,11 @@ export 'core/util/burgan_util.dart';
 export 'core/widgets/burgan_widgets.dart';
 
 class BurganCore {
-  static init({required String httpConfigEndpoint}) async {
+  static init() async {
     await SharedPreferencesHelper.init();
+  }
+
+  static initNetworkManager({required String httpConfigEndpoint}) async {
     await NeoNetworkManager.init(httpConfigEndpoint);
   }
 }
