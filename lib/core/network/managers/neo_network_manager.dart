@@ -15,7 +15,6 @@ import 'dart:convert';
 import 'package:burgan_core/burgan_core.dart';
 import 'package:burgan_core/core/network/models/http_client_config.dart';
 import 'package:burgan_core/core/network/models/http_method.dart';
-import 'package:burgan_core/core/network/models/neo_base_response.dart';
 import 'package:burgan_core/core/network/models/neo_response.dart';
 import 'package:burgan_core/core/storage/shared_preferences_helper.dart';
 import 'package:http/http.dart' as http;
@@ -40,7 +39,7 @@ class NeoNetworkManager {
     }
   }
 
-  Future<NeoResponse<T>> call<T extends NeoBaseResponse>(
+  Future<NeoResponse> call(
     String endpoint, {
     Object body = const {},
     Map<String, String>? pathParameters,
@@ -53,11 +52,11 @@ class NeoNetworkManager {
     }
     switch (method) {
       case HttpMethod.get:
-        return await _requestGet<T>(fullPath, queryProviders: queryProviders);
+        return await _requestGet(fullPath, queryProviders: queryProviders);
       case HttpMethod.post:
-        return await _requestPost<T>(fullPath, body, queryProviders: queryProviders);
+        return await _requestPost(fullPath, body, queryProviders: queryProviders);
       case HttpMethod.delete:
-        return await _requestDelete<T>(fullPath);
+        return await _requestDelete(fullPath);
     }
   }
 
@@ -86,7 +85,7 @@ class NeoNetworkManager {
       'Behalf-Of-User': const Uuid().v1(), // TODO: Get it from storage
     });
 
-  static Future<NeoResponse<T>> _requestGet<T extends NeoBaseResponse>(
+  static Future<NeoResponse> _requestGet(
     String fullPath, {
     List<HttpQueryProvider> queryProviders = const [],
   }) async {
@@ -95,10 +94,10 @@ class NeoNetworkManager {
       Uri.parse(fullPathWithQueries),
       headers: _defaultHeaders,
     );
-    return _createResponseMap<T>(response);
+    return _createResponseMap(response);
   }
 
-  Future<NeoResponse<T>> _requestPost<T extends NeoBaseResponse>(
+  Future<NeoResponse> _requestPost(
     String fullPath,
     Object body, {
     List<HttpQueryProvider> queryProviders = const [],
@@ -109,10 +108,10 @@ class NeoNetworkManager {
       headers: _defaultPostHeaders,
       body: json.encode(body),
     );
-    return _createResponseMap<T>(response);
+    return _createResponseMap(response);
   }
 
-  Future<NeoResponse<T>> _requestDelete<T extends NeoBaseResponse>(
+  Future<NeoResponse> _requestDelete(
     String fullPath, {
     Object? body,
     List<HttpQueryProvider> queryProviders = const [],
@@ -123,7 +122,7 @@ class NeoNetworkManager {
       headers: _defaultHeaders,
       body: json.encode(body),
     );
-    return _createResponseMap<T>(response);
+    return _createResponseMap(response);
   }
 
   static String _getFullPathWithQueries(String fullPath, List<HttpQueryProvider> queryProviders) {
@@ -143,7 +142,7 @@ class NeoNetworkManager {
     return fullPathWithQueries;
   }
 
-  static Future<NeoResponse<T>> _createResponseMap<T extends NeoBaseResponse>(http.Response? response) async {
+  static Future<NeoResponse> _createResponseMap(http.Response? response) async {
     Map<String, dynamic>? responseJSON;
     if (response?.body != null) {
       try {
@@ -156,7 +155,7 @@ class NeoNetworkManager {
     }
 
     if (response!.statusCode >= 200 && response.statusCode < 300) {
-      return NeoResponse.success((T as NeoBaseResponse).fromJson(responseJSON ?? {}) as T);
+      return NeoResponse.success(responseJSON ?? {});
     } else {
       try {
         return NeoResponse.error(BrgError.fromJson(responseJSON ?? {}));
@@ -181,9 +180,9 @@ class NeoNetworkManager {
 
   static Future<HttpClientConfig?> _fetchHttpClientConfig(String httpConfigEndpoint) async {
     try {
-      final responseJson = await _requestGet<HttpClientConfig>(httpConfigEndpoint);
+      final responseJson = await _requestGet(httpConfigEndpoint);
       if (responseJson.isSuccess) {
-        return (responseJson as NeoSuccess).data;
+        return HttpClientConfig.fromJson((responseJson as NeoSuccess).data);
       }
       // TODO: Handle error case
       return null;

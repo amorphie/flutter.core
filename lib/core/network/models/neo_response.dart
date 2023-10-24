@@ -12,7 +12,7 @@
 
 import 'package:burgan_core/core/network/models/brg_error.dart';
 
-sealed class NeoResponse<T> {
+sealed class NeoResponse {
   const NeoResponse();
 
   bool get isSuccess {
@@ -24,18 +24,18 @@ sealed class NeoResponse<T> {
 
   bool get isError => !isSuccess;
 
-  factory NeoResponse.success(T response) => NeoSuccess(response);
+  factory NeoResponse.success(Map<String, dynamic> response) => NeoSuccess(response);
 
   factory NeoResponse.error(BrgError response) => NeoError(response);
 }
 
-final class NeoSuccess<T> extends NeoResponse<T> {
+final class NeoSuccess extends NeoResponse {
   const NeoSuccess(this.data);
 
-  final T data;
+  final Map<String, dynamic> data;
 }
 
-final class NeoError<T> extends NeoResponse<T> {
+final class NeoError extends NeoResponse {
   const NeoError(this.error);
 
   final BrgError error;
