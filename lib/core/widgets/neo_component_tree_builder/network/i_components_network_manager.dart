@@ -1,4 +1,4 @@
-import 'package:burgan_core/core/network/models/neo_response.dart';
+import 'package:neo_core/core/network/models/neo_response.dart';
 
 abstract class IComponentsNetworkManager {
   IComponentsNetworkManager();

@@ -1,4 +1,4 @@
-import 'package:burgan_core/neo_core.dart';
+import 'package:neo_core/neo_core.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:json_dynamic_widget/json_dynamic_widget.dart';

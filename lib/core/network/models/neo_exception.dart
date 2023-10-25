@@ -1,5 +1,5 @@
 /*
- * burgan_core
+ * neo_core
  *
  * Created on 24/10/2023.
  * Copyright (c) 2023 Commencis. All rights reserved.
@@ -10,7 +10,7 @@
  * Any reproduction of this material must contain this notice.
  */
 
-import 'package:burgan_core/core/network/models/neo_error.dart';
+import 'package:neo_core/core/network/models/neo_error.dart';
 
 class NeoException implements Exception {
   final NeoError error;

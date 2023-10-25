@@ -1,5 +1,5 @@
 /*
- * burgan_core
+ * neo_core
  *
  * Created on 22/9/2023.
  * Copyright (c) 2023 Commencis. All rights reserved.

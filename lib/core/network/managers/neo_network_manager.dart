@@ -1,5 +1,5 @@
 /*
- * burgan_core
+ * neo_core
  *
  * Created on 19/10/2023.
  * Copyright (c) 2023 Commencis. All rights reserved.
@@ -12,12 +12,10 @@
 
 import 'dart:convert';
 
-import 'package:burgan_core/core/network/models/http_method.dart';
-import 'package:burgan_core/core/network/models/neo_exception.dart';
-import 'package:burgan_core/core/storage/neo_core_shared_preferences.dart';
-import 'package:burgan_core/neo_core.dart';
 import 'package:http/http.dart' as http;
 import 'package:json_annotation/json_annotation.dart';
+import 'package:neo_core/core/network/models/http_method.dart';
+import 'package:neo_core/neo_core.dart';
 import 'package:uuid/uuid.dart';
 
 class NeoNetworkManager {

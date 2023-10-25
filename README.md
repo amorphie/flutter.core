@@ -1,4 +1,4 @@
-# burgan_core
+# neo_core
 
 Burgan Flutter Core Project
 

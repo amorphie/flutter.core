@@ -1,5 +1,5 @@
 /*
- * burgan_core
+ * neo_core
  *
  * Created on 18/10/2023.
  * Copyright (c) 2023 Commencis. All rights reserved.
@@ -10,8 +10,8 @@
  * Any reproduction of this material must contain this notice.
  */
 
-import 'package:burgan_core/core/network/models/http_method.dart';
 import 'package:json_annotation/json_annotation.dart';
+import 'package:neo_core/core/network/models/http_method.dart';
 
 part 'http_service.g.dart';
 

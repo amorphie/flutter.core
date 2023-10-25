@@ -1,5 +1,5 @@
 /*
- * burgan_core
+ * neo_core
  *
  * Created on 22/9/2023.
  * Copyright (c) 2023 Commencis. All rights reserved.
@@ -13,9 +13,9 @@
 import 'dart:convert';
 import 'dart:developer';
 
-import 'package:burgan_core/core/network/models/neo_signalr_transition.dart';
 import 'package:collection/collection.dart';
 import 'package:flutter/foundation.dart';
+import 'package:neo_core/core/network/models/neo_signalr_transition.dart';
 import 'package:signalr_netcore/signalr_client.dart';
 
 class SignalrConnectionManager {

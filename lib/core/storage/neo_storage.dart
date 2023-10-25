@@ -1,7 +1,7 @@
 /*
  * neo_core
  *
- * Created on 22/9/2023.
+ * Created on 25/10/2023.
  * Copyright (c) 2023 Commencis. All rights reserved.
  *
  * Save to the extent permitted by law, you may not use, copy, modify,
@@ -10,8 +10,4 @@
  * Any reproduction of this material must contain this notice.
  */
 
-class HttpQueryProvider {
-  final Map<String, String> queryParameters;
-
-  HttpQueryProvider(this.queryParameters);
-}
+export 'neo_core_shared_preferences.dart';

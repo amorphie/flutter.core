@@ -1,5 +1,5 @@
 /*
- * burgan_core
+ * neo_core
  *
  * Created on 22/9/2023.
  * Copyright (c) 2023 Commencis. All rights reserved.
@@ -10,7 +10,7 @@
  * Any reproduction of this material must contain this notice.
  */
 
-import 'package:burgan_core/core/bus/widget_event_bus/neo_widget_event.dart';
+import 'package:neo_core/core/bus/widget_event_bus/neo_widget_event.dart';
 import 'package:rxdart/rxdart.dart';
 
 class NeoWidgetEventBus {

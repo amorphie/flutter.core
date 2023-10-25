@@ -1,4 +1,4 @@
-import 'package:burgan_core/core/network/neo_network.dart';
+import 'package:neo_core/core/network/neo_network.dart';
 import 'package:flutter/material.dart';
 
 class NeoTransitionListenerWidget extends StatefulWidget {
