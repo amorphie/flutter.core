@@ -1,4 +1,4 @@
-import 'package:burgan_core/burgan_core.dart';
+import 'package:burgan_core/neo_core.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:uuid/uuid.dart';
 
@@ -10,10 +10,10 @@ class _Constants {
   static const String sharedPrefKeyAuthToken = "shared_pref_key_auth_token";
 }
 
-class SharedPreferencesHelper {
-  SharedPreferencesHelper._();
+class NeoCoreSharedPreferences {
+  NeoCoreSharedPreferences._();
 
-  static SharedPreferencesHelper shared = SharedPreferencesHelper._();
+  static NeoCoreSharedPreferences shared = NeoCoreSharedPreferences._();
   static SharedPreferences? _preferences;
 
   static init() async {

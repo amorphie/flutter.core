@@ -10,5 +10,9 @@
  * Any reproduction of this material must contain this notice.
  */
 
-export 'widget_event_bus/brg_widget_event.dart';
-export 'widget_event_bus/brg_widget_event_bus.dart';
+class NeoWidgetEvent {
+  final String eventId;
+  final Object? data;
+
+  NeoWidgetEvent({required this.eventId, this.data});
+}

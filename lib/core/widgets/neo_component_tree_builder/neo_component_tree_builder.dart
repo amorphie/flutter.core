@@ -1,15 +1,15 @@
-import 'package:burgan_core/burgan_core.dart';
+import 'package:burgan_core/neo_core.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:json_dynamic_widget/json_dynamic_widget.dart';
 
-class BrgComponentTreeBuilder extends StatelessWidget {
+class NeoComponentTreeBuilder extends StatelessWidget {
   final IComponentsNetworkManager componentsNetworkManager;
   final String pageId;
   final Widget loadingWidget;
   final Widget errorWidget;
 
-  const BrgComponentTreeBuilder({
+  const NeoComponentTreeBuilder({
     Key? key,
     required this.componentsNetworkManager,
     required this.pageId,
@@ -24,16 +24,16 @@ class BrgComponentTreeBuilder extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return BlocBuilder<BrgComponentTreeBuilderBloc, BrgComponentTreeBuilderState>(
-      bloc: BrgComponentTreeBuilderBloc(componentsNetworkManager)
-        ..add(BrgComponentTreeBuilderEventFetchComponents(pageId: pageId)),
+    return BlocBuilder<NeoComponentTreeBuilderBloc, NeoComponentTreeBuilderState>(
+      bloc: NeoComponentTreeBuilderBloc(componentsNetworkManager)
+        ..add(NeoComponentTreeBuilderEventFetchComponents(pageId: pageId)),
       builder: (context, state) {
         switch (state) {
-          case BrgComponentTreeBuilderStateLoading _:
+          case NeoComponentTreeBuilderStateLoading _:
             return loadingWidget;
-          case BrgComponentTreeBuilderStateLoaded _:
+          case NeoComponentTreeBuilderStateLoaded _:
             return JsonWidgetData.fromDynamic(state.componentsMap)?.build(context: context) ?? const SizedBox.shrink();
-          case BrgComponentTreeBuilderStateError _:
+          case NeoComponentTreeBuilderStateError _:
             return errorWidget;
         }
       },

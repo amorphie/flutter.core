@@ -10,15 +10,15 @@
  * Any reproduction of this material must contain this notice.
  */
 
-import 'package:burgan_core/core/bus/widget_event_bus/brg_widget_event.dart';
+import 'package:burgan_core/core/bus/widget_event_bus/neo_widget_event.dart';
 import 'package:rxdart/rxdart.dart';
 
-class BrgWidgetEventBus {
-  final _eventBus = BehaviorSubject<BrgWidgetEvent>();
+class NeoWidgetEventBus {
+  final _eventBus = BehaviorSubject<NeoWidgetEvent>();
 
   listen({
     required String eventId,
-    required Function(BrgWidgetEvent) onEventReceived,
+    required Function(NeoWidgetEvent) onEventReceived,
   }) {
     _eventBus.stream.listen((event) {
       if (event.eventId == eventId) {
@@ -27,7 +27,7 @@ class BrgWidgetEventBus {
     });
   }
 
-  addEvent(BrgWidgetEvent event) {
+  addEvent(NeoWidgetEvent event) {
     _eventBus.add(event);
   }
 }

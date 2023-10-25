@@ -12,10 +12,10 @@
 
 import 'dart:convert';
 
-import 'package:burgan_core/burgan_core.dart';
 import 'package:burgan_core/core/network/models/http_method.dart';
 import 'package:burgan_core/core/network/models/neo_exception.dart';
-import 'package:burgan_core/core/storage/shared_preferences_helper.dart';
+import 'package:burgan_core/core/storage/neo_core_shared_preferences.dart';
+import 'package:burgan_core/neo_core.dart';
 import 'package:http/http.dart' as http;
 import 'package:json_annotation/json_annotation.dart';
 import 'package:uuid/uuid.dart';
@@ -61,7 +61,7 @@ class NeoNetworkManager {
   }
 
   static Map<String, String> get _defaultHeaders {
-    final sharedPreferencesHelper = SharedPreferencesHelper.shared;
+    final sharedPreferencesHelper = NeoCoreSharedPreferences.shared;
     final languageCode = sharedPreferencesHelper.getLanguageCode().orEmpty;
     final authToken = sharedPreferencesHelper.getAuthToken();
 

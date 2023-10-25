@@ -12,8 +12,8 @@
 
 export 'managers/neo_network_manager.dart';
 export 'managers/signalr_connection_manager.dart';
-export 'models/brg_signalr_transition.dart';
 export 'models/http_client_config.dart';
 export 'models/neo_error.dart';
 export 'models/neo_response.dart';
+export 'models/neo_signalr_transition.dart';
 export 'query_providers/http_query_provider.dart';

@@ -13,10 +13,10 @@
 import 'package:equatable/equatable.dart';
 import 'package:json_annotation/json_annotation.dart';
 
-part 'brg_signalr_transition.g.dart';
+part 'neo_signalr_transition.g.dart';
 
 @JsonSerializable(createToJson: false)
-class BrgSignalRTransition extends Equatable {
+class NeoSignalRTransition extends Equatable {
   @JsonKey(name: "transition")
   final String transitionId;
 
@@ -29,7 +29,7 @@ class BrgSignalRTransition extends Equatable {
   @JsonKey(name: "message", defaultValue: "")
   final String errorMessage;
 
-  const BrgSignalRTransition({
+  const NeoSignalRTransition({
     required this.transitionId,
     required this.pageDetails,
     required this.errorMessage,
@@ -39,5 +39,5 @@ class BrgSignalRTransition extends Equatable {
   @override
   List<Object?> get props => [transitionId, pageDetails, errorMessage];
 
-  factory BrgSignalRTransition.fromJson(Map<String, dynamic> json) => _$BrgSignalRTransitionFromJson(json);
+  factory NeoSignalRTransition.fromJson(Map<String, dynamic> json) => _$NeoSignalRTransitionFromJson(json);
 }

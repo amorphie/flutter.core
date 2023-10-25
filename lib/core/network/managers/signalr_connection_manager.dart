@@ -13,7 +13,7 @@
 import 'dart:convert';
 import 'dart:developer';
 
-import 'package:burgan_core/core/network/models/brg_signalr_transition.dart';
+import 'package:burgan_core/core/network/models/neo_signalr_transition.dart';
 import 'package:collection/collection.dart';
 import 'package:flutter/foundation.dart';
 import 'package:signalr_netcore/signalr_client.dart';
@@ -69,7 +69,7 @@ class SignalrConnectionManager {
       final ongoingTransition = transitions
           .map((transition) {
             try {
-              return BrgSignalRTransition.fromJson(jsonDecode(transition as String));
+              return NeoSignalRTransition.fromJson(jsonDecode(transition as String));
             } catch (e) {
               return null;
             }

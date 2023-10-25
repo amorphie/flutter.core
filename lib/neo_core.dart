@@ -11,16 +11,16 @@
  */
 
 import 'package:burgan_core/core/network/managers/neo_network_manager.dart';
-import 'package:burgan_core/core/storage/shared_preferences_helper.dart';
+import 'package:burgan_core/core/storage/neo_core_shared_preferences.dart';
 
-export 'core/bus/burgan_bus.dart';
-export 'core/network/burgan_network.dart';
-export 'core/util/burgan_util.dart';
-export 'core/widgets/burgan_widgets.dart';
+export 'core/bus/neo_bus.dart';
+export 'core/network/neo_network.dart';
+export 'core/util/neo_util.dart';
+export 'core/widgets/neo_widgets.dart';
 
-class BurganCore {
+class NeoCore {
   static init() async {
-    await SharedPreferencesHelper.init();
+    await NeoCoreSharedPreferences.init();
   }
 
   static initNetworkManager({required String httpConfigEndpoint}) async {

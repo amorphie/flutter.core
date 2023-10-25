@@ -10,9 +10,5 @@
  * Any reproduction of this material must contain this notice.
  */
 
-class BrgWidgetEvent {
-  final String eventId;
-  final Object? data;
-
-  BrgWidgetEvent({required this.eventId, this.data});
-}
+export 'widget_event_bus/neo_widget_event.dart';
+export 'widget_event_bus/neo_widget_event_bus.dart';

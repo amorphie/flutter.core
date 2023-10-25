@@ -1,14 +1,12 @@
 // GENERATED CODE - DO NOT MODIFY BY HAND
 
-part of 'brg_signalr_transition.dart';
+part of 'neo_signalr_transition.dart';
 
 // **************************************************************************
 // JsonSerializableGenerator
 // **************************************************************************
 
-BrgSignalRTransition _$BrgSignalRTransitionFromJson(
-        Map<String, dynamic> json) =>
-    BrgSignalRTransition(
+NeoSignalRTransition _$NeoSignalRTransitionFromJson(Map<String, dynamic> json) => NeoSignalRTransition(
       transitionId: json['transition'] as String,
       pageDetails: json['page'] as Map<String, dynamic>? ?? {},
       errorMessage: json['message'] as String? ?? '',

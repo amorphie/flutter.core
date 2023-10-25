@@ -10,7 +10,7 @@
  * Any reproduction of this material must contain this notice.
  */
 
-export 'brg_component_tree_builder/bloc/brg_component_tree_builder_bloc.dart';
-export 'brg_component_tree_builder/brg_component_tree_builder.dart';
-export 'brg_component_tree_builder/network/i_components_network_manager.dart';
-export 'brg_transition_listener/brg_transition_listener_widget.dart';
+export 'neo_component_tree_builder/bloc/neo_component_tree_builder_bloc.dart';
+export 'neo_component_tree_builder/neo_component_tree_builder.dart';
+export 'neo_component_tree_builder/network/i_components_network_manager.dart';
+export 'neo_transition_listener/neo_transition_listener_widget.dart';

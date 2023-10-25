@@ -1,7 +1,7 @@
-import 'package:burgan_core/core/network/burgan_network.dart';
+import 'package:burgan_core/core/network/neo_network.dart';
 import 'package:flutter/material.dart';
 
-class BrgTransitionListenerWidget extends StatefulWidget {
+class NeoTransitionListenerWidget extends StatefulWidget {
   final Widget child;
   final String transitionId;
   final String signalRServerUrl;
@@ -10,7 +10,7 @@ class BrgTransitionListenerWidget extends StatefulWidget {
   final Function(String token)? onTokenRetrieved;
   final Function(String errorMessage)? onError;
 
-  const BrgTransitionListenerWidget({
+  const NeoTransitionListenerWidget({
     Key? key,
     required this.child,
     required this.transitionId,
@@ -22,10 +22,10 @@ class BrgTransitionListenerWidget extends StatefulWidget {
   }) : super(key: key);
 
   @override
-  State<BrgTransitionListenerWidget> createState() => _BrgTransitionListenerWidgetState();
+  State<NeoTransitionListenerWidget> createState() => _NeoTransitionListenerWidgetState();
 }
 
-class _BrgTransitionListenerWidgetState extends State<BrgTransitionListenerWidget> {
+class _NeoTransitionListenerWidgetState extends State<NeoTransitionListenerWidget> {
   late SignalrConnectionManager signalrConnectionManager;
 
   @override
