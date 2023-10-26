@@ -8,6 +8,7 @@ class _Constants {
   static const String sharedPrefKeyDeviceInfo = "shared_pref_key_device_info";
   static const String sharedPrefKeyTokenId = "shared_pref_key_token_id";
   static const String sharedPrefKeyAuthToken = "shared_pref_key_auth_token";
+  static const String sharedPrefKeyRefreshToken = "shared_pref_key_refresh_token";
 }
 
 class NeoCoreSharedPreferences {
@@ -84,5 +85,13 @@ class NeoCoreSharedPreferences {
 
   String? getAuthToken() {
     return _preferences!.getString(_Constants.sharedPrefKeyAuthToken);
+  }
+
+  Future<bool> setRefreshToken(String refreshToken) async {
+    return await _preferences!.setString(_Constants.sharedPrefKeyRefreshToken, refreshToken);
+  }
+
+  String? getRefreshToken() {
+    return _preferences!.getString(_Constants.sharedPrefKeyRefreshToken);
   }
 }
