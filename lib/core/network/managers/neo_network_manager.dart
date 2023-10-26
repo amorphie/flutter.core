@@ -19,18 +19,17 @@ import 'package:neo_core/neo_core.dart';
 import 'package:uuid/uuid.dart';
 
 class NeoNetworkManager {
-  final bool useHttps;
+  NeoNetworkManager._();
 
+  static NeoNetworkManager shared = NeoNetworkManager._();
   static HttpClientConfig? _httpClientConfig;
-
-  NeoNetworkManager({this.useHttps = true});
 
   static Future init(String httpConfigEndpoint) async {
     if (_httpClientConfig != null) {
       return;
     }
     try {
-      _httpClientConfig = await _fetchHttpClientConfig(httpConfigEndpoint);
+      _httpClientConfig = await shared._fetchHttpClientConfig(httpConfigEndpoint);
     } on Exception catch (_) {
       rethrow;
     }
@@ -41,6 +40,7 @@ class NeoNetworkManager {
     Object body = const {},
     Map<String, String>? pathParameters,
     List<HttpQueryProvider> queryProviders = const [],
+    bool useHttps = true,
   }) async {
     final fullPath = _httpClientConfig?.getServiceUrlByKey(endpoint, parameters: pathParameters, useHttps: useHttps);
     final method = _httpClientConfig?.getServiceMethodByKey(endpoint);
@@ -83,7 +83,7 @@ class NeoNetworkManager {
       'Behalf-Of-User': const Uuid().v1(), // TODO: Get it from storage
     });
 
-  static Future<Map<String, dynamic>> _requestGet(
+  Future<Map<String, dynamic>> _requestGet(
     String fullPath, {
     List<HttpQueryProvider> queryProviders = const [],
   }) async {
@@ -123,7 +123,7 @@ class NeoNetworkManager {
     return _createResponseMap(response);
   }
 
-  static String _getFullPathWithQueries(String fullPath, List<HttpQueryProvider> queryProviders) {
+  String _getFullPathWithQueries(String fullPath, List<HttpQueryProvider> queryProviders) {
     if (queryProviders.isEmpty) {
       return fullPath;
     }
@@ -170,7 +170,7 @@ class NeoNetworkManager {
     }
   }
 
-  static Future<HttpClientConfig?> _fetchHttpClientConfig(String httpConfigEndpoint) async {
+  Future<HttpClientConfig?> _fetchHttpClientConfig(String httpConfigEndpoint) async {
     final responseJson = await _requestGet(httpConfigEndpoint);
     return HttpClientConfig.fromJson(responseJson);
   }
