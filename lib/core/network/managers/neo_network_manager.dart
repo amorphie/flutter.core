@@ -14,9 +14,14 @@ import 'dart:convert';
 
 import 'package:http/http.dart' as http;
 import 'package:json_annotation/json_annotation.dart';
+import 'package:neo_core/core/network/models/http_auth_response.dart';
 import 'package:neo_core/core/network/models/http_method.dart';
 import 'package:neo_core/neo_core.dart';
 import 'package:uuid/uuid.dart';
+
+abstract class _Constants {
+  static const int responseCodeUnauthorized = 401;
+}
 
 class NeoNetworkManager {
   NeoNetworkManager._();
@@ -140,7 +145,7 @@ class NeoNetworkManager {
     return fullPathWithQueries;
   }
 
-  static Future<Map<String, dynamic>> _createResponseMap(http.Response? response) async {
+  Future<Map<String, dynamic>> _createResponseMap(http.Response? response) async {
     Map<String, dynamic>? responseJSON;
     if (response?.body != null) {
       try {
@@ -154,6 +159,14 @@ class NeoNetworkManager {
 
     if (response!.statusCode >= 200 && response.statusCode < 300) {
       return responseJSON ?? {};
+    } else if (response.statusCode == _Constants.responseCodeUnauthorized) {
+      final isTokenRefreshed = await _refreshAuthDetailsByUsingRefreshToken();
+      if (isTokenRefreshed) {
+        // TODO: Retry last call
+      } else {
+        // TODO: Return error
+      }
+      return {}; // STOPSHIP: Update with response
     } else {
       try {
         final error = NeoError.fromJson(responseJSON ?? {});
@@ -173,5 +186,26 @@ class NeoNetworkManager {
   Future<HttpClientConfig?> _fetchHttpClientConfig(String httpConfigEndpoint) async {
     final responseJson = await _requestGet(httpConfigEndpoint);
     return HttpClientConfig.fromJson(responseJson);
+  }
+
+  Future<bool> _refreshAuthDetailsByUsingRefreshToken() async {
+    final sharedPrefs = NeoCoreSharedPreferences.shared;
+    try {
+      final responseJson = await call(
+        "get-token",
+        body: {
+          "grant_type": "refresh_token",
+          "refresh_token": sharedPrefs.getRefreshToken(),
+        },
+      ); // STOPSHIP: Update token endpoint when determined.
+      final authResponse = HttpAuthResponse.fromJson(responseJson);
+      sharedPrefs.setAuthToken(authResponse.token);
+      if (authResponse.refreshToken.isNotEmpty) {
+        sharedPrefs.setRefreshToken(authResponse.refreshToken);
+      }
+      return true;
+    } catch (e) {
+      return false;
+    }
   }
 }
