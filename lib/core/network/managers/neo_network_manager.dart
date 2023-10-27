@@ -163,7 +163,7 @@ class NeoNetworkManager {
     } else if (response.statusCode == _Constants.responseCodeUnauthorized) {
       final isTokenRefreshed = await _refreshAuthDetailsByUsingRefreshToken();
       if (isTokenRefreshed) {
-        _retryLastCall();
+        await _retryLastCall();
       } else {
         // TODO: Return error
       }
@@ -184,14 +184,14 @@ class NeoNetworkManager {
     }
   }
 
-  void _retryLastCall() {
+  Future _retryLastCall() async {
     if (_lastCall != null) {
       if (_lastCall!.retryCount == null) {
         _lastCall!.setRetryCount(_httpClientConfig?.getRetryCountByKey(_lastCall!.endpoint) ?? 0);
       }
       if (canRetryRequest(_lastCall!)) {
         _lastCall!.decreaseRetryCount();
-        call(_lastCall!);
+        await call(_lastCall!);
       }
     }
   }
