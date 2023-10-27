@@ -16,6 +16,7 @@ import 'package:http/http.dart' as http;
 import 'package:json_annotation/json_annotation.dart';
 import 'package:neo_core/core/network/models/http_auth_response.dart';
 import 'package:neo_core/core/network/models/http_method.dart';
+import 'package:neo_core/core/network/models/neo_http_call.dart';
 import 'package:neo_core/neo_core.dart';
 import 'package:uuid/uuid.dart';
 
@@ -40,24 +41,22 @@ class NeoNetworkManager {
     }
   }
 
-  Future<Map<String, dynamic>> call(
-    String endpoint, {
-    Object body = const {},
-    Map<String, String>? pathParameters,
-    List<HttpQueryProvider> queryProviders = const [],
-    bool useHttps = true,
-  }) async {
-    final fullPath = _httpClientConfig?.getServiceUrlByKey(endpoint, parameters: pathParameters, useHttps: useHttps);
-    final method = _httpClientConfig?.getServiceMethodByKey(endpoint);
+  Future<Map<String, dynamic>> call(NeoHttpCall neoCall) async {
+    final fullPath = _httpClientConfig?.getServiceUrlByKey(
+      neoCall.endpoint,
+      parameters: neoCall.pathParameters,
+      useHttps: neoCall.useHttps,
+    );
+    final method = _httpClientConfig?.getServiceMethodByKey(neoCall.endpoint);
     if (fullPath == null || method == null) {
       // TODO: Throw custom exception
       throw NeoException(error: NeoError.defaultError());
     }
     switch (method) {
       case HttpMethod.get:
-        return await _requestGet(fullPath, queryProviders: queryProviders);
+        return await _requestGet(fullPath, queryProviders: neoCall.queryProviders);
       case HttpMethod.post:
-        return await _requestPost(fullPath, body, queryProviders: queryProviders);
+        return await _requestPost(fullPath, neoCall.body, queryProviders: neoCall.queryProviders);
       case HttpMethod.delete:
         return await _requestDelete(fullPath);
     }
@@ -102,7 +101,7 @@ class NeoNetworkManager {
 
   Future<Map<String, dynamic>> _requestPost(
     String fullPath,
-    Object body, {
+    Map<String, dynamic> body, {
     List<HttpQueryProvider> queryProviders = const [],
   }) async {
     String fullPathWithQueries = _getFullPathWithQueries(fullPath, queryProviders);
@@ -116,7 +115,7 @@ class NeoNetworkManager {
 
   Future<Map<String, dynamic>> _requestDelete(
     String fullPath, {
-    Object? body,
+    Map<String, dynamic>? body,
     List<HttpQueryProvider> queryProviders = const [],
   }) async {
     String fullPathWithQueries = _getFullPathWithQueries(fullPath, queryProviders);
@@ -192,11 +191,13 @@ class NeoNetworkManager {
     final sharedPrefs = NeoCoreSharedPreferences.shared;
     try {
       final responseJson = await call(
-        "get-token",
-        body: {
-          "grant_type": "refresh_token",
-          "refresh_token": sharedPrefs.getRefreshToken(),
-        },
+        NeoHttpCall(
+          endpoint: "get-token",
+          body: {
+            "grant_type": "refresh_token",
+            "refresh_token": sharedPrefs.getRefreshToken(),
+          },
+        ),
       ); // STOPSHIP: Update token endpoint when determined.
       final authResponse = HttpAuthResponse.fromJson(responseJson);
       sharedPrefs.setAuthToken(authResponse.token);
