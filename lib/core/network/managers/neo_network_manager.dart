@@ -29,38 +29,7 @@ class NeoNetworkManager {
 
   static NeoNetworkManager shared = NeoNetworkManager._();
   static HttpClientConfig? _httpClientConfig;
-
-  static Future init(String httpConfigEndpoint) async {
-    if (_httpClientConfig != null) {
-      return;
-    }
-    try {
-      _httpClientConfig = await shared._fetchHttpClientConfig(httpConfigEndpoint);
-    } on Exception catch (_) {
-      rethrow;
-    }
-  }
-
-  Future<Map<String, dynamic>> call(NeoHttpCall neoCall) async {
-    final fullPath = _httpClientConfig?.getServiceUrlByKey(
-      neoCall.endpoint,
-      parameters: neoCall.pathParameters,
-      useHttps: neoCall.useHttps,
-    );
-    final method = _httpClientConfig?.getServiceMethodByKey(neoCall.endpoint);
-    if (fullPath == null || method == null) {
-      // TODO: Throw custom exception
-      throw NeoException(error: NeoError.defaultError());
-    }
-    switch (method) {
-      case HttpMethod.get:
-        return await _requestGet(fullPath, queryProviders: neoCall.queryProviders);
-      case HttpMethod.post:
-        return await _requestPost(fullPath, neoCall.body, queryProviders: neoCall.queryProviders);
-      case HttpMethod.delete:
-        return await _requestDelete(fullPath);
-    }
-  }
+  static NeoHttpCall? _lastCall;
 
   static Map<String, String> get _defaultHeaders {
     final sharedPreferencesHelper = NeoCoreSharedPreferences.shared;
@@ -86,6 +55,39 @@ class NeoNetworkManager {
       'User': const Uuid().v1(), // TODO: Get it from storage
       'Behalf-Of-User': const Uuid().v1(), // TODO: Get it from storage
     });
+
+  static Future init(String httpConfigEndpoint) async {
+    if (_httpClientConfig != null) {
+      return;
+    }
+    try {
+      _httpClientConfig = await shared._fetchHttpClientConfig(httpConfigEndpoint);
+    } on Exception catch (_) {
+      rethrow;
+    }
+  }
+
+  Future<Map<String, dynamic>> call(NeoHttpCall neoCall) async {
+    _lastCall = neoCall;
+    final fullPath = _httpClientConfig?.getServiceUrlByKey(
+      neoCall.endpoint,
+      parameters: neoCall.pathParameters,
+      useHttps: neoCall.useHttps,
+    );
+    final method = _httpClientConfig?.getServiceMethodByKey(neoCall.endpoint);
+    if (fullPath == null || method == null) {
+      // TODO: Throw custom exception
+      throw NeoException(error: NeoError.defaultError());
+    }
+    switch (method) {
+      case HttpMethod.get:
+        return await _requestGet(fullPath, queryProviders: neoCall.queryProviders);
+      case HttpMethod.post:
+        return await _requestPost(fullPath, neoCall.body, queryProviders: neoCall.queryProviders);
+      case HttpMethod.delete:
+        return await _requestDelete(fullPath);
+    }
+  }
 
   Future<Map<String, dynamic>> _requestGet(
     String fullPath, {
@@ -161,7 +163,7 @@ class NeoNetworkManager {
     } else if (response.statusCode == _Constants.responseCodeUnauthorized) {
       final isTokenRefreshed = await _refreshAuthDetailsByUsingRefreshToken();
       if (isTokenRefreshed) {
-        // TODO: Retry last call
+        _retryLastCall();
       } else {
         // TODO: Return error
       }
@@ -180,6 +182,26 @@ class NeoNetworkManager {
         throw NeoException(error: const NeoError(responseCode: "-1"));
       }
     }
+  }
+
+  void _retryLastCall() {
+    if (_lastCall != null) {
+      if (_lastCall!.retryCount == null) {
+        _lastCall!.setRetryCount(_httpClientConfig?.getRetryCountByKey(_lastCall!.endpoint) ?? 0);
+      }
+      if (canRetryRequest(_lastCall!)) {
+        _lastCall!.decreaseRetryCount();
+        call(_lastCall!);
+      }
+    }
+  }
+
+  bool canRetryRequest(NeoHttpCall call) {
+    if (_httpClientConfig == null) {
+      return false;
+    }
+    final retryCount = _httpClientConfig!.getRetryCountByKey(call.endpoint);
+    return retryCount > 0;
   }
 
   Future<HttpClientConfig?> _fetchHttpClientConfig(String httpConfigEndpoint) async {

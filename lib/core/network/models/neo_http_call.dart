@@ -10,6 +10,8 @@
  * Any reproduction of this material must contain this notice.
  */
 
+import 'dart:math';
+
 import 'package:equatable/equatable.dart';
 import 'package:neo_core/core/network/query_providers/http_query_provider.dart';
 
@@ -24,14 +26,26 @@ class NeoHttpCall extends Equatable {
 
   final bool useHttps;
 
+  int? _retryCount;
+
+  int? get retryCount => _retryCount;
+
   @override
   List<Object?> get props => [endpoint, body, pathParameters, queryProviders, useHttps];
 
-  const NeoHttpCall({
+  NeoHttpCall({
     required this.endpoint,
     this.body = const {},
     this.queryProviders = const [],
     this.useHttps = true,
     this.pathParameters,
   });
+
+  setRetryCount(int retryCount) {
+    _retryCount = retryCount;
+  }
+
+  decreaseRetryCount() {
+    _retryCount = max(0, (_retryCount ?? 0) - 1);
+  }
 }

@@ -51,11 +51,24 @@ class HttpClientConfig {
     return fullUrl;
   }
 
+  int getRetryCountByKey(String key) {
+    final hostKey = _findServiceByKey(key)?.host;
+    if (hostKey == null) {
+      return 0;
+    } else {
+      return _getRetryCountByHost(hostKey) ?? 0;
+    }
+  }
+
   HttpService? _findServiceByKey(String key) {
     return services.firstWhereOrNull((element) => element.key == key);
   }
 
   String? _getBaseUrlByHost(String host) {
     return hosts.firstWhereOrNull((element) => element.key == host)?.activeHosts.firstOrNull?.host;
+  }
+
+  int? _getRetryCountByHost(String host) {
+    return hosts.firstWhereOrNull((element) => element.key == host)?.activeHosts.firstOrNull?.retryCount;
   }
 }

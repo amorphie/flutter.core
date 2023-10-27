@@ -19,7 +19,10 @@ class HttpActiveHost {
   @JsonKey(name: 'host', defaultValue: "")
   final String host;
 
-  const HttpActiveHost({required this.host});
+  @JsonKey(name: 'retry-count', defaultValue: 0)
+  final int retryCount;
+
+  const HttpActiveHost({required this.host, required this.retryCount});
 
   factory HttpActiveHost.fromJson(Map<String, dynamic> json) => _$HttpActiveHostFromJson(json);
 }
