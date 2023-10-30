@@ -30,7 +30,7 @@ class SignalrConnectionManager {
 
   Future<void> init({Function(String navigationPath)? onPageNavigation}) async {
     _hubConnection = HubConnectionBuilder()
-        .withUrl(serverUrl)
+        .withUrl(serverUrl, transportType: HttpTransportType.LongPolling)
         .withAutomaticReconnect(retryDelays: [2000, 5000, 10000, 20000]).build();
     _hubConnection.onclose(({error}) {
       if (kDebugMode) {
