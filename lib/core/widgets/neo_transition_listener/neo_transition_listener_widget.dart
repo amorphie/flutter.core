@@ -1,5 +1,5 @@
-import 'package:neo_core/core/network/neo_network.dart';
 import 'package:flutter/material.dart';
+import 'package:neo_core/core/network/neo_network.dart';
 
 class NeoTransitionListenerWidget extends StatefulWidget {
   final Widget child;
@@ -31,10 +31,15 @@ class _NeoTransitionListenerWidgetState extends State<NeoTransitionListenerWidge
   @override
   void initState() {
     super.initState();
+    _initSignalRConnectionManager();
+  }
+
+  _initSignalRConnectionManager() async {
     signalrConnectionManager = SignalrConnectionManager(
       serverUrl: widget.signalRServerUrl,
       methodName: widget.signalRMethodName,
-    )..init();
+    );
+    await signalrConnectionManager.init();
     signalrConnectionManager.listenForTransitionEvents(
       transitionId: widget.transitionId,
       onPageNavigation: widget.onPageNavigation,

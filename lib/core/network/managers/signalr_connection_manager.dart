@@ -28,7 +28,7 @@ class SignalrConnectionManager {
     required this.methodName,
   });
 
-  Future<void> init({Function(String navigationPath)? onPageNavigation}) async {
+  Future init() async {
     _hubConnection = HubConnectionBuilder()
         .withUrl(serverUrl, transportType: HttpTransportType.LongPolling)
         .withAutomaticReconnect(retryDelays: [2000, 5000, 10000, 20000]).build();
