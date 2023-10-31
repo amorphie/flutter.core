@@ -56,15 +56,11 @@ class NeoNetworkManager {
       'Behalf-Of-User': const Uuid().v1(), // TODO: Get it from storage
     });
 
-  static Future init(String httpConfigEndpoint) async {
+  static void init(HttpClientConfig httpClientConfig) {
     if (_httpClientConfig != null) {
       return;
     }
-    try {
-      _httpClientConfig = await shared._fetchHttpClientConfig(httpConfigEndpoint);
-    } on Exception catch (_) {
-      rethrow;
-    }
+    _httpClientConfig = httpClientConfig;
   }
 
   Future<Map<String, dynamic>> call(NeoHttpCall neoCall) async {
@@ -200,11 +196,6 @@ class NeoNetworkManager {
 
   bool _canRetryRequest(NeoHttpCall call) {
     return (call.retryCount ?? 0) > 0;
-  }
-
-  Future<HttpClientConfig?> _fetchHttpClientConfig(String httpConfigEndpoint) async {
-    final responseJson = await _requestGet(httpConfigEndpoint);
-    return HttpClientConfig.fromJson(responseJson);
   }
 
   Future<bool> _refreshAuthDetailsByUsingRefreshToken() async {
