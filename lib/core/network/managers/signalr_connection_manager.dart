@@ -21,7 +21,7 @@ import 'package:signalr_netcore/signalr_client.dart';
 class SignalrConnectionManager {
   final String serverUrl;
   final String methodName;
-  late HubConnection _hubConnection;
+  HubConnection? _hubConnection;
 
   SignalrConnectionManager({
     required this.serverUrl,
@@ -32,24 +32,24 @@ class SignalrConnectionManager {
     _hubConnection = HubConnectionBuilder()
         .withUrl(serverUrl, transportType: HttpTransportType.LongPolling)
         .withAutomaticReconnect(retryDelays: [2000, 5000, 10000, 20000]).build();
-    _hubConnection.onclose(({error}) {
+    _hubConnection?.onclose(({error}) {
       if (kDebugMode) {
         log('SignalrConnectionManager: onclose called');
       }
     });
-    _hubConnection.onreconnecting(({error}) {
+    _hubConnection?.onreconnecting(({error}) {
       if (kDebugMode) {
         log('SignalrConnectionManager: onreconnecting called');
       }
     });
-    _hubConnection.onreconnected(({connectionId}) {
+    _hubConnection?.onreconnected(({connectionId}) {
       if (kDebugMode) {
         log('SignalrConnectionManager: onreconnected called');
       }
     });
 
-    if (_hubConnection.state != HubConnectionState.Connected) {
-      await _hubConnection.start();
+    if (_hubConnection?.state != HubConnectionState.Connected) {
+      await _hubConnection?.start();
     }
   }
 
@@ -59,7 +59,7 @@ class SignalrConnectionManager {
     Function(String token)? onTokenRetrieved,
     Function(String errorMessage)? onError,
   }) {
-    _hubConnection.on(methodName, (List<Object?>? transitions) {
+    _hubConnection?.on(methodName, (List<Object?>? transitions) {
       if (kDebugMode) {
         log('SignalrConnectionManager: Incoming transitions: $transitions');
       }
@@ -94,6 +94,6 @@ class SignalrConnectionManager {
   }
 
   void stop() {
-    _hubConnection.stop();
+    _hubConnection?.stop();
   }
 }
