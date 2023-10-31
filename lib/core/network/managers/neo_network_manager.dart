@@ -165,7 +165,7 @@ class NeoNetworkManager {
       if (isTokenRefreshed) {
         await _retryLastCall();
       } else {
-        // TODO: Return error
+        throw NeoException(error: NeoError.defaultError());
       }
       return {}; // STOPSHIP: Update with response
     } else {
@@ -189,19 +189,17 @@ class NeoNetworkManager {
       if (_lastCall!.retryCount == null) {
         _lastCall!.setRetryCount(_httpClientConfig?.getRetryCountByKey(_lastCall!.endpoint) ?? 0);
       }
-      if (canRetryRequest(_lastCall!)) {
+      if (_canRetryRequest(_lastCall!)) {
         _lastCall!.decreaseRetryCount();
         await call(_lastCall!);
+      } else {
+        throw NeoException(error: NeoError.defaultError());
       }
     }
   }
 
-  bool canRetryRequest(NeoHttpCall call) {
-    if (_httpClientConfig == null) {
-      return false;
-    }
-    final retryCount = _httpClientConfig!.getRetryCountByKey(call.endpoint);
-    return retryCount > 0;
+  bool _canRetryRequest(NeoHttpCall call) {
+    return (call.retryCount ?? 0) > 0;
   }
 
   Future<HttpClientConfig?> _fetchHttpClientConfig(String httpConfigEndpoint) async {
