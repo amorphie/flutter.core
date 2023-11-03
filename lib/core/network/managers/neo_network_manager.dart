@@ -25,29 +25,44 @@ abstract class _Constants {
 }
 
 class NeoNetworkManager {
-  NeoNetworkManager._();
+  final NeoCoreSecureStorage secureStorage;
+  final HttpClientConfig httpClientConfig;
 
-  static NeoNetworkManager shared = NeoNetworkManager._();
-  static HttpClientConfig? _httpClientConfig;
+  NeoNetworkManager({
+    required this.httpClientConfig,
+    required this.secureStorage,
+  });
+
   static NeoHttpCall? _lastCall;
-  static final NeoCoreSecureStorage _secureStorage = NeoCoreSecureStorage.shared;
 
-  static Future<Map<String, String>> get _defaultHeaders async {
-    final languageCode = (await _secureStorage.getLanguageCode()).orEmpty;
+  Future<Map<String, String>> get _defaultHeaders async {
+    final results = await Future.wait([
+      secureStorage.getLanguageCode(),
+      secureStorage.getDeviceId(),
+      secureStorage.getTokenId(),
+      secureStorage.getDeviceInfo(),
+      _authHeader,
+    ]);
+
+    final languageCode = results[0] as String? ?? "";
+    final deviceId = results[1] as String? ?? "";
+    final tokenId = results[2] as String? ?? "";
+    final deviceInfo = results[3] as String? ?? "";
+    final authHeader = results[4] as Map<String, String>;
 
     return {
       'Accept-Language': '$languageCode-${languageCode.toUpperCase()}',
       'X-Application': 'burgan-mobile-app',
       'X-Deployment': DeviceUtil().getPlatformName(),
-      'X-Device-Id': (await _secureStorage.getDeviceId()).orEmpty,
-      'X-Token-Id': (await _secureStorage.getTokenId()).orEmpty,
+      'X-Device-Id': deviceId,
+      'X-Token-Id': tokenId,
       'X-Request-Id': const Uuid().v1(),
-      'X-Device-Info': (await _secureStorage.getDeviceInfo()).orEmpty,
-    }..addAll(await _authHeader);
+      'X-Device-Info': deviceInfo,
+    }..addAll(authHeader);
   }
 
-  static Future<Map<String, String>> get _authHeader async {
-    final authToken = (await NeoCoreSecureStorage.shared.getAuthToken());
+  Future<Map<String, String>> get _authHeader async {
+    final authToken = (await secureStorage.getAuthToken());
 
     return authToken == null ? {} : {'Authorization': 'Bearer $authToken'};
   }
@@ -60,21 +75,14 @@ class NeoNetworkManager {
       'Behalf-Of-User': const Uuid().v1(), // TODO: Get it from storage
     });
 
-  static void init(HttpClientConfig httpClientConfig) {
-    if (_httpClientConfig != null) {
-      return;
-    }
-    _httpClientConfig = httpClientConfig;
-  }
-
   Future<Map<String, dynamic>> call(NeoHttpCall neoCall) async {
     _lastCall = neoCall;
-    final fullPath = _httpClientConfig?.getServiceUrlByKey(
+    final fullPath = httpClientConfig.getServiceUrlByKey(
       neoCall.endpoint,
       parameters: neoCall.pathParameters,
       useHttps: neoCall.useHttps,
     );
-    final method = _httpClientConfig?.getServiceMethodByKey(neoCall.endpoint);
+    final method = httpClientConfig.getServiceMethodByKey(neoCall.endpoint);
     if (fullPath == null || method == null) {
       // TODO: Throw custom exception
       throw NeoException(error: NeoError.defaultError());
@@ -187,7 +195,7 @@ class NeoNetworkManager {
   Future _retryLastCall() async {
     if (_lastCall != null) {
       if (_lastCall!.retryCount == null) {
-        _lastCall!.setRetryCount(_httpClientConfig?.getRetryCountByKey(_lastCall!.endpoint) ?? 0);
+        _lastCall!.setRetryCount(httpClientConfig.getRetryCountByKey(_lastCall!.endpoint));
       }
       if (_canRetryRequest(_lastCall!)) {
         _lastCall!.decreaseRetryCount();
@@ -209,15 +217,15 @@ class NeoNetworkManager {
           endpoint: "get-token",
           body: {
             "grant_type": "refresh_token",
-            "refresh_token": await _secureStorage.getRefreshToken(),
+            "refresh_token": await secureStorage.getRefreshToken(),
           },
         ),
       ); // STOPSHIP: Update token endpoint when determined.
       final authResponse = HttpAuthResponse.fromJson(responseJson);
-      await _secureStorage.setAuthToken(authResponse.token);
-      if (authResponse.refreshToken.isNotEmpty) {
-        await _secureStorage.setRefreshToken(authResponse.refreshToken);
-      }
+      await Future.wait([
+        secureStorage.setAuthToken(authResponse.token),
+        secureStorage.setRefreshToken(authResponse.refreshToken),
+      ]);
       return true;
     } catch (e) {
       return false;

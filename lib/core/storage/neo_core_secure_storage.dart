@@ -25,12 +25,17 @@ class _Constants {
 }
 
 class NeoCoreSecureStorage {
-  NeoCoreSecureStorage._();
+  static final NeoCoreSecureStorage _singleton = NeoCoreSecureStorage._internal();
 
-  static NeoCoreSecureStorage shared = NeoCoreSecureStorage._();
-  static FlutterSecureStorage? _storage;
+  factory NeoCoreSecureStorage() {
+    return _singleton;
+  }
 
-  static init() async {
+  NeoCoreSecureStorage._internal();
+
+  FlutterSecureStorage? _storage;
+
+  init() async {
     if (_storage != null) {
       return;
     }
@@ -43,7 +48,7 @@ class NeoCoreSecureStorage {
     await _setInitialParameters();
   }
 
-  static _setInitialParameters() async {
+  _setInitialParameters() async {
     final deviceUtil = DeviceUtil();
     final deviceId = await deviceUtil.getDeviceId();
     final deviceInfo = await deviceUtil.getDeviceInfo();
@@ -66,7 +71,7 @@ class NeoCoreSecureStorage {
     return await _storage!.read(key: _Constants.sharedPrefKeyLanguage);
   }
 
-  static _setDeviceId(String deviceId) async {
+  _setDeviceId(String deviceId) async {
     await _storage!.write(key: _Constants.sharedPrefKeyDeviceId, value: deviceId);
   }
 
@@ -74,7 +79,7 @@ class NeoCoreSecureStorage {
     return await _storage!.read(key: _Constants.sharedPrefKeyDeviceId);
   }
 
-  static _setDeviceInfo(String deviceInfo) async {
+  _setDeviceInfo(String deviceInfo) async {
     await _storage!.write(key: _Constants.sharedPrefKeyDeviceInfo, value: deviceInfo);
   }
 
@@ -82,7 +87,7 @@ class NeoCoreSecureStorage {
     return await _storage!.read(key: _Constants.sharedPrefKeyDeviceInfo);
   }
 
-  static _setTokenId(String tokenId) async {
+  _setTokenId(String tokenId) async {
     await _storage!.write(key: _Constants.sharedPrefKeyTokenId, value: tokenId);
   }
 
