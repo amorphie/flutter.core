@@ -30,26 +30,30 @@ class NeoNetworkManager {
   static NeoNetworkManager shared = NeoNetworkManager._();
   static HttpClientConfig? _httpClientConfig;
   static NeoHttpCall? _lastCall;
+  static final NeoCoreSecureStorage _secureStorage = NeoCoreSecureStorage.shared;
 
-  static Map<String, String> get _defaultHeaders {
-    final sharedPreferencesHelper = NeoCoreSharedPreferences.shared;
-    final languageCode = sharedPreferencesHelper.getLanguageCode().orEmpty;
-    final authToken = sharedPreferencesHelper.getAuthToken();
+  static Future<Map<String, String>> get _defaultHeaders async {
+    final languageCode = (await _secureStorage.getLanguageCode()).orEmpty;
 
     return {
       'Accept-Language': '$languageCode-${languageCode.toUpperCase()}',
       'X-Application': 'burgan-mobile-app',
       'X-Deployment': DeviceUtil().getPlatformName(),
-      'X-Device-Id': sharedPreferencesHelper.getDeviceId().orEmpty,
-      'X-Token-Id': sharedPreferencesHelper.getTokenId().orEmpty,
+      'X-Device-Id': (await _secureStorage.getDeviceId()).orEmpty,
+      'X-Token-Id': (await _secureStorage.getTokenId()).orEmpty,
       'X-Request-Id': const Uuid().v1(),
-      'X-Device-Info': sharedPreferencesHelper.getDeviceInfo().orEmpty,
-      'Authorization': authToken == null ? '' : 'Bearer ${sharedPreferencesHelper.getAuthToken()}'
-    };
+      'X-Device-Info': (await _secureStorage.getDeviceInfo()).orEmpty,
+    }..addAll(await _authHeader);
   }
 
-  Map<String, String> get _defaultPostHeaders => <String, String>{}
-    ..addAll(_defaultHeaders)
+  static Future<Map<String, String>> get _authHeader async {
+    final authToken = (await NeoCoreSecureStorage.shared.getAuthToken());
+
+    return authToken == null ? {} : {'Authorization': 'Bearer $authToken'};
+  }
+
+  Future<Map<String, String>> get _defaultPostHeaders async => <String, String>{}
+    ..addAll(await _defaultHeaders)
     ..addAll({
       'Content-Type': 'application/json',
       'User': const Uuid().v1(), // TODO: Get it from storage
@@ -92,7 +96,7 @@ class NeoNetworkManager {
     String fullPathWithQueries = _getFullPathWithQueries(fullPath, queryProviders);
     final response = await http.get(
       Uri.parse(fullPathWithQueries),
-      headers: _defaultHeaders,
+      headers: await _defaultHeaders,
     );
     return _createResponseMap(response);
   }
@@ -105,7 +109,7 @@ class NeoNetworkManager {
     String fullPathWithQueries = _getFullPathWithQueries(fullPath, queryProviders);
     final response = await http.post(
       Uri.parse(fullPathWithQueries),
-      headers: _defaultPostHeaders,
+      headers: await _defaultPostHeaders,
       body: json.encode(body),
     );
     return _createResponseMap(response);
@@ -119,7 +123,7 @@ class NeoNetworkManager {
     String fullPathWithQueries = _getFullPathWithQueries(fullPath, queryProviders);
     final response = await http.delete(
       Uri.parse(fullPathWithQueries),
-      headers: _defaultHeaders,
+      headers: await _defaultHeaders,
       body: json.encode(body),
     );
     return _createResponseMap(response);
@@ -199,21 +203,20 @@ class NeoNetworkManager {
   }
 
   Future<bool> _refreshAuthDetailsByUsingRefreshToken() async {
-    final sharedPrefs = NeoCoreSharedPreferences.shared;
     try {
       final responseJson = await call(
         NeoHttpCall(
           endpoint: "get-token",
           body: {
             "grant_type": "refresh_token",
-            "refresh_token": sharedPrefs.getRefreshToken(),
+            "refresh_token": await _secureStorage.getRefreshToken(),
           },
         ),
       ); // STOPSHIP: Update token endpoint when determined.
       final authResponse = HttpAuthResponse.fromJson(responseJson);
-      sharedPrefs.setAuthToken(authResponse.token);
+      await _secureStorage.setAuthToken(authResponse.token);
       if (authResponse.refreshToken.isNotEmpty) {
-        sharedPrefs.setRefreshToken(authResponse.refreshToken);
+        await _secureStorage.setRefreshToken(authResponse.refreshToken);
       }
       return true;
     } catch (e) {

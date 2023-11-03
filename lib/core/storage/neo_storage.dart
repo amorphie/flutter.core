@@ -10,4 +10,4 @@
  * Any reproduction of this material must contain this notice.
  */
 
-export 'neo_core_shared_preferences.dart';
+export 'neo_core_secure_storage.dart';

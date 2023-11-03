@@ -12,7 +12,7 @@
 
 import 'package:neo_core/core/network/managers/neo_network_manager.dart';
 import 'package:neo_core/core/network/models/http_client_config.dart';
-import 'package:neo_core/core/storage/neo_core_shared_preferences.dart';
+import 'package:neo_core/core/storage/neo_core_secure_storage.dart';
 
 export 'core/bus/neo_bus.dart';
 export 'core/network/neo_network.dart';
@@ -22,7 +22,7 @@ export 'core/widgets/neo_widgets.dart';
 
 class NeoCore {
   static init({required HttpClientConfig httpClientConfig}) async {
-    await NeoCoreSharedPreferences.init();
+    await NeoCoreSecureStorage.init();
     NeoNetworkManager.init(httpClientConfig);
   }
 }
