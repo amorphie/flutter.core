@@ -10,7 +10,6 @@
  * Any reproduction of this material must contain this notice.
  */
 
-import 'package:neo_core/core/network/models/http_client_config.dart';
 import 'package:neo_core/core/storage/neo_core_secure_storage.dart';
 
 export 'core/bus/neo_bus.dart';
@@ -22,7 +21,7 @@ export 'core/widgets/neo_widgets.dart';
 class NeoCore {
   NeoCore._();
 
-  static init({required HttpClientConfig httpClientConfig}) async {
+  static init() async {
     await NeoCoreSecureStorage().init();
   }
 }
