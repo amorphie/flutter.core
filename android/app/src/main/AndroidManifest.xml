@@ -2,6 +2,7 @@
     <application
         android:label="neo_core"
         android:name="${applicationName}"
+        android:allowBackup="false"
         android:icon="@mipmap/ic_launcher">
         <activity
             android:name=".MainActivity"
