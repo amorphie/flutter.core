@@ -69,8 +69,8 @@ class SignalrConnectionManager {
       final ongoingTransition = transitions
           .map((transition) {
             try {
-              return NeoSignalRTransition.fromJson(jsonDecode(transition as String));
-            } catch (e) {
+              return NeoSignalRTransition.fromJson(jsonDecode(transition is String ? transition : "{}"));
+            } on Exception catch (_) {
               return null;
             }
           })

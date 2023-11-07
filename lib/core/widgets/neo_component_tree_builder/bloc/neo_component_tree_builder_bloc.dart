@@ -1,7 +1,7 @@
-import 'package:neo_core/core/network/models/neo_response.dart';
-import 'package:neo_core/core/widgets/neo_component_tree_builder/network/i_components_network_manager.dart';
 import 'package:equatable/equatable.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:neo_core/core/network/models/neo_response.dart';
+import 'package:neo_core/core/widgets/neo_component_tree_builder/network/i_components_network_manager.dart';
 
 part 'neo_component_tree_builder_event.dart';
 part 'neo_component_tree_builder_state.dart';
@@ -12,11 +12,11 @@ class NeoComponentTreeBuilderBloc extends Bloc<NeoComponentTreeBuilderEvent, Neo
   NeoComponentTreeBuilderBloc(this.networkManager) : super(NeoComponentTreeBuilderStateLoading()) {
     on<NeoComponentTreeBuilderEventFetchComponents>((event, emit) async {
       try {
-        NeoResponse response = await networkManager.fetchPageComponentsByPageId(
+        final response = await networkManager.fetchPageComponentsByPageId(
           event.pageId,
         );
         if (response.isSuccess) {
-          emit(NeoComponentTreeBuilderStateLoaded(componentsMap: ((response as NeoSuccessResponse).data)));
+          emit(NeoComponentTreeBuilderStateLoaded(componentsMap: (response as NeoSuccessResponse).data));
         } else {
           emit(
             NeoComponentTreeBuilderStateError(

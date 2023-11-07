@@ -16,7 +16,7 @@ import 'package:rxdart/rxdart.dart';
 class NeoWidgetEventBus {
   final _eventBus = BehaviorSubject<NeoWidgetEvent>();
 
-  listen({
+  void listen({
     required String eventId,
     required Function(NeoWidgetEvent) onEventReceived,
   }) {
@@ -27,7 +27,7 @@ class NeoWidgetEventBus {
     });
   }
 
-  addEvent(NeoWidgetEvent event) {
+  void addEvent(NeoWidgetEvent event) {
     _eventBus.add(event);
   }
 }

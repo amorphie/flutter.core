@@ -1,9 +1,9 @@
+import 'package:flutter/material.dart';
 import 'package:neo_core/core/network/models/neo_error_display_method.dart';
 import 'package:neo_core/neo_core.dart';
-import 'package:flutter/material.dart';
 
 class DisplayNeoErrorUseCase {
-  call(NeoError neoError, BuildContext context, String languageCode) {
+  void call(NeoError neoError, BuildContext context, String languageCode) {
     if (neoError.displayMode == NeoErrorDisplayMethod.popup) {
       _displayDialog(neoError, context, languageCode);
     }

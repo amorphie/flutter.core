@@ -29,7 +29,7 @@ class MyApp extends StatelessWidget {
 }
 
 class DemoPage extends StatefulWidget {
-  const DemoPage({super.key, required this.title});
+  const DemoPage({required this.title, super.key});
 
   final String title;
 

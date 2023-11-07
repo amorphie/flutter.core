@@ -45,12 +45,6 @@ class NeoErrorMessage extends Equatable {
 
   factory NeoErrorMessage.fromJson(Map<String, dynamic> json) => _$NeoErrorMessageFromJson(json);
 
-  factory NeoErrorMessage.defaultErrorTR() => const NeoErrorMessage(
-        language: _Constants.languageCodeTurkish,
-        title: _Constants.defaultTitleTurkish,
-        subtitle: _Constants.defaultSubtitleTurkish,
-      );
-
   static const defaultErrorTurkish = NeoErrorMessage(
     language: _Constants.languageCodeTurkish,
     title: _Constants.defaultTitleTurkish,
