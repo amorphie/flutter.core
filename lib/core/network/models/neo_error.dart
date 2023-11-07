@@ -51,8 +51,6 @@ class NeoError extends Equatable {
 
   factory NeoError.defaultError() => const NeoError(
         responseCode: _Constants.defaultErrorCode,
-        displayMode: _Constants.defaultErrorDisplayMode,
-        messages: _Constants.defaultErrorMessages,
       );
 
   NeoErrorMessage? getErrorMessageByLanguageCode(String languageCode) {

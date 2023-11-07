@@ -21,7 +21,7 @@ export 'core/widgets/neo_widgets.dart';
 class NeoCore {
   NeoCore._();
 
-  static init() async {
+  static Future init() async {
     await NeoCoreSecureStorage().init();
   }
 }

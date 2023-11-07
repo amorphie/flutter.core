@@ -48,7 +48,7 @@ class NeoNetworkManager {
     final deviceId = results[1] as String? ?? "";
     final tokenId = results[2] as String? ?? "";
     final deviceInfo = results[3] as String? ?? "";
-    final authHeader = results[4] as Map<String, String>;
+    final authHeader = results[4] as Map<String, String>? ?? {};
 
     return {
       'Accept-Language': '$languageCode-${languageCode.toUpperCase()}',
@@ -62,8 +62,7 @@ class NeoNetworkManager {
   }
 
   Future<Map<String, String>> get _authHeader async {
-    final authToken = (await secureStorage.getAuthToken());
-
+    final authToken = await secureStorage.getAuthToken();
     return authToken == null ? {} : {'Authorization': 'Bearer $authToken'};
   }
 
@@ -89,11 +88,11 @@ class NeoNetworkManager {
     }
     switch (method) {
       case HttpMethod.get:
-        return await _requestGet(fullPath, queryProviders: neoCall.queryProviders);
+        return _requestGet(fullPath, queryProviders: neoCall.queryProviders);
       case HttpMethod.post:
-        return await _requestPost(fullPath, neoCall.body, queryProviders: neoCall.queryProviders);
+        return _requestPost(fullPath, neoCall.body, queryProviders: neoCall.queryProviders);
       case HttpMethod.delete:
-        return await _requestDelete(fullPath);
+        return _requestDelete(fullPath);
     }
   }
 
@@ -101,7 +100,7 @@ class NeoNetworkManager {
     String fullPath, {
     List<HttpQueryProvider> queryProviders = const [],
   }) async {
-    String fullPathWithQueries = _getFullPathWithQueries(fullPath, queryProviders);
+    final fullPathWithQueries = _getFullPathWithQueries(fullPath, queryProviders);
     final response = await http.get(
       Uri.parse(fullPathWithQueries),
       headers: await _defaultHeaders,
@@ -114,7 +113,7 @@ class NeoNetworkManager {
     Map<String, dynamic> body, {
     List<HttpQueryProvider> queryProviders = const [],
   }) async {
-    String fullPathWithQueries = _getFullPathWithQueries(fullPath, queryProviders);
+    final fullPathWithQueries = _getFullPathWithQueries(fullPath, queryProviders);
     final response = await http.post(
       Uri.parse(fullPathWithQueries),
       headers: await _defaultPostHeaders,
@@ -128,7 +127,7 @@ class NeoNetworkManager {
     Map<String, dynamic>? body,
     List<HttpQueryProvider> queryProviders = const [],
   }) async {
-    String fullPathWithQueries = _getFullPathWithQueries(fullPath, queryProviders);
+    final fullPathWithQueries = _getFullPathWithQueries(fullPath, queryProviders);
     final response = await http.delete(
       Uri.parse(fullPathWithQueries),
       headers: await _defaultHeaders,
@@ -227,7 +226,7 @@ class NeoNetworkManager {
         secureStorage.setRefreshToken(authResponse.refreshToken),
       ]);
       return true;
-    } catch (e) {
+    } on Exception catch (_) {
       return false;
     }
   }

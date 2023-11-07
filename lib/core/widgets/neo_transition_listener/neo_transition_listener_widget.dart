@@ -11,7 +11,6 @@ class NeoTransitionListenerWidget extends StatefulWidget {
   final Function(String errorMessage)? onError;
 
   const NeoTransitionListenerWidget({
-    Key? key,
     required this.child,
     required this.transitionId,
     required this.signalRServerUrl,
@@ -19,6 +18,7 @@ class NeoTransitionListenerWidget extends StatefulWidget {
     required this.onPageNavigation,
     this.onTokenRetrieved,
     this.onError,
+    Key? key,
   }) : super(key: key);
 
   @override

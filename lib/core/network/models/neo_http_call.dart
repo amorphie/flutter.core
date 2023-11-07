@@ -15,6 +15,7 @@ import 'dart:math';
 import 'package:equatable/equatable.dart';
 import 'package:neo_core/core/network/query_providers/http_query_provider.dart';
 
+// ignore: must_be_immutable
 class NeoHttpCall extends Equatable {
   final String endpoint;
 
@@ -41,11 +42,11 @@ class NeoHttpCall extends Equatable {
     this.pathParameters,
   });
 
-  setRetryCount(int retryCount) {
+  void setRetryCount(int retryCount) {
     _retryCount = retryCount;
   }
 
-  decreaseRetryCount() {
+  void decreaseRetryCount() {
     _retryCount = max(0, (_retryCount ?? 0) - 1);
   }
 }

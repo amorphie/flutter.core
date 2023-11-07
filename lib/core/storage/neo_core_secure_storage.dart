@@ -35,7 +35,7 @@ class NeoCoreSecureStorage {
 
   FlutterSecureStorage? _storage;
 
-  init() async {
+  Future init() async {
     if (_storage != null) {
       return;
     }
@@ -64,11 +64,11 @@ class NeoCoreSecureStorage {
   }
 
   Future setLanguageCode(String languageCode) async {
-    return await _storage!.write(key: _Constants.sharedPrefKeyLanguage, value: languageCode);
+    return _storage!.write(key: _Constants.sharedPrefKeyLanguage, value: languageCode);
   }
 
   Future<String?> getLanguageCode() async {
-    return await _storage!.read(key: _Constants.sharedPrefKeyLanguage);
+    return _storage!.read(key: _Constants.sharedPrefKeyLanguage);
   }
 
   _setDeviceId(String deviceId) async {
@@ -76,7 +76,7 @@ class NeoCoreSecureStorage {
   }
 
   Future<String?> getDeviceId() async {
-    return await _storage!.read(key: _Constants.sharedPrefKeyDeviceId);
+    return _storage!.read(key: _Constants.sharedPrefKeyDeviceId);
   }
 
   _setDeviceInfo(String deviceInfo) async {
@@ -84,7 +84,7 @@ class NeoCoreSecureStorage {
   }
 
   Future<String?> getDeviceInfo() async {
-    return await _storage!.read(key: _Constants.sharedPrefKeyDeviceInfo);
+    return _storage!.read(key: _Constants.sharedPrefKeyDeviceInfo);
   }
 
   _setTokenId(String tokenId) async {
@@ -92,7 +92,7 @@ class NeoCoreSecureStorage {
   }
 
   Future<String?> getTokenId() async {
-    return await _storage!.read(key: _Constants.sharedPrefKeyTokenId);
+    return _storage!.read(key: _Constants.sharedPrefKeyTokenId);
   }
 
   Future setAuthToken(String token) async {
@@ -101,12 +101,12 @@ class NeoCoreSecureStorage {
 
   Future deleteAuthToken() async {
     if (await _storage!.containsKey(key: _Constants.sharedPrefKeyAuthToken)) {
-      return await _storage!.delete(key: _Constants.sharedPrefKeyAuthToken);
+      return _storage!.delete(key: _Constants.sharedPrefKeyAuthToken);
     }
   }
 
   Future<String?> getAuthToken() async {
-    return await _storage!.read(key: _Constants.sharedPrefKeyAuthToken);
+    return _storage!.read(key: _Constants.sharedPrefKeyAuthToken);
   }
 
   Future setRefreshToken(String refreshToken) async {
@@ -114,6 +114,6 @@ class NeoCoreSecureStorage {
   }
 
   Future<String?> getRefreshToken() async {
-    return await _storage!.read(key: _Constants.sharedPrefKeyRefreshToken);
+    return _storage!.read(key: _Constants.sharedPrefKeyRefreshToken);
   }
 }

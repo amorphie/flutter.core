@@ -1,7 +1,7 @@
-import 'package:neo_core/neo_core.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:json_dynamic_widget/json_dynamic_widget.dart';
+import 'package:neo_core/neo_core.dart';
 
 class NeoComponentTreeBuilder extends StatelessWidget {
   final IComponentsNetworkManager componentsNetworkManager;
@@ -10,16 +10,15 @@ class NeoComponentTreeBuilder extends StatelessWidget {
   final Widget errorWidget;
 
   const NeoComponentTreeBuilder({
-    Key? key,
     required this.componentsNetworkManager,
     required this.pageId,
     this.loadingWidget = const Row(
-      mainAxisSize: MainAxisSize.max,
       mainAxisAlignment: MainAxisAlignment.center,
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [Center(child: CircularProgressIndicator())],
     ),
     this.errorWidget = const SizedBox.shrink(),
+    Key? key,
   }) : super(key: key);
 
   @override
