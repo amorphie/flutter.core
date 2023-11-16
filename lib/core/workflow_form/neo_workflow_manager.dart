@@ -13,9 +13,13 @@ abstract class _Constants {
 
 class NeoWorkflowManager {
   final NeoNetworkManager neoNetworkManager;
-  final String recordId = const Uuid().v1();
+  static String recordId = const Uuid().v1();
 
   NeoWorkflowManager(this.neoNetworkManager);
+
+  void startWorkflow() {
+    recordId = const Uuid().v1();
+  }
 
   Future getTransitions({required String entityId}) async {
     final response = await neoNetworkManager.call(
@@ -32,7 +36,6 @@ class NeoWorkflowManager {
 
   Future postTransition({
     required String entity,
-    required String recordId,
     required String transitionId,
     required Map<String, dynamic> body,
   }) async {
