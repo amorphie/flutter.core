@@ -31,37 +31,39 @@ class _NeoTransitionButtonState extends State<NeoTransitionButton> {
   @override
   Widget build(BuildContext context) {
     final appBloc = context.read<NeoCoreAppBloc>();
-    return BlocBuilder<NeoTransitionButtonBloc, NeoTransitionButtonState>(
-      bloc: NeoTransitionButtonBloc()
+    return BlocProvider(
+      create: (context) => NeoTransitionButtonBloc()
         ..add(
           NeoTransitionButtonEventInit(
             neoWorkflowManager: NeoWorkflowManager(appBloc.neoNetworkManager),
             startWorkflow: widget.startWorkflow,
           ),
         ),
-      builder: (context, state) {
-        return NeoTransitionListenerWidget(
-          transitionId: widget.transitionId,
-          signalRServerUrl: appBloc.neoCoreAppConstants.workflowHubUrl,
-          signalRMethodName: appBloc.neoCoreAppConstants.workflowMethodName,
-          onPageNavigation: (String navigationPath) => _handleNavigation(context, navigationPath),
-          onTokenRetrieved: (token) async => NeoCoreSecureStorage().setAuthToken(token),
-          child: FilledButton(
-            style: OutlinedButton.styleFrom(
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-              backgroundColor: _buttonColor,
+      child: BlocBuilder<NeoTransitionButtonBloc, NeoTransitionButtonState>(
+        builder: (context, state) {
+          return NeoTransitionListenerWidget(
+            transitionId: widget.transitionId,
+            signalRServerUrl: appBloc.neoCoreAppConstants.workflowHubUrl,
+            signalRMethodName: appBloc.neoCoreAppConstants.workflowMethodName,
+            onPageNavigation: (String navigationPath) => _handleNavigation(context, navigationPath),
+            onTokenRetrieved: (token) async => NeoCoreSecureStorage().setAuthToken(token),
+            child: FilledButton(
+              style: OutlinedButton.styleFrom(
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                backgroundColor: _buttonColor,
+              ),
+              onPressed: () {
+                context.read<NeoTransitionButtonBloc>().neoWorkflowManager.postTransition(
+                      entity: widget.entity,
+                      transitionId: widget.transitionId,
+                      body: _getFormParametersIfExist(context),
+                    );
+              },
+              child: Text(widget.text).padding(left: 16, right: 16, top: 20, bottom: 20),
             ),
-            onPressed: () {
-              context.read<NeoTransitionButtonBloc>().neoWorkflowManager.postTransition(
-                    entity: widget.entity,
-                    transitionId: widget.transitionId,
-                    body: _getFormParametersIfExist(context),
-                  );
-            },
-            child: Text(widget.text).padding(left: 16, right: 16, top: 20, bottom: 20),
-          ),
-        );
-      },
+          );
+        },
+      ),
     );
   }
 
