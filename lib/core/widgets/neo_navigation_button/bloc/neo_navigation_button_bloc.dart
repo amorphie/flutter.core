@@ -10,18 +10,18 @@
  * Any reproduction of this material must contain this notice.
  */
 
-import 'package:bloc/bloc.dart';
 import 'package:equatable/equatable.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:neo_core/core/workflow_form/neo_workflow_manager.dart';
 
-part 'neo_transition_button_event.dart';
-part 'neo_transition_button_state.dart';
+part 'neo_navigation_button_event.dart';
+part 'neo_navigation_button_state.dart';
 
-class NeoTransitionButtonBloc extends Bloc<NeoTransitionButtonEvent, NeoTransitionButtonState> {
+class NeoNavigationButtonBloc extends Bloc<NeoNavigationButtonEvent, NeoNavigationButtonState> {
   late NeoWorkflowManager neoWorkflowManager;
 
-  NeoTransitionButtonBloc() : super(NeoTransitionButtonInitial()) {
-    on<NeoTransitionButtonEventInit>(
+  NeoNavigationButtonBloc() : super(NeoNavigationButtonInitial()) {
+    on<NeoNavigationButtonEventInit>(
       (event, emit) {
         neoWorkflowManager = event.neoWorkflowManager;
         if (event.startWorkflow) {

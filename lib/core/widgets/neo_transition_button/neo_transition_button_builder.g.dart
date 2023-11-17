@@ -60,7 +60,6 @@ class NeoTransitionButtonBuilder extends _NeoTransitionButtonBuilder {
     return NeoTransitionButton(
       entity: model.entity,
       key: key,
-      startWorkflow: model.startWorkflow,
       text: model.text,
       transitionId: model.transitionId,
     );
@@ -72,14 +71,12 @@ class JsonNeoTransitionButton extends JsonWidgetData {
     Map<String, dynamic> args = const {},
     JsonWidgetRegistry? registry,
     required this.entity,
-    this.startWorkflow = false,
     required this.text,
     required this.transitionId,
   }) : super(
           jsonWidgetArgs: NeoTransitionButtonBuilderModel.fromDynamic(
             {
               'entity': entity,
-              'startWorkflow': startWorkflow,
               'text': text,
               'transitionId': transitionId,
               ...args,
@@ -91,7 +88,6 @@ class JsonNeoTransitionButton extends JsonWidgetData {
             args: NeoTransitionButtonBuilderModel.fromDynamic(
               {
                 'entity': entity,
-                'startWorkflow': startWorkflow,
                 'text': text,
                 'transitionId': transitionId,
                 ...args,
@@ -105,8 +101,6 @@ class JsonNeoTransitionButton extends JsonWidgetData {
 
   final String entity;
 
-  final bool startWorkflow;
-
   final String text;
 
   final String transitionId;
@@ -116,14 +110,11 @@ class NeoTransitionButtonBuilderModel extends JsonWidgetBuilderModel {
   const NeoTransitionButtonBuilderModel(
     super.args, {
     required this.entity,
-    this.startWorkflow = false,
     required this.text,
     required this.transitionId,
   });
 
   final String entity;
-
-  final bool startWorkflow;
 
   final String text;
 
@@ -172,10 +163,6 @@ class NeoTransitionButtonBuilderModel extends JsonWidgetBuilderModel {
         result = NeoTransitionButtonBuilderModel(
           args,
           entity: map['entity'],
-          startWorkflow: JsonClass.parseBool(
-            map['startWorkflow'],
-            whenNull: false,
-          ),
           text: map['text'],
           transitionId: map['transitionId'],
         );
@@ -189,7 +176,6 @@ class NeoTransitionButtonBuilderModel extends JsonWidgetBuilderModel {
   Map<String, dynamic> toJson() {
     return JsonClass.removeNull({
       'entity': entity,
-      'startWorkflow': false == startWorkflow ? null : startWorkflow,
       'text': text,
       'transitionId': transitionId,
       ...args,
@@ -209,7 +195,6 @@ class NeoTransitionButtonSchema {
     'additionalProperties': false,
     'properties': {
       'entity': SchemaHelper.stringSchema,
-      'startWorkflow': SchemaHelper.boolSchema,
       'text': SchemaHelper.stringSchema,
       'transitionId': SchemaHelper.stringSchema,
     },

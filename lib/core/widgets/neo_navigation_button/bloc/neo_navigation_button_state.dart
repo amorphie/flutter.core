@@ -10,13 +10,13 @@
  * Any reproduction of this material must contain this notice.
  */
 
-part of 'neo_transition_button_bloc.dart';
+part of 'neo_navigation_button_bloc.dart';
 
-abstract class NeoTransitionButtonState extends Equatable {
-  const NeoTransitionButtonState();
+abstract class NeoNavigationButtonState extends Equatable {
+  const NeoNavigationButtonState();
 }
 
-class NeoTransitionButtonInitial extends NeoTransitionButtonState {
+class NeoNavigationButtonInitial extends NeoNavigationButtonState {
   @override
   List<Object> get props => [];
 }

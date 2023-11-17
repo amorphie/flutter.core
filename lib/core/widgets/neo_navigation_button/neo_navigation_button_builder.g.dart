@@ -61,6 +61,7 @@ class NeoNavigationButtonBuilder extends _NeoNavigationButtonBuilder {
       key: key,
       navigationPath: model.navigationPath,
       paddingAll: model.paddingAll,
+      startWorkflow: model.startWorkflow,
       text: model.text,
     );
   }
@@ -72,12 +73,14 @@ class JsonNeoNavigationButton extends JsonWidgetData {
     JsonWidgetRegistry? registry,
     required this.navigationPath,
     this.paddingAll = 16,
+    this.startWorkflow = false,
     required this.text,
   }) : super(
           jsonWidgetArgs: NeoNavigationButtonBuilderModel.fromDynamic(
             {
               'navigationPath': navigationPath,
               'paddingAll': paddingAll,
+              'startWorkflow': startWorkflow,
               'text': text,
               ...args,
             },
@@ -89,6 +92,7 @@ class JsonNeoNavigationButton extends JsonWidgetData {
               {
                 'navigationPath': navigationPath,
                 'paddingAll': paddingAll,
+                'startWorkflow': startWorkflow,
                 'text': text,
                 ...args,
               },
@@ -103,6 +107,8 @@ class JsonNeoNavigationButton extends JsonWidgetData {
 
   final double paddingAll;
 
+  final bool startWorkflow;
+
   final String text;
 }
 
@@ -111,12 +117,15 @@ class NeoNavigationButtonBuilderModel extends JsonWidgetBuilderModel {
     super.args, {
     required this.navigationPath,
     this.paddingAll = 16,
+    this.startWorkflow = false,
     required this.text,
   });
 
   final String navigationPath;
 
   final double paddingAll;
+
+  final bool startWorkflow;
 
   final String text;
 
@@ -170,6 +179,10 @@ class NeoNavigationButtonBuilderModel extends JsonWidgetBuilderModel {
 
             return parsed;
           }(),
+          startWorkflow: JsonClass.parseBool(
+            map['startWorkflow'],
+            whenNull: false,
+          ),
           text: map['text'],
         );
       }
@@ -183,6 +196,7 @@ class NeoNavigationButtonBuilderModel extends JsonWidgetBuilderModel {
     return JsonClass.removeNull({
       'navigationPath': navigationPath,
       'paddingAll': 16 == paddingAll ? null : paddingAll,
+      'startWorkflow': false == startWorkflow ? null : startWorkflow,
       'text': text,
       ...args,
     });
@@ -202,6 +216,7 @@ class NeoNavigationButtonSchema {
     'properties': {
       'navigationPath': SchemaHelper.stringSchema,
       'paddingAll': SchemaHelper.numberSchema,
+      'startWorkflow': SchemaHelper.boolSchema,
       'text': SchemaHelper.stringSchema,
     },
   };

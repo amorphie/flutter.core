@@ -10,17 +10,17 @@
  * Any reproduction of this material must contain this notice.
  */
 
-part of 'neo_transition_button_bloc.dart';
+part of 'neo_navigation_button_bloc.dart';
 
-sealed class NeoTransitionButtonEvent extends Equatable {
-  const NeoTransitionButtonEvent();
+sealed class NeoNavigationButtonEvent extends Equatable {
+  const NeoNavigationButtonEvent();
 }
 
-class NeoTransitionButtonEventInit extends NeoTransitionButtonEvent {
+class NeoNavigationButtonEventInit extends NeoNavigationButtonEvent {
   final NeoWorkflowManager neoWorkflowManager;
   final bool startWorkflow;
 
-  const NeoTransitionButtonEventInit({required this.neoWorkflowManager, required this.startWorkflow});
+  const NeoNavigationButtonEventInit({required this.neoWorkflowManager, required this.startWorkflow});
 
   @override
   List<Object?> get props => [neoWorkflowManager, startWorkflow];
