@@ -42,7 +42,11 @@ class NeoCoreApp extends StatelessWidget {
             neoNavigationHelper: neoNavigationHelper,
           ),
         ),
-      child: child,
+      child: BlocBuilder<NeoCoreAppBloc, NeoCoreAppState>(
+        builder: (context, state) {
+          return child;
+        },
+      ),
     );
   }
 }
