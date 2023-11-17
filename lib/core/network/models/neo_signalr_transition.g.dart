@@ -6,7 +6,9 @@ part of 'neo_signalr_transition.dart';
 // JsonSerializableGenerator
 // **************************************************************************
 
-NeoSignalRTransition _$NeoSignalRTransitionFromJson(Map<String, dynamic> json) => NeoSignalRTransition(
+NeoSignalRTransition _$NeoSignalRTransitionFromJson(
+        Map<String, dynamic> json) =>
+    NeoSignalRTransition(
       transitionId: json['transition'] as String,
       pageDetails: json['page'] as Map<String, dynamic>? ?? {},
       errorMessage: json['message'] as String? ?? '',
