@@ -47,7 +47,7 @@ class NeoWorkflowManager {
           _Constants.pathParameterRecordId: recordId,
           _Constants.pathParameterTransitionId: transitionId,
         },
-        body: {"entityData": body},
+        body: {"entityData": body.isEmpty ? "" : body},
       ),
     );
   }
