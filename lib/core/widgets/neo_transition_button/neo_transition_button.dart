@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:get_it/get_it.dart';
+import 'package:neo_core/core/navigation/i_neo_navigation_helper.dart';
 import 'package:neo_core/core/navigation/neo_navigation_type.dart';
-import 'package:neo_core/core/widgets/neo_core_app/bloc/neo_core_app_bloc.dart';
+import 'package:neo_core/core/util/neo_core_app_constants.dart';
 import 'package:neo_core/core/workflow_form/bloc/workflow_form_bloc.dart';
 import 'package:neo_core/core/workflow_form/neo_workflow_manager.dart';
 import 'package:neo_core/neo_core.dart';
@@ -27,11 +29,11 @@ class NeoTransitionButton extends StatefulWidget {
 class _NeoTransitionButtonState extends State<NeoTransitionButton> {
   @override
   Widget build(BuildContext context) {
-    final appBloc = context.read<NeoCoreAppBloc>();
+    final appConstants = GetIt.I<NeoCoreAppConstants>();
     return NeoTransitionListenerWidget(
       transitionId: widget.transitionId,
-      signalRServerUrl: appBloc.neoCoreAppConstants.workflowHubUrl,
-      signalRMethodName: appBloc.neoCoreAppConstants.workflowMethodName,
+      signalRServerUrl: appConstants.workflowHubUrl,
+      signalRMethodName: appConstants.workflowMethodName,
       onPageNavigation: (String navigationPath) => _handleNavigation(context, navigationPath),
       child: FilledButton(
         style: OutlinedButton.styleFrom(
@@ -39,8 +41,7 @@ class _NeoTransitionButtonState extends State<NeoTransitionButton> {
           backgroundColor: _buttonColor,
         ),
         onPressed: () {
-          final appBloc = context.read<NeoCoreAppBloc>();
-          NeoWorkflowManager(appBloc.neoNetworkManager).postTransition(
+          NeoWorkflowManager(GetIt.I<NeoNetworkManager>()).postTransition(
             entity: widget.entity,
             transitionId: widget.transitionId,
             body: _getFormParametersIfExist(context),
@@ -62,11 +63,11 @@ class _NeoTransitionButtonState extends State<NeoTransitionButton> {
   }
 
   void _handleNavigation(BuildContext context, String navigationPath) {
-    context.read<NeoCoreAppBloc>().neoNavigationHelper.navigate(
-          context: context,
-          // STOPSHIP: Get navigation type from signalR
-          navigationType: NeoNavigationType.pushReplacement,
-          navigationPath: navigationPath,
-        );
+    GetIt.I<INeoNavigationHelper>().navigate(
+      context: context,
+      // STOPSHIP: Get navigation type from signalR
+      navigationType: NeoNavigationType.pushReplacement,
+      navigationPath: navigationPath,
+    );
   }
 }

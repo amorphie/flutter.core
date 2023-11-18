@@ -28,6 +28,9 @@ dependencies:
   json_dynamic_widget: ^7.0.5+1
   child_builder: ^2.0.1
 
+  # DI
+  get_it: ^7.6.0
+
   # UI Related
   cupertino_icons: ^1.0.2
 

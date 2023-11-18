@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:get_it/get_it.dart';
+import 'package:neo_core/core/navigation/i_neo_navigation_helper.dart';
 import 'package:neo_core/core/navigation/neo_navigation_type.dart';
 import 'package:neo_core/core/widgets/neo_core_app/bloc/neo_core_app_bloc.dart';
 import 'package:neo_core/core/widgets/neo_navigation_button/bloc/neo_navigation_button_bloc.dart';
@@ -29,7 +31,7 @@ class NeoNavigationButton extends StatelessWidget {
       create: (context) => NeoNavigationButtonBloc()
         ..add(
           NeoNavigationButtonEventInit(
-            neoWorkflowManager: NeoWorkflowManager(appBloc.neoNetworkManager),
+            neoWorkflowManager: NeoWorkflowManager(GetIt.I<NeoNetworkManager>()),
             startWorkflow: startWorkflow,
           ),
         ),
@@ -49,11 +51,11 @@ class NeoNavigationButton extends StatelessWidget {
   }
 
   void _handleNavigation(BuildContext context) {
-    context.read<NeoCoreAppBloc>().neoNavigationHelper.navigate(
-          context: context,
-          // STOPSHIP: Get navigation type from signalR
-          navigationType: NeoNavigationType.pushReplacement,
-          navigationPath: navigationPath,
-        );
+    GetIt.I<INeoNavigationHelper>().navigate(
+      context: context,
+      // STOPSHIP: Get navigation type from signalR
+      navigationType: NeoNavigationType.pushReplacement,
+      navigationPath: navigationPath,
+    );
   }
 }
