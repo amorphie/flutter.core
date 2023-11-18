@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:neo_core/core/network/neo_network.dart';
+import 'package:neo_core/core/storage/neo_core_secure_storage.dart';
 
 class NeoTransitionListenerWidget extends StatefulWidget {
   final Widget child;
@@ -7,7 +8,6 @@ class NeoTransitionListenerWidget extends StatefulWidget {
   final String signalRServerUrl;
   final String signalRMethodName;
   final Function(String navigationPath) onPageNavigation;
-  final Function(String token)? onTokenRetrieved;
   final Function(String errorMessage)? onError;
 
   const NeoTransitionListenerWidget({
@@ -16,7 +16,6 @@ class NeoTransitionListenerWidget extends StatefulWidget {
     required this.signalRServerUrl,
     required this.signalRMethodName,
     required this.onPageNavigation,
-    this.onTokenRetrieved,
     this.onError,
     Key? key,
   }) : super(key: key);
@@ -43,7 +42,7 @@ class _NeoTransitionListenerWidgetState extends State<NeoTransitionListenerWidge
     signalrConnectionManager.listenForTransitionEvents(
       transitionId: widget.transitionId,
       onPageNavigation: widget.onPageNavigation,
-      onTokenRetrieved: widget.onTokenRetrieved,
+      onTokenRetrieved: (token) => NeoCoreSecureStorage().setAuthToken(token),
       onError: widget.onError,
     );
   }

@@ -33,7 +33,6 @@ class _NeoTransitionButtonState extends State<NeoTransitionButton> {
       signalRServerUrl: appBloc.neoCoreAppConstants.workflowHubUrl,
       signalRMethodName: appBloc.neoCoreAppConstants.workflowMethodName,
       onPageNavigation: (String navigationPath) => _handleNavigation(context, navigationPath),
-      onTokenRetrieved: (token) async => NeoCoreSecureStorage().setAuthToken(token),
       child: FilledButton(
         style: OutlinedButton.styleFrom(
           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
