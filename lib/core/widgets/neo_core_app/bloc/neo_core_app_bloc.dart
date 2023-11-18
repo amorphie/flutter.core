@@ -14,7 +14,6 @@ import 'package:bloc/bloc.dart';
 import 'package:equatable/equatable.dart';
 import 'package:get_it/get_it.dart';
 import 'package:neo_core/core/navigation/i_neo_navigation_helper.dart';
-import 'package:neo_core/core/network/managers/neo_network_manager.dart';
 import 'package:neo_core/core/util/neo_core_app_constants.dart';
 
 part 'neo_core_app_event.dart';
@@ -23,7 +22,6 @@ part 'neo_core_app_state.dart';
 class NeoCoreAppBloc extends Bloc<NeoCoreAppEvent, NeoCoreAppState> {
   NeoCoreAppBloc() : super(NeoCoreAppInitial()) {
     on<NeoCoreAppEventInitConfigurations>((event, emit) {
-      GetIt.I.registerSingleton<NeoNetworkManager>(event.neoNetworkManager);
       GetIt.I.registerSingleton<NeoCoreAppConstants>(event.appConstants);
       GetIt.I.registerSingleton<INeoNavigationHelper>(event.neoNavigationHelper);
     });

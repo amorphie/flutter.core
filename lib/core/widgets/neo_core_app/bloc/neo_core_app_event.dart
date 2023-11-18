@@ -17,16 +17,14 @@ sealed class NeoCoreAppEvent extends Equatable {
 }
 
 class NeoCoreAppEventInitConfigurations extends NeoCoreAppEvent {
-  final NeoNetworkManager neoNetworkManager;
   final NeoCoreAppConstants appConstants;
   final INeoNavigationHelper neoNavigationHelper;
 
   const NeoCoreAppEventInitConfigurations({
-    required this.neoNetworkManager,
     required this.appConstants,
     required this.neoNavigationHelper,
   });
 
   @override
-  List<Object?> get props => [neoNetworkManager, appConstants, neoNavigationHelper];
+  List<Object?> get props => [appConstants, neoNavigationHelper];
 }

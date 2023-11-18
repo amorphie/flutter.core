@@ -13,19 +13,16 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:neo_core/core/navigation/i_neo_navigation_helper.dart';
-import 'package:neo_core/core/network/managers/neo_network_manager.dart';
 import 'package:neo_core/core/util/neo_core_app_constants.dart';
 import 'package:neo_core/core/widgets/neo_core_app/bloc/neo_core_app_bloc.dart';
 
 class NeoCoreApp extends StatelessWidget {
   final Widget child;
-  final NeoNetworkManager neoNetworkManager;
   final NeoCoreAppConstants appConstants;
   final INeoNavigationHelper neoNavigationHelper;
 
   const NeoCoreApp({
     required this.child,
-    required this.neoNetworkManager,
     required this.appConstants,
     required this.neoNavigationHelper,
     Key? key,
@@ -37,7 +34,6 @@ class NeoCoreApp extends StatelessWidget {
       create: (context) => NeoCoreAppBloc()
         ..add(
           NeoCoreAppEventInitConfigurations(
-            neoNetworkManager: neoNetworkManager,
             appConstants: appConstants,
             neoNavigationHelper: neoNavigationHelper,
           ),
