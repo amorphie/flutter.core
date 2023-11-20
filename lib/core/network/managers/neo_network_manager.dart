@@ -53,6 +53,7 @@ class NeoNetworkManager {
     final authHeader = results[5] as Map<String, String>? ?? {};
 
     return {
+      'Content-Type': 'application/json',
       'Accept-Language': '$languageCode-${languageCode.toUpperCase()}',
       'X-Application': 'burgan-mobile-app',
       'X-Deployment': DeviceUtil().getPlatformName(),
@@ -72,9 +73,8 @@ class NeoNetworkManager {
   Future<Map<String, String>> get _defaultPostHeaders async => <String, String>{}
     ..addAll(await _defaultHeaders)
     ..addAll({
-      'Content-Type': 'application/json',
-      'User': const Uuid().v1(), // TODO: Get it from storage
-      'Behalf-Of-User': const Uuid().v1(), // TODO: Get it from storage
+      'User': const Uuid().v1(), // STOPSHIP: Delete it
+      'Behalf-Of-User': const Uuid().v1(), // STOPSHIP: Delete it
     });
 
   Future<Map<String, dynamic>> call(NeoHttpCall neoCall) async {
