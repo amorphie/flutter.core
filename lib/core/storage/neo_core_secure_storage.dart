@@ -11,6 +11,7 @@
  */
 
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
+import 'package:neo_core/core/encryption/jwt_decoder.dart';
 import 'package:neo_core/neo_core.dart';
 import 'package:uuid/uuid.dart';
 
@@ -22,6 +23,7 @@ class _Constants {
   static const String sharedPrefKeyTokenId = "shared_pref_key_token_id";
   static const String sharedPrefKeyAuthToken = "shared_pref_key_auth_token";
   static const String sharedPrefKeyRefreshToken = "shared_pref_key_refresh_token";
+  static const String sharedPrefKeyCustomerId = "shared_pref_key_customer_id";
 }
 
 class NeoCoreSecureStorage {
@@ -95,14 +97,20 @@ class NeoCoreSecureStorage {
     return _storage!.read(key: _Constants.sharedPrefKeyTokenId);
   }
 
+  /// Set auth token(JWT) and customerId from encoded JWT
   Future setAuthToken(String token) async {
     await _storage!.write(key: _Constants.sharedPrefKeyAuthToken, value: token);
+    final customerId = JwtDecoder.decode(token)["user.reference"];
+    if (customerId is String && customerId.isNotEmpty) {
+      await _setCustomerId(customerId);
+    }
   }
 
   Future deleteAuthToken() async {
     if (await _storage!.containsKey(key: _Constants.sharedPrefKeyAuthToken)) {
       return _storage!.delete(key: _Constants.sharedPrefKeyAuthToken);
     }
+    await _deleteCustomerId();
   }
 
   Future<String?> getAuthToken() async {
@@ -115,5 +123,19 @@ class NeoCoreSecureStorage {
 
   Future<String?> getRefreshToken() async {
     return _storage!.read(key: _Constants.sharedPrefKeyRefreshToken);
+  }
+
+  Future _setCustomerId(String customerId) async {
+    await _storage!.write(key: _Constants.sharedPrefKeyCustomerId, value: customerId);
+  }
+
+  Future<String?> getCustomerId() async {
+    return _storage!.read(key: _Constants.sharedPrefKeyCustomerId);
+  }
+
+  Future _deleteCustomerId() async {
+    if (await _storage!.containsKey(key: _Constants.sharedPrefKeyCustomerId)) {
+      return _storage!.delete(key: _Constants.sharedPrefKeyCustomerId);
+    }
   }
 }
