@@ -108,7 +108,7 @@ class NeoCoreSecureStorage {
 
   Future deleteAuthToken() async {
     if (await _storage!.containsKey(key: _Constants.sharedPrefKeyAuthToken)) {
-      return _storage!.delete(key: _Constants.sharedPrefKeyAuthToken);
+      await _storage!.delete(key: _Constants.sharedPrefKeyAuthToken);
     }
     await _deleteCustomerId();
   }
