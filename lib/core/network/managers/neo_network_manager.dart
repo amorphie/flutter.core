@@ -41,16 +41,16 @@ class NeoNetworkManager {
       secureStorage.getDeviceId(),
       secureStorage.getTokenId(),
       secureStorage.getDeviceInfo(),
-      secureStorage.getCustomerId(),
       _authHeader,
+      _customerIdHeader,
     ]);
 
     final languageCode = results[0] as String? ?? "";
     final deviceId = results[1] as String? ?? "";
     final tokenId = results[2] as String? ?? "";
     final deviceInfo = results[3] as String? ?? "";
-    final customerId = results[4] as String? ?? "";
-    final authHeader = results[5] as Map<String, String>? ?? {};
+    final authHeader = results[4] as Map<String, String>? ?? {};
+    final customerIdHeader = results[5] as Map<String, String>? ?? {};
 
     return {
       'Content-Type': 'application/json',
@@ -61,13 +61,19 @@ class NeoNetworkManager {
       'X-Token-Id': tokenId,
       'X-Request-Id': const Uuid().v1(),
       'X-Device-Info': deviceInfo,
-      'A-Customer': customerId,
-    }..addAll(authHeader);
+    }
+      ..addAll(authHeader)
+      ..addAll(customerIdHeader);
   }
 
   Future<Map<String, String>> get _authHeader async {
     final authToken = await secureStorage.getAuthToken();
     return authToken == null ? {} : {'Authorization': 'Bearer $authToken'};
+  }
+
+  Future<Map<String, String>> get _customerIdHeader async {
+    final customerId = await secureStorage.getCustomerId();
+    return customerId == null ? {} : {'A-Customer': customerId};
   }
 
   Future<Map<String, String>> get _defaultPostHeaders async => <String, String>{}
