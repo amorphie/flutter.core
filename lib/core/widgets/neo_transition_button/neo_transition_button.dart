@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:meta/meta.dart';
 import 'package:neo_core/core/widgets/neo_transition_button/i_neo_transition_button.dart';
 import 'package:neo_core/neo_core.dart';
 
@@ -13,22 +12,18 @@ class NeoTransitionButton extends INeoTransitionButton {
     super.key,
   });
 
-  /// Don't forget to call [onStartTransition] to start transition
   @override
-  @visibleForOverriding
-  Widget buildCustom(BuildContext context) {
-    return FilledButton(
-      style: OutlinedButton.styleFrom(
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-        backgroundColor: _buttonColor,
-      ),
-      onPressed: () => onStartTransition(context),
-      child: Text(text).padding(left: 16, right: 16, top: 20, bottom: 20),
-    );
-  }
+  Widget Function(BuildContext) get childBuilder => (context) => FilledButton(
+        style: OutlinedButton.styleFrom(
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+          backgroundColor: _buttonColor,
+        ),
+        onPressed: () => onStartTransition(context),
+        child: Text(text).padding(left: 16, right: 16, top: 20, bottom: 20),
+      );
 
   @override
-  void onTransitionError(String errorMessage) {
+  void onTransitionError(BuildContext context, String errorMessage) {
     // No-op. Override if necessary
   }
 }

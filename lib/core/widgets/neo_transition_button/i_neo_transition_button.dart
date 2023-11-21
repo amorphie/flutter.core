@@ -21,6 +21,8 @@ abstract class INeoTransitionButton extends StatelessWidget {
   final String transitionId;
   final String text;
 
+  abstract final Widget Function(BuildContext) childBuilder;
+
   @nonVirtual
   @override
   Widget build(BuildContext context) {
@@ -30,18 +32,14 @@ abstract class INeoTransitionButton extends StatelessWidget {
       signalRServerUrl: appConstants.workflowHubUrl,
       signalRMethodName: appConstants.workflowMethodName,
       onPageNavigation: (String navigationPath) => _handleNavigation(context, navigationPath),
-      onError: onTransitionError,
-      child: buildCustom(context),
+      onError: (errorMessage) => onTransitionError(context, errorMessage),
+      child: childBuilder(context),
     );
   }
 
-  /// Don't forget to call [onStartTransition] to start transition from custom widget design
-  @visibleForOverriding
-  Widget buildCustom(BuildContext context);
-
   /// Triggered when there is an error from SignalR
   @visibleForOverriding
-  void onTransitionError(String errorMessage);
+  void onTransitionError(BuildContext context, String errorMessage);
 
   Future onStartTransition(BuildContext context) {
     return NeoWorkflowManager(GetIt.I<NeoNetworkManager>()).postTransition(
