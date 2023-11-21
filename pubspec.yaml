@@ -23,6 +23,7 @@ dependencies:
   flutter_secure_storage: ^9.0.0
   device_info_plus: ^9.1.0
   collection: ^1.17.1
+  meta: ^1.9.1
 
   # Dynamic Widget Building
   json_dynamic_widget: ^7.0.5+1
