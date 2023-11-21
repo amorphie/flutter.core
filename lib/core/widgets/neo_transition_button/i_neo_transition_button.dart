@@ -13,13 +13,11 @@ abstract class INeoTransitionButton extends StatelessWidget {
   const INeoTransitionButton({
     required this.entity,
     required this.transitionId,
-    required this.text,
     Key? key,
   }) : super(key: key);
 
   final String entity;
   final String transitionId;
-  final String text;
 
   abstract final Widget Function(BuildContext) childBuilder;
 

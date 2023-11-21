@@ -8,9 +8,11 @@ class NeoTransitionButton extends INeoTransitionButton {
   const NeoTransitionButton({
     required super.entity,
     required super.transitionId,
-    required super.text,
+    required this.text,
     super.key,
   });
+
+  final String text;
 
   @override
   Widget Function(BuildContext) get childBuilder => (context) => FilledButton(
