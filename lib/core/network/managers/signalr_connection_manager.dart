@@ -70,7 +70,7 @@ class SignalrConnectionManager {
           .map((transition) {
             try {
               return NeoSignalRTransition.fromJson(jsonDecode(transition is String ? transition : "{}"));
-            } on Exception catch (_) {
+            } catch (_) {
               return null;
             }
           })

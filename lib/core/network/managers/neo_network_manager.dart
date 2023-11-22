@@ -169,7 +169,7 @@ class NeoNetworkManager {
         const utf8Decoder = Utf8Decoder();
         final responseString = utf8Decoder.convert(response!.bodyBytes);
         responseJSON = json.decode(responseString) as Map<String, dynamic>;
-      } on Exception {
+      } catch (_) {
         responseJSON = {};
       }
     }
@@ -191,7 +191,7 @@ class NeoNetworkManager {
       } on MissingRequiredKeysException {
         final error = NeoError(responseCode: response.statusCode.toString());
         throw NeoException(error: error);
-      } on Exception catch (e) {
+      } catch (e) {
         if (e is NeoException) {
           rethrow;
         }
@@ -235,7 +235,7 @@ class NeoNetworkManager {
         secureStorage.setRefreshToken(authResponse.refreshToken),
       ]);
       return true;
-    } on Exception catch (_) {
+    } catch (_) {
       return false;
     }
   }

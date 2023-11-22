@@ -51,7 +51,7 @@ abstract class INeoTransitionButton extends StatelessWidget {
     Map<String, dynamic> data = {};
     try {
       data = context.read<WorkflowFormBloc>().formData;
-    } on Exception catch (_) {
+    } catch (_) {
       // no-op
     }
     return data;

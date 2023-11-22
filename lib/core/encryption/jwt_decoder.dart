@@ -28,7 +28,7 @@ class JwtDecoder {
       final decodedPayload = jsonDecode(payloadString);
 
       return decodedPayload;
-    } on Exception catch (_) {
+    } catch (_) {
       throw const FormatException('Invalid payload');
     }
   }
@@ -42,7 +42,7 @@ class JwtDecoder {
   static Map<String, dynamic>? tryDecode(String token) {
     try {
       return decode(token);
-    } on Exception catch (_) {
+    } catch (_) {
       return null;
     }
   }
