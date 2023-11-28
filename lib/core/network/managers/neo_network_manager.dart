@@ -22,6 +22,7 @@ import 'package:uuid/uuid.dart';
 
 abstract class _Constants {
   static const int responseCodeUnauthorized = 401;
+  static const String wrapperResponseKey = "data";
 }
 
 class NeoNetworkManager {
@@ -168,7 +169,12 @@ class NeoNetworkManager {
       try {
         const utf8Decoder = Utf8Decoder();
         final responseString = utf8Decoder.convert(response!.bodyBytes);
-        responseJSON = json.decode(responseString) as Map<String, dynamic>;
+        final decodedResponse = json.decode(responseString);
+        if (decodedResponse is Map<String, dynamic>) {
+          responseJSON = decodedResponse;
+        } else {
+          responseJSON = {_Constants.wrapperResponseKey: decodedResponse};
+        }
       } catch (_) {
         responseJSON = {};
       }
