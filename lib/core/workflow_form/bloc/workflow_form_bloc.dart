@@ -13,6 +13,9 @@ class WorkflowFormBloc extends Bloc<WorkflowFormEvent, WorkflowFormState> {
     on<WorkflowFormEventUpdateTextFormField>((event, emit) {
       _onTextFormFieldUpdated(event);
     });
+    on<WorkflowFormEventAddAllParameters>((event, emit) {
+      _formData.addAll(event.parameters);
+    });
   }
 
   void _onTextFormFieldUpdated(WorkflowFormEventUpdateTextFormField event) {
