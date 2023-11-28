@@ -39,11 +39,11 @@ abstract class INeoTransitionButton extends StatelessWidget {
   @visibleForOverriding
   void onTransitionError(BuildContext context, String errorMessage);
 
-  Future onStartTransition(BuildContext context) {
+  Future onStartTransition(BuildContext context, {Map<String, dynamic>? transitionBody}) {
     return NeoWorkflowManager(GetIt.I<NeoNetworkManager>()).postTransition(
       entity: entity,
       transitionId: transitionId,
-      body: _getFormParametersIfExist(context),
+      body: transitionBody ?? _getFormParametersIfExist(context),
     );
   }
 
