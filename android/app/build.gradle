@@ -48,7 +48,7 @@ android {
         applicationId "com.example.neo_core"
         // You can update the following values to match your application needs.
         // For more information, see: https://docs.flutter.dev/deployment/android#reviewing-the-gradle-build-configuration.
-        minSdkVersion 19
+        minSdkVersion 21
         targetSdkVersion flutter.targetSdkVersion
         versionCode flutterVersionCode.toInteger()
         versionName flutterVersionName
@@ -69,4 +69,31 @@ flutter {
 
 dependencies {
     implementation "org.jetbrains.kotlin:kotlin-stdlib-jdk7:$kotlin_version"
+    implementation 'androidx.core:core-ktx:1.8.0'
+    implementation "androidx.appcompat:appcompat:1.5.1"
+    implementation 'com.google.android.material:material:1.6.1'
+    implementation 'androidx.constraintlayout:constraintlayout:2.1.4'
+    implementation 'com.squareup.retrofit2:retrofit:2.9.0'
+    implementation 'com.squareup.retrofit2:converter-gson:2.9.0'
+    implementation 'com.google.code.gson:gson:2.8.9'
+    implementation 'com.google.guava:guava:31.1-jre'
+    implementation "com.android.volley:volley:1.2.1"
+    implementation 'com.google.android.gms:play-services-mlkit-face-detection:17.1.0'
+    implementation 'com.google.android.gms:play-services-mlkit-text-recognition:18.0.2'
+    implementation 'com.google.android.gms:play-services-base:18.1.0'
+    implementation('io.socket:socket.io-client:1.0.1') {
+        exclude group: 'org.json', module: 'json'
+    }
+    implementation "androidx.camera:camera-camera2:1.2.0-alpha04"
+    implementation "androidx.camera:camera-lifecycle:1.2.0-alpha04"
+    implementation "androidx.camera:camera-view:1.2.0-alpha04"
+    implementation 'org.jmrtd:jmrtd:0.7.19'
+    implementation 'net.sf.scuba:scuba-sc-android:0.0.23'
+    implementation 'com.fasterxml.jackson.core:jackson-core:2.12.3'
+    implementation 'com.fasterxml.jackson.core:jackson-annotations:2.12.3'
+    implementation 'com.fasterxml.jackson.core:jackson-databind:2.12.3'
+    implementation 'org.tensorflow:tensorflow-lite-support:0.4.0'
+    implementation 'com.googlecode.mp4parser:isoparser:1.1.22'
+    implementation fileTree(include: ['*.jar', '*.aar'], dir: 'libs')
+    implementation files('libs/enverify.aar')
 }
