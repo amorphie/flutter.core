@@ -12,20 +12,14 @@
 
 import 'package:json_dynamic_widget/json_dynamic_widget.dart';
 import 'package:neo_core/core/widgets/neo_navigation_button/neo_navigation_button_builder.dart';
-import 'package:neo_core/core/widgets/neo_transition_button/neo_transition_button_builder.dart';
 
 class NeoCoreWidgetRegisterer {
   static final registry = JsonWidgetRegistry.instance;
 
   void init() {
-    registry
-      ..registerCustomBuilder(
-        NeoTransitionButtonBuilder.kType,
-        const JsonWidgetBuilderContainer(builder: NeoTransitionButtonBuilder.fromDynamic),
-      )
-      ..registerCustomBuilder(
-        NeoNavigationButtonBuilder.kType,
-        const JsonWidgetBuilderContainer(builder: NeoNavigationButtonBuilder.fromDynamic),
-      );
+    registry.registerCustomBuilder(
+      NeoNavigationButtonBuilder.kType,
+      const JsonWidgetBuilderContainer(builder: NeoNavigationButtonBuilder.fromDynamic),
+    );
   }
 }
