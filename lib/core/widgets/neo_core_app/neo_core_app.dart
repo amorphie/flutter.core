@@ -39,6 +39,7 @@ class NeoCoreApp extends StatelessWidget {
           NeoCoreAppEventInitConfigurations(
             appConstants: appConstants,
             neoNavigationHelper: neoNavigationHelper,
+            firebaseOptions: firebaseOptions,
           ),
         ),
       child: BlocBuilder<NeoCoreAppBloc, NeoCoreAppState>(
