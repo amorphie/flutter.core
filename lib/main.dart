@@ -11,9 +11,15 @@
  */
 
 import 'package:flutter/material.dart';
+import 'package:neo_core/neo_core.dart';
 
-void main() {
+Future<void> main() async {
+  await _initBurganSDKs();
   runApp(const MyApp());
+}
+
+Future _initBurganSDKs() async {
+  await NeoCore.init();
 }
 
 class MyApp extends StatelessWidget {
