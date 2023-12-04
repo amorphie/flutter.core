@@ -10,6 +10,7 @@
  * Any reproduction of this material must contain this notice.
  */
 
+import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:neo_core/core/navigation/i_neo_navigation_helper.dart';
@@ -20,11 +21,13 @@ class NeoCoreApp extends StatelessWidget {
   final Widget child;
   final NeoCoreAppConstants appConstants;
   final INeoNavigationHelper neoNavigationHelper;
+  final FirebaseOptions firebaseOptions;
 
   const NeoCoreApp({
     required this.child,
     required this.appConstants,
     required this.neoNavigationHelper,
+    required this.firebaseOptions,
     Key? key,
   }) : super(key: key);
 

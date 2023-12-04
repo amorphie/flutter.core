@@ -19,12 +19,14 @@ sealed class NeoCoreAppEvent extends Equatable {
 class NeoCoreAppEventInitConfigurations extends NeoCoreAppEvent {
   final NeoCoreAppConstants appConstants;
   final INeoNavigationHelper neoNavigationHelper;
+  final FirebaseOptions firebaseOptions;
 
   const NeoCoreAppEventInitConfigurations({
     required this.appConstants,
     required this.neoNavigationHelper,
+    required this.firebaseOptions,
   });
 
   @override
-  List<Object?> get props => [appConstants, neoNavigationHelper];
+  List<Object?> get props => [appConstants, neoNavigationHelper, firebaseOptions];
 }

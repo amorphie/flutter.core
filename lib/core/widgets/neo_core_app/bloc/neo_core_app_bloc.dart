@@ -12,6 +12,9 @@
 
 import 'package:bloc/bloc.dart';
 import 'package:equatable/equatable.dart';
+import 'package:firebase_core/firebase_core.dart';
+import 'package:firebase_crashlytics/firebase_crashlytics.dart';
+import 'package:flutter/foundation.dart';
 import 'package:get_it/get_it.dart';
 import 'package:neo_core/core/navigation/i_neo_navigation_helper.dart';
 import 'package:neo_core/core/util/neo_core_app_constants.dart';
@@ -24,6 +27,14 @@ class NeoCoreAppBloc extends Bloc<NeoCoreAppEvent, NeoCoreAppState> {
     on<NeoCoreAppEventInitConfigurations>((event, emit) {
       GetIt.I.registerSingleton<NeoCoreAppConstants>(event.appConstants);
       GetIt.I.registerSingleton<INeoNavigationHelper>(event.neoNavigationHelper);
+      _initFirebase(event.firebaseOptions);
     });
+  }
+
+  _initFirebase(FirebaseOptions firebaseOptions) async {
+    await Firebase.initializeApp();
+    FlutterError.onError = (errorDetails) {
+      FirebaseCrashlytics.instance.recordFlutterFatalError(errorDetails);
+    };
   }
 }
