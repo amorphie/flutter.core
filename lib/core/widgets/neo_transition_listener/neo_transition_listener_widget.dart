@@ -45,7 +45,7 @@ class _NeoTransitionListenerWidgetState extends State<NeoTransitionListenerWidge
       onPageNavigation: widget.onPageNavigation,
       onTokenRetrieved: (token, refreshToken) => neoCoreSecureStorage
         ..setAuthToken(token)
-        ..setRefreshToken(token),
+        ..setRefreshToken(refreshToken),
       onError: widget.onError,
     );
   }
