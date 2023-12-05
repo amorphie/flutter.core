@@ -1,11 +1,15 @@
 import 'dart:io';
 
 import 'package:device_info_plus/device_info_plus.dart';
+import 'package:flutter/foundation.dart' show kIsWeb;
 
 class DeviceUtil {
   Future<String?> getDeviceId() async {
     final deviceInfo = DeviceInfoPlugin();
-    if (Platform.isIOS) {
+    if (kIsWeb) {
+      final webBrowserInfo = await deviceInfo.webBrowserInfo;
+      return webBrowserInfo.vendor;
+    } else if (Platform.isIOS) {
       final iosInfo = await deviceInfo.iosInfo;
       return iosInfo.identifierForVendor;
     } else if (Platform.isAndroid) {
@@ -18,7 +22,10 @@ class DeviceUtil {
 
   Future<String?> getDeviceInfo() async {
     final deviceInfo = DeviceInfoPlugin();
-    if (Platform.isIOS) {
+    if (kIsWeb) {
+      final webBrowserInfo = await deviceInfo.webBrowserInfo;
+      return webBrowserInfo.platform;
+    } else if (Platform.isIOS) {
       final iosInfo = await deviceInfo.iosInfo;
       return iosInfo.utsname.machine;
     } else if (Platform.isAndroid) {
@@ -30,7 +37,9 @@ class DeviceUtil {
   }
 
   String getPlatformName() {
-    if (Platform.isIOS) {
+    if (kIsWeb) {
+      return "WEB";
+    } else if (Platform.isIOS) {
       return "IOS";
     } else if (Platform.isAndroid) {
       return "ANDROID";
