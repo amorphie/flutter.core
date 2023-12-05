@@ -27,11 +27,11 @@ class NeoCoreAppBloc extends Bloc<NeoCoreAppEvent, NeoCoreAppState> {
     on<NeoCoreAppEventInitConfigurations>((event, emit) {
       GetIt.I.registerSingleton<NeoCoreAppConstants>(event.appConstants);
       GetIt.I.registerSingleton<INeoNavigationHelper>(event.neoNavigationHelper);
-      _initFirebase(event.firebaseOptions);
+      _initFirebase();
     });
   }
 
-  _initFirebase(FirebaseOptions firebaseOptions) async {
+  _initFirebase() async {
     await Firebase.initializeApp();
     FlutterError.onError = (errorDetails) {
       FirebaseCrashlytics.instance.recordFlutterFatalError(errorDetails);
