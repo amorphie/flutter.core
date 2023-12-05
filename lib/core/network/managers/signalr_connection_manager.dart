@@ -16,6 +16,7 @@ import 'dart:developer';
 import 'package:collection/collection.dart';
 import 'package:flutter/foundation.dart';
 import 'package:neo_core/core/network/models/neo_signalr_transition.dart';
+import 'package:neo_core/core/util/neo_util.dart';
 import 'package:signalr_netcore/signalr_client.dart';
 
 class SignalrConnectionManager {
@@ -56,7 +57,7 @@ class SignalrConnectionManager {
   void listenForTransitionEvents({
     required String transitionId,
     required Function(String navigationPath) onPageNavigation,
-    Function(String token)? onTokenRetrieved,
+    Function(String token, String refreshToken)? onTokenRetrieved,
     Function(String errorMessage)? onError,
   }) {
     _hubConnection?.on(methodName, (List<Object?>? transitions) {
@@ -79,8 +80,9 @@ class SignalrConnectionManager {
           .firstWhereOrNull((transition) => transition?.transitionId == transitionId);
 
       final String? token = ongoingTransition?.additionalData?["access_token"];
+      final String? refreshToken = ongoingTransition?.additionalData?["refresh_token"];
       if (onTokenRetrieved != null && token != null && token.isNotEmpty) {
-        onTokenRetrieved(token);
+        onTokenRetrieved(token, refreshToken.orEmpty);
       }
 
       final isNavigationAllowed = ongoingTransition?.pageDetails["operation"] == "Open";
