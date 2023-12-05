@@ -26,6 +26,7 @@ class NeoTransitionListenerWidget extends StatefulWidget {
 
 class _NeoTransitionListenerWidgetState extends State<NeoTransitionListenerWidget> {
   late SignalrConnectionManager signalrConnectionManager;
+  late NeoCoreSecureStorage neoCoreSecureStorage = NeoCoreSecureStorage();
 
   @override
   void initState() {
@@ -42,7 +43,9 @@ class _NeoTransitionListenerWidgetState extends State<NeoTransitionListenerWidge
     signalrConnectionManager.listenForTransitionEvents(
       transitionId: widget.transitionId,
       onPageNavigation: widget.onPageNavigation,
-      onTokenRetrieved: (token) => NeoCoreSecureStorage().setAuthToken(token),
+      onTokenRetrieved: (token, refreshToken) => neoCoreSecureStorage
+        ..setAuthToken(token)
+        ..setRefreshToken(refreshToken),
       onError: widget.onError,
     );
   }
