@@ -1,5 +1,7 @@
 package com.amorphie.core.feature.enverify
 
+import android.os.Bundle
+import android.os.PersistableBundle
 import com.enqura.enverify.EnVerifyCallback
 import com.enqura.enverify.models.enums.CloseSessionStatus
 import com.smartvist.idverify.models.IDVerifyFailureCode
@@ -12,6 +14,10 @@ class EnverifyActivity : FlutterActivity(), EnVerifyCallback {
 
     override fun configureFlutterEngine(flutterEngine: FlutterEngine) {
         super.configureFlutterEngine(flutterEngine)
+    }
+
+    override fun onCreate(savedInstanceState: Bundle?) {
+        super.onCreate(savedInstanceState)
     }
 
     override fun videoCallReady() {
