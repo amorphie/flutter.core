@@ -1,0 +1,14 @@
+<resources>
+
+    <!-- Enverify SDK button text overrides -->
+    <string name="start_button" translatable="false">BAŞLAT</string>
+    <string name="call_button" translatable="false">ARA</string>
+    <string name="hangup_button" translatable="false">KAPAT</string>
+    <string name="exit_button" translatable="false">ÇIKIŞ</string>
+    <!-- Enverify SDK Metinler -->
+    <string name="stt_txt_fake_check_id" translatable="false">Flaş ışığını hologram bölgesi parlayacak şekilde yönlendiriniz</string>
+    <string name="stt_txt_front_started" translatable="false">Lütfen Kimlik Tespiti İçin Önyüzü Okutun</string>
+    <!-- Enverify END -->
+
+
+</resources>
