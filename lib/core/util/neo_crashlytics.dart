@@ -17,23 +17,23 @@ import 'package:firebase_crashlytics/firebase_crashlytics.dart';
 class NeoCrashlytics {
   NeoCrashlytics._();
 
-  static final FirebaseCrashlytics crashlytics = FirebaseCrashlytics.instance;
+  static final FirebaseCrashlytics _crashlytics = FirebaseCrashlytics.instance;
 
-  static bool get isEnabled => crashlytics.isCrashlyticsCollectionEnabled;
+  static bool get isEnabled => _crashlytics.isCrashlyticsCollectionEnabled;
 
   static Future<void> logError(String message) async {
-    await crashlytics.log(message);
+    await _crashlytics.log(message);
   }
 
   static Future<void> logException(dynamic exception, StackTrace stackTrace) async {
-    await crashlytics.recordError(exception, stackTrace);
+    await _crashlytics.recordError(exception, stackTrace);
   }
 
   static Future<void> setEnabled({required bool enabled}) async {
-    await crashlytics.setCrashlyticsCollectionEnabled(enabled);
+    await _crashlytics.setCrashlyticsCollectionEnabled(enabled);
   }
 
   static Future<void> sendUnsentReports() async {
-    await crashlytics.sendUnsentReports();
+    await _crashlytics.sendUnsentReports();
   }
 }
