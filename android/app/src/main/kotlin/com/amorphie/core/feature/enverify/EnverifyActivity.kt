@@ -2,6 +2,8 @@ package com.amorphie.core.feature.enverify
 
 import android.os.Bundle
 import android.os.PersistableBundle
+import com.amorphie.core.feature.enverify.config.DomainType
+import com.amorphie.core.feature.enverify.config.EnverifySDKBuilder
 import com.enqura.enverify.EnVerifyCallback
 import com.enqura.enverify.models.enums.CloseSessionStatus
 import com.smartvist.idverify.models.IDVerifyFailureCode
@@ -18,6 +20,17 @@ class EnverifyActivity : FlutterActivity(), EnVerifyCallback {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+    }
+
+    override fun onStart() {
+        super.onStart()
+        val api = EnverifySDKBuilder.create()
+            .withUserData(applicationContext, "name", "surname", "call")
+            .withDomain(DomainType.pilot, true)
+            .withPrefs(true, true)
+            .withCredential(domainType = DomainType.pilot)
+            .build()
+
     }
 
     override fun videoCallReady() {
