@@ -1,7 +1,9 @@
 package com.amorphie.core.feature.enverify
 
 import android.os.Bundle
-import android.os.PersistableBundle
+import com.amorphie.core.feature.enverify.channel.EventChannelHandler
+import com.amorphie.core.feature.enverify.channel.MethodChannelHandler
+import com.amorphie.core.feature.enverify.channel.MethodChannelListener
 import com.amorphie.core.feature.enverify.config.DomainType
 import com.amorphie.core.feature.enverify.config.EnverifySDKBuilder
 import com.enqura.enverify.EnVerifyCallback
@@ -14,12 +16,24 @@ import io.swagger.client.model.VerifyCallResultModel
 
 class EnverifyActivity : FlutterActivity(), EnVerifyCallback {
 
+    private val eventHandler: EventChannelHandler by lazy {
+        EventChannelHandler(FlutterEngine(this))
+    }
+    private val methodHandler: MethodChannelHandler by lazy {
+        MethodChannelHandler(FlutterEngine(this)).also {
+            moveTaskToBack(true)
+        }
+    }
+
     override fun configureFlutterEngine(flutterEngine: FlutterEngine) {
         super.configureFlutterEngine(flutterEngine)
+
     }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+
+
     }
 
     override fun onStart() {
@@ -30,6 +44,19 @@ class EnverifyActivity : FlutterActivity(), EnVerifyCallback {
             .withPrefs(true, true)
             .withCredential(domainType = DomainType.pilot)
             .build()
+
+        eventHandler.sendIntialData()
+        
+        methodHandler.setListener(object : MethodChannelListener {
+            override fun onSDKInit(name: String, lastName: String, callType: String) {
+                TODO("Not yet implemented")
+            }
+
+            override fun onSDKStopped() {
+                TODO("Not yet implemented")
+            }
+
+        })
 
     }
 
