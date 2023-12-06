@@ -96,5 +96,5 @@ dependencies {
     implementation 'org.tensorflow:tensorflow-lite-support:0.4.0'
     implementation 'com.googlecode.mp4parser:isoparser:1.1.22'
     implementation fileTree(include: ['*.jar', '*.aar'], dir: 'libs')
-    implementation files('libs/enverify.aar')
+    implementation files('libs/enverify_v1-3-11-5.aar')
 }
