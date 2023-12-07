@@ -12,6 +12,7 @@
 
 import 'package:neo_core/core/bridge/bridge_manager.dart';
 import 'package:neo_core/core/storage/neo_core_secure_storage.dart';
+import 'package:neo_core/core/util/neo_crashlytics.dart';
 import 'package:neo_core/core/widgets/neo_core_widget_registerer.dart';
 
 export 'core/bus/neo_bus.dart';
@@ -24,8 +25,17 @@ class NeoCore {
   NeoCore._();
 
   static Future init() async {
+<<<<<<< HEAD
     await NeoCoreSecureStorage().init();
     NeoCoreWidgetRegisterer().init();
     BridgeManager.init();
+=======
+    try {
+      await NeoCoreSecureStorage().init();
+      NeoCoreWidgetRegisterer().init();
+    } catch (error) {
+      await NeoCrashlytics.logError(error.toString());
+    }
+>>>>>>> main
   }
 }
