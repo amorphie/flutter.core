@@ -1,13 +1,13 @@
-import 'package:flutter/services.dart';
+part of env_bridge;
 
-class MethhodChannelHandler {
+class _MethodChannelHandler {
   static const platformMethods = MethodChannel("com.amorpihe.core/enverify/methods");
 
   Future<bool> startSDK(Map<String, String> requestedData) async {
     bool result = false;
 
     try {
-      final response = await platformMethods.invokeMethod<bool>(MethodName.start.name, requestedData);
+      final response = await platformMethods.invokeMethod<bool>(_MethodName.start.name, requestedData);
       result = response != null && response;
     } on PlatformException catch (e) {
       print("MethodChannel: exception: $e");
@@ -16,5 +16,3 @@ class MethhodChannelHandler {
     return result;
   }
 }
-
-enum MethodName { start, stop }

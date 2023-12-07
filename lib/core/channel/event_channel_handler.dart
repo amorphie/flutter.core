@@ -1,4 +1,4 @@
-import 'package:flutter/services.dart';
+part of env_bridge;
 
 class EventChannelHandler {
   static const platformEvents = EventChannel("com.amorpihe.core/enverify/events");
