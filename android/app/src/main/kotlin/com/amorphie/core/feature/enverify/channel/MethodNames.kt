@@ -1,7 +1,7 @@
 package com.amorphie.core.feature.enverify.channel
 
-enum class EnverifyMethods {
+enum class MethodNames {
 
-    start,
-    stop,
+    startSDK,
+    stopSDK,
 }

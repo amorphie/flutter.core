@@ -2,6 +2,7 @@ package com.amorphie.core.feature.enverify.channel
 
 
 import io.flutter.embedding.engine.FlutterEngine
+import io.flutter.plugin.common.MethodCall
 import io.flutter.plugin.common.MethodChannel
 
 class MethodChannelHandler(engine: FlutterEngine) {
@@ -12,13 +13,13 @@ class MethodChannelHandler(engine: FlutterEngine) {
     init {
         MethodChannel(engine.dartExecutor.binaryMessenger, METHOD_CHANNEL).setMethodCallHandler {
             // This method is invoked on the main thread.
-                c, r ->
-            if (c.method == EnverifyMethods.start.name) {
-
-            } else if (c.method == EnverifyMethods.stop.name) {
+                call, result ->
+            if (call.method == MethodNames.startSDK.name) {
+                nativeEnverifyStart(call, result)
+            } else if (call.method == MethodNames.stopSDK.name) {
 
             } else {
-                r.notImplemented()
+                result.notImplemented()
             }
         }
     }
@@ -27,8 +28,18 @@ class MethodChannelHandler(engine: FlutterEngine) {
         methodChannelListener = listener
     }
 
-    private fun nativeEnverifyStart(name: String, lastName: String, callType: String) {
-        methodChannelListener?.onSDKInit(name, lastName, callType)
+    private fun prepareSDK() {
+        //TODO: get initial config data
+    }
+
+    private fun nativeEnverifyStart(call: MethodCall, result: MethodChannel.Result) {
+        val name: String? = call.argument(MethodKeys.firstName.name)
+        val lastName: String? = call.argument(MethodKeys.lastName.name)
+        val callType: String? = call.argument(MethodKeys.callType.name)
+        //TODO: handle proper way incoming parameters
+        //result.error()
+        methodChannelListener?.onSDKInit(name!!, lastName!!, callType!!)
+        result.success(true)
     }
 
     private fun nativeEnverifyStop() {

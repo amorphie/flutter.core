@@ -7,7 +7,7 @@ class _MethodChannelHandler {
     bool result = false;
 
     try {
-      final response = await platformMethods.invokeMethod<bool>(_MethodName.start.name, requestedData);
+      final response = await platformMethods.invokeMethod<bool>(_MethodNames.start.name, requestedData);
       result = response != null && response;
     } on PlatformException catch (e) {
       print("MethodChannel: exception: $e");

@@ -8,14 +8,11 @@ part 'package:neo_core/core/channel/method_keys.dart';
 part 'package:neo_core/core/channel/method_names.dart';
 
 class BridgeManager {
-  static BridgeManager? _instance;
+  static final _instance = BridgeManager._internal();
 
-  BridgeManager._();
+  BridgeManager._internal();
 
-  factory BridgeManager() {
-    _instance ??= BridgeManager._();
-    return _instance!;
-  }
+  factory BridgeManager() => _instance;
 
   late _MethodChannelHandler _mc;
 

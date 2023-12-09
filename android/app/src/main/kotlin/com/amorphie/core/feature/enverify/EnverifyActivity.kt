@@ -6,6 +6,8 @@ import com.amorphie.core.feature.enverify.channel.MethodChannelHandler
 import com.amorphie.core.feature.enverify.channel.MethodChannelListener
 import com.amorphie.core.feature.enverify.config.DomainType
 import com.amorphie.core.feature.enverify.config.EnverifySDKBuilder
+import com.amorphie.core.util.Nlog
+import com.enqura.enverify.EnVerifyApi
 import com.enqura.enverify.EnVerifyCallback
 import com.enqura.enverify.models.enums.CloseSessionStatus
 import com.smartvist.idverify.models.IDVerifyFailureCode
@@ -15,6 +17,8 @@ import io.flutter.embedding.engine.FlutterEngine
 import io.swagger.client.model.VerifyCallResultModel
 
 class EnverifyActivity : FlutterActivity(), EnVerifyCallback {
+
+    private var api: EnVerifyApi = EnVerifyApi()
 
     private val eventHandler: EventChannelHandler by lazy {
         EventChannelHandler(FlutterEngine(this))
@@ -32,31 +36,32 @@ class EnverifyActivity : FlutterActivity(), EnVerifyCallback {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        methodHandler.setListener(object : MethodChannelListener {
+            override fun onSDKInit(name: String, lastName: String, callType: String) {
+                Nlog.x("onSDKInit: $name $lastName $callType")
+                api = EnverifySDKBuilder.create()
+                    .withUserData(applicationContext, "name", "surname", "call")
+                    .withDomain(DomainType.pilot, true)
+                    .withPrefs(true, true)
+                    .withCredential(domainType = DomainType.pilot)
+                    .build()
+            }
 
+            override fun onSDKStopped() {
+                api.exitSelfService();
+
+            }
+
+        })
 
     }
 
     override fun onStart() {
         super.onStart()
-        val api = EnverifySDKBuilder.create()
-            .withUserData(applicationContext, "name", "surname", "call")
-            .withDomain(DomainType.pilot, true)
-            .withPrefs(true, true)
-            .withCredential(domainType = DomainType.pilot)
-            .build()
 
-        eventHandler.sendIntialData()
-        
-        methodHandler.setListener(object : MethodChannelListener {
-            override fun onSDKInit(name: String, lastName: String, callType: String) {
-                TODO("Not yet implemented")
-            }
 
-            override fun onSDKStopped() {
-                TODO("Not yet implemented")
-            }
+        //eventHandler.sendIntialData()
 
-        })
 
     }
 
