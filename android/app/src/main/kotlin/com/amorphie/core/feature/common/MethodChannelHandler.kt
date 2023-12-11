@@ -11,7 +11,7 @@ import io.flutter.plugin.common.MethodChannel
 
 class MethodChannelHandler(engine: FlutterEngine) {
 
-    private val METHOD_CHANNEL = "com.amorpihe.core/common/methods"
+    private val METHOD_CHANNEL = "com.amorphie.core/common/methods"
     private var methodChannelListener: MethodChannelListener? = null
 
     init {

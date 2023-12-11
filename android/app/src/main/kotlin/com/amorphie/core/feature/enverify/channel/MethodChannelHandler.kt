@@ -7,7 +7,7 @@ import io.flutter.plugin.common.MethodChannel
 
 class MethodChannelHandler(engine: FlutterEngine) {
 
-    private val METHOD_CHANNEL = "com.amorpihe.core/enverify/methods"
+    private val METHOD_CHANNEL = "com.amorphie.core/enverify/methods"
     private var methodChannelListener: MethodChannelListener? = null
 
     init {

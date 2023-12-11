@@ -1,7 +1,7 @@
 part of env_bridge;
 
 class EventChannelHandler {
-  static const platformEvents = EventChannel("com.amorpihe.core/enverify/events");
+  static const platformEvents = EventChannel("com.amorphie.core/enverify/events");
 
   EventChannelHandler._();
 

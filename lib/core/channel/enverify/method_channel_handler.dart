@@ -1,7 +1,7 @@
 part of env_bridge;
 
 class _EnverifyMethodChannelHandler {
-  static const platformMethods = MethodChannel("com.amorpihe.core/enverify/methods");
+  static const platformMethods = MethodChannel("com.amorphie.core/enverify/methods");
 
   Future<bool> startSDK(Map<String, String> requestedData) async {
     bool result = false;

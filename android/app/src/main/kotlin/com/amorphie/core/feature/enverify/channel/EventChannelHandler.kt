@@ -5,7 +5,7 @@ import io.flutter.plugin.common.EventChannel
 
 class EventChannelHandler(engine: FlutterEngine) {
 
-    private val EVENT_CHANNEL = "com.amorpihe.core/enverify/events"
+    private val EVENT_CHANNEL = "com.amorphie.core/enverify/events"
     private var eventSink: EventChannel.EventSink? = null
 
     init {
