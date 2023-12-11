@@ -10,7 +10,6 @@
  * Any reproduction of this material must contain this notice.
  */
 
-import 'package:neo_core/core/channel/bridge_manager.dart';
 import 'package:neo_core/core/storage/neo_core_secure_storage.dart';
 import 'package:neo_core/core/widgets/neo_core_widget_registerer.dart';
 
@@ -26,6 +25,6 @@ class NeoCore {
   static Future init() async {
     await NeoCoreSecureStorage().init();
     NeoCoreWidgetRegisterer().init();
-    BridgeManager().init();
+    //BridgeManager().init();
   }
 }
