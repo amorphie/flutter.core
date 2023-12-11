@@ -14,6 +14,7 @@ import 'package:flutter/material.dart';
 import 'package:neo_core/neo_core.dart';
 
 Future<void> main() async {
+  WidgetsFlutterBinding.ensureInitialized();
   await _initBurganSDKs();
   runApp(const MyApp());
 }
