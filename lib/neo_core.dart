@@ -23,11 +23,7 @@ class NeoCore {
   NeoCore._();
 
   static Future init() async {
-    try {
-      await NeoCoreSecureStorage().init();
-      NeoCoreWidgetRegisterer().init();
-    } catch (error) {
-      //await NeoCrashlytics.logError(error.toString());
-    }
+    await NeoCoreSecureStorage().init();
+    NeoCoreWidgetRegisterer().init();
   }
 }
