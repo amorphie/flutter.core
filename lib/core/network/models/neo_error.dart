@@ -22,7 +22,7 @@ abstract class _Constants {
   static const defaultErrorCode = "400";
   static const List<NeoErrorMessage> defaultErrorMessages = [
     NeoErrorMessage.defaultErrorTurkish,
-    NeoErrorMessage.defaultErrorEnglish
+    NeoErrorMessage.defaultErrorEnglish,
   ];
   static const defaultErrorDisplayMode = NeoErrorDisplayMethod.popup;
 }

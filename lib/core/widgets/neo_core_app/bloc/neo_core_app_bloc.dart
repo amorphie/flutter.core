@@ -10,11 +10,11 @@
  * Any reproduction of this material must contain this notice.
  */
 
-import 'package:bloc/bloc.dart';
 import 'package:equatable/equatable.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_crashlytics/firebase_crashlytics.dart';
 import 'package:flutter/foundation.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:get_it/get_it.dart';
 import 'package:neo_core/core/navigation/i_neo_navigation_helper.dart';
 import 'package:neo_core/core/util/neo_core_app_constants.dart';
