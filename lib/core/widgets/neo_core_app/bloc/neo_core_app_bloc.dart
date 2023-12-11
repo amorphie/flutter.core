@@ -28,7 +28,9 @@ class NeoCoreAppBloc extends Bloc<NeoCoreAppEvent, NeoCoreAppState> {
     on<NeoCoreAppEventInitConfigurations>((event, emit) {
       GetIt.I.registerSingleton<NeoCoreAppConstants>(event.appConstants);
       GetIt.I.registerSingleton<INeoNavigationHelper>(event.neoNavigationHelper);
-      _initFirebase();
+      if (kIsWeb) {
+        _initFirebase();
+      }
     });
   }
 

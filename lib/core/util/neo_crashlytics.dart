@@ -13,27 +13,42 @@
  */
 
 import 'package:firebase_crashlytics/firebase_crashlytics.dart';
+import 'package:flutter/foundation.dart';
 
 class NeoCrashlytics {
   NeoCrashlytics._();
 
   static final FirebaseCrashlytics _crashlytics = FirebaseCrashlytics.instance;
 
-  static bool get isEnabled => _crashlytics.isCrashlyticsCollectionEnabled;
+  static bool get isEnabled {
+    if (kIsWeb) {
+      return false;
+    } else {
+      return _crashlytics.isCrashlyticsCollectionEnabled;
+    }
+  }
 
   static Future<void> logError(String message) async {
-    await _crashlytics.log(message);
+    if (!kIsWeb) {
+      await _crashlytics.log(message);
+    }
   }
 
   static Future<void> logException(dynamic exception, StackTrace stackTrace) async {
-    await _crashlytics.recordError(exception, stackTrace);
+    if (!kIsWeb) {
+      await _crashlytics.recordError(exception, stackTrace);
+    }
   }
 
   static Future<void> setEnabled({required bool enabled}) async {
-    await _crashlytics.setCrashlyticsCollectionEnabled(enabled);
+    if (!kIsWeb) {
+      await _crashlytics.setCrashlyticsCollectionEnabled(enabled);
+    }
   }
 
   static Future<void> sendUnsentReports() async {
-    await _crashlytics.sendUnsentReports();
+    if (!kIsWeb) {
+      await _crashlytics.sendUnsentReports();
+    }
   }
 }
