@@ -24,6 +24,7 @@ import 'package:uuid/uuid.dart';
 abstract class _Constants {
   static const int responseCodeUnauthorized = 401;
   static const String wrapperResponseKey = "data";
+  static const String refreshTokenEndpoint = "get-token";
 }
 
 class NeoNetworkManager {
@@ -169,6 +170,9 @@ class NeoNetworkManager {
     if (response.statusCode >= 200 && response.statusCode < 300) {
       return responseJSON;
     } else if (response.statusCode == _Constants.responseCodeUnauthorized) {
+      if (call.endpoint == _Constants.refreshTokenEndpoint) {
+        throw NeoException(error: NeoError.defaultError());
+      }
       final isTokenRefreshed = await _refreshAuthDetailsByUsingRefreshToken();
       if (isTokenRefreshed) {
         return _retryLastCall(call);
@@ -211,7 +215,7 @@ class NeoNetworkManager {
     try {
       final responseJson = await call(
         NeoHttpCall(
-          endpoint: "get-token",
+          endpoint: _Constants.refreshTokenEndpoint,
           body: {
             "grant_type": "refresh_token",
             "refresh_token": await secureStorage.getRefreshToken(),
