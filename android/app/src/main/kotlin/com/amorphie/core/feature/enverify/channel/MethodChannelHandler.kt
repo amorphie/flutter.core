@@ -28,9 +28,6 @@ class MethodChannelHandler(engine: FlutterEngine) {
         methodChannelListener = listener
     }
 
-    private fun prepareSDK() {
-        //TODO: get initial config data
-    }
 
     private fun nativeEnverifyStart(call: MethodCall, result: MethodChannel.Result) {
         val name: String? = call.argument(MethodKeys.firstName.name)

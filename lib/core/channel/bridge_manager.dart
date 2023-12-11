@@ -2,6 +2,7 @@ library env_bridge;
 
 import 'package:flutter/services.dart';
 
+part 'package:neo_core/core/channel/enverify_method_channel_handler.dart';
 part 'package:neo_core/core/channel/event_channel_handler.dart';
 part 'package:neo_core/core/channel/method_channel_handler.dart';
 part 'package:neo_core/core/channel/method_keys.dart';
@@ -14,12 +15,16 @@ class BridgeManager {
 
   factory BridgeManager() => _instance;
 
+  late _EnverifyMethodChannelHandler _emc;
   late _MethodChannelHandler _mc;
 
   void init() {
     //EventChannelHandler.init();
     _mc = _MethodChannelHandler();
+    _emc = _EnverifyMethodChannelHandler();
   }
+
+  prepareSDK() {}
 
   startSDK(String firstName, String lastName, String callType) {
     _mc.startSDK({

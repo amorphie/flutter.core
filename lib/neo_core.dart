@@ -11,7 +11,6 @@
  */
 
 import 'package:neo_core/core/storage/neo_core_secure_storage.dart';
-import 'package:neo_core/core/util/neo_crashlytics.dart';
 import 'package:neo_core/core/widgets/neo_core_widget_registerer.dart';
 
 export 'core/bus/neo_bus.dart';
@@ -28,7 +27,7 @@ class NeoCore {
       await NeoCoreSecureStorage().init();
       NeoCoreWidgetRegisterer().init();
     } catch (error) {
-      await NeoCrashlytics.logError(error.toString());
+      //await NeoCrashlytics.logError(error.toString());
     }
   }
 }
