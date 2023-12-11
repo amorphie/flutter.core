@@ -2,6 +2,7 @@ package com.amorphie.core.feature.common
 
 
 import android.content.Context
+import com.amorphie.core.util.Nlog
 
 
 import io.flutter.embedding.engine.FlutterEngine
@@ -15,15 +16,21 @@ class MethodChannelHandler(engine: FlutterEngine) {
     private var methodChannelListener: MethodChannelListener? = null
 
     init {
+        if (engine==null){
+            Nlog.x("NULL NULL")
+        }else{
+            Nlog.x("NOT NULL")
+        }
         MethodChannel(engine.dartExecutor.binaryMessenger, METHOD_CHANNEL).setMethodCallHandler {
             // This method is invoked on the main thread.
                 call, result ->
+                Nlog.x("Native Method Call: ${call.method}")
             if (call.method == MethodNames.prepareEnverifySDK.name) {
                 prepareEnverifySDK(call, result)
             } else if (call.method == "") {
 
             } else {
-                result.notImplemented()
+               // result.notImplemented()
             }
         }
     }

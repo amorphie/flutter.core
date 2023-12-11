@@ -47,6 +47,9 @@
         <activity
             android:name=".feature.enverify.EnverifyActivity"
             android:exported="false" />
+        <activity
+            android:name=".feature.enverify.SampleActivity"
+            android:exported="false" />
         <!--
  Don't delete the meta-data below.
              This is used by the Flutter tool to generate GeneratedPluginRegistrant.java

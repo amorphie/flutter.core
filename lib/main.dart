@@ -11,6 +11,7 @@
  */
 
 import 'package:flutter/material.dart';
+import 'package:neo_core/core/widgets/demo/demo_enverify_page.dart';
 import 'package:neo_core/neo_core.dart';
 
 Future<void> main() async {
@@ -30,7 +31,7 @@ class MyApp extends StatelessWidget {
   Widget build(BuildContext context) {
     return const MaterialApp(
       title: 'Flutter Demo',
-      home: DemoPage(title: 'Flutter Demo Home Page'),
+      home: EnverifyDemo(),
     );
   }
 }

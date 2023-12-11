@@ -27,6 +27,7 @@ class BridgeManager {
   }
 
   prepareSDK() {
+    print("CORE: prepareSDK");
     _mc?.prepareEnverifySDK({
       _MethodKeys.configEnverifySDK.name: "TODO add config.",
     });

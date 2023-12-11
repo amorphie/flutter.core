@@ -23,36 +23,34 @@ class EnverifyActivity : FlutterActivity(), EnVerifyCallback {
     private val eventHandler: EventChannelHandler by lazy {
         EventChannelHandler(FlutterEngine(this))
     }
-    private val methodHandler: MethodChannelHandler by lazy {
-        MethodChannelHandler(FlutterEngine(this)).also {
-            moveTaskToBack(true)
-        }
-    }
 
     override fun configureFlutterEngine(flutterEngine: FlutterEngine) {
         super.configureFlutterEngine(flutterEngine)
+        MethodChannelHandler(FlutterEngine(this)).let {
+            it.setListener(object : MethodChannelListener {
+                override fun onSDKInit(name: String, lastName: String, callType: String) {
+                    Nlog.x("onSDKInit: $name $lastName $callType")
+                    api = EnverifySDKBuilder.create()
+                        .withUserData(applicationContext, "name", "surname", "call")
+                        .withDomain(DomainType.pilot, true)
+                        .withPrefs(true, true)
+                        .withCredential(domainType = DomainType.pilot)
+                        .build()
+                }
+
+                override fun onSDKStopped() {
+                    api.exitSelfService();
+
+                }
+            }
+            )
+        }
 
     }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        methodHandler.setListener(object : MethodChannelListener {
-            override fun onSDKInit(name: String, lastName: String, callType: String) {
-                Nlog.x("onSDKInit: $name $lastName $callType")
-                api = EnverifySDKBuilder.create()
-                    .withUserData(applicationContext, "name", "surname", "call")
-                    .withDomain(DomainType.pilot, true)
-                    .withPrefs(true, true)
-                    .withCredential(domainType = DomainType.pilot)
-                    .build()
-            }
 
-            override fun onSDKStopped() {
-                api.exitSelfService();
-
-            }
-
-        })
 
     }
 
