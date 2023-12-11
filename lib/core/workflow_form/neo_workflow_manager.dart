@@ -5,12 +5,11 @@ import 'package:uuid/uuid.dart';
 
 abstract class _Constants {
   static const endpointInitWorkflow = "init-workflow";
-  static const endpointGetTransition = "get-page-response-from-workflow";
+  static const endpointGetAvailableTransitions = "get-workflow-available-steps";
   static const endpointPostTransition = "post-transition-to-workflow";
   static const pathParameterTransitionName = "TRANSITION_NAME";
   static const pathParameterWorkflowName = "WORKFLOW_NAME";
   static const pathParameterInstanceId = "INSTANCE_ID";
-  static const pathParameterSource = "SOURCE";
 }
 
 class NeoWorkflowManager {
@@ -19,8 +18,7 @@ class NeoWorkflowManager {
 
   NeoWorkflowManager(this.neoNetworkManager);
 
-  /// Returns view source of the started workflow
-  Future<String> initWorkflow({required String workflowName}) async {
+  Future<Map<String, dynamic>> initWorkflow({required String workflowName}) async {
     // Reset instance id
     _instanceId = const Uuid().v1();
 
@@ -33,23 +31,23 @@ class NeoWorkflowManager {
       ),
     );
     debugPrint('\n[NeoWorkflowManager] Init Workflow: $response');
-    return response["view-source"];
+    return response;
   }
 
-  Future getTransitions() async {
+  Future<Map<String, dynamic>> getAvailableTransitions() async {
     final response = await neoNetworkManager.call(
       NeoHttpCall(
-        endpoint: _Constants.endpointGetTransition,
+        endpoint: _Constants.endpointGetAvailableTransitions,
         pathParameters: {
           _Constants.pathParameterInstanceId: _instanceId,
         },
       ),
     );
     debugPrint('\n[NeoWorkflowManager] Get Transitions: $response');
+    return response;
   }
 
   Future postTransition({
-    required String entity,
     required String transitionName,
     required Map<String, dynamic> body,
   }) async {
@@ -63,25 +61,5 @@ class NeoWorkflowManager {
         body: body,
       ),
     );
-  }
-
-  Future<Map<String, dynamic>> getDynamicPageResponse({
-    required String source,
-    required String transitionName,
-  }) async {
-    final response = await neoNetworkManager.call(
-      NeoHttpCall(
-        endpoint: _Constants.endpointGetTransition,
-        pathParameters: {
-          _Constants.pathParameterSource: source,
-          _Constants.pathParameterWorkflowName: transitionName,
-        },
-        queryProviders: [
-          HttpQueryProvider({"type": "flutterwidget"}),
-        ],
-      ),
-    );
-    debugPrint('\n[NeoWorkflowManager] Get Dynamic Page Response: $response');
-    return response;
   }
 }
