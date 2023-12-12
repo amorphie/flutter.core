@@ -12,6 +12,7 @@
  * 
  */
 
+import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_crashlytics/firebase_crashlytics.dart';
 import 'package:flutter/foundation.dart';
 
@@ -20,7 +21,21 @@ class NeoCrashlytics {
 
   static final FirebaseCrashlytics _crashlytics = FirebaseCrashlytics.instance;
 
-  static bool get isEnabled {
+  static Future<void> initializeCrashlytics() async {
+    if (kIsWeb) {
+      await Firebase.initializeApp();
+      FlutterError.onError = (errorDetails) {
+        FirebaseCrashlytics.instance.recordFlutterFatalError(errorDetails);
+      };
+      PlatformDispatcher.instance.onError = (error, stack) {
+        FirebaseCrashlytics.instance.recordError(error, stack, fatal: true);
+        return true;
+      };
+      await NeoCrashlytics.sendUnsentReports();
+    }
+  }
+
+  static bool get isCrashlyticsCollectionEnabled {
     if (kIsWeb) {
       return false;
     } else {

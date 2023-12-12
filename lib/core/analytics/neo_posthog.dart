@@ -27,7 +27,7 @@ class NeoPosthog {
     await _posthog.screen(screenName: screenName);
   }
 
-  static Future<void> captureEvent(
+  static Future<void> logEvent(
     String eventName, {
     Map<String, dynamic>? properties,
     Map<String, dynamic>? options,
@@ -42,6 +42,4 @@ class NeoPosthog {
   static Future<void> reloadFeatureFlags() async {
     await _posthog.reloadFeatureFlags();
   }
-
-  static PosthogObserver setPosthogObserver() => PosthogObserver();
 }
