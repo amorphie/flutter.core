@@ -21,25 +21,25 @@ class NeoLogger {
 
   static void setScreen(
     String screenName, {
-    Map<String, dynamic>? posthogProperties,
-    Map<String, dynamic>? posthogOptions,
+    Map<String, dynamic>? properties,
+    Map<String, dynamic>? options,
   }) {
     NeoPosthog.setScreen(
       screenName,
-      properties: posthogProperties,
-      options: posthogOptions,
+      properties: properties,
+      options: options,
     );
   }
 
   static void logNavigationEvent(
     String eventName, {
-    Map<String, dynamic>? posthogProperties,
-    Map<String, dynamic>? posthogOptions,
+    Map<String, dynamic>? properties,
+    Map<String, dynamic>? options,
   }) {
     NeoPosthog.captureEvent(
       eventName,
-      properties: posthogProperties,
-      options: posthogOptions,
+      properties: properties,
+      options: options,
     );
   }
 
@@ -51,9 +51,9 @@ class NeoLogger {
     await NeoPosthog.reloadFeatureFlags();
   }
 
-  static PosthogObserver setPosthogObserver() => PosthogObserver();
+  static PosthogObserver setObserver() => PosthogObserver();
 
-  static bool get isEnabled => NeoCrashlytics.isEnabled;
+  static bool get isCrashlyticsEnabled => NeoCrashlytics.isEnabled;
 
   static void logError(String message) {
     NeoCrashlytics.logError(message);
