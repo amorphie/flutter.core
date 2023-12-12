@@ -22,7 +22,7 @@ class NeoCrashlytics {
   static final FirebaseCrashlytics _crashlytics = FirebaseCrashlytics.instance;
 
   static Future<void> initializeCrashlytics() async {
-    if (kIsWeb) {
+    if (!kIsWeb) {
       await Firebase.initializeApp();
       FlutterError.onError = (errorDetails) {
         FirebaseCrashlytics.instance.recordFlutterFatalError(errorDetails);
