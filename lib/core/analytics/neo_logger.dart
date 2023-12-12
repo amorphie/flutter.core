@@ -19,10 +19,10 @@ import 'package:neo_core/core/analytics/neo_posthog.dart';
 import 'package:posthog_flutter/posthog_flutter.dart';
 
 class NeoLogger implements INeoLogger {
-  bool _isCrashlyticsEnabled = false;
-  bool _isPosthogEnabled = false;
+  static bool _isCrashlyticsEnabled = false;
+  static bool _isPosthogEnabled = false;
 
-  void init({bool enableCrashlytics = true, bool enablePosthog = true}) {
+  static void init({bool enableCrashlytics = true, bool enablePosthog = true}) {
     _isCrashlyticsEnabled = enableCrashlytics;
     _isPosthogEnabled = enablePosthog;
 
