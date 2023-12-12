@@ -27,8 +27,11 @@ class NeoPosthog {
     await _posthog.screen(screenName: screenName);
   }
 
-  static Future<void> captureEvent(String eventName,
-      {Map<String, dynamic>? properties, Map<String, dynamic>? options}) async {
+  static Future<void> captureEvent(
+    String eventName, {
+    Map<String, dynamic>? properties,
+    Map<String, dynamic>? options,
+  }) async {
     await _posthog.capture(eventName: eventName, properties: properties, options: options);
   }
 

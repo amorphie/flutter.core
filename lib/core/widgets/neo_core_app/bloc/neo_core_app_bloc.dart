@@ -18,7 +18,7 @@ import 'package:flutter/foundation.dart';
 import 'package:get_it/get_it.dart';
 import 'package:neo_core/core/navigation/i_neo_navigation_helper.dart';
 import 'package:neo_core/core/util/neo_core_app_constants.dart';
-import 'package:neo_core/core/util/neo_crashlytics.dart';
+import 'package:neo_core/core/util/neo_logger.dart';
 
 part 'neo_core_app_event.dart';
 part 'neo_core_app_state.dart';
@@ -43,6 +43,6 @@ class NeoCoreAppBloc extends Bloc<NeoCoreAppEvent, NeoCoreAppState> {
       FirebaseCrashlytics.instance.recordError(error, stack, fatal: true);
       return true;
     };
-    await NeoCrashlytics.sendUnsentReports();
+    await NeoLogger.sendUnsentReports();
   }
 }
