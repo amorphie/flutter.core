@@ -24,7 +24,7 @@ class NeoPosthog {
     Map<String, dynamic>? properties,
     Map<String, dynamic>? options,
   }) async {
-    await _posthog.screen(screenName: screenName);
+    await _posthog.screen(screenName: screenName, properties: properties, options: options);
   }
 
   static Future<void> logEvent(

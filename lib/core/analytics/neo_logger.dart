@@ -22,7 +22,7 @@ class NeoLogger implements INeoLogger {
   static bool _isCrashlyticsEnabled = false;
   static bool _isPosthogEnabled = false;
 
-  static void init({bool enableCrashlytics = true, bool enablePosthog = true}) {
+  static void init({bool enableCrashlytics = false, bool enablePosthog = false}) {
     _isCrashlyticsEnabled = enableCrashlytics;
     _isPosthogEnabled = enablePosthog;
 
