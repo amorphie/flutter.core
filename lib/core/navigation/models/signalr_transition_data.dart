@@ -10,7 +10,16 @@
  * Any reproduction of this material must contain this notice.
  */
 
+import 'dart:convert';
+
 import 'package:neo_core/core/navigation/models/neo_navigation_type.dart';
+
+class _Constant {
+  static const keyNavigationPath = "navigationPath";
+  static const keyNavigationType = "navigationType";
+  static const keyPageId = "pageId";
+  static const keyInitialData = "initialData";
+}
 
 class SignalrTransitionData {
   final String navigationPath;
@@ -24,4 +33,23 @@ class SignalrTransitionData {
     required this.pageId,
     required this.initialData,
   });
+
+  String encode() {
+    return jsonEncode({
+      _Constant.keyNavigationPath: navigationPath,
+      _Constant.keyNavigationType: navigationType.toString(),
+      _Constant.keyPageId: pageId,
+      _Constant.keyInitialData: initialData,
+    });
+  }
+
+  factory SignalrTransitionData.decode(String jsonString) {
+    final Map<String, dynamic> jsonMap = jsonDecode(jsonString);
+    return SignalrTransitionData(
+      navigationPath: jsonMap[_Constant.keyNavigationPath],
+      navigationType: NeoNavigationType.fromJson(jsonMap[_Constant.keyNavigationType]),
+      pageId: jsonMap[_Constant.keyPageId],
+      initialData: jsonMap[_Constant.keyInitialData],
+    );
+  }
 }
