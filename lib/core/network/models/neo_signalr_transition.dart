@@ -23,6 +23,9 @@ class NeoSignalRTransition extends Equatable {
   @JsonKey(name: "state", defaultValue: "")
   final String pageId;
 
+  @JsonKey(name: "viewSource", defaultValue: "")
+  final String viewSource;
+
   @JsonKey(name: "page", defaultValue: {})
   final Map<String, dynamic> pageDetails;
 
@@ -38,6 +41,7 @@ class NeoSignalRTransition extends Equatable {
   const NeoSignalRTransition({
     required this.transitionId,
     required this.pageId,
+    required this.viewSource,
     required this.pageDetails,
     required this.initialData,
     required this.errorMessage,

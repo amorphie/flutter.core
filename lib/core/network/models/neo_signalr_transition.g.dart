@@ -11,6 +11,7 @@ NeoSignalRTransition _$NeoSignalRTransitionFromJson(
     NeoSignalRTransition(
       transitionId: json['transition'] as String,
       pageId: json['state'] as String? ?? '',
+      viewSource: json['viewSource'] as String? ?? '',
       pageDetails: json['page'] as Map<String, dynamic>? ?? {},
       initialData: json['data'] as Map<String, dynamic>? ?? {},
       errorMessage: json['message'] as String? ?? '',

@@ -114,6 +114,7 @@ class SignalrConnectionManager {
           navigationPath: navigationPath,
           navigationType: NeoNavigationType.fromJson(navigationType.orEmpty),
           pageId: ongoingTransition?.pageId ?? "",
+          viewSource: ongoingTransition?.viewSource ?? "",
           initialData: ongoingTransition?.initialData ?? {},
         ),
       );

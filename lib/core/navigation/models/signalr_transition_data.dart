@@ -18,6 +18,7 @@ class _Constant {
   static const keyNavigationPath = "navigationPath";
   static const keyNavigationType = "navigationType";
   static const keyPageId = "pageId";
+  static const keyViewSource = "viewSource";
   static const keyInitialData = "initialData";
 }
 
@@ -25,12 +26,14 @@ class SignalrTransitionData {
   final String navigationPath;
   final NeoNavigationType navigationType;
   final String pageId;
+  final String viewSource;
   final Map<String, dynamic> initialData;
 
   SignalrTransitionData({
     required this.navigationPath,
     required this.navigationType,
     required this.pageId,
+    required this.viewSource,
     required this.initialData,
   });
 
@@ -39,6 +42,7 @@ class SignalrTransitionData {
       _Constant.keyNavigationPath: navigationPath,
       _Constant.keyNavigationType: navigationType.toString(),
       _Constant.keyPageId: pageId,
+      _Constant.keyViewSource: viewSource,
       _Constant.keyInitialData: initialData,
     });
   }
@@ -49,6 +53,7 @@ class SignalrTransitionData {
       navigationPath: jsonMap[_Constant.keyNavigationPath],
       navigationType: NeoNavigationType.fromJson(jsonMap[_Constant.keyNavigationType]),
       pageId: jsonMap[_Constant.keyPageId],
+      viewSource: jsonMap[_Constant.keyViewSource],
       initialData: jsonMap[_Constant.keyInitialData],
     );
   }
