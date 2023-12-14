@@ -1,7 +1,7 @@
 /*
  * neo_core
  *
- * Created on 17/11/2023.
+ * Created on 14/12/2023.
  * Copyright (c) 2023 Commencis. All rights reserved.
  *
  * Save to the extent permitted by law, you may not use, copy, modify,
@@ -10,13 +10,18 @@
  * Any reproduction of this material must contain this notice.
  */
 
-import 'package:flutter/material.dart';
 import 'package:neo_core/core/navigation/models/neo_navigation_type.dart';
 
-abstract class INeoNavigationHelper {
-  Future<void> navigate({
-    required BuildContext context,
-    required NeoNavigationType navigationType,
-    required String navigationPath,
+class SignalrTransitionData {
+  final String navigationPath;
+  final NeoNavigationType navigationType;
+  final String pageId;
+  final Map<String, dynamic> initialData;
+
+  SignalrTransitionData({
+    required this.navigationPath,
+    required this.navigationType,
+    required this.pageId,
+    required this.initialData,
   });
 }
