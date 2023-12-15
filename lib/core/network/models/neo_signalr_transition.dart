@@ -49,7 +49,7 @@ class NeoSignalRTransition extends Equatable {
   });
 
   @override
-  List<Object?> get props => [transitionId, pageDetails, errorMessage];
+  List<Object?> get props => [transitionId, pageId, viewSource, pageDetails, initialData, additionalData, errorMessage];
 
   factory NeoSignalRTransition.fromJson(Map<String, dynamic> json) => _$NeoSignalRTransitionFromJson(json);
 }
