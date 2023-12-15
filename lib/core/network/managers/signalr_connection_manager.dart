@@ -87,9 +87,9 @@ class SignalrConnectionManager {
             return null;
           }
         })
-        .where((element) => element != null)
+        .whereNotNull()
         .toList()
-        .firstWhereOrNull((transition) => transition?.transitionId == transitionId);
+        .firstWhereOrNull((transition) => transition.transitionId == transitionId);
   }
 
   void _retrieveTokenIfExist(

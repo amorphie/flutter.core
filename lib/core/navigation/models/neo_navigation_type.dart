@@ -15,26 +15,17 @@ import 'package:json_annotation/json_annotation.dart';
 @JsonEnum()
 enum NeoNavigationType {
   @JsonValue('pop-until')
-  popUntil('pop-until'),
-
+  popUntil,
   @JsonValue('push')
-  push('push'),
-
+  push,
   @JsonValue('push-replacement')
-  pushReplacement('push-replacement'),
-
+  pushReplacement(),
   @JsonValue('push-as-root')
-  pushAsRoot('push-as-root'),
-
+  pushAsRoot,
   @JsonValue('popup')
-  popup('popup'),
-
+  popup,
   @JsonValue('bottom-sheet')
-  bottomSheet('bottom-sheet');
-
-  final String value;
-
-  const NeoNavigationType(this.value);
+  bottomSheet;
 
   static const Map<String, NeoNavigationType> _jsonValues = {
     'pop-until': NeoNavigationType.popUntil,
