@@ -70,6 +70,9 @@ class SignalrConnectionManager {
         return;
       }
       final NeoSignalRTransition? ongoingTransition = _parseOngoingTransition(transitions, transitionId);
+      if (ongoingTransition == null) {
+        return;
+      }
       _retrieveTokenIfExist(ongoingTransition, onTokenRetrieved);
       _handleTransitionNavigation(ongoingTransition, onPageNavigation, onError);
     });
@@ -90,36 +93,36 @@ class SignalrConnectionManager {
   }
 
   void _retrieveTokenIfExist(
-    NeoSignalRTransition? ongoingTransition,
+    NeoSignalRTransition ongoingTransition,
     Function(String token, String refreshToken)? onTokenRetrieved,
   ) {
-    final String? token = ongoingTransition?.additionalData?["access_token"];
-    final String? refreshToken = ongoingTransition?.additionalData?["refresh_token"];
+    final String? token = ongoingTransition.additionalData?["access_token"];
+    final String? refreshToken = ongoingTransition.additionalData?["refresh_token"];
     if (onTokenRetrieved != null && token != null && token.isNotEmpty) {
       onTokenRetrieved(token, refreshToken.orEmpty);
     }
   }
 
   void _handleTransitionNavigation(
-    NeoSignalRTransition? ongoingTransition,
+    NeoSignalRTransition ongoingTransition,
     Function(SignalrTransitionData navigationData) onPageNavigation,
     Function(String errorMessage)? onError,
   ) {
-    final isNavigationAllowed = ongoingTransition?.pageDetails["operation"] == "Open";
-    final navigationPath = ongoingTransition?.pageDetails["pageRoute"]?["label"] as String?;
-    final navigationType = ongoingTransition?.pageDetails["type"] as String?;
+    final isNavigationAllowed = ongoingTransition.pageDetails["operation"] == "Open";
+    final navigationPath = ongoingTransition.pageDetails["pageRoute"]?["label"] as String?;
+    final navigationType = ongoingTransition.pageDetails["type"] as String?;
     if (isNavigationAllowed && navigationPath != null) {
       onPageNavigation(
         SignalrTransitionData(
           navigationPath: navigationPath,
           navigationType: NeoNavigationType.fromJson(navigationType.orEmpty),
-          pageId: ongoingTransition?.pageId ?? "",
-          viewSource: ongoingTransition?.viewSource ?? "",
-          initialData: ongoingTransition?.initialData ?? {},
+          pageId: ongoingTransition.pageId,
+          viewSource: ongoingTransition.viewSource,
+          initialData: ongoingTransition.initialData,
         ),
       );
-    } else if ((ongoingTransition?.errorMessage.isNotEmpty ?? false) && onError != null) {
-      onError(ongoingTransition!.errorMessage);
+    } else if ((ongoingTransition.errorMessage.isNotEmpty) && onError != null) {
+      onError(ongoingTransition.errorMessage);
     }
   }
 
