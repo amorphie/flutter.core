@@ -11,7 +11,7 @@
  */
 
 import 'package:flutter/material.dart';
-import 'package:neo_core/core/navigation/neo_navigation_type.dart';
+import 'package:neo_core/core/navigation/models/neo_navigation_type.dart';
 
 abstract class INeoNavigationHelper {
   Future<void> navigate({

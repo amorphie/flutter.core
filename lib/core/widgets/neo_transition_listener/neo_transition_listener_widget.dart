@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:neo_core/core/navigation/models/signalr_transition_data.dart';
 import 'package:neo_core/core/network/neo_network.dart';
 import 'package:neo_core/core/storage/neo_core_secure_storage.dart';
 
@@ -7,7 +8,7 @@ class NeoTransitionListenerWidget extends StatefulWidget {
   final String transitionId;
   final String signalRServerUrl;
   final String signalRMethodName;
-  final Function(String navigationPath) onPageNavigation;
+  final Function(SignalrTransitionData navigationData) onPageNavigation;
   final Function(String errorMessage)? onError;
 
   const NeoTransitionListenerWidget({

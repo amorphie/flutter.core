@@ -20,8 +20,17 @@ class NeoSignalRTransition extends Equatable {
   @JsonKey(name: "transition")
   final String transitionId;
 
+  @JsonKey(name: "state", defaultValue: "")
+  final String pageId;
+
+  @JsonKey(name: "viewSource", defaultValue: "")
+  final String viewSource;
+
   @JsonKey(name: "page", defaultValue: {})
   final Map<String, dynamic> pageDetails;
+
+  @JsonKey(name: "data", defaultValue: {})
+  final Map<String, dynamic> initialData;
 
   @JsonKey(name: "additionalData", defaultValue: null)
   final Map<String, dynamic>? additionalData;
@@ -31,13 +40,16 @@ class NeoSignalRTransition extends Equatable {
 
   const NeoSignalRTransition({
     required this.transitionId,
+    required this.pageId,
+    required this.viewSource,
     required this.pageDetails,
+    required this.initialData,
     required this.errorMessage,
     this.additionalData,
   });
 
   @override
-  List<Object?> get props => [transitionId, pageDetails, errorMessage];
+  List<Object?> get props => [transitionId, pageId, viewSource, pageDetails, initialData, additionalData, errorMessage];
 
   factory NeoSignalRTransition.fromJson(Map<String, dynamic> json) => _$NeoSignalRTransitionFromJson(json);
 }

@@ -15,6 +15,8 @@ import 'dart:developer';
 
 import 'package:collection/collection.dart';
 import 'package:flutter/foundation.dart';
+import 'package:neo_core/core/navigation/models/neo_navigation_type.dart';
+import 'package:neo_core/core/navigation/models/signalr_transition_data.dart';
 import 'package:neo_core/core/network/models/neo_signalr_transition.dart';
 import 'package:neo_core/core/util/neo_util.dart';
 import 'package:signalr_netcore/signalr_client.dart';
@@ -35,17 +37,17 @@ class SignalrConnectionManager {
         .withAutomaticReconnect(retryDelays: [2000, 5000, 10000, 20000]).build();
     _hubConnection?.onclose(({error}) {
       if (kDebugMode) {
-        log('SignalrConnectionManager: onclose called');
+        log('[SignalrConnectionManager]: onclose called');
       }
     });
     _hubConnection?.onreconnecting(({error}) {
       if (kDebugMode) {
-        log('SignalrConnectionManager: onreconnecting called');
+        log('[SignalrConnectionManager]: onreconnecting called');
       }
     });
     _hubConnection?.onreconnected(({connectionId}) {
       if (kDebugMode) {
-        log('SignalrConnectionManager: onreconnected called');
+        log('[SignalrConnectionManager]: onreconnected called');
       }
     });
 
@@ -56,43 +58,72 @@ class SignalrConnectionManager {
 
   void listenForTransitionEvents({
     required String transitionId,
-    required Function(String navigationPath) onPageNavigation,
+    required Function(SignalrTransitionData navigationData) onPageNavigation,
     Function(String token, String refreshToken)? onTokenRetrieved,
     Function(String errorMessage)? onError,
   }) {
     _hubConnection?.on(methodName, (List<Object?>? transitions) {
       if (kDebugMode) {
-        log('SignalrConnectionManager: Incoming transitions: $transitions');
+        log('\n[SignalrConnectionManager] Transition: $transitions');
       }
       if (transitions == null) {
         return;
       }
-      final ongoingTransition = transitions
-          .map((transition) {
-            try {
-              return NeoSignalRTransition.fromJson(jsonDecode(transition is String ? transition : "{}"));
-            } catch (_) {
-              return null;
-            }
-          })
-          .where((element) => element != null)
-          .toList()
-          .firstWhereOrNull((transition) => transition?.transitionId == transitionId);
-
-      final String? token = ongoingTransition?.additionalData?["access_token"];
-      final String? refreshToken = ongoingTransition?.additionalData?["refresh_token"];
-      if (onTokenRetrieved != null && token != null && token.isNotEmpty) {
-        onTokenRetrieved(token, refreshToken.orEmpty);
+      final NeoSignalRTransition? ongoingTransition = _parseOngoingTransition(transitions, transitionId);
+      if (ongoingTransition == null) {
+        return;
       }
-
-      final isNavigationAllowed = ongoingTransition?.pageDetails["operation"] == "Open";
-      final navigationPath = ongoingTransition?.pageDetails["pageRoute"]?["label"] as String?;
-      if (isNavigationAllowed && navigationPath != null) {
-        onPageNavigation(navigationPath);
-      } else if ((ongoingTransition?.errorMessage.isNotEmpty ?? false) && onError != null) {
-        onError(ongoingTransition!.errorMessage);
-      }
+      _retrieveTokenIfExist(ongoingTransition, onTokenRetrieved);
+      _handleTransitionNavigation(ongoingTransition, onPageNavigation, onError);
     });
+  }
+
+  NeoSignalRTransition? _parseOngoingTransition(List<Object?> transitions, String transitionId) {
+    return transitions
+        .map((transition) {
+          try {
+            return NeoSignalRTransition.fromJson(jsonDecode(transition is String ? transition : "{}"));
+          } catch (_) {
+            return null;
+          }
+        })
+        .whereNotNull()
+        .toList()
+        .firstWhereOrNull((transition) => transition.transitionId == transitionId);
+  }
+
+  void _retrieveTokenIfExist(
+    NeoSignalRTransition ongoingTransition,
+    Function(String token, String refreshToken)? onTokenRetrieved,
+  ) {
+    final String? token = ongoingTransition.additionalData?["access_token"];
+    final String? refreshToken = ongoingTransition.additionalData?["refresh_token"];
+    if (onTokenRetrieved != null && token != null && token.isNotEmpty) {
+      onTokenRetrieved(token, refreshToken.orEmpty);
+    }
+  }
+
+  void _handleTransitionNavigation(
+    NeoSignalRTransition ongoingTransition,
+    Function(SignalrTransitionData navigationData) onPageNavigation,
+    Function(String errorMessage)? onError,
+  ) {
+    final isNavigationAllowed = ongoingTransition.pageDetails["operation"] == "Open";
+    final navigationPath = ongoingTransition.pageDetails["pageRoute"]?["label"] as String?;
+    final navigationType = ongoingTransition.pageDetails["type"] as String?;
+    if (isNavigationAllowed && navigationPath != null) {
+      onPageNavigation(
+        SignalrTransitionData(
+          navigationPath: navigationPath,
+          navigationType: NeoNavigationType.fromJson(navigationType.orEmpty),
+          pageId: ongoingTransition.pageId,
+          viewSource: ongoingTransition.viewSource,
+          initialData: ongoingTransition.initialData,
+        ),
+      );
+    } else if ((ongoingTransition.errorMessage.isNotEmpty) && onError != null) {
+      onError(ongoingTransition.errorMessage);
+    }
   }
 
   void stop() {
