@@ -11,7 +11,6 @@
  */
 
 import 'package:neo_core/core/storage/neo_core_secure_storage.dart';
-import 'package:neo_core/core/widgets/neo_core_widget_registerer.dart';
 
 export 'core/bus/neo_bus.dart';
 export 'core/network/neo_network.dart';
@@ -24,6 +23,5 @@ class NeoCore {
 
   static Future init() async {
     await NeoCoreSecureStorage().init();
-    NeoCoreWidgetRegisterer().init();
   }
 }

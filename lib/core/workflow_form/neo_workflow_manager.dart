@@ -4,50 +4,61 @@ import 'package:neo_core/neo_core.dart';
 import 'package:uuid/uuid.dart';
 
 abstract class _Constants {
-  static const endpointGetTransition = "get-transitions";
-  static const endpointPostTransition = "post-transition";
-  static const pathParameterEntity = "ENTITY";
-  static const pathParameterRecordId = "RECORD_ID";
-  static const pathParameterTransitionId = "TRANSITION_ID";
+  static const endpointInitWorkflow = "init-workflow";
+  static const endpointGetAvailableTransitions = "get-workflow-available-steps";
+  static const endpointPostTransition = "post-transition-to-workflow";
+  static const pathParameterTransitionName = "TRANSITION_NAME";
+  static const pathParameterWorkflowName = "WORKFLOW_NAME";
+  static const pathParameterInstanceId = "INSTANCE_ID";
 }
 
 class NeoWorkflowManager {
   final NeoNetworkManager neoNetworkManager;
-  static String recordId = const Uuid().v1();
+  static String _instanceId = const Uuid().v1();
 
   NeoWorkflowManager(this.neoNetworkManager);
 
-  void startWorkflow() {
-    recordId = const Uuid().v1();
-  }
+  Future<Map<String, dynamic>> initWorkflow({required String workflowName}) async {
+    // Reset instance id
+    _instanceId = const Uuid().v1();
 
-  Future getTransitions({required String entityId}) async {
     final response = await neoNetworkManager.call(
       NeoHttpCall(
-        endpoint: _Constants.endpointGetTransition,
+        endpoint: _Constants.endpointInitWorkflow,
         pathParameters: {
-          _Constants.pathParameterEntity: entityId,
-          _Constants.pathParameterRecordId: recordId,
+          _Constants.pathParameterWorkflowName: workflowName,
         },
       ),
     );
-    debugPrint('[NeoWorkflowManager] Get Transitions: $response');
+    debugPrint('\n[NeoWorkflowManager] Init Workflow: $response');
+    return response;
+  }
+
+  Future<Map<String, dynamic>> getAvailableTransitions() async {
+    final response = await neoNetworkManager.call(
+      NeoHttpCall(
+        endpoint: _Constants.endpointGetAvailableTransitions,
+        pathParameters: {
+          _Constants.pathParameterInstanceId: _instanceId,
+        },
+      ),
+    );
+    debugPrint('\n[NeoWorkflowManager] Get Transitions: $response');
+    return response;
   }
 
   Future postTransition({
-    required String entity,
-    required String transitionId,
+    required String transitionName,
     required Map<String, dynamic> body,
   }) async {
     await neoNetworkManager.call(
       NeoHttpCall(
         endpoint: _Constants.endpointPostTransition,
         pathParameters: {
-          _Constants.pathParameterEntity: entity,
-          _Constants.pathParameterRecordId: recordId,
-          _Constants.pathParameterTransitionId: transitionId,
+          _Constants.pathParameterInstanceId: _instanceId,
+          _Constants.pathParameterTransitionName: transitionName,
         },
-        body: {"entityData": body.isEmpty ? "" : body},
+        body: body,
       ),
     );
   }
