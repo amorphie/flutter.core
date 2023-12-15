@@ -12,6 +12,8 @@
  * 
  */
 
+import 'package:firebase_core/firebase_core.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:neo_core/core/analytics/i_neo_logger.dart';
 import 'package:neo_core/core/analytics/neo_crashlytics.dart';
@@ -19,75 +21,76 @@ import 'package:neo_core/core/analytics/neo_posthog.dart';
 import 'package:posthog_flutter/posthog_flutter.dart';
 
 class NeoLogger implements INeoLogger {
-  static bool _isCrashlyticsEnabled = false;
-  static bool _isPosthogEnabled = false;
+  static final NeoLogger _instance = NeoLogger._internal();
 
-  static void init({bool enableCrashlytics = false, bool enablePosthog = false}) {
-    _isCrashlyticsEnabled = enableCrashlytics;
-    _isPosthogEnabled = enablePosthog;
+  @override
+  List<NavigatorObserver> observers = [];
+  NeoCrashlytics? _neoCrashlytics;
+  final NeoPosthog _neoPosthog = NeoPosthog();
 
-    if (_isCrashlyticsEnabled) {
-      NeoCrashlytics.initializeCrashlytics();
+  factory NeoLogger() {
+    return _instance;
+  }
+
+  NeoLogger._internal();
+
+  Future<void> init({bool enableCrashlytics = false, bool enablePosthog = false}) async {
+    if (!kIsWeb) {
+      await Firebase.initializeApp();
+      _neoCrashlytics = NeoCrashlytics();
+      if (enableCrashlytics) {
+        await _neoCrashlytics?.initializeCrashlytics();
+      }
+      await _neoCrashlytics?.setEnabled(enabled: enableCrashlytics);
     }
+
+    if (enablePosthog) {
+      observers = [PosthogObserver()];
+    }
+    await _neoPosthog.setEnabled(enabled: enablePosthog);
   }
 
   @override
-  List<NavigatorObserver> setObserver() => _isPosthogEnabled ? [PosthogObserver()] : [];
-
-  @override
   void logScreenEvent(String screenName, {Map<String, dynamic>? properties, Map<String, dynamic>? options}) {
-    if (_isPosthogEnabled) {
-      NeoPosthog.setScreen(screenName, properties: properties, options: options);
-    }
+    _neoPosthog.setScreen(screenName, properties: properties, options: options);
   }
 
   @override
   void logNavigationEvent(String eventName, {Map<String, dynamic>? properties, Map<String, dynamic>? options}) {
-    if (_isPosthogEnabled) {
-      NeoPosthog.logEvent(eventName, properties: properties, options: options);
-    }
+    _neoPosthog.logEvent(eventName, properties: properties, options: options);
   }
 
   @override
   Future<bool?> isFeatureEnabled(String key) async {
-    return _isPosthogEnabled ? NeoPosthog.isFeatureEnabled(key) : null;
+    return _neoPosthog.isFeatureEnabled(key);
   }
 
   @override
   Future<void> reloadFeatureFlags() async {
-    if (_isPosthogEnabled) {
-      await NeoPosthog.reloadFeatureFlags();
-    }
+    await _neoPosthog.reloadFeatureFlags();
   }
 
   @override
-  bool get isCrashlyticsCollectionEnabled => _isCrashlyticsEnabled && NeoCrashlytics.isCrashlyticsCollectionEnabled;
-
-  @override
   void logError(String message) {
-    if (_isCrashlyticsEnabled) {
-      NeoCrashlytics.logError(message);
+    if (kIsWeb) {
+      return;
     }
+    _neoCrashlytics?.logError(message);
   }
 
   @override
   void logException(dynamic exception, StackTrace stackTrace) {
-    if (_isCrashlyticsEnabled) {
-      NeoCrashlytics.logException(exception, stackTrace);
+    if (kIsWeb) {
+      return;
     }
-  }
-
-  @override
-  Future<void> setEnabled({required bool enabled}) async {
-    if (_isCrashlyticsEnabled) {
-      await NeoCrashlytics.setEnabled(enabled: enabled);
-    }
+    _neoCrashlytics?.logException(exception, stackTrace);
   }
 
   @override
   Future<void> sendUnsentReports() async {
-    if (_isCrashlyticsEnabled) {
-      await NeoCrashlytics.sendUnsentReports();
+    if (kIsWeb) {
+      return;
     }
+    await _neoCrashlytics?.sendUnsentReports();
   }
 }

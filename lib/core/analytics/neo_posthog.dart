@@ -15,11 +15,9 @@
 import 'package:posthog_flutter/posthog_flutter.dart';
 
 class NeoPosthog {
-  NeoPosthog._();
+  final Posthog _posthog = Posthog();
 
-  static final Posthog _posthog = Posthog();
-
-  static Future<void> setScreen(
+  Future<void> setScreen(
     String screenName, {
     Map<String, dynamic>? properties,
     Map<String, dynamic>? options,
@@ -27,7 +25,7 @@ class NeoPosthog {
     await _posthog.screen(screenName: screenName, properties: properties, options: options);
   }
 
-  static Future<void> logEvent(
+  Future<void> logEvent(
     String eventName, {
     Map<String, dynamic>? properties,
     Map<String, dynamic>? options,
@@ -35,11 +33,15 @@ class NeoPosthog {
     await _posthog.capture(eventName: eventName, properties: properties, options: options);
   }
 
-  static Future<bool?> isFeatureEnabled(String key) async {
+  Future<bool?> isFeatureEnabled(String key) async {
     return _posthog.isFeatureEnabled(key);
   }
 
-  static Future<void> reloadFeatureFlags() async {
+  Future<void> reloadFeatureFlags() async {
     await _posthog.reloadFeatureFlags();
+  }
+
+  Future<void> setEnabled({required bool enabled}) async {
+    return enabled ? _posthog.enable() : _posthog.disable();
   }
 }

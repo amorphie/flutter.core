@@ -15,6 +15,8 @@
 import 'package:flutter/material.dart';
 
 abstract class INeoLogger {
+  List<NavigatorObserver> get observers;
+
   void logScreenEvent(
     String screenName, {
     Map<String, dynamic>? properties,
@@ -28,17 +30,12 @@ abstract class INeoLogger {
   });
 
   Future<bool?> isFeatureEnabled(String key);
-
   Future<void> reloadFeatureFlags();
 
-  List<NavigatorObserver> setObserver();
-
-  bool get isCrashlyticsCollectionEnabled;
-
   void logError(String message);
-
   void logException(dynamic exception, StackTrace stackTrace);
-  Future<void> setEnabled({required bool enabled});
 
+  /// If automatic data collection is disabled, this method queues up all the
+  /// reports on a device to send to Crashlytics. Otherwise, this method is a no-op.
   Future<void> sendUnsentReports();
 }

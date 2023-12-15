@@ -12,58 +12,38 @@
  * 
  */
 
-import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_crashlytics/firebase_crashlytics.dart';
 import 'package:flutter/foundation.dart';
 
 class NeoCrashlytics {
-  NeoCrashlytics._();
+  final FirebaseCrashlytics _crashlytics = FirebaseCrashlytics.instance;
 
-  static final FirebaseCrashlytics _crashlytics = FirebaseCrashlytics.instance;
-
-  static Future<void> initializeCrashlytics() async {
-    if (!kIsWeb) {
-      await Firebase.initializeApp();
-      FlutterError.onError = (errorDetails) {
-        FirebaseCrashlytics.instance.recordFlutterFatalError(errorDetails);
-      };
-      PlatformDispatcher.instance.onError = (error, stack) {
-        FirebaseCrashlytics.instance.recordError(error, stack, fatal: true);
-        return true;
-      };
-      await NeoCrashlytics.sendUnsentReports();
-    }
+  Future<void> initializeCrashlytics() async {
+    FlutterError.onError = _crashlytics.recordFlutterFatalError;
+    PlatformDispatcher.instance.onError = (error, stack) {
+      _crashlytics.recordError(error, stack, fatal: true);
+      return true;
+    };
+    await sendUnsentReports();
   }
 
-  static bool get isCrashlyticsCollectionEnabled {
-    if (kIsWeb) {
-      return false;
-    } else {
-      return _crashlytics.isCrashlyticsCollectionEnabled;
-    }
+  bool get isCrashlyticsCollectionEnabled {
+    return _crashlytics.isCrashlyticsCollectionEnabled;
   }
 
-  static Future<void> logError(String message) async {
-    if (!kIsWeb) {
-      await _crashlytics.log(message);
-    }
+  Future<void> logError(String message) async {
+    await _crashlytics.log(message);
   }
 
-  static Future<void> logException(dynamic exception, StackTrace stackTrace) async {
-    if (!kIsWeb) {
-      await _crashlytics.recordError(exception, stackTrace);
-    }
+  Future<void> logException(dynamic exception, StackTrace stackTrace) async {
+    await _crashlytics.recordError(exception, stackTrace);
   }
 
-  static Future<void> setEnabled({required bool enabled}) async {
-    if (!kIsWeb) {
-      await _crashlytics.setCrashlyticsCollectionEnabled(enabled);
-    }
+  Future<void> setEnabled({required bool enabled}) async {
+    await _crashlytics.setCrashlyticsCollectionEnabled(enabled && !kIsWeb);
   }
 
-  static Future<void> sendUnsentReports() async {
-    if (!kIsWeb) {
-      await _crashlytics.sendUnsentReports();
-    }
+  Future<void> sendUnsentReports() async {
+    await _crashlytics.sendUnsentReports();
   }
 }
