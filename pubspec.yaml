@@ -38,6 +38,9 @@ dependencies:
   firebase_core: ^2.24.0
   firebase_crashlytics: ^3.4.6
 
+  # Posthog
+  posthog_flutter: ^3.3.0
+
 dependency_overrides:
   uuid: ^4.1.0 # Delete this overrides when signalr_netcore package is updated
 
