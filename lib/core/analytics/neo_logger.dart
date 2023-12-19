@@ -12,7 +12,6 @@
  * 
  */
 
-import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:neo_core/core/analytics/i_neo_logger.dart';
@@ -36,7 +35,6 @@ class NeoLogger implements INeoLogger {
 
   Future<void> init({bool enableCrashlytics = false, bool enablePosthog = false}) async {
     if (!kIsWeb) {
-      await Firebase.initializeApp();
       _neoCrashlytics = NeoCrashlytics();
       if (enableCrashlytics) {
         await _neoCrashlytics?.initializeCrashlytics();

@@ -10,7 +10,11 @@
  * Any reproduction of this material must contain this notice.
  */
 
+import 'package:firebase_core/firebase_core.dart';
+
+import 'package:neo_core/core/analytics/neo_logger.dart';
 import 'package:neo_core/core/storage/neo_core_secure_storage.dart';
+import 'package:neo_core/core/util/neo_core_firebase_messaging.dart';
 
 export 'core/bus/neo_bus.dart';
 export 'core/network/neo_network.dart';
@@ -21,7 +25,16 @@ export 'core/widgets/neo_widgets.dart';
 class NeoCore {
   NeoCore._();
 
-  static Future init() async {
+  static Future init({
+    bool enableCrashlytics = false,
+    bool enablePosthog = false,
+    FirebaseOptions? firebaseOptions,
+  }) async {
     await NeoCoreSecureStorage().init();
+    await Firebase.initializeApp(
+      options: firebaseOptions,
+    );
+    await NeoLogger().init(enableCrashlytics: enableCrashlytics, enablePosthog: enablePosthog);
+    await NeoCoreFirebaseMessaging().init();
   }
 }
