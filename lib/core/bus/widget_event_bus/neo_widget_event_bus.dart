@@ -17,27 +17,32 @@ import 'package:rxdart/rxdart.dart';
 
 class NeoWidgetEventBus {
   final _eventBus = BehaviorSubject<NeoWidgetEvent>();
+  final Set<StreamSubscription<NeoWidgetEvent>> _subscriptions = {};
 
   StreamSubscription<NeoWidgetEvent> listen({
     required String eventId,
     required Function(NeoWidgetEvent) onEventReceived,
   }) {
-    return _eventBus.stream.listen((event) {
+    final subscription = _eventBus.stream.listen((event) {
       if (event.eventId == eventId) {
         onEventReceived(event);
       }
     });
+    _subscriptions.add(subscription);
+    return subscription;
   }
 
   StreamSubscription<NeoWidgetEvent> listenEvents({
     required List<String> eventIds,
     required Function(NeoWidgetEvent) onEventReceived,
   }) {
-    return _eventBus.stream.listen((event) {
+    final subscription = _eventBus.stream.listen((event) {
       if (eventIds.contains(event.eventId)) {
         onEventReceived(event);
       }
     });
+    _subscriptions.add(subscription);
+    return subscription;
   }
 
   void addEvent(NeoWidgetEvent event) {
@@ -45,6 +50,10 @@ class NeoWidgetEventBus {
   }
 
   void close() {
+    for (final subscription in _subscriptions) {
+      subscription.cancel();
+    }
+    _subscriptions.clear();
     _eventBus.close();
   }
 }
