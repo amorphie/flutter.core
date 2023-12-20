@@ -10,24 +10,50 @@
  * Any reproduction of this material must contain this notice.
  */
 
+import 'dart:async';
+
 import 'package:neo_core/core/bus/widget_event_bus/neo_widget_event.dart';
 import 'package:rxdart/rxdart.dart';
 
 class NeoWidgetEventBus {
   final _eventBus = BehaviorSubject<NeoWidgetEvent>();
+  final Set<StreamSubscription<NeoWidgetEvent>> _subscriptions = {};
 
-  void listen({
+  StreamSubscription<NeoWidgetEvent> listen({
     required String eventId,
     required Function(NeoWidgetEvent) onEventReceived,
   }) {
-    _eventBus.stream.listen((event) {
+    final subscription = _eventBus.stream.listen((event) {
       if (event.eventId == eventId) {
         onEventReceived(event);
       }
     });
+    _subscriptions.add(subscription);
+    return subscription;
+  }
+
+  StreamSubscription<NeoWidgetEvent> listenEvents({
+    required List<String> eventIds,
+    required Function(NeoWidgetEvent) onEventReceived,
+  }) {
+    final subscription = _eventBus.stream.listen((event) {
+      if (eventIds.contains(event.eventId)) {
+        onEventReceived(event);
+      }
+    });
+    _subscriptions.add(subscription);
+    return subscription;
   }
 
   void addEvent(NeoWidgetEvent event) {
     _eventBus.add(event);
+  }
+
+  void close() {
+    for (final subscription in _subscriptions) {
+      subscription.cancel();
+    }
+    _subscriptions.clear();
+    _eventBus.close();
   }
 }
