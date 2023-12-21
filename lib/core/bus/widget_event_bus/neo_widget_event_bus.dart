@@ -13,10 +13,9 @@
 import 'dart:async';
 
 import 'package:neo_core/core/bus/widget_event_bus/neo_widget_event.dart';
-import 'package:rxdart/rxdart.dart';
 
 class NeoWidgetEventBus {
-  final _eventBus = BehaviorSubject<NeoWidgetEvent>();
+  final _eventBus = StreamController<NeoWidgetEvent>.broadcast();
   final Set<StreamSubscription<NeoWidgetEvent>> _subscriptions = {};
 
   StreamSubscription<NeoWidgetEvent> listen({
