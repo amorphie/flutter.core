@@ -17,6 +17,7 @@ import 'package:collection/collection.dart';
 import 'package:flutter/foundation.dart';
 import 'package:neo_core/core/navigation/models/neo_navigation_type.dart';
 import 'package:neo_core/core/navigation/models/signalr_transition_data.dart';
+import 'package:neo_core/core/network/models/neo_network_header_key.dart';
 import 'package:neo_core/core/network/models/neo_signalr_transition.dart';
 import 'package:neo_core/core/storage/neo_core_secure_storage.dart';
 import 'package:neo_core/core/util/neo_util.dart';
@@ -137,10 +138,10 @@ class SignalrConnectionManager {
 
     final deviceId = results[0].orEmpty;
     final tokenId = results[1].orEmpty;
-    final headers = MessageHeaders()..setHeaderValue("X-Device-Id", deviceId);
+    final headers = MessageHeaders()..setHeaderValue(NeoNetworkHeaderKey.deviceId, deviceId);
 
     if (tokenId.isNotEmpty) {
-      headers.setHeaderValue("X-Token-Id", tokenId);
+      headers.setHeaderValue(NeoNetworkHeaderKey.tokenId, tokenId);
     }
     return headers;
   }
