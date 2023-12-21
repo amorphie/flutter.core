@@ -17,23 +17,27 @@ import 'package:collection/collection.dart';
 import 'package:flutter/foundation.dart';
 import 'package:neo_core/core/navigation/models/neo_navigation_type.dart';
 import 'package:neo_core/core/navigation/models/signalr_transition_data.dart';
+import 'package:neo_core/core/network/models/neo_network_header_key.dart';
 import 'package:neo_core/core/network/models/neo_signalr_transition.dart';
+import 'package:neo_core/core/storage/neo_core_secure_storage.dart';
 import 'package:neo_core/core/util/neo_util.dart';
+import 'package:signalr_netcore/ihub_protocol.dart';
 import 'package:signalr_netcore/signalr_client.dart';
 
 class SignalrConnectionManager {
   final String serverUrl;
   final String methodName;
+  final NeoCoreSecureStorage _secureStorage;
   HubConnection? _hubConnection;
 
   SignalrConnectionManager({
     required this.serverUrl,
     required this.methodName,
-  });
+  }) : _secureStorage = NeoCoreSecureStorage();
 
   Future init() async {
     _hubConnection = HubConnectionBuilder()
-        .withUrl(serverUrl)
+        .withUrl(serverUrl, options: HttpConnectionOptions(headers: await _getHeaders()))
         .withAutomaticReconnect(retryDelays: [2000, 5000, 10000, 20000]).build();
     _hubConnection?.onclose(({error}) {
       if (kDebugMode) {
@@ -124,6 +128,22 @@ class SignalrConnectionManager {
     } else if ((ongoingTransition.errorMessage.isNotEmpty) && onError != null) {
       onError(ongoingTransition.errorMessage);
     }
+  }
+
+  Future<MessageHeaders> _getHeaders() async {
+    final results = await Future.wait([
+      _secureStorage.getDeviceId(),
+      _secureStorage.getTokenId(),
+    ]);
+
+    final deviceId = results[0].orEmpty;
+    final tokenId = results[1].orEmpty;
+    final headers = MessageHeaders()..setHeaderValue(NeoNetworkHeaderKey.deviceId, deviceId);
+
+    if (tokenId.isNotEmpty) {
+      headers.setHeaderValue(NeoNetworkHeaderKey.tokenId, tokenId);
+    }
+    return headers;
   }
 
   void stop() {

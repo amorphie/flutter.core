@@ -18,6 +18,7 @@ import 'package:json_annotation/json_annotation.dart';
 import 'package:neo_core/core/network/models/http_auth_response.dart';
 import 'package:neo_core/core/network/models/http_method.dart';
 import 'package:neo_core/core/network/models/neo_http_call.dart';
+import 'package:neo_core/core/network/models/neo_network_header_key.dart';
 import 'package:neo_core/neo_core.dart';
 import 'package:uuid/uuid.dart';
 
@@ -25,6 +26,8 @@ abstract class _Constants {
   static const int responseCodeUnauthorized = 401;
   static const String wrapperResponseKey = "data";
   static const String refreshTokenEndpoint = "get-token";
+  static const String headerValueContentType = "application/json";
+  static const String headerValueApplication = "burgan-mobile-app";
 }
 
 class NeoNetworkManager {
@@ -54,14 +57,14 @@ class NeoNetworkManager {
     final customerIdHeader = results[5] as Map<String, String>? ?? {};
 
     return {
-      'Content-Type': 'application/json',
-      'Accept-Language': '$languageCode-${languageCode.toUpperCase()}',
-      'X-Application': 'burgan-mobile-app',
-      'X-Deployment': DeviceUtil().getPlatformName(),
-      'X-Device-Id': deviceId,
-      'X-Token-Id': tokenId,
-      'X-Request-Id': const Uuid().v1(),
-      'X-Device-Info': deviceInfo,
+      NeoNetworkHeaderKey.contentType: _Constants.headerValueContentType,
+      NeoNetworkHeaderKey.acceptLanguage: '$languageCode-${languageCode.toUpperCase()}',
+      NeoNetworkHeaderKey.application: _Constants.headerValueApplication,
+      NeoNetworkHeaderKey.deployment: DeviceUtil().getPlatformName(),
+      NeoNetworkHeaderKey.deviceId: deviceId,
+      NeoNetworkHeaderKey.tokenId: tokenId,
+      NeoNetworkHeaderKey.requestId: const Uuid().v1(),
+      NeoNetworkHeaderKey.deviceInfo: deviceInfo,
     }
       ..addAll(authHeader)
       ..addAll(customerIdHeader);
@@ -69,19 +72,19 @@ class NeoNetworkManager {
 
   Future<Map<String, String>> get _authHeader async {
     final authToken = await secureStorage.getAuthToken();
-    return authToken == null ? {} : {'Authorization': 'Bearer $authToken'};
+    return authToken == null ? {} : {NeoNetworkHeaderKey.authorization: 'Bearer $authToken'};
   }
 
   Future<Map<String, String>> get _customerIdHeader async {
     final customerId = await secureStorage.getCustomerId();
-    return customerId == null ? {} : {'A-Customer': customerId};
+    return customerId == null ? {} : {NeoNetworkHeaderKey.customer: customerId};
   }
 
   Future<Map<String, String>> get _defaultPostHeaders async => <String, String>{}
     ..addAll(await _defaultHeaders)
     ..addAll({
-      'User': const Uuid().v1(), // STOPSHIP: Delete it
-      'Behalf-Of-User': const Uuid().v1(), // STOPSHIP: Delete it
+      NeoNetworkHeaderKey.user: const Uuid().v1(), // STOPSHIP: Delete it
+      NeoNetworkHeaderKey.behalfOfUser: const Uuid().v1(), // STOPSHIP: Delete it
     });
 
   Future<Map<String, dynamic>> call(NeoHttpCall neoCall) async {
