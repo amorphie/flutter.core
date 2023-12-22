@@ -3,7 +3,6 @@ import 'package:neo_core/core/navigation/models/signalr_transition_data.dart';
 import 'package:neo_core/core/network/models/neo_network_header_key.dart';
 import 'package:neo_core/core/network/neo_network.dart';
 import 'package:neo_core/core/storage/neo_core_secure_storage.dart';
-import 'package:neo_core/core/util/neo_util.dart';
 
 class NeoTransitionListenerWidget extends StatefulWidget {
   final Widget child;
@@ -65,8 +64,8 @@ class _NeoTransitionListenerWidgetState extends State<NeoTransitionListenerWidge
       secureStorage.getTokenId(),
     ]);
 
-    final deviceId = results[0].orEmpty;
-    final tokenId = results[1].orEmpty;
+    final deviceId = results[0] ?? "";
+    final tokenId = results[1] ?? "";
 
     return "?${NeoNetworkHeaderKey.deviceId}=$deviceId&${NeoNetworkHeaderKey.tokenId}=$tokenId";
   }
