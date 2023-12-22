@@ -115,6 +115,7 @@ class SignalrConnectionManager {
     final isNavigationAllowed = ongoingTransition.pageDetails["operation"] == "Open";
     final navigationPath = ongoingTransition.pageDetails["pageRoute"]?["label"] as String?;
     final navigationType = ongoingTransition.pageDetails["type"] as String?;
+    final isBackNavigation = ongoingTransition.buttonType == "Back";
     if (isNavigationAllowed && navigationPath != null) {
       onPageNavigation(
         SignalrTransitionData(
@@ -123,6 +124,7 @@ class SignalrConnectionManager {
           pageId: ongoingTransition.pageId,
           viewSource: ongoingTransition.viewSource,
           initialData: ongoingTransition.initialData,
+          isBackNavigation: isBackNavigation,
         ),
       );
     } else if ((ongoingTransition.errorMessage.isNotEmpty) && onError != null) {
