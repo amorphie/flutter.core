@@ -20,6 +20,7 @@ class _Constant {
   static const keyPageId = "pageId";
   static const keyViewSource = "viewSource";
   static const keyInitialData = "initialData";
+  static const keyIsBackNavigation = "isBackNavigation";
 }
 
 class SignalrTransitionData {
@@ -28,6 +29,7 @@ class SignalrTransitionData {
   final String pageId;
   final String viewSource;
   final Map<String, dynamic> initialData;
+  final bool isBackNavigation;
 
   SignalrTransitionData({
     required this.navigationPath,
@@ -35,6 +37,7 @@ class SignalrTransitionData {
     required this.pageId,
     required this.viewSource,
     required this.initialData,
+    required this.isBackNavigation,
   });
 
   String encode() {
@@ -44,6 +47,7 @@ class SignalrTransitionData {
       _Constant.keyPageId: pageId,
       _Constant.keyViewSource: viewSource,
       _Constant.keyInitialData: initialData,
+      _Constant.keyIsBackNavigation: isBackNavigation,
     });
   }
 
@@ -55,6 +59,7 @@ class SignalrTransitionData {
       pageId: jsonMap[_Constant.keyPageId],
       viewSource: jsonMap[_Constant.keyViewSource],
       initialData: jsonMap[_Constant.keyInitialData],
+      isBackNavigation: jsonMap[_Constant.keyIsBackNavigation],
     );
   }
 }

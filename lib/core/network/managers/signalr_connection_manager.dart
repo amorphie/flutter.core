@@ -20,7 +20,6 @@ import 'package:neo_core/core/navigation/models/signalr_transition_data.dart';
 import 'package:neo_core/core/network/models/neo_network_header_key.dart';
 import 'package:neo_core/core/network/models/neo_signalr_transition.dart';
 import 'package:neo_core/core/storage/neo_core_secure_storage.dart';
-import 'package:neo_core/core/util/neo_util.dart';
 import 'package:signalr_netcore/ihub_protocol.dart';
 import 'package:signalr_netcore/signalr_client.dart';
 
@@ -103,7 +102,7 @@ class SignalrConnectionManager {
     final String? token = ongoingTransition.additionalData?["access_token"];
     final String? refreshToken = ongoingTransition.additionalData?["refresh_token"];
     if (onTokenRetrieved != null && token != null && token.isNotEmpty) {
-      onTokenRetrieved(token, refreshToken.orEmpty);
+      onTokenRetrieved(token, refreshToken ?? "");
     }
   }
 
@@ -115,14 +114,16 @@ class SignalrConnectionManager {
     final isNavigationAllowed = ongoingTransition.pageDetails["operation"] == "Open";
     final navigationPath = ongoingTransition.pageDetails["pageRoute"]?["label"] as String?;
     final navigationType = ongoingTransition.pageDetails["type"] as String?;
+    final isBackNavigation = ongoingTransition.buttonType == "Back";
     if (isNavigationAllowed && navigationPath != null) {
       onPageNavigation(
         SignalrTransitionData(
           navigationPath: navigationPath,
-          navigationType: NeoNavigationType.fromJson(navigationType.orEmpty),
+          navigationType: NeoNavigationType.fromJson(navigationType ?? ""),
           pageId: ongoingTransition.pageId,
           viewSource: ongoingTransition.viewSource,
           initialData: ongoingTransition.initialData,
+          isBackNavigation: isBackNavigation,
         ),
       );
     } else if ((ongoingTransition.errorMessage.isNotEmpty) && onError != null) {
@@ -136,8 +137,8 @@ class SignalrConnectionManager {
       _secureStorage.getTokenId(),
     ]);
 
-    final deviceId = results[0].orEmpty;
-    final tokenId = results[1].orEmpty;
+    final deviceId = results[0] ?? "";
+    final tokenId = results[1] ?? "";
     final headers = MessageHeaders()..setHeaderValue(NeoNetworkHeaderKey.deviceId, deviceId);
 
     if (tokenId.isNotEmpty) {
