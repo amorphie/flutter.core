@@ -11,7 +11,6 @@
  */
 
 import 'package:flutter/material.dart';
-import 'package:neo_core/core/util/neo_firebase_messaging.dart';
 import 'package:neo_core/neo_core.dart';
 
 Future<void> main() async {
@@ -22,7 +21,6 @@ Future<void> main() async {
 
 Future _initBurganSDKs() async {
   await NeoCore.init();
-  //await NeoFirebaseMessaging().init();
 }
 
 class MyApp extends StatelessWidget {
