@@ -22,3 +22,8 @@ class WorkflowFormEventAddAllParameters extends WorkflowFormEvent {
   @override
   List<Object?> get props => [parameters];
 }
+
+class WorkflowFormEventValidateForm extends WorkflowFormEvent {
+  @override
+  List<Object?> get props => [];
+}
