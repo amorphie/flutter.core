@@ -11,10 +11,10 @@
  */
 
 import 'package:firebase_core/firebase_core.dart';
+import 'package:flutter/foundation.dart';
 
 import 'package:neo_core/core/analytics/neo_logger.dart';
 import 'package:neo_core/core/storage/neo_core_secure_storage.dart';
-import 'package:neo_core/core/util/neo_core_firebase_messaging.dart';
 
 export 'core/bus/neo_bus.dart';
 export 'core/network/neo_network.dart';
@@ -28,15 +28,11 @@ class NeoCore {
   static Future init({
     bool enableCrashlytics = false,
     bool enablePosthog = false,
-    FirebaseOptions? firebaseOptions,
-    String? vapidKey,
-    String? androidDefaultIcon,
   }) async {
     await NeoCoreSecureStorage().init();
-    await Firebase.initializeApp(
-      options: firebaseOptions,
-    );
+    if (!kIsWeb) {
+      await Firebase.initializeApp();
+    }
     await NeoLogger().init(enableCrashlytics: enableCrashlytics, enablePosthog: enablePosthog);
-    await NeoCoreFirebaseMessaging().init(vapidKey, androidDefaultIcon);
   }
 }

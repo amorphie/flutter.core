@@ -4,13 +4,10 @@ import 'dart:io';
 
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/foundation.dart';
+import 'package:flutter/material.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
-import 'package:rxdart/rxdart.dart';
 
-@pragma('vm:entry-point')
-Future<void> onBackgroundMessage(RemoteMessage message) async {
-  return Future.value();
-}
+typedef TokenCallback = void Function(String token);
 
 abstract class _Constant {
   static const androidNotificationChannelID = "high_importance_channel";
@@ -18,19 +15,29 @@ abstract class _Constant {
   static const androidNotificationChannelDescription = "This channel is used for important notifications";
 }
 
-class NeoCoreFirebaseMessaging {
-  static final NeoCoreFirebaseMessaging _singleton = NeoCoreFirebaseMessaging._internal();
-  factory NeoCoreFirebaseMessaging() {
-    return _singleton;
-  }
+@pragma('vm:entry-point')
+Future<void> onBackgroundMessage(RemoteMessage message) async {
+  return Future.value();
+}
 
-  NeoCoreFirebaseMessaging._internal();
+class NeoCoreFirebaseMessaging extends StatefulWidget {
+  const NeoCoreFirebaseMessaging({
+    required this.child,
+    required this.onTokenChange,
+    this.androidDefaultIcon,
+    super.key,
+  });
 
-  String? _vapidKey;
-  String? _androidDefaultIcon;
-  final FirebaseMessaging _firebaseMessaging = FirebaseMessaging.instance;
-  final _publishToken = BehaviorSubject<String?>();
-  Stream<String?> get pushTokens => _publishToken.stream;
+  final Widget child;
+  final TokenCallback onTokenChange;
+  final String? androidDefaultIcon;
+
+  @override
+  State<NeoCoreFirebaseMessaging> createState() => _NeoCoreFirebaseMessagingState();
+}
+
+class _NeoCoreFirebaseMessagingState extends State<NeoCoreFirebaseMessaging> {
+  late FirebaseMessaging _firebaseMessaging;
 
   final _androidChannel = const AndroidNotificationChannel(
     _Constant.androidNotificationChannelID,
@@ -39,9 +46,18 @@ class NeoCoreFirebaseMessaging {
   );
   final _localNotifications = FlutterLocalNotificationsPlugin();
 
-  Future init(String? vapidKey, String? androidDefaultIcon) async {
-    _vapidKey = vapidKey;
-    _androidDefaultIcon = androidDefaultIcon;
+  @override
+  Widget build(BuildContext context) {
+    return widget.child;
+  }
+
+  @override
+  void initState() {
+    super.initState();
+    if (kIsWeb) {
+      return;
+    }
+    _firebaseMessaging = FirebaseMessaging.instance;
     _initNotifications();
     _initPushNotifications();
     _initLocalNotifications();
@@ -51,9 +67,11 @@ class NeoCoreFirebaseMessaging {
     await _firebaseMessaging.requestPermission();
 
     final token = await _getTokenBasedOnPlatform();
-    _publishToken.sink.add(token);
-    _firebaseMessaging.onTokenRefresh.listen((newPushToken) {
-      _publishToken.sink.add(newPushToken);
+    if (token != null) {
+      widget.onTokenChange(token);
+    }
+    _firebaseMessaging.onTokenRefresh.listen((token) {
+      widget.onTokenChange(token);
     });
   }
 
@@ -87,7 +105,7 @@ class NeoCoreFirebaseMessaging {
             _androidChannel.id,
             _androidChannel.name,
             channelDescription: _androidChannel.description,
-            icon: _androidDefaultIcon,
+            icon: widget.androidDefaultIcon,
           ),
         ),
         payload: jsonEncode(message.toMap()),
@@ -96,11 +114,8 @@ class NeoCoreFirebaseMessaging {
   }
 
   _initLocalNotifications() async {
-    if (kIsWeb) {
-      return;
-    }
     const iOS = DarwinInitializationSettings();
-    final String androidIcon = _androidDefaultIcon ?? "";
+    final String androidIcon = widget.androidDefaultIcon ?? "";
     final android = AndroidInitializationSettings(androidIcon);
     final settings = InitializationSettings(android: android, iOS: iOS);
     await _localNotifications.initialize(
@@ -116,9 +131,7 @@ class NeoCoreFirebaseMessaging {
       },
     );
     if (Platform.isIOS) {
-      await _localNotifications
-          .resolvePlatformSpecificImplementation<IOSFlutterLocalNotificationsPlugin>()
-          ?.requestPermissions(alert: true, badge: true, sound: true);
+      _localNotifications.resolvePlatformSpecificImplementation<IOSFlutterLocalNotificationsPlugin>();
     } else if (Platform.isAndroid) {
       final platform =
           _localNotifications.resolvePlatformSpecificImplementation<AndroidFlutterLocalNotificationsPlugin>();
@@ -129,9 +142,7 @@ class NeoCoreFirebaseMessaging {
   Future<String?> _getTokenBasedOnPlatform() async {
     String? token;
     if (kIsWeb) {
-      token = await _firebaseMessaging.getToken(
-        vapidKey: _vapidKey,
-      );
+      return null;
     } else if (Platform.isIOS) {
       token = await _firebaseMessaging.getAPNSToken();
     } else if (Platform.isAndroid) {
@@ -145,9 +156,5 @@ class NeoCoreFirebaseMessaging {
       return;
     }
     // TODO: Handle push message
-  }
-
-  void close() {
-    _publishToken.close();
   }
 }
