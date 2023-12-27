@@ -138,4 +138,10 @@ class NeoCoreSecureStorage {
       return _storage!.delete(key: _Constants.sharedPrefKeyCustomerId);
     }
   }
+
+  Future deleteRefreshToken() async {
+    if (await _storage!.containsKey(key: _Constants.sharedPrefKeyRefreshToken)) {
+      return _storage!.delete(key: _Constants.sharedPrefKeyRefreshToken);
+    }
+  }
 }
