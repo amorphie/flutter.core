@@ -60,7 +60,9 @@ class _NeoCoreFirebaseMessagingState extends State<NeoCoreFirebaseMessaging> {
     _firebaseMessaging = FirebaseMessaging.instance;
     _initNotifications();
     _initPushNotifications();
-    _initLocalNotifications();
+    if (Platform.isAndroid) {
+      _initLocalNotifications();
+    }
   }
 
   _initNotifications() async {
@@ -93,7 +95,7 @@ class _NeoCoreFirebaseMessagingState extends State<NeoCoreFirebaseMessaging> {
     /// the Flutter instance is in the foreground.
     FirebaseMessaging.onMessage.listen((message) {
       final notification = message.notification;
-      if (notification == null) {
+      if (notification == null || !Platform.isAndroid) {
         return;
       }
       _localNotifications.show(
@@ -114,10 +116,9 @@ class _NeoCoreFirebaseMessagingState extends State<NeoCoreFirebaseMessaging> {
   }
 
   _initLocalNotifications() async {
-    const iOS = DarwinInitializationSettings();
     final String androidIcon = widget.androidDefaultIcon ?? "";
     final android = AndroidInitializationSettings(androidIcon);
-    final settings = InitializationSettings(android: android, iOS: iOS);
+    final settings = InitializationSettings(android: android);
     await _localNotifications.initialize(
       settings,
       onDidReceiveNotificationResponse: (NotificationResponse notificationResponse) {
@@ -130,13 +131,9 @@ class _NeoCoreFirebaseMessagingState extends State<NeoCoreFirebaseMessaging> {
         }
       },
     );
-    if (Platform.isIOS) {
-      _localNotifications.resolvePlatformSpecificImplementation<IOSFlutterLocalNotificationsPlugin>();
-    } else if (Platform.isAndroid) {
-      final platform =
-          _localNotifications.resolvePlatformSpecificImplementation<AndroidFlutterLocalNotificationsPlugin>();
-      await platform?.createNotificationChannel(_androidChannel);
-    }
+    final platform =
+        _localNotifications.resolvePlatformSpecificImplementation<AndroidFlutterLocalNotificationsPlugin>();
+    await platform?.createNotificationChannel(_androidChannel);
   }
 
   Future<String?> _getTokenBasedOnPlatform() async {
