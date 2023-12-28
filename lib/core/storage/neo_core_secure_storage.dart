@@ -125,7 +125,7 @@ class NeoCoreSecureStorage {
     return _storage!.read(key: _Constants.sharedPrefKeyRefreshToken);
   }
 
-  Future _setCustomerId(String customerId) async {
+  Future setCustomerId(String customerId) async {
     await _storage!.write(key: _Constants.sharedPrefKeyCustomerId, value: customerId);
   }
 
