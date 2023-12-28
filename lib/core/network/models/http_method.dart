@@ -18,5 +18,9 @@ enum HttpMethod {
   @JsonValue('POST')
   post,
   @JsonValue('DELETE')
-  delete;
+  delete,
+  @JsonValue('PUT')
+  put,
+  @JsonValue('PATCH')
+  patch;
 }
