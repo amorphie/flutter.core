@@ -2,13 +2,13 @@ import 'dart:io';
 
 import 'package:device_info_plus/device_info_plus.dart';
 import 'package:flutter/foundation.dart' show kIsWeb;
+import 'package:uuid/uuid.dart';
 
 class DeviceUtil {
   Future<String?> getDeviceId() async {
     final deviceInfo = DeviceInfoPlugin();
     if (kIsWeb) {
-      final webBrowserInfo = await deviceInfo.webBrowserInfo;
-      return webBrowserInfo.vendor;
+      return const Uuid().v1();
     } else if (Platform.isIOS) {
       final iosInfo = await deviceInfo.iosInfo;
       return iosInfo.identifierForVendor;
