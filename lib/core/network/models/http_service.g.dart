@@ -18,4 +18,6 @@ const _$HttpMethodEnumMap = {
   HttpMethod.get: 'GET',
   HttpMethod.post: 'POST',
   HttpMethod.delete: 'DELETE',
+  HttpMethod.put: 'PUT',
+  HttpMethod.patch: 'PATCH',
 };

@@ -105,6 +105,10 @@ class NeoNetworkManager {
         return _requestPost(fullPath, neoCall);
       case HttpMethod.delete:
         return _requestDelete(fullPath, neoCall);
+      case HttpMethod.put:
+        return _requestPut(fullPath, neoCall);
+      case HttpMethod.patch:
+        return _requestPatch(fullPath, neoCall);
     }
   }
 
@@ -132,6 +136,26 @@ class NeoNetworkManager {
     final response = await http.delete(
       Uri.parse(fullPathWithQueries),
       headers: await _defaultHeaders,
+      body: json.encode(neoCall.body),
+    );
+    return _createResponseMap(response, neoCall);
+  }
+
+  Future<Map<String, dynamic>> _requestPut(String fullPath, NeoHttpCall neoCall) async {
+    final fullPathWithQueries = _getFullPathWithQueries(fullPath, neoCall.queryProviders);
+    final response = await http.put(
+      Uri.parse(fullPathWithQueries),
+      headers: await _defaultPostHeaders,
+      body: json.encode(neoCall.body),
+    );
+    return _createResponseMap(response, neoCall);
+  }
+
+  Future<Map<String, dynamic>> _requestPatch(String fullPath, NeoHttpCall neoCall) async {
+    final fullPathWithQueries = _getFullPathWithQueries(fullPath, neoCall.queryProviders);
+    final response = await http.patch(
+      Uri.parse(fullPathWithQueries),
+      headers: await _defaultPostHeaders,
       body: json.encode(neoCall.body),
     );
     return _createResponseMap(response, neoCall);
