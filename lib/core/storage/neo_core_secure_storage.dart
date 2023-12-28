@@ -102,7 +102,7 @@ class NeoCoreSecureStorage {
     await _storage!.write(key: _Constants.sharedPrefKeyAuthToken, value: token);
     final customerId = JwtDecoder.decode(token)["user.reference"];
     if (customerId is String && customerId.isNotEmpty) {
-      await _setCustomerId(customerId);
+      await setCustomerId(customerId);
     }
   }
 
