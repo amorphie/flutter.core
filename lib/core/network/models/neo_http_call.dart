@@ -25,6 +25,8 @@ class NeoHttpCall extends Equatable {
 
   final List<HttpQueryProvider> queryProviders;
 
+  final Map<String, String> headerParameters;
+
   final bool useHttps;
 
   int? _retryCount;
@@ -40,6 +42,7 @@ class NeoHttpCall extends Equatable {
     this.queryProviders = const [],
     this.useHttps = true,
     this.pathParameters,
+    this.headerParameters = const {},
   });
 
   void setRetryCount(int retryCount) {
