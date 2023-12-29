@@ -116,7 +116,7 @@ class NeoNetworkManager {
     final fullPathWithQueries = _getFullPathWithQueries(fullPath, neoCall.queryProviders);
     final response = await http.get(
       Uri.parse(fullPathWithQueries),
-      headers: await _defaultHeaders,
+      headers: (await _defaultHeaders)..addAll(neoCall.headerParameters),
     );
     return _createResponseMap(response, neoCall);
   }
@@ -125,7 +125,7 @@ class NeoNetworkManager {
     final fullPathWithQueries = _getFullPathWithQueries(fullPath, neoCall.queryProviders);
     final response = await http.post(
       Uri.parse(fullPathWithQueries),
-      headers: await _defaultPostHeaders,
+      headers: (await _defaultPostHeaders)..addAll(neoCall.headerParameters),
       body: json.encode(neoCall.body),
     );
     return _createResponseMap(response, neoCall);
@@ -135,7 +135,7 @@ class NeoNetworkManager {
     final fullPathWithQueries = _getFullPathWithQueries(fullPath, neoCall.queryProviders);
     final response = await http.delete(
       Uri.parse(fullPathWithQueries),
-      headers: await _defaultHeaders,
+      headers: (await _defaultHeaders)..addAll(neoCall.headerParameters),
       body: json.encode(neoCall.body),
     );
     return _createResponseMap(response, neoCall);

@@ -70,7 +70,10 @@ class NeoCoreSecureStorage {
   }
 
   Future<String?> getLanguageCode() async {
-    return _storage!.read(key: _Constants.sharedPrefKeyLanguage);
+    if (await _storage!.containsKey(key: _Constants.sharedPrefKeyLanguage)) {
+      return _storage!.read(key: _Constants.sharedPrefKeyLanguage);
+    }
+    return null;
   }
 
   _setDeviceId(String deviceId) async {
@@ -78,7 +81,10 @@ class NeoCoreSecureStorage {
   }
 
   Future<String?> getDeviceId() async {
-    return _storage!.read(key: _Constants.sharedPrefKeyDeviceId);
+    if (await _storage!.containsKey(key: _Constants.sharedPrefKeyDeviceId)) {
+      return _storage!.read(key: _Constants.sharedPrefKeyDeviceId);
+    }
+    return null;
   }
 
   _setDeviceInfo(String deviceInfo) async {
@@ -86,7 +92,10 @@ class NeoCoreSecureStorage {
   }
 
   Future<String?> getDeviceInfo() async {
-    return _storage!.read(key: _Constants.sharedPrefKeyDeviceInfo);
+    if (await _storage!.containsKey(key: _Constants.sharedPrefKeyDeviceId)) {
+      return _storage!.read(key: _Constants.sharedPrefKeyDeviceInfo);
+    }
+    return null;
   }
 
   _setTokenId(String tokenId) async {
@@ -94,7 +103,10 @@ class NeoCoreSecureStorage {
   }
 
   Future<String?> getTokenId() async {
-    return _storage!.read(key: _Constants.sharedPrefKeyTokenId);
+    if (await _storage!.containsKey(key: _Constants.sharedPrefKeyTokenId)) {
+      return _storage!.read(key: _Constants.sharedPrefKeyTokenId);
+    }
+    return null;
   }
 
   /// Set auth token(JWT) and customerId from encoded JWT
@@ -114,7 +126,10 @@ class NeoCoreSecureStorage {
   }
 
   Future<String?> getAuthToken() async {
-    return _storage!.read(key: _Constants.sharedPrefKeyAuthToken);
+    if (await _storage!.containsKey(key: _Constants.sharedPrefKeyAuthToken)) {
+      return _storage!.read(key: _Constants.sharedPrefKeyAuthToken);
+    }
+    return null;
   }
 
   Future setRefreshToken(String refreshToken) async {
@@ -122,7 +137,10 @@ class NeoCoreSecureStorage {
   }
 
   Future<String?> getRefreshToken() async {
-    return _storage!.read(key: _Constants.sharedPrefKeyRefreshToken);
+    if (await _storage!.containsKey(key: _Constants.sharedPrefKeyRefreshToken)) {
+      return _storage!.read(key: _Constants.sharedPrefKeyRefreshToken);
+    }
+    return null;
   }
 
   Future _setCustomerId(String customerId) async {
@@ -130,7 +148,10 @@ class NeoCoreSecureStorage {
   }
 
   Future<String?> getCustomerId() async {
-    return _storage!.read(key: _Constants.sharedPrefKeyCustomerId);
+    if (await _storage!.containsKey(key: _Constants.sharedPrefKeyCustomerId)) {
+      return _storage!.read(key: _Constants.sharedPrefKeyCustomerId);
+    }
+    return null;
   }
 
   Future _deleteCustomerId() async {
