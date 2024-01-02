@@ -10,6 +10,7 @@ class NeoTransitionListenerWidget extends StatefulWidget {
   final String signalRServerUrl;
   final String signalRMethodName;
   final Function(SignalrTransitionData navigationData) onPageNavigation;
+  final VoidCallback? onLoggedInSuccessfully;
   final Function(String errorMessage)? onError;
 
   const NeoTransitionListenerWidget({
@@ -18,6 +19,7 @@ class NeoTransitionListenerWidget extends StatefulWidget {
     required this.signalRServerUrl,
     required this.signalRMethodName,
     required this.onPageNavigation,
+    this.onLoggedInSuccessfully,
     this.onError,
     Key? key,
   }) : super(key: key);
@@ -45,9 +47,12 @@ class _NeoTransitionListenerWidgetState extends State<NeoTransitionListenerWidge
     signalrConnectionManager.listenForTransitionEvents(
       transitionId: widget.transitionId,
       onPageNavigation: widget.onPageNavigation,
-      onTokenRetrieved: (token, refreshToken) => neoCoreSecureStorage
-        ..setAuthToken(token)
-        ..setRefreshToken(refreshToken),
+      onTokenRetrieved: (token, refreshToken) {
+        widget.onLoggedInSuccessfully?.call();
+        neoCoreSecureStorage
+          ..setAuthToken(token)
+          ..setRefreshToken(refreshToken);
+      },
       onError: widget.onError,
     );
   }
