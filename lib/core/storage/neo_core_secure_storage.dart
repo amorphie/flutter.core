@@ -118,11 +118,10 @@ class NeoCoreSecureStorage {
     }
   }
 
-  Future deleteAuthToken() async {
+  Future _deleteAuthToken() async {
     if (await _storage!.containsKey(key: _Constants.sharedPrefKeyAuthToken)) {
       await _storage!.delete(key: _Constants.sharedPrefKeyAuthToken);
     }
-    await _deleteCustomerId();
   }
 
   Future<String?> getAuthToken() async {
@@ -160,9 +159,14 @@ class NeoCoreSecureStorage {
     }
   }
 
-  Future deleteRefreshToken() async {
+  Future _deleteRefreshToken() async {
     if (await _storage!.containsKey(key: _Constants.sharedPrefKeyRefreshToken)) {
       return _storage!.delete(key: _Constants.sharedPrefKeyRefreshToken);
     }
+  }
+
+  Future deleteTokens() async {
+    await _deleteAuthToken();
+    await _deleteRefreshToken();
   }
 }
