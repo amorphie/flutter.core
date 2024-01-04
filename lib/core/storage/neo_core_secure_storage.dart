@@ -169,4 +169,9 @@ class NeoCoreSecureStorage {
     await _deleteAuthToken();
     await _deleteRefreshToken();
   }
+
+  Future deleteCustomer() async {
+    await deleteTokens();
+    await _deleteCustomerId();
+  }
 }
