@@ -55,13 +55,13 @@ class NeoCoreSecureStorage {
     final deviceId = await deviceUtil.getDeviceId();
     final deviceInfo = await deviceUtil.getDeviceInfo();
     if (!await _storage!.containsKey(key: _Constants.sharedPrefKeyDeviceId) && deviceId != null) {
-      _setDeviceId(deviceId);
+      await _setDeviceId(deviceId);
     }
     if (!await _storage!.containsKey(key: _Constants.sharedPrefKeyDeviceInfo) && deviceInfo != null) {
-      _setDeviceInfo(deviceInfo);
+      await _setDeviceInfo(deviceInfo);
     }
     if (!await _storage!.containsKey(key: _Constants.sharedPrefKeyTokenId)) {
-      _setTokenId(const Uuid().v1());
+      await _setTokenId(const Uuid().v1());
     }
   }
 
@@ -76,7 +76,7 @@ class NeoCoreSecureStorage {
     return null;
   }
 
-  _setDeviceId(String deviceId) async {
+  Future _setDeviceId(String deviceId) async {
     await _storage!.write(key: _Constants.sharedPrefKeyDeviceId, value: deviceId);
   }
 
@@ -87,18 +87,18 @@ class NeoCoreSecureStorage {
     return null;
   }
 
-  _setDeviceInfo(String deviceInfo) async {
+  Future _setDeviceInfo(String deviceInfo) async {
     await _storage!.write(key: _Constants.sharedPrefKeyDeviceInfo, value: deviceInfo);
   }
 
   Future<String?> getDeviceInfo() async {
-    if (await _storage!.containsKey(key: _Constants.sharedPrefKeyDeviceId)) {
+    if (await _storage!.containsKey(key: _Constants.sharedPrefKeyDeviceInfo)) {
       return _storage!.read(key: _Constants.sharedPrefKeyDeviceInfo);
     }
     return null;
   }
 
-  _setTokenId(String tokenId) async {
+  Future _setTokenId(String tokenId) async {
     await _storage!.write(key: _Constants.sharedPrefKeyTokenId, value: tokenId);
   }
 
