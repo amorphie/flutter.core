@@ -12,7 +12,7 @@
 
 import 'dart:convert';
 
-import 'package:flutter/foundation.dart';
+import 'package:flutter/foundation.dart' show debugPrint;
 import 'package:http/http.dart' as http;
 import 'package:json_annotation/json_annotation.dart';
 import 'package:neo_core/core/network/models/http_auth_response.dart';

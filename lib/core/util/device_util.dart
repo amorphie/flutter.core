@@ -1,7 +1,6 @@
-import 'dart:io';
-
 import 'package:device_info_plus/device_info_plus.dart';
 import 'package:flutter/foundation.dart' show kIsWeb;
+import 'package:universal_io/io.dart';
 import 'package:uuid/uuid.dart';
 
 class DeviceUtil {

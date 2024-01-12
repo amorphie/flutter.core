@@ -12,7 +12,7 @@
  * 
  */
 
-import 'package:flutter/foundation.dart';
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
 import 'package:neo_core/core/analytics/i_neo_logger.dart';
 import 'package:neo_core/core/analytics/neo_crashlytics.dart';
