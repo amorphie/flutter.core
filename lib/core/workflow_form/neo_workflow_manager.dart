@@ -18,9 +18,12 @@ class NeoWorkflowManager {
 
   NeoWorkflowManager(this.neoNetworkManager);
 
-  Future<Map<String, dynamic>> initWorkflow({required String workflowName}) async {
-    // Reset instance id
+  static void resetInstanceId() {
     _instanceId = const Uuid().v1();
+  }
+
+  Future<Map<String, dynamic>> initWorkflow({required String workflowName}) async {
+    resetInstanceId();
 
     final response = await neoNetworkManager.call(
       NeoHttpCall(
