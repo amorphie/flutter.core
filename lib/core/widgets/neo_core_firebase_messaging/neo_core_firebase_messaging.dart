@@ -1,11 +1,11 @@
 import 'dart:async';
 import 'dart:convert';
-import 'dart:io';
 
 import 'package:firebase_messaging/firebase_messaging.dart';
-import 'package:flutter/foundation.dart';
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
+import 'package:universal_io/io.dart';
 
 typedef TokenCallback = void Function(String token);
 

@@ -14,7 +14,7 @@ import 'dart:convert';
 import 'dart:developer';
 
 import 'package:collection/collection.dart';
-import 'package:flutter/foundation.dart';
+import 'package:flutter/foundation.dart' show kDebugMode;
 import 'package:neo_core/core/navigation/models/neo_navigation_type.dart';
 import 'package:neo_core/core/navigation/models/signalr_transition_data.dart';
 import 'package:neo_core/core/network/models/neo_signalr_transition.dart';

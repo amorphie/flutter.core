@@ -10,12 +10,11 @@
  * Any reproduction of this material must contain this notice.
  */
 
-import 'dart:io' show Platform;
-
 import 'package:firebase_core/firebase_core.dart';
-import 'package:flutter/foundation.dart';
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:neo_core/core/analytics/neo_logger.dart';
 import 'package:neo_core/core/storage/neo_core_secure_storage.dart';
+import 'package:universal_io/io.dart';
 
 export 'core/bus/neo_bus.dart';
 export 'core/network/neo_network.dart';
