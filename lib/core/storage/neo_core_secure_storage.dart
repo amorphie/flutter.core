@@ -24,7 +24,7 @@ class _Constants {
   static const String sharedPrefKeyAuthToken = "shared_pref_key_auth_token";
   static const String sharedPrefKeyRefreshToken = "shared_pref_key_refresh_token";
   static const String sharedPrefKeyCustomerId = "shared_pref_key_customer_id";
-  static const String sharedPrefKeyDeviceRegistrationStatus = "shared_pref_key_device_registration_status";
+  static const String sharedPrefKeyDeviceRegistrationToken = "shared_pref_key_device_registration_token";
 }
 
 class NeoCoreSecureStorage {
@@ -176,14 +176,14 @@ class NeoCoreSecureStorage {
     await _deleteCustomerId();
   }
 
-  Future setDeviceRegistrationStatus({required bool isRegistered}) async {
-    await _storage!.write(key: _Constants.sharedPrefKeyDeviceRegistrationStatus, value: isRegistered.toString());
+  Future setDeviceRegistrationToken({required String registrationToken}) async {
+    await _storage!.write(key: _Constants.sharedPrefKeyDeviceRegistrationToken, value: registrationToken);
   }
 
-  Future<bool> getDeviceRegistrationStatus() async {
-    if (await _storage!.containsKey(key: _Constants.sharedPrefKeyDeviceRegistrationStatus)) {
-      return await _storage!.read(key: _Constants.sharedPrefKeyDeviceRegistrationStatus) == true.toString();
+  Future<String?> getDeviceRegistrationToken() async {
+    if (await _storage!.containsKey(key: _Constants.sharedPrefKeyDeviceRegistrationToken)) {
+      return _storage!.read(key: _Constants.sharedPrefKeyDeviceRegistrationToken);
     }
-    return false;
+    return null;
   }
 }
