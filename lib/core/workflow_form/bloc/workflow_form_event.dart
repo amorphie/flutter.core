@@ -14,13 +14,11 @@ class WorkflowFormEventUpdateTextFormField extends WorkflowFormEvent {
   List<Object?> get props => [key, value];
 }
 
-class WorkflowFormEventInitialize extends WorkflowFormEvent {
-  final NeoWidgetEventBus neoWidgetEventBus;
-
-  const WorkflowFormEventInitialize(this.neoWidgetEventBus);
+class WorkflowFormEventResetFrom extends WorkflowFormEvent {
+  const WorkflowFormEventResetFrom();
 
   @override
-  List<Object?> get props => [neoWidgetEventBus];
+  List<Object?> get props => [];
 }
 
 class WorkflowFormEventAddAllParameters extends WorkflowFormEvent {

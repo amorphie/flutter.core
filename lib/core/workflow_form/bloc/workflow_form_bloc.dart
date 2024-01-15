@@ -1,14 +1,9 @@
 import 'package:equatable/equatable.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:neo_core/core/bus/neo_bus.dart';
 
 part 'workflow_form_event.dart';
 part 'workflow_form_state.dart';
-
-abstract class _Constants {
-  static const neoTextFormFieldClearEventKey = 'neoTextFormFieldClearEventKey';
-}
 
 class WorkflowFormBloc extends Bloc<WorkflowFormEvent, WorkflowFormState> {
   final GlobalKey<FormState> formKey = GlobalKey<FormState>();
@@ -17,11 +12,8 @@ class WorkflowFormBloc extends Bloc<WorkflowFormEvent, WorkflowFormState> {
   Map<String, dynamic> get formData => _formData;
 
   WorkflowFormBloc() : super(WorkflowFormInitial()) {
-    on<WorkflowFormEventInitialize>((event, emit) {
-      event.neoWidgetEventBus.listen(
-        eventId: _Constants.neoTextFormFieldClearEventKey,
-        onEventReceived: (_) => formKey.currentState?.reset(),
-      );
+    on<WorkflowFormEventResetFrom>((event, emit) {
+      formKey.currentState?.reset();
     });
     on<WorkflowFormEventUpdateTextFormField>((event, emit) {
       _onTextFormFieldUpdated(event);
