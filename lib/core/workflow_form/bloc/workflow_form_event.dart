@@ -14,6 +14,13 @@ class WorkflowFormEventUpdateTextFormField extends WorkflowFormEvent {
   List<Object?> get props => [key, value];
 }
 
+class WorkflowFormEventResetFrom extends WorkflowFormEvent {
+  const WorkflowFormEventResetFrom();
+
+  @override
+  List<Object?> get props => [];
+}
+
 class WorkflowFormEventAddAllParameters extends WorkflowFormEvent {
   final Map<String, dynamic> parameters;
 

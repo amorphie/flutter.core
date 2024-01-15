@@ -12,6 +12,9 @@ class WorkflowFormBloc extends Bloc<WorkflowFormEvent, WorkflowFormState> {
   Map<String, dynamic> get formData => _formData;
 
   WorkflowFormBloc() : super(WorkflowFormInitial()) {
+    on<WorkflowFormEventResetFrom>((event, emit) {
+      formKey.currentState?.reset();
+    });
     on<WorkflowFormEventUpdateTextFormField>((event, emit) {
       _onTextFormFieldUpdated(event);
     });
