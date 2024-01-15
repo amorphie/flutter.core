@@ -5,9 +5,9 @@ import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
+import 'package:neo_core/core/network/managers/neo_network_manager.dart';
+import 'package:neo_core/feature/device_registration/usecases/neo_core_register_device_usecase.dart';
 import 'package:universal_io/io.dart';
-
-typedef TokenCallback = void Function(String token);
 
 abstract class _Constant {
   static const androidNotificationChannelID = "high_importance_channel";
@@ -23,13 +23,13 @@ Future<void> onBackgroundMessage(RemoteMessage message) async {
 class NeoCoreFirebaseMessaging extends StatefulWidget {
   const NeoCoreFirebaseMessaging({
     required this.child,
-    required this.onTokenChange,
+    required this.networkManager,
     this.androidDefaultIcon,
     super.key,
   });
 
   final Widget child;
-  final TokenCallback onTokenChange;
+  final NeoNetworkManager networkManager;
   final String? androidDefaultIcon;
 
   @override
@@ -65,19 +65,21 @@ class _NeoCoreFirebaseMessagingState extends State<NeoCoreFirebaseMessaging> {
     }
   }
 
-  _initNotifications() async {
+  Future<void> _initNotifications() async {
     await _firebaseMessaging.requestPermission();
 
     final token = await _getTokenBasedOnPlatform();
     if (token != null) {
-      widget.onTokenChange(token);
+      _onTokenChange(token);
     }
-    _firebaseMessaging.onTokenRefresh.listen((token) {
-      widget.onTokenChange(token);
-    });
+    _firebaseMessaging.onTokenRefresh.listen(_onTokenChange);
   }
 
-  _initPushNotifications() async {
+  void _onTokenChange(String token) {
+    NeoCoreRegisterDeviceUseCase().call(networkManager: widget.networkManager, deviceToken: token);
+  }
+
+  Future<void> _initPushNotifications() async {
     await _firebaseMessaging.setForegroundNotificationPresentationOptions(alert: true, badge: true, sound: true);
 
     // Get any messages which caused the application to open from
@@ -115,7 +117,7 @@ class _NeoCoreFirebaseMessagingState extends State<NeoCoreFirebaseMessaging> {
     });
   }
 
-  _initLocalNotifications() async {
+  Future<void> _initLocalNotifications() async {
     final String androidIcon = widget.androidDefaultIcon ?? "";
     final android = AndroidInitializationSettings(androidIcon);
     final settings = InitializationSettings(android: android);
