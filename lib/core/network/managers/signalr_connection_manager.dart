@@ -19,6 +19,7 @@ import 'package:logging/logging.dart';
 import 'package:neo_core/core/navigation/models/neo_navigation_type.dart';
 import 'package:neo_core/core/navigation/models/signalr_transition_data.dart';
 import 'package:neo_core/core/network/models/neo_signalr_transition.dart';
+import 'package:signalr_netcore/ihub_protocol.dart';
 import 'package:signalr_netcore/signalr_client.dart';
 
 class SignalrConnectionManager {
@@ -46,7 +47,15 @@ class SignalrConnectionManager {
     });
 
     _hubConnection = HubConnectionBuilder()
-        .withUrl(serverUrl, options: HttpConnectionOptions(logger: transportProtLogger))
+        .withUrl(
+          serverUrl,
+          options: HttpConnectionOptions(
+            logger: transportProtLogger,
+            headers: MessageHeaders()
+              ..setHeaderValue("Connection", 'upgrade')
+              ..setHeaderValue('Upgrade', 'websocket'),
+          ),
+        )
         .withAutomaticReconnect(retryDelays: [2000, 5000, 10000, 20000])
         .configureLogging(hubProtLogger)
         .build();
