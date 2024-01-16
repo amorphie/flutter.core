@@ -15,6 +15,7 @@ import 'dart:developer';
 
 import 'package:collection/collection.dart';
 import 'package:flutter/foundation.dart' show kDebugMode;
+import 'package:logging/logging.dart';
 import 'package:neo_core/core/navigation/models/neo_navigation_type.dart';
 import 'package:neo_core/core/navigation/models/signalr_transition_data.dart';
 import 'package:neo_core/core/network/models/neo_signalr_transition.dart';
@@ -30,10 +31,25 @@ class SignalrConnectionManager {
     required this.methodName,
   });
 
+// If you want only to log out the message for the higer level hub protocol:
+  final hubProtLogger = Logger("SignalR - hub");
+
+// If youn want to also to log out transport messages:
+  final transportProtLogger = Logger("SignalR - transport");
+
   Future init() async {
+    // Configer the logging
+    Logger.root.level = Level.ALL;
+// Writes the log messages to the console
+    Logger.root.onRecord.listen((LogRecord rec) {
+      print('${rec.level.name}: ${rec.time}: ${rec.message}');
+    });
+
     _hubConnection = HubConnectionBuilder()
-        .withUrl(serverUrl)
-        .withAutomaticReconnect(retryDelays: [2000, 5000, 10000, 20000]).build();
+        .withUrl(serverUrl, options: HttpConnectionOptions(logger: transportProtLogger))
+        .withAutomaticReconnect(retryDelays: [2000, 5000, 10000, 20000])
+        .configureLogging(hubProtLogger)
+        .build();
     _hubConnection?.onclose(({error}) {
       if (kDebugMode) {
         log('[SignalrConnectionManager]: onclose called');
