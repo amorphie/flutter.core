@@ -31,6 +31,17 @@ target 'Runner' do
   use_frameworks!
   use_modular_headers!
 
+  pod 'Alamofire'
+  pod 'GoogleMLKit/TextRecognition', '2.2.0'
+  pod 'OpenSSL-Universal', '1.1.1900'
+  pod 'Socket.IO-Client-Swift', '14.0.0'
+  pod 'Starscream', '3.0.6'
+  pod 'SwiftyJSON', '5.0'
+  pod 'GoogleMLKit/BarcodeScanning'
+  pod 'GoogleMLKit/FaceDetection'
+  pod 'GoogleWebRTC'
+  pod 'TensorFlowLiteSwift'
+
   flutter_install_all_ios_pods File.dirname(File.realpath(__FILE__))
   target 'RunnerTests' do
     inherit! :search_paths
@@ -40,5 +51,10 @@ end
 post_install do |installer|
   installer.pods_project.targets.each do |target|
     flutter_additional_ios_build_settings(target)
+  end
+
+  installer.pods_project.build_configurations.each do |config|
+      config.build_settings.delete('CODE_SIGNING_ALLOWED')
+      config.build_settings.delete('CODE_SIGNING_REQUIRED')
   end
 end

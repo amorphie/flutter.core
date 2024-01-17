@@ -46,7 +46,7 @@ class _EnverifyDemo extends State<EnverifyDemo> {
               ),
               onPressed: () {
                 print("SDK has been started");
-                //  BridgeManager().prepareSDK();
+                  BridgeManager().startSDK("hasan", "gücüyener", "ib");
               },
             ),
             OutlinedButton(
