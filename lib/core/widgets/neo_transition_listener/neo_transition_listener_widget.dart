@@ -30,7 +30,7 @@ class NeoTransitionListenerWidget extends StatefulWidget {
 }
 
 class _NeoTransitionListenerWidgetState extends State<NeoTransitionListenerWidget> {
-  late SignalrConnectionManager signalrConnectionManager;
+  SignalrConnectionManager? signalrConnectionManager;
   late NeoCoreSecureStorage neoCoreSecureStorage = NeoCoreSecureStorage();
 
   @override
@@ -44,8 +44,8 @@ class _NeoTransitionListenerWidgetState extends State<NeoTransitionListenerWidge
       serverUrl: widget.signalRServerUrl + await _getWorkflowQueryParameters(),
       methodName: widget.signalRMethodName,
     );
-    await signalrConnectionManager.init();
-    signalrConnectionManager.listenForTransitionEvents(
+    await signalrConnectionManager?.init();
+    signalrConnectionManager?.listenForTransitionEvents(
       transitionId: widget.transitionId,
       onPageNavigation: widget.onPageNavigation,
       onTokenRetrieved: (token, refreshToken) {
@@ -80,7 +80,7 @@ class _NeoTransitionListenerWidgetState extends State<NeoTransitionListenerWidge
 
   @override
   void dispose() {
-    signalrConnectionManager.stop();
+    signalrConnectionManager?.stop();
     super.dispose();
   }
 }
