@@ -25,6 +25,7 @@ class _Constants {
   static const String sharedPrefKeyRefreshToken = "shared_pref_key_refresh_token";
   static const String sharedPrefKeyCustomerId = "shared_pref_key_customer_id";
   static const String sharedPrefKeyDeviceRegistrationToken = "shared_pref_key_device_registration_token";
+  static const String sharedPrefKeyCustomerNameAndSurname = "shared_pref_key_customer_name_and_surname";
 }
 
 class NeoCoreSecureStorage {
@@ -110,12 +111,20 @@ class NeoCoreSecureStorage {
     return null;
   }
 
-  /// Set auth token(JWT) and customerId from encoded JWT
+  /// Set auth token(JWT), customerId and customerNameAndSurname from encoded JWT
   Future setAuthToken(String token) async {
     await _storage!.write(key: _Constants.sharedPrefKeyAuthToken, value: token);
-    final customerId = JwtDecoder.decode(token)["user.reference"];
+    final Map<String, dynamic> decodedToken = JwtDecoder.decode(token);
+
+    final customerId = decodedToken["user.reference"];
     if (customerId is String && customerId.isNotEmpty) {
       await _setCustomerId(customerId);
+    }
+
+    final customerName = decodedToken["given_name"];
+    final customerSurname = decodedToken["family_name"];
+    if (customerName is String && customerName.isNotEmpty && customerSurname is String && customerSurname.isNotEmpty) {
+      await _setCustomerNameAndSurname(customerName, customerSurname);
     }
   }
 
@@ -166,6 +175,18 @@ class NeoCoreSecureStorage {
     }
   }
 
+  Future<void> _setCustomerNameAndSurname(String name, String surname) async {
+    await _storage?.write(key: _Constants.sharedPrefKeyCustomerNameAndSurname, value: "$name $surname");
+  }
+
+  Future<String?> getCustomerNameAndSurname() async {
+    return await _storage?.read(key: _Constants.sharedPrefKeyCustomerNameAndSurname);
+  }
+
+  Future<void> _deleteCustomerNameAndSurname() async {
+    await _storage?.delete(key: _Constants.sharedPrefKeyCustomerNameAndSurname);
+  }
+
   Future deleteTokens() async {
     await _deleteAuthToken();
     await _deleteRefreshToken();
@@ -174,6 +195,7 @@ class NeoCoreSecureStorage {
   Future deleteCustomer() async {
     await deleteTokens();
     await _deleteCustomerId();
+    await _deleteCustomerNameAndSurname();
   }
 
   Future setDeviceRegistrationToken({required String registrationToken}) async {
