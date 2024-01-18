@@ -183,7 +183,7 @@ class NeoCoreSecureStorage {
     return await _storage?.read(key: _Constants.sharedPrefKeyCustomerNameAndSurname);
   }
 
-  Future<void> deleteCustomerNameAndSurname() async {
+  Future<void> _deleteCustomerNameAndSurname() async {
     await _storage?.delete(key: _Constants.sharedPrefKeyCustomerNameAndSurname);
   }
 
@@ -195,6 +195,7 @@ class NeoCoreSecureStorage {
   Future deleteCustomer() async {
     await deleteTokens();
     await _deleteCustomerId();
+    await _deleteCustomerNameAndSurname();
   }
 
   Future setDeviceRegistrationToken({required String registrationToken}) async {
