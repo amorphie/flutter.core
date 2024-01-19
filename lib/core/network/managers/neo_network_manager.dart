@@ -13,21 +13,31 @@
 import 'dart:convert';
 
 import 'package:flutter/foundation.dart' show debugPrint;
+import 'package:get_it/get_it.dart';
 import 'package:http/http.dart' as http;
 import 'package:json_annotation/json_annotation.dart';
 import 'package:neo_core/core/network/models/http_auth_response.dart';
 import 'package:neo_core/core/network/models/http_method.dart';
 import 'package:neo_core/core/network/models/neo_http_call.dart';
 import 'package:neo_core/core/network/models/neo_network_header_key.dart';
+import 'package:neo_core/core/util/neo_core_app_constants.dart';
 import 'package:neo_core/neo_core.dart';
 import 'package:uuid/uuid.dart';
 
 abstract class _Constants {
   static const int responseCodeUnauthorized = 401;
   static const String wrapperResponseKey = "data";
-  static const String refreshTokenEndpoint = "get-token";
+  static const String endpointGetToken = "get-token";
   static const String headerValueContentType = "application/json";
   static const String headerValueApplication = "burgan-mobile-app";
+  static const String requestKeyClientId = "client_id";
+  static const String requestKeyClientSecret = "client_secret";
+  static const String requestKeyGrantType = "grant_type";
+  static const String requestValueGrantTypeRefreshToken = "refresh_token";
+  static const String requestValueGrantTypeClientCredentials = "client_credentials";
+  static const String requestKeyRefreshToken = "refresh_token";
+  static const String requestKeyScopes = "scopes";
+  static const List<String> requestValueScopes = ["retail-customer"];
 }
 
 class NeoNetworkManager {
@@ -98,6 +108,8 @@ class NeoNetworkManager {
       // TODO: Throw custom exception
       throw NeoException(error: NeoError.defaultError());
     }
+    await _getTemporaryTokenForNotLoggedInUser(neoCall);
+
     switch (method) {
       case HttpMethod.get:
         return _requestGet(fullPath, neoCall);
@@ -197,7 +209,7 @@ class NeoNetworkManager {
     if (response.statusCode >= 200 && response.statusCode < 300) {
       return responseJSON;
     } else if (response.statusCode == _Constants.responseCodeUnauthorized) {
-      if (call.endpoint == _Constants.refreshTokenEndpoint) {
+      if (call.endpoint == _Constants.endpointGetToken) {
         throw NeoException(error: NeoError.defaultError());
       }
       final isTokenRefreshed = await _refreshAuthDetailsByUsingRefreshToken();
@@ -242,10 +254,10 @@ class NeoNetworkManager {
     try {
       final responseJson = await call(
         NeoHttpCall(
-          endpoint: _Constants.refreshTokenEndpoint,
+          endpoint: _Constants.endpointGetToken,
           body: {
-            "grant_type": "refresh_token",
-            "refresh_token": await secureStorage.getRefreshToken(),
+            _Constants.requestKeyGrantType: _Constants.requestValueGrantTypeRefreshToken,
+            _Constants.requestKeyRefreshToken: await secureStorage.getRefreshToken(),
           },
         ),
       );
@@ -257,6 +269,39 @@ class NeoNetworkManager {
       return true;
     } catch (_) {
       return false;
+    }
+  }
+
+  Future<void> _getTemporaryTokenForNotLoggedInUser(NeoHttpCall currentCall) async {
+    // Prevent infinite call loop
+    if (currentCall.endpoint == _Constants.endpointGetToken) {
+      return;
+    }
+    try {
+      final authToken = await secureStorage.getAuthToken();
+      if (authToken != null && authToken.isNotEmpty) {
+        return;
+      }
+
+      final appConstants = GetIt.I.get<NeoCoreAppConstants>();
+      final responseJson = await call(
+        NeoHttpCall(
+          endpoint: _Constants.endpointGetToken,
+          body: {
+            _Constants.requestKeyClientId: appConstants.workflowClientId,
+            _Constants.requestKeyClientSecret: appConstants.workflowClientSecret,
+            _Constants.requestKeyGrantType: _Constants.requestValueGrantTypeClientCredentials,
+            _Constants.requestKeyScopes: _Constants.requestValueScopes,
+          },
+        ),
+      );
+      final authResponse = HttpAuthResponse.fromJson(responseJson);
+      await Future.wait([
+        secureStorage.setAuthToken(authResponse.token),
+        secureStorage.setRefreshToken(authResponse.refreshToken),
+      ]);
+    } catch (_) {
+      // No-op
     }
   }
 }
