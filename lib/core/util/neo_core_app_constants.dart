@@ -13,11 +13,14 @@
 import 'package:equatable/equatable.dart';
 
 class NeoCoreAppConstants extends Equatable {
-  final String workflowHubUrl;
-  final String workflowMethodName;
+  final String workflowClientId;
+  final String workflowClientSecret;
 
-  const NeoCoreAppConstants({required this.workflowHubUrl, required this.workflowMethodName});
+  const NeoCoreAppConstants({
+    required this.workflowClientId,
+    required this.workflowClientSecret,
+  });
 
   @override
-  List<Object?> get props => [workflowHubUrl, workflowMethodName];
+  List<Object?> get props => [workflowClientId, workflowClientSecret];
 }
