@@ -180,11 +180,16 @@ class NeoCoreSecureStorage {
   }
 
   Future<String?> getCustomerNameAndSurname() async {
-    return await _storage?.read(key: _Constants.sharedPrefKeyCustomerNameAndSurname);
+    if (await _storage!.containsKey(key: _Constants.sharedPrefKeyCustomerNameAndSurname)) {
+      return await _storage?.read(key: _Constants.sharedPrefKeyCustomerNameAndSurname);
+    }
+    return null;
   }
 
   Future<void> _deleteCustomerNameAndSurname() async {
-    await _storage?.delete(key: _Constants.sharedPrefKeyCustomerNameAndSurname);
+    if (await _storage!.containsKey(key: _Constants.sharedPrefKeyCustomerNameAndSurname)) {
+      await _storage?.delete(key: _Constants.sharedPrefKeyCustomerNameAndSurname);
+    }
   }
 
   Future deleteTokens() async {
