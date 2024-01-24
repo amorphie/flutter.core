@@ -63,13 +63,13 @@ class SignalrConnectionManager {
   }) {
     _hubConnection?.on(methodName, (List<Object?>? transitions) {
       if (kDebugMode) {
-        log('\n[SignalrConnectionManager] Transition: $transitions');
+        log('\n[SignalrConnectionManager] TR: $transitions');
       }
       if (transitions == null) {
         return;
       }
       final NeoSignalRTransition? ongoingTransition = _parseOngoingTransition(transitions, transitionId);
-      log("\n[SignalrConnectionManager] ongoingTransition ${ongoingTransition}");
+      log("\n[SignalrConnectionManager] ongoingTransition ");
       if (ongoingTransition == null) {
         return;
       }
