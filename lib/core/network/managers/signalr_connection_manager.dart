@@ -69,7 +69,7 @@ class SignalrConnectionManager {
         return;
       }
       final NeoSignalRTransition? ongoingTransition = _parseOngoingTransition(transitions, transitionId);
-      print("ongoingTransition ${ongoingTransition}");
+      log("\n[SignalrConnectionManager] ongoingTransition ${ongoingTransition}");
       if (ongoingTransition == null) {
         return;
       }
@@ -108,7 +108,7 @@ class SignalrConnectionManager {
     Function(SignalrTransitionData navigationData) onPageNavigation,
     Function(String errorMessage)? onError,
   ) {
-    print("_handleTransitionNavigation ${ongoingTransition.pageDetails}");
+    log("\n[SignalrConnectionManager] ${ongoingTransition.pageDetails}");
     final isNavigationAllowed = ongoingTransition.pageDetails["operation"] == "Open";
     final navigationPath = ongoingTransition.pageDetails["pageRoute"]?["label"] as String?;
     final navigationType = ongoingTransition.pageDetails["type"] as String?;
