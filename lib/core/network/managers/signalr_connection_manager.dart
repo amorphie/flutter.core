@@ -56,9 +56,11 @@ class SignalrConnectionManager {
   }
 
   var counter = 0;
+
   void listenForTransitionEvents({
     required String transitionId,
     required Function(SignalrTransitionData navigationData) onPageNavigation,
+    required Function(String str) onEventFlow,
     Function(String token, String refreshToken)? onTokenRetrieved,
     Function(String errorMessage)? onError,
   }) {
@@ -81,7 +83,14 @@ class SignalrConnectionManager {
       //STOPSIP: REMOVE
       log("\n[SignalrConnectionManager] OngoingTransition${-counter}: ${ongoingTransition}");
       _retrieveTokenIfExist(ongoingTransition, onTokenRetrieved);
-      _handleTransitionNavigation(ongoingTransition, onPageNavigation, onError);
+
+      if (ongoingTransition.pageDetails == null) {
+        //&& ongoingTransition.additionalData != null
+        // ongoingTransition.additionalData?["isKYC"] == true)
+        _handleNonTransitionalFlow(ongoingTransition, onEventFlow, onError);
+      } else {
+        _handleTransitionNavigation(ongoingTransition, onPageNavigation, onError);
+      }
     });
   }
 
@@ -117,6 +126,7 @@ class SignalrConnectionManager {
   ) {
     //STOPSIP: REMOVE
     log("\n[SignalrConnectionManager] HandleTransitionNavigation${-counter}: ${ongoingTransition.pageDetails}");
+
     final isNavigationAllowed = ongoingTransition.pageDetails["operation"] == "Open";
     final navigationPath = ongoingTransition.pageDetails["pageRoute"]?["label"] as String?;
     final navigationType = ongoingTransition.pageDetails["type"] as String?;
@@ -135,6 +145,16 @@ class SignalrConnectionManager {
     } else if ((ongoingTransition.errorMessage.isNotEmpty) && onError != null) {
       onError(ongoingTransition.errorMessage);
     }
+  }
+
+  void _handleNonTransitionalFlow(
+    NeoSignalRTransition ongoingTransition,
+    Function(String str) onFlowEvent,
+    Function(String errorMessage)? onError,
+  ) {
+    log("\n[SignalrConnectionManager] HandleNonTransitionalFlow${-counter}: ${ongoingTransition.pageDetails}");
+    //STOPSHIP:
+    onFlowEvent("isKyc ");
   }
 
   void stop() {
