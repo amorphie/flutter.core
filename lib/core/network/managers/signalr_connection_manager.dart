@@ -55,6 +55,7 @@ class SignalrConnectionManager {
     }
   }
 
+  var counter = 0;
   void listenForTransitionEvents({
     required String transitionId,
     required Function(SignalrTransitionData navigationData) onPageNavigation,
@@ -62,22 +63,23 @@ class SignalrConnectionManager {
     Function(String errorMessage)? onError,
   }) {
     _hubConnection?.on(methodName, (List<Object?>? transitions) {
+      counter++;
       if (kDebugMode) {
-        log('\n[SignalrConnectionManager] Transition: $transitions');
+        log('\n[SignalrConnectionManager] Transition${-counter}: $transitions');
       }
       if (transitions == null) {
         //STOPSIP: REMOVE
-        log('\n[SignalrConnectionManager] Transition: NULL');
+        log('\n[SignalrConnectionManager] Transition${-counter}: NULL');
         return;
       }
       final NeoSignalRTransition? ongoingTransition = _parseOngoingTransition(transitions, transitionId);
       if (ongoingTransition == null) {
         //STOPSIP: REMOVE
-        log('\n[SignalrConnectionManager] OngoingTransition: NULL');
+        log('\n[SignalrConnectionManager] OngoingTransition${-counter}: NULL');
         return;
       }
       //STOPSIP: REMOVE
-      log("\n[SignalrConnectionManager] OngoingTransition ${ongoingTransition}");
+      log("\n[SignalrConnectionManager] OngoingTransition${-counter}: ${ongoingTransition}");
       _retrieveTokenIfExist(ongoingTransition, onTokenRetrieved);
       _handleTransitionNavigation(ongoingTransition, onPageNavigation, onError);
     });
@@ -114,7 +116,7 @@ class SignalrConnectionManager {
     Function(String errorMessage)? onError,
   ) {
     //STOPSIP: REMOVE
-    log("\n[SignalrConnectionManager] ${ongoingTransition.pageDetails}");
+    log("\n[SignalrConnectionManager] HandleTransitionNavigation${-counter}: ${ongoingTransition.pageDetails}");
     final isNavigationAllowed = ongoingTransition.pageDetails["operation"] == "Open";
     final navigationPath = ongoingTransition.pageDetails["pageRoute"]?["label"] as String?;
     final navigationType = ongoingTransition.pageDetails["type"] as String?;
