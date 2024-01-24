@@ -63,16 +63,21 @@ class SignalrConnectionManager {
   }) {
     _hubConnection?.on(methodName, (List<Object?>? transitions) {
       if (kDebugMode) {
-        log('\n[SignalrConnectionManager] TR: $transitions');
+        log('\n[SignalrConnectionManager] Transition: $transitions');
       }
       if (transitions == null) {
+        //STOPSIP: REMOVE
+        log('\n[SignalrConnectionManager] Transition: NULL');
         return;
       }
       final NeoSignalRTransition? ongoingTransition = _parseOngoingTransition(transitions, transitionId);
-      log("\n[SignalrConnectionManager] ongoingTransition ");
       if (ongoingTransition == null) {
+        //STOPSIP: REMOVE
+        log('\n[SignalrConnectionManager] OngoingTransition: NULL');
         return;
       }
+      //STOPSIP: REMOVE
+      log("\n[SignalrConnectionManager] OngoingTransition ${ongoingTransition}");
       _retrieveTokenIfExist(ongoingTransition, onTokenRetrieved);
       _handleTransitionNavigation(ongoingTransition, onPageNavigation, onError);
     });
@@ -108,6 +113,7 @@ class SignalrConnectionManager {
     Function(SignalrTransitionData navigationData) onPageNavigation,
     Function(String errorMessage)? onError,
   ) {
+    //STOPSIP: REMOVE
     log("\n[SignalrConnectionManager] ${ongoingTransition.pageDetails}");
     final isNavigationAllowed = ongoingTransition.pageDetails["operation"] == "Open";
     final navigationPath = ongoingTransition.pageDetails["pageRoute"]?["label"] as String?;
