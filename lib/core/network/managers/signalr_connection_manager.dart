@@ -11,10 +11,9 @@
  */
 
 import 'dart:convert';
-import 'dart:developer';
 
 import 'package:collection/collection.dart';
-import 'package:flutter/foundation.dart' show kDebugMode;
+import 'package:flutter/foundation.dart' show debugPrint, kDebugMode;
 import 'package:neo_core/core/navigation/models/neo_navigation_type.dart';
 import 'package:neo_core/core/navigation/models/signalr_transition_data.dart';
 import 'package:neo_core/core/network/models/neo_signalr_transition.dart';
@@ -36,17 +35,17 @@ class SignalrConnectionManager {
         .withAutomaticReconnect(retryDelays: [2000, 5000, 10000, 20000]).build();
     _hubConnection?.onclose(({error}) {
       if (kDebugMode) {
-        log('[SignalrConnectionManager]: onclose called');
+        debugPrint('[SignalrConnectionManager]: onclose called');
       }
     });
     _hubConnection?.onreconnecting(({error}) {
       if (kDebugMode) {
-        log('[SignalrConnectionManager]: onreconnecting called');
+        debugPrint('[SignalrConnectionManager]: onreconnecting called');
       }
     });
     _hubConnection?.onreconnected(({connectionId}) {
       if (kDebugMode) {
-        log('[SignalrConnectionManager]: onreconnected called');
+        debugPrint('[SignalrConnectionManager]: onreconnected called');
       }
     });
 
@@ -67,21 +66,21 @@ class SignalrConnectionManager {
     _hubConnection?.on(methodName, (List<Object?>? transitions) {
       counter++;
       if (kDebugMode) {
-        log('\n[SignalrConnectionManager] Transition${-counter}: $transitions');
+        debugPrint('\n[SignalrConnectionManager] Transition${-counter}: $transitions');
       }
       if (transitions == null) {
         //STOPSIP: REMOVE
-        log('\n[SignalrConnectionManager] Transition${-counter}: NULL');
+        debugPrint('\n[SignalrConnectionManager] Transition${-counter}: NULL');
         return;
       }
       final NeoSignalRTransition? ongoingTransition = _parseOngoingTransition(transitions, transitionId);
       if (ongoingTransition == null) {
         //STOPSIP: REMOVE
-        log('\n[SignalrConnectionManager] OngoingTransition${-counter}: NULL');
+        debugPrint('\n[SignalrConnectionManager] OngoingTransition${-counter}: NULL');
         return;
       }
       //STOPSIP: REMOVE
-      log("\n[SignalrConnectionManager] OngoingTransition${-counter}: ${ongoingTransition}");
+      debugPrint("\n[SignalrConnectionManager] OngoingTransition${-counter}: ${ongoingTransition}");
       _retrieveTokenIfExist(ongoingTransition, onTokenRetrieved);
 
       if (ongoingTransition.pageDetails == null) {
@@ -125,7 +124,7 @@ class SignalrConnectionManager {
     Function(String errorMessage)? onError,
   ) {
     //STOPSIP: REMOVE
-    log("\n[SignalrConnectionManager] HandleTransitionNavigation${-counter}: ${ongoingTransition.pageDetails}");
+    debugPrint("\n[SignalrConnectionManager] HandleTransitionNavigation${-counter}: ${ongoingTransition.pageDetails}");
 
     final isNavigationAllowed = ongoingTransition.pageDetails["operation"] == "Open";
     final navigationPath = ongoingTransition.pageDetails["pageRoute"]?["label"] as String?;
@@ -152,7 +151,7 @@ class SignalrConnectionManager {
     Function(String str) onFlowEvent,
     Function(String errorMessage)? onError,
   ) {
-    log("\n[SignalrConnectionManager] HandleNonTransitionalFlow${-counter}: ${ongoingTransition.pageDetails}");
+    debugPrint("\n[SignalrConnectionManager] HandleNonTransitionalFlow${-counter}: ${ongoingTransition.pageDetails}");
     //STOPSHIP:
     onFlowEvent("isKyc ");
   }
