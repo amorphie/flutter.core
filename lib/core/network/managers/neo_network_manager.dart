@@ -109,7 +109,7 @@ class NeoNetworkManager {
       throw NeoException(error: NeoError.defaultError());
     }
     await _getTemporaryTokenForNotLoggedInUser(neoCall);
-
+    debugPrint("Fullpath: $fullPath");
     switch (method) {
       case HttpMethod.get:
         return _requestGet(fullPath, neoCall);
