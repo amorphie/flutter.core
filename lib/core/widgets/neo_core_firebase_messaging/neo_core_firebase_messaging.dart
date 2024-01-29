@@ -13,6 +13,7 @@ abstract class _Constant {
   static const androidNotificationChannelID = "high_importance_channel";
   static const androidNotificationChannelName = "High Importance Notifications";
   static const androidNotificationChannelDescription = "This channel is used for important notifications";
+  static const pushNotificationDeeplinkKey = "deeplink";
 }
 
 @pragma('vm:entry-point')
@@ -25,12 +26,14 @@ class NeoCoreFirebaseMessaging extends StatefulWidget {
     required this.child,
     required this.networkManager,
     this.androidDefaultIcon,
+    this.onDeeplinkNavigation,
     super.key,
   });
 
   final Widget child;
   final NeoNetworkManager networkManager;
   final String? androidDefaultIcon;
+  final Function(String)? onDeeplinkNavigation;
 
   @override
   State<NeoCoreFirebaseMessaging> createState() => _NeoCoreFirebaseMessagingState();
@@ -82,19 +85,16 @@ class _NeoCoreFirebaseMessagingState extends State<NeoCoreFirebaseMessaging> {
   Future<void> _initPushNotifications() async {
     await _firebaseMessaging.setForegroundNotificationPresentationOptions(alert: true, badge: true, sound: true);
 
-    // Get any messages which caused the application to open from
-    // a terminated state.
+    // Get any messages which caused the application to open from a terminated state.
     await _firebaseMessaging.getInitialMessage().then(_handleMessage);
 
-    // Also handle any interaction when the app is in the background via a
-    // Stream listener
+    // Also handle any interaction when the app is in the background via Stream listener
     FirebaseMessaging.onMessageOpenedApp.listen(_handleMessage);
 
-    ///Sadece Android'de çalışan notification alındığı zaman payload'u alan fonksiyon
+    // Background message handler for Android platform
     FirebaseMessaging.onBackgroundMessage(onBackgroundMessage);
 
-    /// This is called when an incoming FCM payload is received whilst
-    /// the Flutter instance is in the foreground.
+    // This is called when an incoming FCM payload is received while the Flutter instance is in the foreground.
     FirebaseMessaging.onMessage.listen((message) {
       final notification = message.notification;
       if (notification == null || !Platform.isAndroid) {
@@ -133,9 +133,9 @@ class _NeoCoreFirebaseMessagingState extends State<NeoCoreFirebaseMessaging> {
         }
       },
     );
-    final platform =
-        _localNotifications.resolvePlatformSpecificImplementation<AndroidFlutterLocalNotificationsPlugin>();
-    await platform?.createNotificationChannel(_androidChannel);
+    await _localNotifications
+        .resolvePlatformSpecificImplementation<AndroidFlutterLocalNotificationsPlugin>()
+        ?.createNotificationChannel(_androidChannel);
   }
 
   Future<String?> _getTokenBasedOnPlatform() async {
@@ -154,6 +154,9 @@ class _NeoCoreFirebaseMessagingState extends State<NeoCoreFirebaseMessaging> {
     if (message == null) {
       return;
     }
-    // TODO: Handle push message
+    final String? deeplinkPath = message.data[_Constant.pushNotificationDeeplinkKey];
+    if (deeplinkPath != null && deeplinkPath.isNotEmpty) {
+      widget.onDeeplinkNavigation?.call(deeplinkPath);
+    }
   }
 }
