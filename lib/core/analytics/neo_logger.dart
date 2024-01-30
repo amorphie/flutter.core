@@ -35,17 +35,17 @@ class NeoLogger implements INeoLogger {
 
   Future<void> init({bool enableCrashlytics = false, bool enablePosthog = false}) async {
     if (!kIsWeb) {
-      _neoCrashlytics = NeoCrashlytics();
       if (enableCrashlytics) {
+        _neoCrashlytics = NeoCrashlytics();
         await _neoCrashlytics?.initializeCrashlytics();
+        await _neoCrashlytics?.setEnabled(enabled: enableCrashlytics);
       }
-      await _neoCrashlytics?.setEnabled(enabled: enableCrashlytics);
     }
 
     if (enablePosthog) {
       observers = [PosthogObserver()];
+      await _neoPosthog.setEnabled(enabled: enablePosthog);
     }
-    await _neoPosthog.setEnabled(enabled: enablePosthog);
   }
 
   @override
