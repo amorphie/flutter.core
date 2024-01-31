@@ -23,4 +23,5 @@ abstract class NeoNetworkHeaderKey {
   static const customer = "A-Customer";
   static const user = "User";
   static const behalfOfUser = "Behalf-Of-User";
+  static const accessToken = "access_token";
 }
