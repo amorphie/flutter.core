@@ -18,6 +18,7 @@ import 'package:neo_core/core/analytics/i_neo_logger.dart';
 import 'package:neo_core/core/analytics/neo_crashlytics.dart';
 import 'package:neo_core/core/analytics/neo_posthog.dart';
 import 'package:posthog_flutter/posthog_flutter.dart';
+import 'package:universal_io/io.dart';
 
 class NeoLogger implements INeoLogger {
   static final NeoLogger _instance = NeoLogger._internal();
@@ -34,6 +35,9 @@ class NeoLogger implements INeoLogger {
   NeoLogger._internal();
 
   Future<void> init({bool enableCrashlytics = false, bool enablePosthog = false}) async {
+    if (Platform.isMacOS || Platform.isWindows) {
+      return;
+    }
     if (!kIsWeb) {
       if (enableCrashlytics) {
         _neoCrashlytics = NeoCrashlytics();
