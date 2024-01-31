@@ -58,7 +58,7 @@ class NeoLogger implements INeoLogger {
   }
 
   @override
-  void logNavigationEvent(String eventName, {Map<String, dynamic>? properties, Map<String, dynamic>? options}) {
+  void logEvent(String eventName, {Map<String, dynamic>? properties, Map<String, dynamic>? options}) {
     _neoPosthog.logEvent(eventName, properties: properties, options: options);
   }
 

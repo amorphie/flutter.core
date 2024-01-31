@@ -23,7 +23,7 @@ abstract class INeoLogger {
     Map<String, dynamic>? options,
   });
 
-  void logNavigationEvent(
+  void logEvent(
     String eventName, {
     Map<String, dynamic>? properties,
     Map<String, dynamic>? options,
