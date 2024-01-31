@@ -13,44 +13,60 @@
 import 'dart:convert';
 
 import 'package:collection/collection.dart';
-import 'package:flutter/foundation.dart' show debugPrint, kDebugMode;
+import 'package:flutter/foundation.dart' show kDebugMode;
+import 'package:flutter/material.dart';
+import 'package:neo_core/core/analytics/neo_logger.dart';
 import 'package:neo_core/core/navigation/models/neo_navigation_type.dart';
 import 'package:neo_core/core/navigation/models/signalr_transition_data.dart';
 import 'package:neo_core/core/network/models/neo_signalr_transition.dart';
 import 'package:signalr_netcore/signalr_client.dart';
 
+abstract class _Constants {
+  static const eventNameSignalrOnClose = "[SignalrConnectionManager]: onClose is called!";
+  static const eventNameSignalrOnReconnecting = "[SignalrConnectionManager]: onReconnecting is called!";
+  static const eventNameSignalrOnReconnected = "[SignalrConnectionManager]: onReconnected is called!";
+  static const eventNameSignalrInitSucceed = "[SignalrConnectionManager]: init is succeed!";
+  static const eventNameSignalrInitFailed = "[SignalrConnectionManager]: init is failed!";
+}
+
 class SignalrConnectionManager {
   final String serverUrl;
   final String methodName;
+  final NeoLogger _neoLogger;
+
   HubConnection? _hubConnection;
 
   SignalrConnectionManager({
     required this.serverUrl,
     required this.methodName,
-  });
+  }) : _neoLogger = NeoLogger();
 
   Future init() async {
     _hubConnection = HubConnectionBuilder()
         .withUrl(serverUrl)
         .withAutomaticReconnect(retryDelays: [2000, 5000, 10000, 20000]).build();
     _hubConnection?.onclose(({error}) {
-      if (kDebugMode) {
-        debugPrint('[SignalrConnectionManager]: onclose called');
-      }
+      _neoLogger.logEvent(_Constants.eventNameSignalrOnClose);
+      debugPrint(_Constants.eventNameSignalrOnClose);
     });
     _hubConnection?.onreconnecting(({error}) {
-      if (kDebugMode) {
-        debugPrint('[SignalrConnectionManager]: onreconnecting called');
-      }
+      _neoLogger.logEvent(_Constants.eventNameSignalrOnReconnecting);
+      debugPrint(_Constants.eventNameSignalrOnReconnecting);
     });
     _hubConnection?.onreconnected(({connectionId}) {
-      if (kDebugMode) {
-        debugPrint('[SignalrConnectionManager]: onreconnected called');
-      }
+      _neoLogger.logEvent(_Constants.eventNameSignalrOnReconnected);
+      debugPrint(_Constants.eventNameSignalrOnReconnected);
     });
 
     if (_hubConnection?.state != HubConnectionState.Connected) {
-      await _hubConnection?.start();
+      try {
+        await _hubConnection?.start();
+        _neoLogger.logEvent(_Constants.eventNameSignalrInitSucceed);
+        debugPrint(_Constants.eventNameSignalrInitSucceed);
+      } on Exception catch (e, stacktrace) {
+        _neoLogger.logException("${_Constants.eventNameSignalrInitFailed} $e", stacktrace);
+        debugPrint(_Constants.eventNameSignalrInitFailed);
+      }
     }
   }
 

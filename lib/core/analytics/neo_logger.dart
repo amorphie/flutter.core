@@ -18,6 +18,7 @@ import 'package:neo_core/core/analytics/i_neo_logger.dart';
 import 'package:neo_core/core/analytics/neo_crashlytics.dart';
 import 'package:neo_core/core/analytics/neo_posthog.dart';
 import 'package:posthog_flutter/posthog_flutter.dart';
+import 'package:universal_io/io.dart';
 
 class NeoLogger implements INeoLogger {
   static final NeoLogger _instance = NeoLogger._internal();
@@ -34,18 +35,21 @@ class NeoLogger implements INeoLogger {
   NeoLogger._internal();
 
   Future<void> init({bool enableCrashlytics = false, bool enablePosthog = false}) async {
+    if (Platform.isMacOS || Platform.isWindows) {
+      return;
+    }
     if (!kIsWeb) {
-      _neoCrashlytics = NeoCrashlytics();
       if (enableCrashlytics) {
+        _neoCrashlytics = NeoCrashlytics();
         await _neoCrashlytics?.initializeCrashlytics();
+        await _neoCrashlytics?.setEnabled(enabled: enableCrashlytics);
       }
-      await _neoCrashlytics?.setEnabled(enabled: enableCrashlytics);
     }
 
     if (enablePosthog) {
       observers = [PosthogObserver()];
+      await _neoPosthog.setEnabled(enabled: enablePosthog);
     }
-    await _neoPosthog.setEnabled(enabled: enablePosthog);
   }
 
   @override
@@ -54,7 +58,7 @@ class NeoLogger implements INeoLogger {
   }
 
   @override
-  void logNavigationEvent(String eventName, {Map<String, dynamic>? properties, Map<String, dynamic>? options}) {
+  void logEvent(String eventName, {Map<String, dynamic>? properties, Map<String, dynamic>? options}) {
     _neoPosthog.logEvent(eventName, properties: properties, options: options);
   }
 

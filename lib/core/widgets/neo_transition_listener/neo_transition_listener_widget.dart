@@ -71,14 +71,17 @@ class _NeoTransitionListenerWidgetState extends State<NeoTransitionListenerWidge
     final results = await Future.wait([
       secureStorage.getDeviceId(),
       secureStorage.getTokenId(),
+      secureStorage.getAuthToken(),
     ]);
 
     final deviceId = results[0] ?? "";
     final tokenId = results[1] ?? "";
+    final authToken = results[2] ?? "";
 
     return "?${NeoNetworkHeaderKey.deviceId}=$deviceId&"
         "${NeoNetworkHeaderKey.tokenId}=$tokenId&"
-        "${NeoNetworkHeaderKey.requestId}=${const Uuid().v1()}";
+        "${NeoNetworkHeaderKey.requestId}=${const Uuid().v1()}&"
+        "${NeoNetworkHeaderKey.accessToken}=$authToken";
   }
 
   @override
