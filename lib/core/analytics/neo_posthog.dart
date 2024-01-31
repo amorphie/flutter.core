@@ -12,10 +12,21 @@
  * 
  */
 
+import 'dart:async';
+
+import 'package:neo_core/core/storage/neo_core_secure_storage.dart';
 import 'package:posthog_flutter/posthog_flutter.dart';
 
 class NeoPosthog {
+  NeoPosthog() {
+    _init();
+  }
+
   final Posthog _posthog = Posthog();
+
+  Future<void> _init() async {
+    unawaited(_posthog.identify(userId: await NeoCoreSecureStorage().getTokenId() ?? ""));
+  }
 
   Future<void> setScreen(
     String screenName, {
