@@ -17,8 +17,6 @@ import 'package:collection/collection.dart';
 import 'package:flutter/foundation.dart' show kDebugMode;
 import 'package:flutter/material.dart';
 import 'package:neo_core/core/analytics/neo_logger.dart';
-import 'package:neo_core/core/navigation/models/neo_navigation_type.dart';
-import 'package:neo_core/core/navigation/models/signalr_transition_data.dart';
 import 'package:neo_core/core/network/models/neo_signalr_transition.dart';
 import 'package:signalr_netcore/signalr_client.dart';
 
@@ -73,11 +71,7 @@ class SignalrConnectionManager {
     }
   }
 
-  void listenForTransitionEvents({
-    required Function(SignalrTransitionData navigationData) onPageNavigation,
-    Function(String token, String refreshToken)? onTokenRetrieved,
-    Function(String errorMessage)? onError,
-  }) {
+  void listenForTransitionEvents({required Function(NeoSignalRTransition transition) onTransition}) {
     _hubConnection?.on(methodName, (List<Object?>? transitions) {
       if (kDebugMode) {
         log('\n[SignalrConnectionManager] Transition: $transitions');
@@ -89,8 +83,7 @@ class SignalrConnectionManager {
       if (ongoingTransition == null) {
         return;
       }
-      _retrieveTokenIfExist(ongoingTransition, onTokenRetrieved);
-      _handleTransitionNavigation(ongoingTransition, onPageNavigation, onError);
+      onTransition(ongoingTransition);
     });
   }
 
@@ -110,42 +103,6 @@ class SignalrConnectionManager {
         .whereNotNull()
         .toList()
         .firstOrNull;
-  }
-
-  void _retrieveTokenIfExist(
-    NeoSignalRTransition ongoingTransition,
-    Function(String token, String refreshToken)? onTokenRetrieved,
-  ) {
-    final String? token = ongoingTransition.additionalData?["access_token"];
-    final String? refreshToken = ongoingTransition.additionalData?["refresh_token"];
-    if (onTokenRetrieved != null && token != null && token.isNotEmpty) {
-      onTokenRetrieved(token, refreshToken ?? "");
-    }
-  }
-
-  void _handleTransitionNavigation(
-    NeoSignalRTransition ongoingTransition,
-    Function(SignalrTransitionData navigationData) onPageNavigation,
-    Function(String errorMessage)? onError,
-  ) {
-    final isNavigationAllowed = ongoingTransition.pageDetails["operation"] == "Open";
-    final navigationPath = ongoingTransition.pageDetails["pageRoute"]?["label"] as String?;
-    final navigationType = ongoingTransition.pageDetails["type"] as String?;
-    final isBackNavigation = ongoingTransition.buttonType == "Back";
-    if (isNavigationAllowed && navigationPath != null) {
-      onPageNavigation(
-        SignalrTransitionData(
-          navigationPath: navigationPath,
-          navigationType: NeoNavigationType.fromJson(navigationType ?? ""),
-          pageId: ongoingTransition.pageId,
-          viewSource: ongoingTransition.viewSource,
-          initialData: ongoingTransition.additionalData ?? {},
-          isBackNavigation: isBackNavigation,
-        ),
-      );
-    } else if ((ongoingTransition.errorMessage.isNotEmpty) && onError != null) {
-      onError(ongoingTransition.errorMessage);
-    }
   }
 
   void stop() {
