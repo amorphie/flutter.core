@@ -13,4 +13,7 @@
 part of 'neo_transition_listener_bloc.dart';
 
 @immutable
-class NeoTransitionListenerState {}
+class NeoTransitionListenerState extends Equatable {
+  @override
+  List<Object?> get props => [];
+}

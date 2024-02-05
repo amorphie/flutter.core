@@ -12,10 +12,10 @@
 
 part of 'neo_transition_listener_bloc.dart';
 
-@immutable
-sealed class NeoTransitionListenerEvent {}
+sealed class NeoTransitionListenerEvent extends Equatable {}
 
 class NeoTransitionListenerEventInit extends NeoTransitionListenerEvent {
+  final NeoNetworkManager neoNetworkManager;
   final String signalRServerUrl;
   final String signalRMethodName;
   final Function(SignalrTransitionData navigationData) onPageNavigation;
@@ -23,10 +23,40 @@ class NeoTransitionListenerEventInit extends NeoTransitionListenerEvent {
   final Function(String errorMessage)? onError;
 
   NeoTransitionListenerEventInit({
+    required this.neoNetworkManager,
     required this.signalRServerUrl,
     required this.signalRMethodName,
     required this.onPageNavigation,
     required this.onLoggedInSuccessfully,
     required this.onError,
   });
+
+  @override
+  List<Object?> get props => [
+        neoNetworkManager,
+        signalRServerUrl,
+        signalRMethodName,
+        onPageNavigation,
+        onLoggedInSuccessfully,
+        onError,
+      ];
+}
+
+class NeoTransitionListenerEventStartTransition extends NeoTransitionListenerEvent {
+  final String workflowName;
+
+  NeoTransitionListenerEventStartTransition({required this.workflowName});
+
+  @override
+  List<Object?> get props => [workflowName];
+}
+
+class NeoTransitionListenerEventPostTransition extends NeoTransitionListenerEvent {
+  final String transitionName;
+  final Map<String, dynamic> body;
+
+  NeoTransitionListenerEventPostTransition({required this.transitionName, required this.body});
+
+  @override
+  List<Object?> get props => [transitionName, body];
 }

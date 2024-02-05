@@ -11,11 +11,14 @@
  */
 
 import 'package:bloc/bloc.dart';
+import 'package:equatable/equatable.dart';
 import 'package:flutter/foundation.dart';
 import 'package:neo_core/core/navigation/models/signalr_transition_data.dart';
+import 'package:neo_core/core/network/managers/neo_network_manager.dart';
 import 'package:neo_core/core/network/managers/signalr_connection_manager.dart';
 import 'package:neo_core/core/network/models/neo_network_header_key.dart';
 import 'package:neo_core/core/storage/neo_core_secure_storage.dart';
+import 'package:neo_core/core/workflow_form/neo_workflow_manager.dart';
 import 'package:uuid/uuid.dart';
 
 part 'neo_transition_listener_event.dart';
@@ -23,13 +26,17 @@ part 'neo_transition_listener_state.dart';
 
 class NeoTransitionListenerBloc extends Bloc<NeoTransitionListenerEvent, NeoTransitionListenerState> {
   late final NeoCoreSecureStorage neoCoreSecureStorage = NeoCoreSecureStorage();
+  late NeoWorkflowManager neoWorkflowManager;
   SignalrConnectionManager? signalrConnectionManager;
 
   NeoTransitionListenerBloc() : super(NeoTransitionListenerState()) {
     on<NeoTransitionListenerEventInit>((event, emit) => _onInit(event));
+    on<NeoTransitionListenerEventStartTransition>((event, emit) => _onStartTransition(event));
+    on<NeoTransitionListenerEventPostTransition>((event, emit) => _onPostTransition(event));
   }
 
   Future<void> _onInit(NeoTransitionListenerEventInit event) async {
+    neoWorkflowManager = NeoWorkflowManager(event.neoNetworkManager);
     signalrConnectionManager = SignalrConnectionManager(
       serverUrl: event.signalRServerUrl + await _getWorkflowQueryParameters(),
       methodName: event.signalRMethodName,
@@ -63,6 +70,14 @@ class NeoTransitionListenerBloc extends Bloc<NeoTransitionListenerEvent, NeoTran
         "${NeoNetworkHeaderKey.tokenId}=$tokenId&"
         "${NeoNetworkHeaderKey.requestId}=${const Uuid().v1()}&"
         "${NeoNetworkHeaderKey.accessToken}=$authToken";
+  }
+
+  void _onStartTransition(NeoTransitionListenerEventStartTransition event) {
+    NeoWorkflowManager.resetInstanceId();
+  }
+
+  Future<void> _onPostTransition(NeoTransitionListenerEventPostTransition event) async {
+    await neoWorkflowManager.postTransition(transitionName: event.transitionName, body: event.body);
   }
 
   @override
