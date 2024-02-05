@@ -12,6 +12,7 @@ class NeoTransitionListenerWidget extends StatelessWidget {
   final Function(SignalrTransitionData navigationData) onPageNavigation;
   final VoidCallback? onLoggedInSuccessfully;
   final Function(String errorMessage)? onError;
+  final Function({required bool displayLoading}) onLoadingStatusChanged;
 
   const NeoTransitionListenerWidget({
     required this.child,
@@ -19,6 +20,7 @@ class NeoTransitionListenerWidget extends StatelessWidget {
     required this.signalRServerUrl,
     required this.signalRMethodName,
     required this.onPageNavigation,
+    required this.onLoadingStatusChanged,
     this.onLoggedInSuccessfully,
     this.onError,
     Key? key,
@@ -30,13 +32,13 @@ class NeoTransitionListenerWidget extends StatelessWidget {
       create: (context) => NeoTransitionListenerBloc()
         ..add(
           NeoTransitionListenerEventInit(
-            neoNetworkManager: neoNetworkManager,
-            signalRServerUrl: signalRServerUrl,
-            signalRMethodName: signalRMethodName,
-            onPageNavigation: onPageNavigation,
-            onLoggedInSuccessfully: onLoggedInSuccessfully,
-            onError: onError,
-          ),
+              neoNetworkManager: neoNetworkManager,
+              signalRServerUrl: signalRServerUrl,
+              signalRMethodName: signalRMethodName,
+              onPageNavigation: onPageNavigation,
+              onLoggedInSuccessfully: onLoggedInSuccessfully,
+              onError: onError,
+              onLoadingStatusChanged: onLoadingStatusChanged),
         ),
       child: BlocBuilder<NeoTransitionListenerBloc, NeoTransitionListenerState>(
         builder: (context, state) {

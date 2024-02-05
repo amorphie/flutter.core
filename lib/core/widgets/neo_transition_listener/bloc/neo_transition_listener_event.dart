@@ -21,6 +21,7 @@ class NeoTransitionListenerEventInit extends NeoTransitionListenerEvent {
   final Function(SignalrTransitionData navigationData) onPageNavigation;
   final VoidCallback? onLoggedInSuccessfully;
   final Function(String errorMessage)? onError;
+  final Function({required bool displayLoading}) onLoadingStatusChanged;
 
   NeoTransitionListenerEventInit({
     required this.neoNetworkManager,
@@ -29,6 +30,7 @@ class NeoTransitionListenerEventInit extends NeoTransitionListenerEvent {
     required this.onPageNavigation,
     required this.onLoggedInSuccessfully,
     required this.onError,
+    required this.onLoadingStatusChanged,
   });
 
   @override
@@ -39,6 +41,7 @@ class NeoTransitionListenerEventInit extends NeoTransitionListenerEvent {
         onPageNavigation,
         onLoggedInSuccessfully,
         onError,
+        onLoadingStatusChanged,
       ];
 }
 
