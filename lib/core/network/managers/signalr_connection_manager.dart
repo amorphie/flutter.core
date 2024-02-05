@@ -42,6 +42,7 @@ class SignalrConnectionManager {
   }) : _neoLogger = NeoLogger();
 
   Future init() async {
+    debugPrint('\n[SignalrConnectionManager] INIT!!!!');
     _hubConnection = HubConnectionBuilder()
         .withUrl(serverUrl)
         .withAutomaticReconnect(retryDelays: [2000, 5000, 10000, 20000]).build();
