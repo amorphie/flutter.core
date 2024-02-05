@@ -12,19 +12,16 @@
 
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:neo_core/core/navigation/i_neo_navigation_helper.dart';
 import 'package:neo_core/core/util/neo_core_app_constants.dart';
 import 'package:neo_core/core/widgets/neo_core_app/bloc/neo_core_app_bloc.dart';
 
 class NeoCoreApp extends StatelessWidget {
   final Widget child;
   final NeoCoreAppConstants appConstants;
-  final INeoNavigationHelper neoNavigationHelper;
 
   const NeoCoreApp({
     required this.child,
     required this.appConstants,
-    required this.neoNavigationHelper,
     Key? key,
   }) : super(key: key);
 
@@ -33,10 +30,7 @@ class NeoCoreApp extends StatelessWidget {
     return BlocProvider(
       create: (context) => NeoCoreAppBloc()
         ..add(
-          NeoCoreAppEventInitConfigurations(
-            appConstants: appConstants,
-            neoNavigationHelper: neoNavigationHelper,
-          ),
+          NeoCoreAppEventInitConfigurations(appConstants: appConstants),
         ),
       child: BlocBuilder<NeoCoreAppBloc, NeoCoreAppState>(
         builder: (context, state) {
