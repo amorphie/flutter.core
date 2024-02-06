@@ -42,16 +42,14 @@ class NeoError extends Equatable {
   List<Object?> get props => [responseCode, displayMode, messages];
 
   const NeoError({
-    required this.responseCode,
+    this.responseCode = _Constants.defaultErrorCode,
     this.displayMode = _Constants.defaultErrorDisplayMode,
     this.messages = _Constants.defaultErrorMessages,
   });
 
   factory NeoError.fromJson(Map<String, dynamic> json) => _$NeoErrorFromJson(json);
 
-  factory NeoError.defaultError() => const NeoError(
-        responseCode: _Constants.defaultErrorCode,
-      );
+  factory NeoError.defaultError() => const NeoError();
 
   NeoErrorMessage? getErrorMessageByLanguageCode(String languageCode) {
     return messages.firstWhereOrNull((errorMessage) => errorMessage.language == languageCode);

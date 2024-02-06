@@ -24,6 +24,10 @@ import 'package:uuid/uuid.dart';
 part 'neo_transition_listener_event.dart';
 part 'neo_transition_listener_state.dart';
 
+abstract class _Constants {
+  static const defaultErrorCode = "400";
+}
+
 class NeoTransitionListenerBloc extends Bloc<NeoTransitionListenerEvent, NeoTransitionListenerState> {
   late final NeoCoreSecureStorage neoCoreSecureStorage = NeoCoreSecureStorage();
   late NeoWorkflowManager neoWorkflowManager;
@@ -98,12 +102,14 @@ class NeoTransitionListenerBloc extends Bloc<NeoTransitionListenerEvent, NeoTran
   void _handleTransitionNavigation({
     required NeoSignalRTransition ongoingTransition,
     required Function(SignalrTransitionData navigationData) onPageNavigation,
-    required Function(String errorMessage)? onError,
+    required Function(NeoError error)? onError,
   }) {
     final isNavigationAllowed = ongoingTransition.pageDetails["operation"] == "Open";
     final navigationPath = ongoingTransition.pageDetails["pageRoute"]?["label"] as String?;
     final navigationType = ongoingTransition.pageDetails["type"] as String?;
     final isBackNavigation = ongoingTransition.buttonType == "Back";
+    final errorMessage = ongoingTransition.errorMessage;
+
     if (isNavigationAllowed && navigationPath != null) {
       onPageNavigation(
         SignalrTransitionData(
@@ -115,8 +121,8 @@ class NeoTransitionListenerBloc extends Bloc<NeoTransitionListenerEvent, NeoTran
           isBackNavigation: isBackNavigation,
         ),
       );
-    } else if ((ongoingTransition.errorMessage.isNotEmpty) && onError != null) {
-      onError(ongoingTransition.errorMessage);
+    } else if (errorMessage != null && errorMessage.isNotEmpty && onError != null) {
+      onError(NeoError(responseCode: ongoingTransition.errorCode ?? _Constants.defaultErrorCode));
     }
   }
 

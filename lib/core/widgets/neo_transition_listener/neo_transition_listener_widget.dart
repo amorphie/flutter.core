@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:neo_core/core/navigation/models/signalr_transition_data.dart';
 import 'package:neo_core/core/network/managers/neo_network_manager.dart';
+import 'package:neo_core/core/network/models/neo_error.dart';
 import 'package:neo_core/core/widgets/neo_transition_listener/bloc/neo_transition_listener_bloc.dart';
 
 class NeoTransitionListenerWidget extends StatelessWidget {
@@ -11,7 +12,7 @@ class NeoTransitionListenerWidget extends StatelessWidget {
   final String signalRMethodName;
   final Function(SignalrTransitionData navigationData) onPageNavigation;
   final VoidCallback? onLoggedInSuccessfully;
-  final Function(String errorMessage)? onError;
+  final Function(NeoError error)? onError;
   final Function({required bool displayLoading}) onLoadingStatusChanged;
 
   const NeoTransitionListenerWidget({

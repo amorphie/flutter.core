@@ -20,7 +20,7 @@ class NeoTransitionListenerEventInit extends NeoTransitionListenerEvent {
   final String signalRMethodName;
   final Function(SignalrTransitionData navigationData) onPageNavigation;
   final VoidCallback? onLoggedInSuccessfully;
-  final Function(String errorMessage)? onError;
+  final Function(NeoError error)? onError;
   final Function({required bool displayLoading}) onLoadingStatusChanged;
 
   NeoTransitionListenerEventInit({
