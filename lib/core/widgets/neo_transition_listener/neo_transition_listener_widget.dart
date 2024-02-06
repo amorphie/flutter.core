@@ -7,7 +7,6 @@ import 'package:uuid/uuid.dart';
 
 class NeoTransitionListenerWidget extends StatefulWidget {
   final Widget child;
-  final String transitionId;
   final String signalRServerUrl;
   final String signalRMethodName;
   final Function(SignalrTransitionData navigationData) onPageNavigation;
@@ -17,7 +16,6 @@ class NeoTransitionListenerWidget extends StatefulWidget {
 
   const NeoTransitionListenerWidget({
     required this.child,
-    required this.transitionId,
     required this.signalRServerUrl,
     required this.signalRMethodName,
     required this.onPageNavigation,
@@ -48,7 +46,6 @@ class _NeoTransitionListenerWidgetState extends State<NeoTransitionListenerWidge
     );
     await signalrConnectionManager?.init();
     signalrConnectionManager?.listenForTransitionEvents(
-      transitionId: widget.transitionId,
       onPageNavigation: widget.onPageNavigation,
       onEventFlow: widget.onEventFlow,
       onTokenRetrieved: (token, refreshToken) {

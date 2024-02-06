@@ -27,6 +27,8 @@ abstract class _Constants {
   static const eventNameSignalrOnReconnected = "[SignalrConnectionManager]: onReconnected is called!";
   static const eventNameSignalrInitSucceed = "[SignalrConnectionManager]: init is succeed!";
   static const eventNameSignalrInitFailed = "[SignalrConnectionManager]: init is failed!";
+  static const transitionSubjectKey = "subject";
+  static const transitionSubjectValue = "worker-completed";
 }
 
 class SignalrConnectionManager {
@@ -74,7 +76,6 @@ class SignalrConnectionManager {
   var counter = 0;
 
   void listenForTransitionEvents({
-    required String transitionId,
     required Function(SignalrTransitionData navigationData) onPageNavigation,
     required Function(String str) onEventFlow,
     Function(String token, String refreshToken)? onTokenRetrieved,
@@ -90,7 +91,7 @@ class SignalrConnectionManager {
         debugPrint('\n[SignalrConnectionManager] Transition${-counter}: NULL');
         return;
       }
-      final NeoSignalRTransition? ongoingTransition = _parseOngoingTransition(transitions, transitionId);
+      final NeoSignalRTransition? ongoingTransition = _parseOngoingTransition(transitions);
       if (ongoingTransition == null) {
         //STOPSIP: REMOVE
         debugPrint('\n[SignalrConnectionManager] OngoingTransition${-counter}: NULL');
@@ -110,18 +111,22 @@ class SignalrConnectionManager {
     });
   }
 
-  NeoSignalRTransition? _parseOngoingTransition(List<Object?> transitions, String transitionId) {
+  NeoSignalRTransition? _parseOngoingTransition(List<Object?> transitions) {
     return transitions
         .map((transition) {
           try {
-            return NeoSignalRTransition.fromJson(jsonDecode(transition is String ? transition : "{}")["data"]);
+            final transitionJsonDecoded = jsonDecode(transition is String ? transition : "{}");
+            if (transitionJsonDecoded[_Constants.transitionSubjectKey] != _Constants.transitionSubjectValue) {
+              return null;
+            }
+            return NeoSignalRTransition.fromJson(transitionJsonDecoded["data"]);
           } catch (_) {
             return null;
           }
         })
         .whereNotNull()
         .toList()
-        .firstWhereOrNull((transition) => transition.transitionId == transitionId);
+        .firstOrNull;
   }
 
   void _retrieveTokenIfExist(
