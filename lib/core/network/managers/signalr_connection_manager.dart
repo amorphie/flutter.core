@@ -139,7 +139,10 @@ class SignalrConnectionManager {
           navigationType: NeoNavigationType.fromJson(navigationType ?? ""),
           pageId: ongoingTransition.pageId,
           viewSource: ongoingTransition.viewSource,
-          initialData: ongoingTransition.additionalData ?? {},
+          initialData: {
+            ...ongoingTransition.additionalData ?? {},
+            ...ongoingTransition.initialData,
+          },
           isBackNavigation: isBackNavigation,
         ),
       );
