@@ -15,11 +15,10 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:neo_core/core/navigation/models/neo_navigation_type.dart';
 import 'package:neo_core/core/navigation/models/signalr_transition_data.dart';
-import 'package:neo_core/core/network/models/neo_network_header_key.dart';
 import 'package:neo_core/core/network/neo_network.dart';
 import 'package:neo_core/core/storage/neo_core_secure_storage.dart';
+import 'package:neo_core/core/widgets/neo_transition_listener/usecases/get_workflow_query_parameters_usecase.dart';
 import 'package:neo_core/core/workflow_form/neo_workflow_manager.dart';
-import 'package:uuid/uuid.dart';
 
 part 'neo_transition_listener_event.dart';
 part 'neo_transition_listener_state.dart';
@@ -44,7 +43,7 @@ class NeoTransitionListenerBloc extends Bloc<NeoTransitionListenerEvent, NeoTran
     neoWorkflowManager = NeoWorkflowManager(event.neoNetworkManager);
     onLoadingStatusChanged = event.onLoadingStatusChanged;
     signalrConnectionManager = SignalrConnectionManager(
-      serverUrl: event.signalRServerUrl + await _getWorkflowQueryParameters(),
+      serverUrl: event.signalRServerUrl + await GetWorkflowQueryParameters().call(),
       methodName: event.signalRMethodName,
     );
     await signalrConnectionManager?.init();
@@ -59,24 +58,6 @@ class NeoTransitionListenerBloc extends Bloc<NeoTransitionListenerEvent, NeoTran
         );
       },
     );
-  }
-
-  Future<String> _getWorkflowQueryParameters() async {
-    final secureStorage = NeoCoreSecureStorage();
-    final results = await Future.wait([
-      secureStorage.getDeviceId(),
-      secureStorage.getTokenId(),
-      secureStorage.getAuthToken(),
-    ]);
-
-    final deviceId = results[0] ?? "";
-    final tokenId = results[1] ?? "";
-    final authToken = results[2] ?? "";
-
-    return "?${NeoNetworkHeaderKey.deviceId}=$deviceId&"
-        "${NeoNetworkHeaderKey.tokenId}=$tokenId&"
-        "${NeoNetworkHeaderKey.requestId}=${const Uuid().v1()}&"
-        "${NeoNetworkHeaderKey.accessToken}=$authToken";
   }
 
   void _onStartTransition(NeoTransitionListenerEventStartTransition event) {
