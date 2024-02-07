@@ -100,7 +100,7 @@ class SignalrConnectionManager {
       //STOPSIP: REMOVE
       debugPrint("\n[SignalrConnectionManager] OngoingTransition${-counter}: ${ongoingTransition}");
       _retrieveTokenIfExist(ongoingTransition, onTokenRetrieved);
-
+      debugPrint("\n[SignalrConnectionManager] additionalData${-counter}: ${ongoingTransition.additionalData}");
       if (ongoingTransition.additionalData != null && ongoingTransition.additionalData!["isKYC"] == true) {
         _handleNonTransitionalFlow(ongoingTransition, onEventFlow, onError);
       } else {
