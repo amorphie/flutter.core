@@ -17,6 +17,7 @@ import 'package:flutter/foundation.dart' show kDebugMode;
 import 'package:flutter/material.dart';
 import 'package:neo_core/core/analytics/neo_logger.dart';
 import 'package:neo_core/core/navigation/models/neo_navigation_type.dart';
+import 'package:neo_core/core/navigation/models/signalr_ekyc_data.dart';
 import 'package:neo_core/core/navigation/models/signalr_transition_data.dart';
 import 'package:neo_core/core/network/models/neo_signalr_transition.dart';
 import 'package:signalr_netcore/signalr_client.dart';
@@ -77,7 +78,7 @@ class SignalrConnectionManager {
 
   void listenForTransitionEvents({
     required Function(SignalrTransitionData navigationData) onPageNavigation,
-    required Function(String str) onEventFlow,
+    required Function(SignalrEkycData flowData) onEventFlow,
     Function(String token, String refreshToken)? onTokenRetrieved,
     Function(String errorMessage)? onError,
   }) {
@@ -171,12 +172,13 @@ class SignalrConnectionManager {
 
   void _handleNonTransitionalFlow(
     NeoSignalRTransition ongoingTransition,
-    Function(String str) onFlowEvent,
+    Function(SignalrEkycData flowData) onFlowEvent,
     Function(String errorMessage)? onError,
   ) {
     debugPrint("\n[SignalrConnectionManager] HandleNonTransitionalFlow${-counter}: ${ongoingTransition.pageDetails}");
-    //STOPSHIP:
-    onFlowEvent("isKyc ");
+    final state = ongoingTransition.additionalData?["state"] as String;
+    final message = ongoingTransition.additionalData?["message"] as String;
+    onFlowEvent(SignalrEkycData(state: state, message: message));
   }
 
   void stop() {
