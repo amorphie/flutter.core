@@ -101,7 +101,7 @@ class SignalrConnectionManager {
       debugPrint("\n[SignalrConnectionManager] OngoingTransition${-counter}: ${ongoingTransition}");
       _retrieveTokenIfExist(ongoingTransition, onTokenRetrieved);
       debugPrint("\n[SignalrConnectionManager] additionalData${-counter}: ${ongoingTransition.additionalData}");
-      if (ongoingTransition.additionalData != null && ongoingTransition.additionalData!["isKYC"] == true) {
+      if (ongoingTransition.additionalData != null && ongoingTransition.additionalData!["isEkyc"] == true) {
         _handleNonTransitionalFlow(ongoingTransition, onEventFlow, onError);
       } else {
         _handleTransitionNavigation(ongoingTransition, onPageNavigation, onError);
