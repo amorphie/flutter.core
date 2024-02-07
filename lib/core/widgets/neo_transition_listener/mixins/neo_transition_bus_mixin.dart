@@ -25,13 +25,15 @@ abstract class _Constants {
 mixin NeoTransitionBus on Bloc<NeoTransitionListenerEvent, NeoTransitionListenerState> {
   late final ReplaySubject<NeoSignalRTransition> _transitionBus = ReplaySubject(maxSize: 2);
   late final NeoWorkflowManager neoWorkflowManager;
+  late final SignalrConnectionManager signalrConnectionManager;
 
-  void initTransitionBus(NeoWorkflowManager neoWorkflowManager) {
+  Future<void> initTransitionBus({
+    required NeoWorkflowManager neoWorkflowManager,
+    required String signalrServerUrl,
+    required String signalrMethodName,
+  }) async {
     this.neoWorkflowManager = neoWorkflowManager;
-  }
-
-  void addTransitionToBus(NeoSignalRTransition transition) {
-    _transitionBus.add(transition);
+    await _initSignalrConnectionManager(signalrServerUrl: signalrServerUrl, signalrMethodName: signalrMethodName);
   }
 
   Future<NeoSignalRTransition> postTransition(String transitionId, Map<String, dynamic> body) async {
@@ -52,6 +54,22 @@ mixin NeoTransitionBus on Bloc<NeoTransitionListenerEvent, NeoTransitionListener
     });
   }
 
+  Future<void> _initSignalrConnectionManager({
+    required String signalrServerUrl,
+    required String signalrMethodName,
+  }) async {
+    signalrConnectionManager = SignalrConnectionManager(
+      serverUrl: signalrServerUrl,
+      methodName: signalrMethodName,
+    );
+    await signalrConnectionManager.init();
+    signalrConnectionManager.listenForTransitionEvents(
+      onTransition: (NeoSignalRTransition transition) {
+        _transitionBus.add(transition);
+      },
+    );
+  }
+
   Future<void> _getTransitionWithLongPolling(Completer<NeoSignalRTransition> completer) async {
     await Future.delayed(_Constants.socketTimeOutDuration);
     // STOPSHIP: Call http request for long polling
@@ -69,6 +87,7 @@ mixin NeoTransitionBus on Bloc<NeoTransitionListenerEvent, NeoTransitionListener
 
   @override
   Future<void> close() {
+    signalrConnectionManager.stop();
     _transitionBus.close();
     return super.close();
   }

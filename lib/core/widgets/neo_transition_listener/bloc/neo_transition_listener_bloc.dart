@@ -36,8 +36,6 @@ class NeoTransitionListenerBloc extends Bloc<NeoTransitionListenerEvent, NeoTran
   late final Function(NeoError error)? onTransitionError;
   late final Function({required bool displayLoading}) onLoadingStatusChanged;
 
-  SignalrConnectionManager? signalrConnectionManager;
-
   NeoTransitionListenerBloc() : super(NeoTransitionListenerState()) {
     on<NeoTransitionListenerEventInit>((event, emit) => _onInit(event));
     on<NeoTransitionListenerEventStartTransition>((event, emit) => _onStartTransition(event));
@@ -50,22 +48,10 @@ class NeoTransitionListenerBloc extends Bloc<NeoTransitionListenerEvent, NeoTran
     onTransitionError = event.onError;
     onLoadingStatusChanged = event.onLoadingStatusChanged;
 
-    initTransitionBus(NeoWorkflowManager(event.neoNetworkManager));
-
-    await _initSignalrConnectionManager(event);
-  }
-
-  Future<void> _initSignalrConnectionManager(NeoTransitionListenerEventInit event) async {
-    signalrConnectionManager = SignalrConnectionManager(
-      serverUrl: event.signalRServerUrl + await GetWorkflowQueryParameters().call(),
-      methodName: event.signalRMethodName,
-    );
-    await signalrConnectionManager?.init();
-    signalrConnectionManager?.listenForTransitionEvents(
-      onTransition: (NeoSignalRTransition transition) {
-        onLoadingStatusChanged(displayLoading: false);
-        addTransitionToBus(transition);
-      },
+    await initTransitionBus(
+      neoWorkflowManager: NeoWorkflowManager(event.neoNetworkManager),
+      signalrServerUrl: event.signalRServerUrl + await GetWorkflowQueryParameters().call(),
+      signalrMethodName: event.signalRMethodName,
     );
   }
 
@@ -74,23 +60,24 @@ class NeoTransitionListenerBloc extends Bloc<NeoTransitionListenerEvent, NeoTran
   }
 
   Future<void> _onPostTransition(NeoTransitionListenerEventPostTransition event) async {
-    onLoadingStatusChanged(displayLoading: true);
     try {
+      onLoadingStatusChanged(displayLoading: true);
       final transitionResponse = await postTransition(event.transitionName, event.body);
-      _retrieveTokenIfExist(transitionResponse);
+      await _retrieveTokenIfExist(transitionResponse);
+      onLoadingStatusChanged(displayLoading: false);
       _handleTransitionNavigation(ongoingTransition: transitionResponse);
     } catch (e) {
+      onLoadingStatusChanged(displayLoading: false);
       onTransitionError?.call(NeoError.defaultError());
     }
   }
 
-  void _retrieveTokenIfExist(NeoSignalRTransition ongoingTransition) {
+  Future<void> _retrieveTokenIfExist(NeoSignalRTransition ongoingTransition) async {
     final String? token = ongoingTransition.additionalData?["access_token"];
     final String? refreshToken = ongoingTransition.additionalData?["refresh_token"];
     if (token != null && token.isNotEmpty) {
-      neoCoreSecureStorage
-        ..setAuthToken(token)
-        ..setRefreshToken(refreshToken ?? "");
+      await neoCoreSecureStorage.setAuthToken(token);
+      await neoCoreSecureStorage.setRefreshToken(refreshToken ?? "");
       onLoggedInSuccessfully?.call();
     }
   }
@@ -113,14 +100,9 @@ class NeoTransitionListenerBloc extends Bloc<NeoTransitionListenerEvent, NeoTran
           isBackNavigation: isBackNavigation,
         ),
       );
-    } else if (errorMessage != null && errorMessage.isNotEmpty && onTransitionError != null) {
-      onTransitionError!(NeoError(responseCode: ongoingTransition.errorCode ?? _Constants.defaultErrorCode));
+    } else if (errorMessage != null && errorMessage.isNotEmpty) {
+      // TODO: Pass error message to onTransitionError callback
+      onTransitionError?.call(NeoError(responseCode: ongoingTransition.errorCode ?? _Constants.defaultErrorCode));
     }
-  }
-
-  @override
-  Future<void> close() {
-    signalrConnectionManager?.stop();
-    return super.close();
   }
 }
