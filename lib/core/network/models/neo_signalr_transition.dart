@@ -65,6 +65,7 @@ class NeoSignalRTransition extends Equatable {
         initialData,
         additionalData,
         errorMessage,
+        errorCode,
         buttonType,
       ];
 
