@@ -33,13 +33,14 @@ class NeoTransitionListenerWidget extends StatelessWidget {
       create: (context) => NeoTransitionListenerBloc()
         ..add(
           NeoTransitionListenerEventInit(
-              neoNetworkManager: neoNetworkManager,
-              signalRServerUrl: signalRServerUrl,
-              signalRMethodName: signalRMethodName,
-              onPageNavigation: onPageNavigation,
-              onLoggedInSuccessfully: onLoggedInSuccessfully,
-              onError: onError,
-              onLoadingStatusChanged: onLoadingStatusChanged),
+            neoNetworkManager: neoNetworkManager,
+            signalRServerUrl: signalRServerUrl,
+            signalRMethodName: signalRMethodName,
+            onPageNavigation: onPageNavigation,
+            onLoggedInSuccessfully: onLoggedInSuccessfully,
+            onError: onError,
+            onLoadingStatusChanged: onLoadingStatusChanged,
+          ),
         ),
       child: BlocBuilder<NeoTransitionListenerBloc, NeoTransitionListenerState>(
         builder: (context, state) {

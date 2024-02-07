@@ -19,11 +19,12 @@ import 'package:neo_core/core/workflow_form/neo_workflow_manager.dart';
 import 'package:rxdart/rxdart.dart';
 
 abstract class _Constants {
-  static const socketTimeOutDuration = Duration(seconds: 10);
+  static const signalrTimeOutDuration = Duration(seconds: 10);
+  static const transitionBusSize = 2;
 }
 
 mixin NeoTransitionBus on Bloc<NeoTransitionListenerEvent, NeoTransitionListenerState> {
-  late final ReplaySubject<NeoSignalRTransition> _transitionBus = ReplaySubject(maxSize: 2);
+  late final ReplaySubject<NeoSignalRTransition> _transitionBus = ReplaySubject(maxSize: _Constants.transitionBusSize);
   late final NeoWorkflowManager neoWorkflowManager;
   late final SignalrConnectionManager signalrConnectionManager;
 
@@ -71,7 +72,7 @@ mixin NeoTransitionBus on Bloc<NeoTransitionListenerEvent, NeoTransitionListener
   }
 
   Future<void> _getTransitionWithLongPolling(Completer<NeoSignalRTransition> completer) async {
-    await Future.delayed(_Constants.socketTimeOutDuration);
+    await Future.delayed(_Constants.signalrTimeOutDuration);
     // STOPSHIP: Call http request for long polling
     completer.complete(
       const NeoSignalRTransition(
