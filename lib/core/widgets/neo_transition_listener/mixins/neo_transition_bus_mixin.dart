@@ -20,11 +20,10 @@ import 'package:rxdart/rxdart.dart';
 
 abstract class _Constants {
   static const signalrTimeOutDuration = Duration(seconds: 10);
-  static const transitionBusSize = 2;
 }
 
 mixin NeoTransitionBus on Bloc<NeoTransitionListenerEvent, NeoTransitionListenerState> {
-  late final ReplaySubject<NeoSignalRTransition> _transitionBus = ReplaySubject(maxSize: _Constants.transitionBusSize);
+  late final BehaviorSubject<NeoSignalRTransition> _transitionBus = BehaviorSubject();
   late final NeoWorkflowManager neoWorkflowManager;
   late final SignalrConnectionManager signalrConnectionManager;
 
