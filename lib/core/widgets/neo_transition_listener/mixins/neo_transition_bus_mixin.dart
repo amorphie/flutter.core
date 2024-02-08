@@ -78,6 +78,9 @@ mixin NeoTransitionBus on Bloc<NeoTransitionListenerEvent, NeoTransitionListener
   Future<void> _getTransitionWithLongPolling(Completer<NeoSignalRTransition> completer) async {
     await Future.delayed(_Constants.signalrTimeOutDuration);
     // STOPSHIP: Call http request for long polling
+    if (completer.isCompleted) {
+      return;
+    }
     completer.complete(
       const NeoSignalRTransition(
         transitionId: '',
