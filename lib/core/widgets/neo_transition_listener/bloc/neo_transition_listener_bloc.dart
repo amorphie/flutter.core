@@ -38,7 +38,6 @@ class NeoTransitionListenerBloc extends Bloc<NeoTransitionListenerEvent, NeoTran
 
   NeoTransitionListenerBloc() : super(NeoTransitionListenerState()) {
     on<NeoTransitionListenerEventInit>((event, emit) => _onInit(event));
-    on<NeoTransitionListenerEventStartTransition>((event, emit) => _onStartTransition(event));
     on<NeoTransitionListenerEventPostTransition>((event, emit) => _onPostTransition(event));
   }
 
@@ -53,10 +52,6 @@ class NeoTransitionListenerBloc extends Bloc<NeoTransitionListenerEvent, NeoTran
       signalrServerUrl: event.signalRServerUrl + await GetWorkflowQueryParameters().call(),
       signalrMethodName: event.signalRMethodName,
     );
-  }
-
-  void _onStartTransition(NeoTransitionListenerEventStartTransition event) {
-    NeoWorkflowManager.resetInstanceId();
   }
 
   Future<void> _onPostTransition(NeoTransitionListenerEventPostTransition event) async {

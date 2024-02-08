@@ -45,15 +45,6 @@ class NeoTransitionListenerEventInit extends NeoTransitionListenerEvent {
       ];
 }
 
-class NeoTransitionListenerEventStartTransition extends NeoTransitionListenerEvent {
-  final String workflowName;
-
-  NeoTransitionListenerEventStartTransition({required this.workflowName});
-
-  @override
-  List<Object?> get props => [workflowName];
-}
-
 class NeoTransitionListenerEventPostTransition extends NeoTransitionListenerEvent {
   final String transitionName;
   final Map<String, dynamic> body;

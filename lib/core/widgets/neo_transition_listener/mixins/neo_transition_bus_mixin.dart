@@ -37,6 +37,10 @@ mixin NeoTransitionBus on Bloc<NeoTransitionListenerEvent, NeoTransitionListener
     await _initSignalrConnectionManager(signalrServerUrl: signalrServerUrl, signalrMethodName: signalrMethodName);
   }
 
+  Future<Map<String, dynamic>> initWorkflow(String workflowName) {
+    return neoWorkflowManager.initWorkflow(workflowName: workflowName);
+  }
+
   Future<NeoSignalRTransition> postTransition(String transitionId, Map<String, dynamic> body) async {
     final completer = Completer<NeoSignalRTransition>();
 
