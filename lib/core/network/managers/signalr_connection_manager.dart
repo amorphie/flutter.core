@@ -178,7 +178,7 @@ class SignalrConnectionManager {
     debugPrint("\n[SignalrConnectionManager] HandleNonTransitionalFlow${-counter}: ${ongoingTransition.pageDetails}");
     final state = ongoingTransition.additionalData?["state"] as String;
     final message = ongoingTransition.additionalData?["message"] as String;
-    onFlowEvent(SignalrEkycData(state: state, message: message));
+    onFlowEvent(SignalrEkycData(pageId: ongoingTransition.pageId, ekycState: state, message: message));
   }
 
   void stop() {
