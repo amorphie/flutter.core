@@ -23,7 +23,7 @@ abstract class _Constants {
 }
 
 mixin NeoTransitionBus on Bloc<NeoTransitionListenerEvent, NeoTransitionListenerState> {
-  late final BehaviorSubject<NeoSignalRTransition> _transitionBus = BehaviorSubject();
+  late final BehaviorSubject<NeoSignalRTransition?> _transitionBus = BehaviorSubject();
   late final NeoWorkflowManager neoWorkflowManager;
   late final SignalrConnectionManager signalrConnectionManager;
 
@@ -46,7 +46,7 @@ mixin NeoTransitionBus on Bloc<NeoTransitionListenerEvent, NeoTransitionListener
     unawaited(neoWorkflowManager.postTransition(transitionName: transitionId, body: body));
 
     final subscription = _transitionBus.listen((transition) {
-      if (transition.transitionId == transitionId) {
+      if (transition?.transitionId == transitionId) {
         completer.complete(transition);
       }
     });
@@ -55,6 +55,7 @@ mixin NeoTransitionBus on Bloc<NeoTransitionListenerEvent, NeoTransitionListener
 
     return completer.future.whenComplete(() async {
       await subscription.cancel();
+      _transitionBus.add(null);
     });
   }
 
