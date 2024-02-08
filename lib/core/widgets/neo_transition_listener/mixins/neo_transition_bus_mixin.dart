@@ -81,16 +81,7 @@ mixin NeoTransitionBus on Bloc<NeoTransitionListenerEvent, NeoTransitionListener
     if (completer.isCompleted) {
       return;
     }
-    completer.complete(
-      const NeoSignalRTransition(
-        transitionId: '',
-        pageId: '',
-        viewSource: '',
-        pageDetails: {},
-        initialData: {},
-        buttonType: '',
-      ),
-    );
+    completer.completeError(NeoError.defaultError());
   }
 
   @override
