@@ -23,7 +23,7 @@ abstract class _Constants {
 }
 
 mixin NeoTransitionBus on Bloc<NeoTransitionListenerEvent, NeoTransitionListenerState> {
-  late final BehaviorSubject<NeoSignalRTransition?> _transitionBus = BehaviorSubject();
+  late final BehaviorSubject<NeoSignalRTransition> _transitionBus = BehaviorSubject();
   late final NeoWorkflowManager neoWorkflowManager;
   late final SignalrConnectionManager signalrConnectionManager;
 
@@ -43,19 +43,20 @@ mixin NeoTransitionBus on Bloc<NeoTransitionListenerEvent, NeoTransitionListener
   Future<NeoSignalRTransition> postTransition(String transitionId, Map<String, dynamic> body) async {
     final completer = Completer<NeoSignalRTransition>();
 
-    unawaited(neoWorkflowManager.postTransition(transitionName: transitionId, body: body));
-
-    final subscription = _transitionBus.listen((transition) {
-      if (transition?.transitionId == transitionId) {
+    // Skip last transition event(currently at bus if it is not initial post request)
+    // and listen for first upcoming event
+    final stream = (_transitionBus.valueOrNull != null) ? _transitionBus.skip(1) : _transitionBus;
+    final subscription = stream.listen((transition) {
+      if (transition.transitionId == transitionId) {
         completer.complete(transition);
       }
     });
 
+    unawaited(neoWorkflowManager.postTransition(transitionName: transitionId, body: body));
     unawaited(_getTransitionWithLongPolling(completer));
 
     return completer.future.whenComplete(() async {
       await subscription.cancel();
-      _transitionBus.add(null);
     });
   }
 
@@ -77,10 +78,10 @@ mixin NeoTransitionBus on Bloc<NeoTransitionListenerEvent, NeoTransitionListener
 
   Future<void> _getTransitionWithLongPolling(Completer<NeoSignalRTransition> completer) async {
     await Future.delayed(_Constants.signalrTimeOutDuration);
-    // STOPSHIP: Call http request for long polling
     if (completer.isCompleted) {
       return;
     }
+    // STOPSHIP: Call http request for long polling
     completer.completeError(NeoError.defaultError());
   }
 
