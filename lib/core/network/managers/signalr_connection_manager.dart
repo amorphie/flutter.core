@@ -28,6 +28,7 @@ abstract class _Constants {
   static const eventNameSignalrInitFailed = "[SignalrConnectionManager]: init is failed!";
   static const transitionSubjectKey = "subject";
   static const transitionSubjectValue = "worker-completed";
+  static const transitionResponseDataKey = "data";
 }
 
 class SignalrConnectionManager {
@@ -95,7 +96,7 @@ class SignalrConnectionManager {
             if (transitionJsonDecoded[_Constants.transitionSubjectKey] != _Constants.transitionSubjectValue) {
               return null;
             }
-            return NeoSignalRTransition.fromJson(transitionJsonDecoded["data"]);
+            return NeoSignalRTransition.fromJson(transitionJsonDecoded[_Constants.transitionResponseDataKey]);
           } catch (_) {
             return null;
           }

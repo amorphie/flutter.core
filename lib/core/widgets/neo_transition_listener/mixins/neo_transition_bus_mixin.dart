@@ -20,6 +20,7 @@ import 'package:rxdart/rxdart.dart';
 
 abstract class _Constants {
   static const signalrTimeOutDuration = Duration(seconds: 10);
+  static const transitionResponseDataKey = "data";
 }
 
 mixin NeoTransitionBus on Bloc<NeoTransitionListenerEvent, NeoTransitionListenerState> {
@@ -81,8 +82,12 @@ mixin NeoTransitionBus on Bloc<NeoTransitionListenerEvent, NeoTransitionListener
     if (completer.isCompleted) {
       return;
     }
-    // STOPSHIP: Call http request for long polling
-    completer.completeError(NeoError.defaultError());
+    try {
+      final response = await neoWorkflowManager.getLastTransitionByLongPolling();
+      completer.complete(NeoSignalRTransition.fromJson(response[_Constants.transitionResponseDataKey]));
+    } catch (e) {
+      completer.completeError(NeoError.defaultError());
+    }
   }
 
   @override
