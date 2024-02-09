@@ -55,7 +55,7 @@ mixin NeoTransitionBus on Bloc<NeoTransitionListenerEvent, NeoTransitionListener
       // and listen for first upcoming event
       final stream = (_transitionBus.valueOrNull != null) ? _transitionBus.skip(1) : _transitionBus;
       transitionBusSubscription = stream.listen((transition) {
-        if (transition.transitionId == transitionId && !completer.isCompleted) {
+        if (!completer.isCompleted) {
           completer.complete(transition);
         }
       });
@@ -79,8 +79,12 @@ mixin NeoTransitionBus on Bloc<NeoTransitionListenerEvent, NeoTransitionListener
     );
     await signalrConnectionManager.init();
     signalrConnectionManager.listenForTransitionEvents(
-      onTransition: (NeoSignalRTransition transition) {
-        _transitionBus.add(transition);
+      onTransition: (NeoSignalRTransition transition) async {
+        final isDifferentTransition = _transitionBus.hasValue && (await _transitionBus.last).id != transition.id;
+        // Add different events only
+        if (!_transitionBus.hasValue || isDifferentTransition) {
+          _transitionBus.add(transition);
+        }
       },
     );
   }
