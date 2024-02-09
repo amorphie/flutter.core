@@ -10,48 +10,44 @@
  * Any reproduction of this material must contain this notice.
  */
 
-import 'package:collection/collection.dart';
 import 'package:equatable/equatable.dart';
 import 'package:json_annotation/json_annotation.dart';
 import 'package:neo_core/core/network/models/neo_error_display_method.dart';
-import 'package:neo_core/core/network/models/neo_error_message.dart';
 
 part 'neo_error.g.dart';
 
 abstract class _Constants {
   static const defaultErrorCode = "400";
-  static const List<NeoErrorMessage> defaultErrorMessages = [
-    NeoErrorMessage.defaultErrorTurkish,
-    NeoErrorMessage.defaultErrorEnglish,
-  ];
   static const defaultErrorDisplayMode = NeoErrorDisplayMethod.popup;
+  static const defaultErrorTitle = "general_noResponse_title";
+  static const defaultErrorMessage = "general_noResponse_text";
 }
 
 @JsonSerializable(createToJson: false)
 class NeoError extends Equatable {
-  @JsonKey(name: "response-code", defaultValue: _Constants.defaultErrorCode)
+  @JsonKey(name: "response-code")
   final String responseCode;
 
   @JsonKey(name: "display-mode")
   final NeoErrorDisplayMethod displayMode;
 
-  @JsonKey(name: "messages")
-  final List<NeoErrorMessage> messages;
+  @JsonKey(name: "title")
+  final String title;
+
+  @JsonKey(name: "message")
+  final String message;
 
   @override
-  List<Object?> get props => [responseCode, displayMode, messages];
+  List<Object?> get props => [responseCode, displayMode, title];
 
   const NeoError({
     this.responseCode = _Constants.defaultErrorCode,
     this.displayMode = _Constants.defaultErrorDisplayMode,
-    this.messages = _Constants.defaultErrorMessages,
+    this.title = _Constants.defaultErrorTitle,
+    this.message = _Constants.defaultErrorMessage,
   });
 
   factory NeoError.fromJson(Map<String, dynamic> json) => _$NeoErrorFromJson(json);
 
   factory NeoError.defaultError() => const NeoError();
-
-  NeoErrorMessage? getErrorMessageByLanguageCode(String languageCode) {
-    return messages.firstWhereOrNull((errorMessage) => errorMessage.language == languageCode);
-  }
 }
