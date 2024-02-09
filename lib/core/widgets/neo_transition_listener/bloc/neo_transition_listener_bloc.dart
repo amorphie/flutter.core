@@ -89,7 +89,7 @@ class NeoTransitionListenerBloc extends Bloc<NeoTransitionListenerEvent, NeoTran
         SignalrTransitionData(
           navigationPath: navigationPath,
           navigationType: NeoNavigationType.fromJson(navigationType ?? ""),
-          pageId: ongoingTransition.pageId,
+          pageId: ongoingTransition.state,
           viewSource: ongoingTransition.viewSource,
           initialData: ongoingTransition.additionalData ?? {},
           isBackNavigation: isBackNavigation,
