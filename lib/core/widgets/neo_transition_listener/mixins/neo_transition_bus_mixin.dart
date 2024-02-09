@@ -13,6 +13,7 @@
 import 'dart:async';
 
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:neo_core/core/feature_flags/neo_feature_flag_util.dart';
 import 'package:neo_core/core/network/neo_network.dart';
 import 'package:neo_core/core/widgets/neo_transition_listener/bloc/neo_transition_listener_bloc.dart';
 import 'package:neo_core/core/workflow_form/neo_workflow_manager.dart';
@@ -27,6 +28,7 @@ mixin NeoTransitionBus on Bloc<NeoTransitionListenerEvent, NeoTransitionListener
   late final BehaviorSubject<NeoSignalRTransition> _transitionBus = BehaviorSubject();
   late final NeoWorkflowManager neoWorkflowManager;
   late final SignalrConnectionManager signalrConnectionManager;
+  late bool _bypassSignalr;
 
   Future<void> initTransitionBus({
     required NeoWorkflowManager neoWorkflowManager,
@@ -34,7 +36,10 @@ mixin NeoTransitionBus on Bloc<NeoTransitionListenerEvent, NeoTransitionListener
     required String signalrMethodName,
   }) async {
     this.neoWorkflowManager = neoWorkflowManager;
-    await _initSignalrConnectionManager(signalrServerUrl: signalrServerUrl, signalrMethodName: signalrMethodName);
+    _bypassSignalr = await NeoFeatureFlagUtil.bypassSignalR();
+    if (!_bypassSignalr) {
+      await _initSignalrConnectionManager(signalrServerUrl: signalrServerUrl, signalrMethodName: signalrMethodName);
+    }
   }
 
   Future<Map<String, dynamic>> initWorkflow(String workflowName) {
@@ -43,21 +48,24 @@ mixin NeoTransitionBus on Bloc<NeoTransitionListenerEvent, NeoTransitionListener
 
   Future<NeoSignalRTransition> postTransition(String transitionId, Map<String, dynamic> body) async {
     final completer = Completer<NeoSignalRTransition>();
+    StreamSubscription<NeoSignalRTransition>? transitionBusSubscription;
 
-    // Skip last transition event(currently at bus if it is not initial post request)
-    // and listen for first upcoming event
-    final stream = (_transitionBus.valueOrNull != null) ? _transitionBus.skip(1) : _transitionBus;
-    final subscription = stream.listen((transition) {
-      if (transition.transitionId == transitionId) {
-        completer.complete(transition);
-      }
-    });
+    if (!_bypassSignalr) {
+      // Skip last transition event(currently at bus if it is not initial post request)
+      // and listen for first upcoming event
+      final stream = (_transitionBus.valueOrNull != null) ? _transitionBus.skip(1) : _transitionBus;
+      transitionBusSubscription = stream.listen((transition) {
+        if (transition.transitionId == transitionId) {
+          completer.complete(transition);
+        }
+      });
+    }
+    await neoWorkflowManager.postTransition(transitionName: transitionId, body: body);
 
-    unawaited(neoWorkflowManager.postTransition(transitionName: transitionId, body: body));
     unawaited(_getTransitionWithLongPolling(completer));
 
     return completer.future.whenComplete(() async {
-      await subscription.cancel();
+      await transitionBusSubscription?.cancel();
     });
   }
 
@@ -78,7 +86,9 @@ mixin NeoTransitionBus on Bloc<NeoTransitionListenerEvent, NeoTransitionListener
   }
 
   Future<void> _getTransitionWithLongPolling(Completer<NeoSignalRTransition> completer) async {
-    await Future.delayed(_Constants.signalrTimeOutDuration);
+    if (!_bypassSignalr) {
+      await Future.delayed(_Constants.signalrTimeOutDuration);
+    }
     if (completer.isCompleted) {
       return;
     }
