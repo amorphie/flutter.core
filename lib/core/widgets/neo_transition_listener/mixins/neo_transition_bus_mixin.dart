@@ -21,6 +21,7 @@ import 'package:rxdart/rxdart.dart';
 
 abstract class _Constants {
   static const signalrTimeOutDuration = Duration(seconds: 10);
+  static const signalrBypassDelayDuration = Duration(seconds: 2);
   static const transitionResponseDataKey = "data";
 }
 
@@ -91,9 +92,8 @@ mixin NeoTransitionBus on Bloc<NeoTransitionListenerEvent, NeoTransitionListener
   }
 
   Future<void> _getTransitionWithLongPolling(Completer<NeoSignalRTransition> completer) async {
-    if (!_bypassSignalr) {
-      await Future.delayed(_Constants.signalrTimeOutDuration);
-    }
+    await Future.delayed(_bypassSignalr ? _Constants.signalrBypassDelayDuration : _Constants.signalrTimeOutDuration);
+
     if (completer.isCompleted) {
       return;
     }
