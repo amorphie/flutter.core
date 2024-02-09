@@ -80,9 +80,10 @@ mixin NeoTransitionBus on Bloc<NeoTransitionListenerEvent, NeoTransitionListener
     await signalrConnectionManager.init();
     signalrConnectionManager.listenForTransitionEvents(
       onTransition: (NeoSignalRTransition transition) async {
-        final isDifferentTransition = _transitionBus.hasValue && (await _transitionBus.last).id != transition.id;
+        final isTransitionBusEmpty = _transitionBus.valueOrNull == null;
+        final isDifferentTransition = !isTransitionBusEmpty && _transitionBus.value.id != transition.id;
         // Add different events only
-        if (!_transitionBus.hasValue || isDifferentTransition) {
+        if (isTransitionBusEmpty || isDifferentTransition) {
           _transitionBus.add(transition);
         }
       },
