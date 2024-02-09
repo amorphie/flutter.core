@@ -55,7 +55,7 @@ mixin NeoTransitionBus on Bloc<NeoTransitionListenerEvent, NeoTransitionListener
       // and listen for first upcoming event
       final stream = (_transitionBus.valueOrNull != null) ? _transitionBus.skip(1) : _transitionBus;
       transitionBusSubscription = stream.listen((transition) {
-        if (transition.transitionId == transitionId) {
+        if (transition.transitionId == transitionId && !completer.isCompleted) {
           completer.complete(transition);
         }
       });
@@ -94,9 +94,13 @@ mixin NeoTransitionBus on Bloc<NeoTransitionListenerEvent, NeoTransitionListener
     }
     try {
       final response = await neoWorkflowManager.getLastTransitionByLongPolling();
-      completer.complete(NeoSignalRTransition.fromJson(response[_Constants.transitionResponseDataKey]));
+      if (!completer.isCompleted) {
+        completer.complete(NeoSignalRTransition.fromJson(response[_Constants.transitionResponseDataKey]));
+      }
     } catch (e) {
-      completer.completeError(NeoError.defaultError());
+      if (!completer.isCompleted) {
+        completer.completeError(NeoError.defaultError());
+      }
     }
   }
 
