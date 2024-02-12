@@ -14,7 +14,7 @@ import 'package:neo_core/core/network/models/neo_network_header_key.dart';
 import 'package:neo_core/core/storage/neo_core_secure_storage.dart';
 import 'package:uuid/uuid.dart';
 
-class GetWorkflowQueryParameters {
+class GetWorkflowQueryParametersUseCase {
   Future<String> call() async {
     final secureStorage = NeoCoreSecureStorage();
     final results = await Future.wait([

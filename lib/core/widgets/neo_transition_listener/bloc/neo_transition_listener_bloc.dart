@@ -49,7 +49,7 @@ class NeoTransitionListenerBloc extends Bloc<NeoTransitionListenerEvent, NeoTran
 
     await initTransitionBus(
       neoWorkflowManager: NeoWorkflowManager(event.neoNetworkManager),
-      signalrServerUrl: event.signalRServerUrl + await GetWorkflowQueryParameters().call(),
+      signalrServerUrl: event.signalRServerUrl + await GetWorkflowQueryParametersUseCase().call(),
       signalrMethodName: event.signalRMethodName,
     );
   }
