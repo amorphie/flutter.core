@@ -6,15 +6,18 @@ import 'package:uuid/uuid.dart';
 abstract class _Constants {
   static const endpointInitWorkflow = "init-workflow";
   static const endpointGetAvailableTransitions = "get-workflow-available-steps";
+  static const endpointGetLastEventByLongPolling = "get-last-wf-event-by-long-polling";
   static const endpointPostTransition = "post-transition-to-workflow";
   static const pathParameterTransitionName = "TRANSITION_NAME";
   static const pathParameterWorkflowName = "WORKFLOW_NAME";
   static const pathParameterInstanceId = "INSTANCE_ID";
+  static const queryParameterInstanceId = "InstanceId";
 }
 
 class NeoWorkflowManager {
   final NeoNetworkManager neoNetworkManager;
   static String _instanceId = const Uuid().v1();
+  static String workflowName = "";
 
   NeoWorkflowManager(this.neoNetworkManager);
 
@@ -23,6 +26,7 @@ class NeoWorkflowManager {
   }
 
   Future<Map<String, dynamic>> initWorkflow({required String workflowName}) async {
+    NeoWorkflowManager.workflowName = workflowName;
     resetInstanceId();
 
     final response = await neoNetworkManager.call(
@@ -62,6 +66,18 @@ class NeoWorkflowManager {
           _Constants.pathParameterTransitionName: transitionName,
         },
         body: body,
+      ),
+    );
+  }
+
+  Future<Map<String, dynamic>> getLastTransitionByLongPolling() async {
+    return neoNetworkManager.call(
+      NeoHttpCall(
+        endpoint: _Constants.endpointGetLastEventByLongPolling,
+        pathParameters: {_Constants.pathParameterWorkflowName: workflowName},
+        queryProviders: [
+          HttpQueryProvider({_Constants.queryParameterInstanceId: _instanceId}),
+        ],
       ),
     );
   }

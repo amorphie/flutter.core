@@ -10,11 +10,13 @@ NeoSignalRTransition _$NeoSignalRTransitionFromJson(
         Map<String, dynamic> json) =>
     NeoSignalRTransition(
       transitionId: json['transition'] as String,
-      pageId: json['state'] as String? ?? '',
+      state: json['state'] as String? ?? '',
       viewSource: json['viewSource'] as String? ?? '',
       pageDetails: json['page'] as Map<String, dynamic>? ?? {},
       initialData: json['data'] as Map<String, dynamic>? ?? {},
-      errorMessage: json['message'] as String? ?? '',
-      buttonType: json['buttonType'] as String? ?? '',
+      buttonType: json['buttonType'] as String?,
+      time: json['time'] as String? ?? '',
+      errorMessage: json['message'] as String?,
+      errorCode: json['errorCode'] as String?,
       additionalData: json['additionalData'] as Map<String, dynamic>?,
     );

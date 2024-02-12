@@ -7,14 +7,13 @@ part of 'neo_error.dart';
 // **************************************************************************
 
 NeoError _$NeoErrorFromJson(Map<String, dynamic> json) => NeoError(
-      responseCode: json['response-code'] as String? ?? '400',
+      responseCode:
+          json['response-code'] as String? ?? _Constants.defaultErrorCode,
       displayMode: $enumDecodeNullable(
               _$NeoErrorDisplayMethodEnumMap, json['display-mode']) ??
           _Constants.defaultErrorDisplayMode,
-      messages: (json['messages'] as List<dynamic>?)
-              ?.map((e) => NeoErrorMessage.fromJson(e as Map<String, dynamic>))
-              .toList() ??
-          _Constants.defaultErrorMessages,
+      title: json['title'] as String? ?? _Constants.defaultErrorTitle,
+      message: json['message'] as String? ?? _Constants.defaultErrorMessage,
     );
 
 const _$NeoErrorDisplayMethodEnumMap = {
