@@ -223,7 +223,7 @@ class NeoNetworkManager {
         }
       } else {
         await _getTemporaryTokenForNotLoggedInUser(call);
-        return _retryLastCall(call, forceRetry: true);
+        return _retryLastCall(call);
       }
     } else {
       try {
@@ -241,11 +241,11 @@ class NeoNetworkManager {
     }
   }
 
-  Future<Map<String, dynamic>> _retryLastCall(NeoHttpCall neoHttpCall, {bool forceRetry = false}) async {
+  Future<Map<String, dynamic>> _retryLastCall(NeoHttpCall neoHttpCall) async {
     if (neoHttpCall.retryCount == null) {
       neoHttpCall.setRetryCount(httpClientConfig.getRetryCountByKey(neoHttpCall.endpoint));
     }
-    if (_canRetryRequest(neoHttpCall) || forceRetry) {
+    if (_canRetryRequest(neoHttpCall)) {
       neoHttpCall.decreaseRetryCount();
       return call(neoHttpCall);
     } else {
