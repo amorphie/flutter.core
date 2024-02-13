@@ -13,14 +13,12 @@
 import 'dart:convert';
 
 import 'package:flutter/foundation.dart' show debugPrint;
-import 'package:get_it/get_it.dart';
 import 'package:http/http.dart' as http;
 import 'package:json_annotation/json_annotation.dart';
 import 'package:neo_core/core/network/models/http_auth_response.dart';
 import 'package:neo_core/core/network/models/http_method.dart';
 import 'package:neo_core/core/network/models/neo_http_call.dart';
 import 'package:neo_core/core/network/models/neo_network_header_key.dart';
-import 'package:neo_core/core/util/neo_core_app_constants.dart';
 import 'package:neo_core/neo_core.dart';
 import 'package:uuid/uuid.dart';
 
@@ -43,10 +41,14 @@ abstract class _Constants {
 class NeoNetworkManager {
   final NeoCoreSecureStorage secureStorage;
   final HttpClientConfig httpClientConfig;
+  final String workflowClientId;
+  final String workflowClientSecret;
 
   NeoNetworkManager({
     required this.httpClientConfig,
     required this.secureStorage,
+    required this.workflowClientId,
+    required this.workflowClientSecret,
   });
 
   Future<Map<String, String>> get _defaultHeaders async {
@@ -212,11 +214,16 @@ class NeoNetworkManager {
       if (call.endpoint == _Constants.endpointGetToken) {
         throw NeoException(error: NeoError.defaultError());
       }
-      final isTokenRefreshed = await _refreshAuthDetailsByUsingRefreshToken();
-      if (isTokenRefreshed) {
-        return _retryLastCall(call);
+      if (await secureStorage.getRefreshToken() != null) {
+        final isTokenRefreshed = await _refreshAuthDetailsByUsingRefreshToken();
+        if (isTokenRefreshed) {
+          return _retryLastCall(call);
+        } else {
+          throw NeoException(error: NeoError.defaultError());
+        }
       } else {
-        throw NeoException(error: NeoError.defaultError());
+        await _getTemporaryTokenForNotLoggedInUser(call);
+        return _retryLastCall(call, forceRetry: true);
       }
     } else {
       try {
@@ -234,11 +241,11 @@ class NeoNetworkManager {
     }
   }
 
-  Future<Map<String, dynamic>> _retryLastCall(NeoHttpCall neoHttpCall) async {
+  Future<Map<String, dynamic>> _retryLastCall(NeoHttpCall neoHttpCall, {bool forceRetry = false}) async {
     if (neoHttpCall.retryCount == null) {
       neoHttpCall.setRetryCount(httpClientConfig.getRetryCountByKey(neoHttpCall.endpoint));
     }
-    if (_canRetryRequest(neoHttpCall)) {
+    if (_canRetryRequest(neoHttpCall) || forceRetry) {
       neoHttpCall.decreaseRetryCount();
       return call(neoHttpCall);
     } else {
@@ -283,13 +290,12 @@ class NeoNetworkManager {
         return;
       }
 
-      final appConstants = GetIt.I.get<NeoCoreAppConstants>();
       final responseJson = await call(
         NeoHttpCall(
           endpoint: _Constants.endpointGetToken,
           body: {
-            _Constants.requestKeyClientId: appConstants.workflowClientId,
-            _Constants.requestKeyClientSecret: appConstants.workflowClientSecret,
+            _Constants.requestKeyClientId: workflowClientId,
+            _Constants.requestKeyClientSecret: workflowClientSecret,
             _Constants.requestKeyGrantType: _Constants.requestValueGrantTypeClientCredentials,
             _Constants.requestKeyScopes: _Constants.requestValueScopes,
           },
