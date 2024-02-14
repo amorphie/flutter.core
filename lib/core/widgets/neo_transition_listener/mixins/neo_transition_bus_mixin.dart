@@ -12,7 +12,6 @@
 
 import 'dart:async';
 
-import 'package:flutter/cupertino.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:neo_core/core/feature_flags/neo_feature_flag_util.dart';
 import 'package:neo_core/core/network/neo_network.dart';
@@ -84,11 +83,11 @@ mixin NeoTransitionBus on Bloc<NeoTransitionListenerEvent, NeoTransitionListener
       onTransition: (NeoSignalRTransition transition) async {
         final isDifferentTransition = _transitionBus.hasValue && _transitionBus.value.id != transition.id;
         // Add different events only
-        debugPrint(
-            "isDifferentTransition $isDifferentTransition -- ${_transitionBus.hasValue} -- ${_transitionBus.value.id} -- ${transition.id}");
-        if (!_transitionBus.hasValue || isDifferentTransition) {
+        //   debugPrint("isDifferentTransition $isDifferentTransition -- ${_transitionBus.hasValue} -- ${_transitionBus.value.id} -- ${transition.id}");
+        /* if (!_transitionBus.hasValue || isDifferentTransition) {
           _transitionBus.add(transition);
-        }
+        }*/
+        _transitionBus.add(transition);
       },
     );
   }
