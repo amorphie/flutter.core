@@ -10,8 +10,6 @@
  * Any reproduction of this material must contain this notice.
  */
 
-import 'dart:ffi';
-
 import 'package:equatable/equatable.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -91,8 +89,8 @@ class NeoTransitionListenerBloc extends Bloc<NeoTransitionListenerEvent, NeoTran
     final navigationType = ongoingTransition.pageDetails["type"] as String?;
     final isBackNavigation = ongoingTransition.buttonType == "Back";
     final errorMessage = ongoingTransition.errorMessage;
-    final isEkycFlow = ongoingTransition.additionalData?["isEkyc"] == true as Bool?;
-    if (false) {
+
+    if (ongoingTransition.additionalData != null && ongoingTransition.additionalData?["isEkyc"] == true) {
       debugPrint("NeoTransitionListenerBloc _handleFlow");
       final ekycState = ongoingTransition.additionalData?["state"] as String;
       final message = ongoingTransition.additionalData?["message"] as String;
