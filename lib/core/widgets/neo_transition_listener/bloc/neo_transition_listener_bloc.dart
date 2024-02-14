@@ -92,7 +92,7 @@ class NeoTransitionListenerBloc extends Bloc<NeoTransitionListenerEvent, NeoTran
     final isBackNavigation = ongoingTransition.buttonType == "Back";
     final errorMessage = ongoingTransition.errorMessage;
     final isEkycFlow = ongoingTransition.additionalData?["isEkyc"] == true as Bool?;
-    if (isEkycFlow != null && isEkycFlow) {
+    if (false) {
       debugPrint("NeoTransitionListenerBloc _handleFlow");
       final ekycState = ongoingTransition.additionalData?["state"] as String;
       final message = ongoingTransition.additionalData?["message"] as String;
