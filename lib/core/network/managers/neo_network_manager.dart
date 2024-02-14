@@ -58,7 +58,6 @@ class NeoNetworkManager {
       secureStorage.getTokenId(),
       secureStorage.getDeviceInfo(),
       _authHeader,
-      _customerIdHeader,
     ]);
 
     final languageCode = results[0] as String? ?? "";
@@ -66,7 +65,6 @@ class NeoNetworkManager {
     final tokenId = results[2] as String? ?? "";
     final deviceInfo = results[3] as String? ?? "";
     final authHeader = results[4] as Map<String, String>? ?? {};
-    final customerIdHeader = results[5] as Map<String, String>? ?? {};
 
     return {
       NeoNetworkHeaderKey.contentType: _Constants.headerValueContentType,
@@ -77,19 +75,12 @@ class NeoNetworkManager {
       NeoNetworkHeaderKey.tokenId: tokenId,
       NeoNetworkHeaderKey.requestId: const Uuid().v1(),
       NeoNetworkHeaderKey.deviceInfo: deviceInfo,
-    }
-      ..addAll(authHeader)
-      ..addAll(customerIdHeader);
+    }..addAll(authHeader);
   }
 
   Future<Map<String, String>> get _authHeader async {
     final authToken = await secureStorage.getAuthToken();
     return authToken == null ? {} : {NeoNetworkHeaderKey.authorization: 'Bearer $authToken'};
-  }
-
-  Future<Map<String, String>> get _customerIdHeader async {
-    final customerId = await secureStorage.getCustomerId();
-    return customerId == null ? {} : {NeoNetworkHeaderKey.customer: customerId};
   }
 
   Future<Map<String, String>> get _defaultPostHeaders async => <String, String>{}
