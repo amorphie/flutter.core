@@ -46,6 +46,7 @@ class NeoTransitionListenerBloc extends Bloc<NeoTransitionListenerEvent, NeoTran
   }
 
   Future<void> _onInit(NeoTransitionListenerEventInit event) async {
+    debugPrint("NeoTransitionListenerBloc _onInit");
     onPageNavigation = event.onPageNavigation;
     onEventFlow = event.onEventFlow;
     onLoggedInSuccessfully = event.onLoggedInSuccessfully;
@@ -60,6 +61,7 @@ class NeoTransitionListenerBloc extends Bloc<NeoTransitionListenerEvent, NeoTran
   }
 
   Future<void> _onPostTransition(NeoTransitionListenerEventPostTransition event) async {
+    debugPrint("NeoTransitionListenerBloc _onPostTransition");
     try {
       onLoadingStatusChanged(displayLoading: true);
       final transitionResponse = await postTransition(event.transitionName, event.body);
@@ -67,6 +69,7 @@ class NeoTransitionListenerBloc extends Bloc<NeoTransitionListenerEvent, NeoTran
       onLoadingStatusChanged(displayLoading: false);
       _handleTransitionNavigation(ongoingTransition: transitionResponse);
     } catch (e) {
+      debugPrint("NeoTransitionListenerBloc error ${e}");
       onLoadingStatusChanged(displayLoading: false);
       onTransitionError?.call(NeoError.defaultError());
     }
@@ -90,10 +93,12 @@ class NeoTransitionListenerBloc extends Bloc<NeoTransitionListenerEvent, NeoTran
     final errorMessage = ongoingTransition.errorMessage;
     final isEkycFlow = ongoingTransition.additionalData?["isEkyc"] == true as Bool?;
     if (isEkycFlow != null && isEkycFlow) {
+      debugPrint("NeoTransitionListenerBloc _handleFlow");
       final ekycState = ongoingTransition.additionalData?["state"] as String;
       final message = ongoingTransition.additionalData?["message"] as String;
       onEventFlow(SignalrEkycData(state: ongoingTransition.state, ekycState: ekycState, message: message));
     } else if (isNavigationAllowed && navigationPath != null) {
+      debugPrint("NeoTransitionListenerBloc _handleTransitionNavigation");
       onPageNavigation(
         SignalrTransitionData(
           navigationPath: navigationPath,
