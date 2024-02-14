@@ -10,10 +10,13 @@
  * Any reproduction of this material must contain this notice.
  */
 
+import 'dart:ffi';
+
 import 'package:equatable/equatable.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:neo_core/core/navigation/models/neo_navigation_type.dart';
+import 'package:neo_core/core/navigation/models/signalr_ekyc_data.dart';
 import 'package:neo_core/core/navigation/models/signalr_transition_data.dart';
 import 'package:neo_core/core/network/neo_network.dart';
 import 'package:neo_core/core/storage/neo_core_secure_storage.dart';
@@ -32,6 +35,7 @@ class NeoTransitionListenerBloc extends Bloc<NeoTransitionListenerEvent, NeoTran
     with NeoTransitionBus {
   late final NeoCoreSecureStorage neoCoreSecureStorage = NeoCoreSecureStorage();
   late final Function(SignalrTransitionData navigationData) onPageNavigation;
+  late final Function(SignalrEkycData flowdata) onEventFlow;
   late final VoidCallback? onLoggedInSuccessfully;
   late final Function(NeoError error)? onTransitionError;
   late final Function({required bool displayLoading}) onLoadingStatusChanged;
@@ -43,6 +47,7 @@ class NeoTransitionListenerBloc extends Bloc<NeoTransitionListenerEvent, NeoTran
 
   Future<void> _onInit(NeoTransitionListenerEventInit event) async {
     onPageNavigation = event.onPageNavigation;
+    onEventFlow = event.onEventFlow;
     onLoggedInSuccessfully = event.onLoggedInSuccessfully;
     onTransitionError = event.onError;
     onLoadingStatusChanged = event.onLoadingStatusChanged;
@@ -83,8 +88,12 @@ class NeoTransitionListenerBloc extends Bloc<NeoTransitionListenerEvent, NeoTran
     final navigationType = ongoingTransition.pageDetails["type"] as String?;
     final isBackNavigation = ongoingTransition.buttonType == "Back";
     final errorMessage = ongoingTransition.errorMessage;
-
-    if (isNavigationAllowed && navigationPath != null) {
+    final isEkycFlow = ongoingTransition.additionalData?["isEkyc"] == true as Bool?;
+    if (isEkycFlow != null && isEkycFlow) {
+      final ekycState = ongoingTransition.additionalData?["state"] as String;
+      final message = ongoingTransition.additionalData?["message"] as String;
+      onEventFlow(SignalrEkycData(state: ongoingTransition.state, ekycState: ekycState, message: message));
+    } else if (isNavigationAllowed && navigationPath != null) {
       onPageNavigation(
         SignalrTransitionData(
           navigationPath: navigationPath,

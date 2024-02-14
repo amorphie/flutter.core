@@ -11,7 +11,6 @@
  */
 
 import 'dart:convert';
-import 'dart:developer';
 
 import 'package:collection/collection.dart';
 import 'package:flutter/foundation.dart' show kDebugMode;
@@ -44,6 +43,7 @@ class SignalrConnectionManager {
   }) : _neoLogger = NeoLogger();
 
   Future init() async {
+    debugPrint('\n[SignalrConnectionManager] INIT!!!!');
     _hubConnection = HubConnectionBuilder()
         .withUrl(serverUrl)
         .withAutomaticReconnect(retryDelays: [2000, 5000, 10000, 20000]).build();
@@ -72,10 +72,11 @@ class SignalrConnectionManager {
     }
   }
 
+  var counter = 0;
   void listenForTransitionEvents({required Function(NeoSignalRTransition transition) onTransition}) {
     _hubConnection?.on(methodName, (List<Object?>? transitions) {
       if (kDebugMode) {
-        log('\n[SignalrConnectionManager] Transition: $transitions');
+        debugPrint('\n[SignalrConnectionManager] Transition: $counter# $transitions');
       }
       if (transitions == null) {
         return;
@@ -84,6 +85,7 @@ class SignalrConnectionManager {
       if (ongoingTransition == null) {
         return;
       }
+      debugPrint("\n[SignalrConnectionManager] OngoingTransition${counter}#: ${ongoingTransition}");
       onTransition(ongoingTransition);
     });
   }
