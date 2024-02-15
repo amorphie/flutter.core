@@ -41,6 +41,18 @@ class NeoTransitionListenerBloc extends Bloc<NeoTransitionListenerEvent, NeoTran
     on<NeoTransitionListenerEventPostTransition>((event, emit) => _onPostTransition(event));
   }
 
+  @override
+  Future<Map<String, dynamic>> initWorkflow(String workflowName) async {
+    try {
+      onLoadingStatusChanged(displayLoading: true);
+      return await super.initWorkflow(workflowName);
+    } catch (e) {
+      rethrow;
+    } finally {
+      onLoadingStatusChanged(displayLoading: false);
+    }
+  }
+
   Future<void> _onInit(NeoTransitionListenerEventInit event) async {
     onPageNavigation = event.onPageNavigation;
     onLoggedInSuccessfully = event.onLoggedInSuccessfully;
