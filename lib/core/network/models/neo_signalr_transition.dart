@@ -73,6 +73,7 @@ class NeoSignalRTransition extends Equatable {
         errorMessage,
         errorCode,
         buttonType,
+        time,
       ];
 
   factory NeoSignalRTransition.fromJson(Map<String, dynamic> json) => _$NeoSignalRTransitionFromJson(json);

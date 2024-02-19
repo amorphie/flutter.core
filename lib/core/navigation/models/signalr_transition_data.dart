@@ -21,6 +21,7 @@ class _Constant {
   static const keyViewSource = "viewSource";
   static const keyInitialData = "initialData";
   static const keyIsBackNavigation = "isBackNavigation";
+  static const keyTransitionId = "transitionId";
 }
 
 class SignalrTransitionData {
@@ -30,6 +31,7 @@ class SignalrTransitionData {
   final String viewSource;
   final Map<String, dynamic> initialData;
   final bool isBackNavigation;
+  final String transitionId;
 
   SignalrTransitionData({
     required this.navigationPath,
@@ -38,6 +40,7 @@ class SignalrTransitionData {
     required this.viewSource,
     required this.initialData,
     required this.isBackNavigation,
+    required this.transitionId,
   });
 
   String encode() {
@@ -48,6 +51,7 @@ class SignalrTransitionData {
       _Constant.keyViewSource: viewSource,
       _Constant.keyInitialData: initialData,
       _Constant.keyIsBackNavigation: isBackNavigation,
+      _Constant.keyTransitionId: transitionId,
     });
   }
 
@@ -60,6 +64,7 @@ class SignalrTransitionData {
       viewSource: jsonMap[_Constant.keyViewSource],
       initialData: jsonMap[_Constant.keyInitialData],
       isBackNavigation: jsonMap[_Constant.keyIsBackNavigation],
+      transitionId: jsonMap[_Constant.keyTransitionId],
     );
   }
 }

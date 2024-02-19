@@ -43,6 +43,18 @@ class NeoTransitionListenerBloc extends Bloc<NeoTransitionListenerEvent, NeoTran
     on<NeoTransitionListenerEventPostTransition>((event, emit) => _onPostTransition(event));
   }
 
+  @override
+  Future<Map<String, dynamic>> initWorkflow(String workflowName) async {
+    try {
+      onLoadingStatusChanged(displayLoading: true);
+      return await super.initWorkflow(workflowName);
+    } catch (e) {
+      rethrow;
+    } finally {
+      onLoadingStatusChanged(displayLoading: false);
+    }
+  }
+
   Future<void> _onInit(NeoTransitionListenerEventInit event) async {
     debugPrint("NeoTransitionListenerBloc _onInit");
     onPageNavigation = event.onPageNavigation;
@@ -89,6 +101,7 @@ class NeoTransitionListenerBloc extends Bloc<NeoTransitionListenerEvent, NeoTran
     final navigationType = ongoingTransition.pageDetails["type"] as String?;
     final isBackNavigation = ongoingTransition.buttonType == "Back";
     final errorMessage = ongoingTransition.errorMessage;
+    final transitionId = ongoingTransition.transitionId;
 
     if (ongoingTransition.additionalData != null && ongoingTransition.additionalData?["isEkyc"] == true) {
       debugPrint("NeoTransitionListenerBloc _handleFlow");
@@ -108,6 +121,7 @@ class NeoTransitionListenerBloc extends Bloc<NeoTransitionListenerEvent, NeoTran
             ...ongoingTransition.initialData,
           },
           isBackNavigation: isBackNavigation,
+          transitionId: transitionId,
         ),
       );
     } else if (errorMessage != null && errorMessage.isNotEmpty) {

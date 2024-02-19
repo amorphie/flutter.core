@@ -25,6 +25,8 @@ class NeoWorkflowManager {
     _instanceId = const Uuid().v1();
   }
 
+  String get instanceId => _instanceId;
+
   Future<Map<String, dynamic>> initWorkflow({required String workflowName}) async {
     NeoWorkflowManager.workflowName = workflowName;
     resetInstanceId();
