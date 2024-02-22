@@ -94,7 +94,7 @@ class NeoTransitionListenerBloc extends Bloc<NeoTransitionListenerEvent, NeoTran
     final navigationPath = ongoingTransition.pageDetails["pageRoute"]?["label"] as String?;
     final navigationType = ongoingTransition.pageDetails["type"] as String?;
     final isBackNavigation = ongoingTransition.buttonType == "Back";
-    final errorMessage = ongoingTransition.errorMessage;
+    final errorMessage = ongoingTransition.message;
     final transitionId = ongoingTransition.transitionId;
 
     if (isNavigationAllowed && navigationPath != null) {
@@ -114,7 +114,7 @@ class NeoTransitionListenerBloc extends Bloc<NeoTransitionListenerEvent, NeoTran
       );
     } else if (errorMessage != null && errorMessage.isNotEmpty) {
       // TODO: Pass error message to onTransitionError callback
-      onTransitionError?.call(NeoError(responseCode: ongoingTransition.errorCode ?? _Constants.defaultErrorCode));
+      onTransitionError?.call(NeoError(responseCode: ongoingTransition.responseCode ?? _Constants.defaultErrorCode));
     }
   }
 }

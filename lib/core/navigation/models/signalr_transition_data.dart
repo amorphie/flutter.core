@@ -14,7 +14,7 @@ import 'dart:convert';
 
 import 'package:neo_core/core/navigation/models/neo_navigation_type.dart';
 
-class _Constant {
+abstract class _Constant {
   static const keyNavigationPath = "navigationPath";
   static const keyNavigationType = "navigationType";
   static const keyPageId = "pageId";
@@ -22,6 +22,9 @@ class _Constant {
   static const keyInitialData = "initialData";
   static const keyIsBackNavigation = "isBackNavigation";
   static const keyTransitionId = "transitionId";
+  static const keyStatusMessage = "statusMessage";
+  static const keyStatusCode = "statusCode";
+  static const statusCodeRedirectToLogin = "302";
 }
 
 class SignalrTransitionData {
@@ -32,6 +35,8 @@ class SignalrTransitionData {
   final Map<String, dynamic> initialData;
   final bool isBackNavigation;
   final String transitionId;
+  final String? statusMessage;
+  final String? statusCode;
 
   SignalrTransitionData({
     required this.navigationPath,
@@ -41,6 +46,8 @@ class SignalrTransitionData {
     required this.initialData,
     required this.isBackNavigation,
     required this.transitionId,
+    this.statusMessage,
+    this.statusCode,
   });
 
   String encode() {
@@ -52,6 +59,8 @@ class SignalrTransitionData {
       _Constant.keyInitialData: initialData,
       _Constant.keyIsBackNavigation: isBackNavigation,
       _Constant.keyTransitionId: transitionId,
+      _Constant.keyStatusMessage: statusMessage,
+      _Constant.keyStatusCode: statusCode,
     });
   }
 
@@ -65,6 +74,12 @@ class SignalrTransitionData {
       initialData: jsonMap[_Constant.keyInitialData],
       isBackNavigation: jsonMap[_Constant.keyIsBackNavigation],
       transitionId: jsonMap[_Constant.keyTransitionId],
+      statusMessage: jsonMap[_Constant.keyStatusMessage],
+      statusCode: jsonMap[_Constant.keyStatusCode],
     );
   }
+}
+
+extension NeoSignalRTransitionExtension on SignalrTransitionData {
+  bool get shouldRedirectToLogin => statusCode == _Constant.statusCodeRedirectToLogin;
 }
