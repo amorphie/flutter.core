@@ -39,7 +39,7 @@ enum NeoNavigationType {
     'pop': NeoNavigationType.pop,
   };
 
-  static NeoNavigationType fromJson(String json) {
-    return _jsonValues[json] ?? NeoNavigationType.pushReplacement;
+  static NeoNavigationType? fromJson(String json) {
+    return _jsonValues[json];
   }
 }
