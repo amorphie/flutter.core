@@ -28,10 +28,10 @@ abstract class _Constant {
 }
 
 class SignalrTransitionData {
-  final String navigationPath;
-  final NeoNavigationType navigationType;
-  final String pageId;
-  final String viewSource;
+  final String? navigationPath;
+  final NeoNavigationType? navigationType;
+  final String? pageId;
+  final String? viewSource;
   final Map<String, dynamic> initialData;
   final bool isBackNavigation;
   final String transitionId;
@@ -39,13 +39,13 @@ class SignalrTransitionData {
   final String? statusCode;
 
   SignalrTransitionData({
-    required this.navigationPath,
-    required this.navigationType,
-    required this.pageId,
-    required this.viewSource,
-    required this.initialData,
-    required this.isBackNavigation,
     required this.transitionId,
+    this.navigationPath,
+    this.navigationType,
+    this.pageId,
+    this.viewSource,
+    this.initialData = const {},
+    this.isBackNavigation = false,
     this.statusMessage,
     this.statusCode,
   });

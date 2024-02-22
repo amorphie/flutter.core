@@ -24,16 +24,12 @@ import 'package:neo_core/core/workflow_form/neo_workflow_manager.dart';
 part 'neo_transition_listener_event.dart';
 part 'neo_transition_listener_state.dart';
 
-abstract class _Constants {
-  static const defaultErrorCode = "400";
-}
-
 class NeoTransitionListenerBloc extends Bloc<NeoTransitionListenerEvent, NeoTransitionListenerState>
     with NeoTransitionBus {
   late final NeoCoreSecureStorage neoCoreSecureStorage = NeoCoreSecureStorage();
-  late final Function(SignalrTransitionData navigationData) onPageNavigation;
-  late final VoidCallback? onLoggedInSuccessfully;
+  late final Function(SignalrTransitionData navigationData) onTransitionSuccess;
   late final Function(NeoError error)? onTransitionError;
+  late final VoidCallback? onLoggedInSuccessfully;
   late final Function({required bool displayLoading}) onLoadingStatusChanged;
 
   NeoTransitionListenerBloc() : super(NeoTransitionListenerState()) {
@@ -54,9 +50,9 @@ class NeoTransitionListenerBloc extends Bloc<NeoTransitionListenerEvent, NeoTran
   }
 
   Future<void> _onInit(NeoTransitionListenerEventInit event) async {
-    onPageNavigation = event.onPageNavigation;
+    onTransitionSuccess = event.onTransitionSuccess;
     onLoggedInSuccessfully = event.onLoggedInSuccessfully;
-    onTransitionError = event.onError;
+    onTransitionError = event.onTransitionError;
     onLoadingStatusChanged = event.onLoadingStatusChanged;
 
     await initTransitionBus(
@@ -90,34 +86,25 @@ class NeoTransitionListenerBloc extends Bloc<NeoTransitionListenerEvent, NeoTran
   }
 
   void _handleTransitionNavigation({required NeoSignalRTransition ongoingTransition}) {
-    final isNavigationAllowed = ongoingTransition.pageDetails["operation"] == "Open";
     final navigationPath = ongoingTransition.pageDetails["pageRoute"]?["label"] as String?;
     final navigationType = ongoingTransition.pageDetails["type"] as String?;
     final isBackNavigation = ongoingTransition.buttonType == "Back";
-    final errorMessage = ongoingTransition.statusMessage;
     final transitionId = ongoingTransition.transitionId;
-
-    if (isNavigationAllowed && navigationPath != null) {
-      onPageNavigation(
-        SignalrTransitionData(
-          navigationPath: navigationPath,
-          navigationType: NeoNavigationType.fromJson(navigationType ?? ""),
-          pageId: ongoingTransition.state,
-          viewSource: ongoingTransition.viewSource,
-          initialData: {
-            ...ongoingTransition.additionalData ?? {},
-            ...ongoingTransition.initialData,
-          },
-          isBackNavigation: isBackNavigation,
-          transitionId: transitionId,
-          statusCode: ongoingTransition.statusCode,
-          statusMessage: ongoingTransition.statusMessage,
-        ),
-      );
-    } else if (errorMessage != null && errorMessage.isNotEmpty) {
-      onTransitionError?.call(
-        NeoError(responseCode: ongoingTransition.statusCode ?? _Constants.defaultErrorCode, message: errorMessage),
-      );
-    }
+    onTransitionSuccess(
+      SignalrTransitionData(
+        navigationPath: navigationPath,
+        navigationType: NeoNavigationType.fromJson(navigationType ?? ""),
+        pageId: ongoingTransition.state,
+        viewSource: ongoingTransition.viewSource,
+        initialData: {
+          ...ongoingTransition.additionalData ?? {},
+          ...ongoingTransition.initialData,
+        },
+        isBackNavigation: isBackNavigation,
+        transitionId: transitionId,
+        statusCode: ongoingTransition.statusCode,
+        statusMessage: ongoingTransition.statusMessage,
+      ),
+    );
   }
 }
