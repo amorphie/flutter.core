@@ -115,8 +115,9 @@ class NeoTransitionListenerBloc extends Bloc<NeoTransitionListenerEvent, NeoTran
         ),
       );
     } else if (errorMessage != null && errorMessage.isNotEmpty) {
-      // TODO: Pass error message to onTransitionError callback
-      onTransitionError?.call(NeoError(responseCode: ongoingTransition.statusCode ?? _Constants.defaultErrorCode));
+      onTransitionError?.call(
+        NeoError(responseCode: ongoingTransition.statusCode ?? _Constants.defaultErrorCode, message: errorMessage),
+      );
     }
   }
 }
