@@ -43,12 +43,16 @@ class NeoNetworkManager {
   final HttpClientConfig httpClientConfig;
   final String workflowClientId;
   final String workflowClientSecret;
+  final Function? onRequestSucceed;
+  final Function? onRequestFailed;
 
   NeoNetworkManager({
     required this.httpClientConfig,
     required this.secureStorage,
     required this.workflowClientId,
     required this.workflowClientSecret,
+    this.onRequestSucceed,
+    this.onRequestFailed,
   });
 
   Future<Map<String, String>> get _defaultHeaders async {
@@ -200,9 +204,11 @@ class NeoNetworkManager {
     debugPrint("[NeoNetworkManager] Response code: ${response.statusCode}. Body: ${response.body}");
 
     if (response.statusCode >= 200 && response.statusCode < 300) {
+      onRequestSucceed?.call();
       return responseJSON;
     } else if (response.statusCode == _Constants.responseCodeUnauthorized) {
       if (call.endpoint == _Constants.endpointGetToken) {
+        onRequestFailed?.call();
         throw NeoException(error: NeoError.defaultError());
       }
       if (await secureStorage.getRefreshToken() != null) {
@@ -210,6 +216,7 @@ class NeoNetworkManager {
         if (isTokenRefreshed) {
           return _retryLastCall(call);
         } else {
+          onRequestFailed?.call();
           throw NeoException(error: NeoError.defaultError());
         }
       } else {
@@ -217,6 +224,7 @@ class NeoNetworkManager {
         return _retryLastCall(call);
       }
     } else {
+      onRequestFailed?.call();
       try {
         final error = NeoError.fromJson(responseJSON);
         throw NeoException(error: error);
