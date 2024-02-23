@@ -43,12 +43,16 @@ class NeoNetworkManager {
   final HttpClientConfig httpClientConfig;
   final String workflowClientId;
   final String workflowClientSecret;
+  final Function(String requestId)? onRequestSucceed;
+  final Function(NeoError neoError, String requestId)? onRequestFailed;
 
   NeoNetworkManager({
     required this.httpClientConfig,
     required this.secureStorage,
     required this.workflowClientId,
     required this.workflowClientSecret,
+    this.onRequestSucceed,
+    this.onRequestFailed,
   });
 
   Future<Map<String, String>> get _defaultHeaders async {
@@ -200,17 +204,22 @@ class NeoNetworkManager {
     debugPrint("[NeoNetworkManager] Response code: ${response.statusCode}. Body: ${response.body}");
 
     if (response.statusCode >= 200 && response.statusCode < 300) {
+      onRequestSucceed?.call(call.endpoint);
       return responseJSON;
     } else if (response.statusCode == _Constants.responseCodeUnauthorized) {
       if (call.endpoint == _Constants.endpointGetToken) {
-        throw NeoException(error: NeoError.defaultError());
+        final error = NeoError.defaultError();
+        onRequestFailed?.call(error, call.endpoint);
+        throw NeoException(error: error);
       }
       if (await secureStorage.getRefreshToken() != null) {
         final isTokenRefreshed = await _refreshAuthDetailsByUsingRefreshToken();
         if (isTokenRefreshed) {
           return _retryLastCall(call);
         } else {
-          throw NeoException(error: NeoError.defaultError());
+          final error = NeoError.defaultError();
+          onRequestFailed?.call(error, call.endpoint);
+          throw NeoException(error: error);
         }
       } else {
         await _getTemporaryTokenForNotLoggedInUser(call);
@@ -219,12 +228,15 @@ class NeoNetworkManager {
     } else {
       try {
         final error = NeoError.fromJson(responseJSON);
+        onRequestFailed?.call(error, call.endpoint);
         throw NeoException(error: error);
       } on MissingRequiredKeysException {
         final error = NeoError(responseCode: response.statusCode.toString());
+        onRequestFailed?.call(error, call.endpoint);
         throw NeoException(error: error);
       } catch (e) {
         if (e is NeoException) {
+          onRequestFailed?.call(e.error, call.endpoint);
           rethrow;
         }
         throw NeoException(error: const NeoError(responseCode: "-1"));
