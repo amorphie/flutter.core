@@ -25,17 +25,13 @@ import 'package:neo_core/core/workflow_form/neo_workflow_manager.dart';
 part 'neo_transition_listener_event.dart';
 part 'neo_transition_listener_state.dart';
 
-abstract class _Constants {
-  static const defaultErrorCode = "400";
-}
-
 class NeoTransitionListenerBloc extends Bloc<NeoTransitionListenerEvent, NeoTransitionListenerState>
     with NeoTransitionBus {
   late final NeoCoreSecureStorage neoCoreSecureStorage = NeoCoreSecureStorage();
-  late final Function(SignalrTransitionData navigationData) onPageNavigation;
+  late final Function(SignalrTransitionData navigationData) onTransitionSuccess;
   late final Function(SignalrEkycData flowdata) onEventFlow;
-  late final VoidCallback? onLoggedInSuccessfully;
   late final Function(NeoError error)? onTransitionError;
+  late final VoidCallback? onLoggedInSuccessfully;
   late final Function({required bool displayLoading}) onLoadingStatusChanged;
 
   NeoTransitionListenerBloc() : super(NeoTransitionListenerState()) {
@@ -57,10 +53,10 @@ class NeoTransitionListenerBloc extends Bloc<NeoTransitionListenerEvent, NeoTran
 
   Future<void> _onInit(NeoTransitionListenerEventInit event) async {
     debugPrint("NeoTransitionListenerBloc _onInit");
-    onPageNavigation = event.onPageNavigation;
+    onTransitionSuccess = event.onTransitionSuccess;
     onEventFlow = event.onEventFlow;
     onLoggedInSuccessfully = event.onLoggedInSuccessfully;
-    onTransitionError = event.onError;
+    onTransitionError = event.onTransitionError;
     onLoadingStatusChanged = event.onLoadingStatusChanged;
 
     await initTransitionBus(
@@ -77,7 +73,7 @@ class NeoTransitionListenerBloc extends Bloc<NeoTransitionListenerEvent, NeoTran
       final transitionResponse = await postTransition(event.transitionName, event.body);
       await _retrieveTokenIfExist(transitionResponse);
       onLoadingStatusChanged(displayLoading: false);
-      _handleTransitionNavigation(ongoingTransition: transitionResponse);
+      _handleTransitionResult(ongoingTransition: transitionResponse);
     } catch (e) {
       debugPrint("NeoTransitionListenerBloc error ${e}");
       onLoadingStatusChanged(displayLoading: false);
@@ -95,22 +91,19 @@ class NeoTransitionListenerBloc extends Bloc<NeoTransitionListenerEvent, NeoTran
     }
   }
 
-  void _handleTransitionNavigation({required NeoSignalRTransition ongoingTransition}) {
-    final isNavigationAllowed = ongoingTransition.pageDetails["operation"] == "Open";
+  void _handleTransitionResult({required NeoSignalRTransition ongoingTransition}) {
     final navigationPath = ongoingTransition.pageDetails["pageRoute"]?["label"] as String?;
     final navigationType = ongoingTransition.pageDetails["type"] as String?;
     final isBackNavigation = ongoingTransition.buttonType == "Back";
-    final errorMessage = ongoingTransition.errorMessage;
     final transitionId = ongoingTransition.transitionId;
-
     if (ongoingTransition.additionalData != null && ongoingTransition.additionalData?["isEkyc"] == true) {
       debugPrint("NeoTransitionListenerBloc _handleFlow");
       final ekycState = ongoingTransition.additionalData?["state"] as String;
       final message = ongoingTransition.additionalData?["message"] as String;
       onEventFlow(SignalrEkycData(state: ongoingTransition.state, ekycState: ekycState, message: message));
-    } else if (isNavigationAllowed && navigationPath != null) {
-      debugPrint("NeoTransitionListenerBloc _handleTransitionNavigation");
-      onPageNavigation(
+    } else {
+      debugPrint("NeoTransitionListenerBloc _handleTransitionResult");
+      onTransitionSuccess(
         SignalrTransitionData(
           navigationPath: navigationPath,
           navigationType: NeoNavigationType.fromJson(navigationType ?? ""),
@@ -122,11 +115,10 @@ class NeoTransitionListenerBloc extends Bloc<NeoTransitionListenerEvent, NeoTran
           },
           isBackNavigation: isBackNavigation,
           transitionId: transitionId,
+          statusCode: ongoingTransition.statusCode,
+          statusMessage: ongoingTransition.statusMessage,
         ),
       );
-    } else if (errorMessage != null && errorMessage.isNotEmpty) {
-      // TODO: Pass error message to onTransitionError callback
-      onTransitionError?.call(NeoError(responseCode: ongoingTransition.errorCode ?? _Constants.defaultErrorCode));
     }
   }
 }
