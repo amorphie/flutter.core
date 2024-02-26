@@ -12,7 +12,7 @@ class NeoTransitionListenerWidget extends StatelessWidget {
   final String signalRServerUrl;
   final String signalRMethodName;
   final Function(SignalrTransitionData navigationData) onPageNavigation;
-  final Function(EkycEventData flowdata) onEventFlow;
+  final Function(EkycEventData flowdata) onEkycEvent;
   final VoidCallback? onLoggedInSuccessfully;
   final Function(NeoError error)? onError;
   final Function({required bool displayLoading}) onLoadingStatusChanged;
@@ -23,7 +23,7 @@ class NeoTransitionListenerWidget extends StatelessWidget {
     required this.signalRServerUrl,
     required this.signalRMethodName,
     required this.onPageNavigation,
-    required this.onEventFlow,
+    required this.onEkycEvent,
     required this.onLoadingStatusChanged,
     this.onLoggedInSuccessfully,
     this.onError,
@@ -40,7 +40,7 @@ class NeoTransitionListenerWidget extends StatelessWidget {
             signalRServerUrl: signalRServerUrl,
             signalRMethodName: signalRMethodName,
             onTransitionSuccess: onPageNavigation,
-            onEkycEvent: onEventFlow,
+            onEkycEvent: onEkycEvent,
             onLoggedInSuccessfully: onLoggedInSuccessfully,
             onTransitionError: onError,
             onLoadingStatusChanged: onLoadingStatusChanged,
