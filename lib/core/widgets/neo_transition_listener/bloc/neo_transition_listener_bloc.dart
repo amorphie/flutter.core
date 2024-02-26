@@ -29,7 +29,7 @@ class NeoTransitionListenerBloc extends Bloc<NeoTransitionListenerEvent, NeoTran
     with NeoTransitionBus {
   late final NeoCoreSecureStorage neoCoreSecureStorage = NeoCoreSecureStorage();
   late final Function(SignalrTransitionData navigationData) onTransitionSuccess;
-  late final Function(SignalrEkycData flowdata) onEventFlow;
+  late final Function(EkycEventData flowdata) onEkycEvent;
   late final Function(NeoError error)? onTransitionError;
   late final VoidCallback? onLoggedInSuccessfully;
   late final Function({required bool displayLoading}) onLoadingStatusChanged;
@@ -54,7 +54,7 @@ class NeoTransitionListenerBloc extends Bloc<NeoTransitionListenerEvent, NeoTran
   Future<void> _onInit(NeoTransitionListenerEventInit event) async {
     debugPrint("NeoTransitionListenerBloc _onInit");
     onTransitionSuccess = event.onTransitionSuccess;
-    onEventFlow = event.onEventFlow;
+    onEkycEvent = event.onEkycEvent;
     onLoggedInSuccessfully = event.onLoggedInSuccessfully;
     onTransitionError = event.onTransitionError;
     onLoadingStatusChanged = event.onLoadingStatusChanged;
@@ -96,11 +96,12 @@ class NeoTransitionListenerBloc extends Bloc<NeoTransitionListenerEvent, NeoTran
     final navigationType = ongoingTransition.pageDetails["type"] as String?;
     final isBackNavigation = ongoingTransition.buttonType == "Back";
     final transitionId = ongoingTransition.transitionId;
-    if (ongoingTransition.additionalData != null && ongoingTransition.additionalData?["isEkyc"] == true) {
+    final isEkyc = ongoingTransition.additionalData != null && ongoingTransition.additionalData?["isEkyc"] == true;
+    if (isEkyc) {
       debugPrint("NeoTransitionListenerBloc _handleFlow");
-      final ekycState = ongoingTransition.additionalData?["state"] as String;
+      final ekycState = ongoingTransition.additionalData?["state"] as String; //STOPSHIP: ekycstate
       final message = ongoingTransition.additionalData?["message"] as String;
-      onEventFlow(SignalrEkycData(state: ongoingTransition.state, ekycState: ekycState, message: message));
+      onEkycEvent(EkycEventData(state: ongoingTransition.state, ekycState: ekycState, message: message));
     } else {
       debugPrint("NeoTransitionListenerBloc _handleTransitionResult");
       onTransitionSuccess(
