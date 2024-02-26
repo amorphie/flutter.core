@@ -12,7 +12,6 @@
 
 import 'dart:async';
 
-import 'package:flutter/cupertino.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:neo_core/core/feature_flags/neo_feature_flag_util.dart';
 import 'package:neo_core/core/network/neo_network.dart';
@@ -45,14 +44,13 @@ mixin NeoTransitionBus on Bloc<NeoTransitionListenerEvent, NeoTransitionListener
   }
 
   Future<Map<String, dynamic>> initWorkflow(String workflowName) {
-    debugPrint("NeoTransitionBus initWorkflow");
     return neoWorkflowManager.initWorkflow(workflowName: workflowName);
   }
 
   Future<NeoSignalRTransition> postTransition(String transitionId, Map<String, dynamic> body) async {
     final completer = Completer<NeoSignalRTransition>();
     StreamSubscription<NeoSignalRTransition>? transitionBusSubscription;
-    debugPrint("NeoTransitionBus postTransition");
+
     if (!_bypassSignalr) {
       // Skip last transition event(currently at bus if it is not initial post request)
       // and listen for first upcoming event
@@ -85,16 +83,9 @@ mixin NeoTransitionBus on Bloc<NeoTransitionListenerEvent, NeoTransitionListener
       onTransition: (NeoSignalRTransition transition) async {
         final isDifferentTransition = _transitionBus.hasValue && _transitionBus.value.id != transition.id;
         // Add different events only
-        if (_transitionBus == null) {
-          debugPrint("transitionBus==null");
-        } else if (_transitionBus.hasValue == null) {
-          debugPrint("_transitionBus.hasValue==null");
-        }
-        //   debugPrint("isDifferentTransition $isDifferentTransition -- ${_transitionBus.hasValue} -- ${_transitionBus.value.id} -- ${transition.id}");
-        /* if (!_transitionBus.hasValue || isDifferentTransition) {
+        if (!_transitionBus.hasValue || isDifferentTransition) {
           _transitionBus.add(transition);
-        }*/
-        _transitionBus.add(transition);
+        }
       },
     );
   }

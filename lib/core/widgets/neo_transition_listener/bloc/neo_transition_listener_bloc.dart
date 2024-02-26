@@ -52,7 +52,6 @@ class NeoTransitionListenerBloc extends Bloc<NeoTransitionListenerEvent, NeoTran
   }
 
   Future<void> _onInit(NeoTransitionListenerEventInit event) async {
-    debugPrint("NeoTransitionListenerBloc _onInit");
     onTransitionSuccess = event.onTransitionSuccess;
     onEkycEvent = event.onEkycEvent;
     onLoggedInSuccessfully = event.onLoggedInSuccessfully;
@@ -67,7 +66,6 @@ class NeoTransitionListenerBloc extends Bloc<NeoTransitionListenerEvent, NeoTran
   }
 
   Future<void> _onPostTransition(NeoTransitionListenerEventPostTransition event) async {
-    debugPrint("NeoTransitionListenerBloc _onPostTransition");
     try {
       onLoadingStatusChanged(displayLoading: true);
       final transitionResponse = await postTransition(event.transitionName, event.body);
@@ -75,7 +73,6 @@ class NeoTransitionListenerBloc extends Bloc<NeoTransitionListenerEvent, NeoTran
       onLoadingStatusChanged(displayLoading: false);
       _handleTransitionResult(ongoingTransition: transitionResponse);
     } catch (e) {
-      debugPrint("NeoTransitionListenerBloc error ${e}");
       onLoadingStatusChanged(displayLoading: false);
       onTransitionError?.call(NeoError.defaultError());
     }
@@ -98,12 +95,10 @@ class NeoTransitionListenerBloc extends Bloc<NeoTransitionListenerEvent, NeoTran
     final transitionId = ongoingTransition.transitionId;
     final isEkyc = ongoingTransition.additionalData != null && ongoingTransition.additionalData?["isEkyc"] == true;
     if (isEkyc) {
-      debugPrint("NeoTransitionListenerBloc _handleFlow");
       final ekycState = ongoingTransition.additionalData?["state"] as String; //STOPSHIP: ekycstate
       final message = ongoingTransition.additionalData?["message"] as String;
       onEkycEvent(EkycEventData(state: ongoingTransition.state, ekycState: ekycState, message: message));
     } else {
-      debugPrint("NeoTransitionListenerBloc _handleTransitionResult");
       onTransitionSuccess(
         SignalrTransitionData(
           navigationPath: navigationPath,
