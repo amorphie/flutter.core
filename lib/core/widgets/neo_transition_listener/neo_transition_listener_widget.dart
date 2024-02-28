@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:neo_core/core/navigation/models/ekyc_event_data.dart';
 import 'package:neo_core/core/navigation/models/signalr_transition_data.dart';
 import 'package:neo_core/core/network/managers/neo_network_manager.dart';
 import 'package:neo_core/core/network/models/neo_error.dart';
@@ -11,6 +12,7 @@ class NeoTransitionListenerWidget extends StatelessWidget {
   final String signalRServerUrl;
   final String signalRMethodName;
   final Function(SignalrTransitionData navigationData) onPageNavigation;
+  final Function(EkycEventData flowdata) onEkycEvent;
   final VoidCallback? onLoggedInSuccessfully;
   final Function(NeoError error)? onError;
   final Function({required bool displayLoading}) onLoadingStatusChanged;
@@ -21,6 +23,7 @@ class NeoTransitionListenerWidget extends StatelessWidget {
     required this.signalRServerUrl,
     required this.signalRMethodName,
     required this.onPageNavigation,
+    required this.onEkycEvent,
     required this.onLoadingStatusChanged,
     this.onLoggedInSuccessfully,
     this.onError,
@@ -37,6 +40,7 @@ class NeoTransitionListenerWidget extends StatelessWidget {
             signalRServerUrl: signalRServerUrl,
             signalRMethodName: signalRMethodName,
             onTransitionSuccess: onPageNavigation,
+            onEkycEvent: onEkycEvent,
             onLoggedInSuccessfully: onLoggedInSuccessfully,
             onTransitionError: onError,
             onLoadingStatusChanged: onLoadingStatusChanged,

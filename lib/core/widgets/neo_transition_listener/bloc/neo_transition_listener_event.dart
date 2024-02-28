@@ -19,6 +19,7 @@ class NeoTransitionListenerEventInit extends NeoTransitionListenerEvent {
   final String signalRServerUrl;
   final String signalRMethodName;
   final Function(SignalrTransitionData navigationData) onTransitionSuccess;
+  final Function(EkycEventData flowdata) onEkycEvent;
   final VoidCallback? onLoggedInSuccessfully;
   final Function(NeoError error)? onTransitionError;
   final Function({required bool displayLoading}) onLoadingStatusChanged;
@@ -28,6 +29,7 @@ class NeoTransitionListenerEventInit extends NeoTransitionListenerEvent {
     required this.signalRServerUrl,
     required this.signalRMethodName,
     required this.onTransitionSuccess,
+    required this.onEkycEvent,
     required this.onLoggedInSuccessfully,
     required this.onTransitionError,
     required this.onLoadingStatusChanged,

@@ -13,6 +13,7 @@
 import 'package:equatable/equatable.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:neo_core/core/navigation/models/ekyc_event_data.dart';
 import 'package:neo_core/core/navigation/models/neo_navigation_type.dart';
 import 'package:neo_core/core/navigation/models/signalr_transition_data.dart';
 import 'package:neo_core/core/network/neo_network.dart';
@@ -28,6 +29,7 @@ class NeoTransitionListenerBloc extends Bloc<NeoTransitionListenerEvent, NeoTran
     with NeoTransitionBus {
   late final NeoCoreSecureStorage neoCoreSecureStorage = NeoCoreSecureStorage();
   late final Function(SignalrTransitionData navigationData) onTransitionSuccess;
+  late final Function(EkycEventData ekycData) onEkycEvent;
   late final Function(NeoError error)? onTransitionError;
   late final VoidCallback? onLoggedInSuccessfully;
   late final Function({required bool displayLoading}) onLoadingStatusChanged;
@@ -51,6 +53,7 @@ class NeoTransitionListenerBloc extends Bloc<NeoTransitionListenerEvent, NeoTran
 
   Future<void> _onInit(NeoTransitionListenerEventInit event) async {
     onTransitionSuccess = event.onTransitionSuccess;
+    onEkycEvent = event.onEkycEvent;
     onLoggedInSuccessfully = event.onLoggedInSuccessfully;
     onTransitionError = event.onTransitionError;
     onLoadingStatusChanged = event.onLoadingStatusChanged;
@@ -90,21 +93,28 @@ class NeoTransitionListenerBloc extends Bloc<NeoTransitionListenerEvent, NeoTran
     final navigationType = ongoingTransition.pageDetails["type"] as String?;
     final isBackNavigation = ongoingTransition.buttonType == "Back";
     final transitionId = ongoingTransition.transitionId;
-    onTransitionSuccess(
-      SignalrTransitionData(
-        navigationPath: navigationPath,
-        navigationType: NeoNavigationType.fromJson(navigationType ?? ""),
-        pageId: ongoingTransition.state,
-        viewSource: ongoingTransition.viewSource,
-        initialData: {
-          ...ongoingTransition.additionalData ?? {},
-          ...ongoingTransition.initialData,
-        },
-        isBackNavigation: isBackNavigation,
-        transitionId: transitionId,
-        statusCode: ongoingTransition.statusCode,
-        statusMessage: ongoingTransition.statusMessage,
-      ),
-    );
+    final isEkyc = ongoingTransition.additionalData != null && ongoingTransition.additionalData?["isEkyc"] == true;
+    if (isEkyc) {
+      final ekycState = ongoingTransition.additionalData?["state"] as String;
+      final message = ongoingTransition.additionalData?["message"] as String;
+      onEkycEvent(EkycEventData(state: ongoingTransition.state, ekycState: ekycState, message: message));
+    } else {
+      onTransitionSuccess(
+        SignalrTransitionData(
+          navigationPath: navigationPath,
+          navigationType: NeoNavigationType.fromJson(navigationType ?? ""),
+          pageId: ongoingTransition.state,
+          viewSource: ongoingTransition.viewSource,
+          initialData: {
+            ...ongoingTransition.additionalData ?? {},
+            ...ongoingTransition.initialData,
+          },
+          isBackNavigation: isBackNavigation,
+          transitionId: transitionId,
+          statusCode: ongoingTransition.statusCode,
+          statusMessage: ongoingTransition.statusMessage,
+        ),
+      );
+    }
   }
 }
