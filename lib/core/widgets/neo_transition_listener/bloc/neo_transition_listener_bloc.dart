@@ -13,8 +13,8 @@
 import 'package:equatable/equatable.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:neo_core/core/navigation/models/ekyc_event_data.dart';
 import 'package:neo_core/core/navigation/models/neo_navigation_type.dart';
-import 'package:neo_core/core/navigation/models/signalr_ekyc_data.dart';
 import 'package:neo_core/core/navigation/models/signalr_transition_data.dart';
 import 'package:neo_core/core/network/neo_network.dart';
 import 'package:neo_core/core/storage/neo_core_secure_storage.dart';
@@ -29,7 +29,7 @@ class NeoTransitionListenerBloc extends Bloc<NeoTransitionListenerEvent, NeoTran
     with NeoTransitionBus {
   late final NeoCoreSecureStorage neoCoreSecureStorage = NeoCoreSecureStorage();
   late final Function(SignalrTransitionData navigationData) onTransitionSuccess;
-  late final Function(EkycEventData flowdata) onEkycEvent;
+  late final Function(EkycEventData ekycData) onEkycEvent;
   late final Function(NeoError error)? onTransitionError;
   late final VoidCallback? onLoggedInSuccessfully;
   late final Function({required bool displayLoading}) onLoadingStatusChanged;
@@ -95,7 +95,7 @@ class NeoTransitionListenerBloc extends Bloc<NeoTransitionListenerEvent, NeoTran
     final transitionId = ongoingTransition.transitionId;
     final isEkyc = ongoingTransition.additionalData != null && ongoingTransition.additionalData?["isEkyc"] == true;
     if (isEkyc) {
-      final ekycState = ongoingTransition.additionalData?["state"] as String; //STOPSHIP: ekycstate
+      final ekycState = ongoingTransition.additionalData?["state"] as String;
       final message = ongoingTransition.additionalData?["message"] as String;
       onEkycEvent(EkycEventData(state: ongoingTransition.state, ekycState: ekycState, message: message));
     } else {
