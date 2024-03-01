@@ -12,6 +12,7 @@
 
 import 'package:neo_core/core/network/managers/neo_network_manager.dart';
 import 'package:neo_core/core/network/models/neo_http_call.dart';
+import 'package:neo_core/core/storage/neo_core_parameter_key.dart';
 import 'package:neo_core/core/storage/neo_core_secure_storage.dart';
 import 'package:neo_core/core/util/device_util.dart';
 import 'package:neo_core/feature/device_registration/models/neo_core_register_device_request.dart';
@@ -24,7 +25,7 @@ class NeoCoreRegisterDeviceUseCase {
   Future<void> call({required NeoNetworkManager networkManager, required String deviceToken}) async {
     try {
       final secureStorage = NeoCoreSecureStorage();
-      final existingToken = await secureStorage.getDeviceRegistrationToken();
+      final existingToken = await secureStorage.read(NeoCoreParameterKey.secureStorageDeviceRegistrationToken);
       if (deviceToken == existingToken) {
         return;
       }
@@ -35,8 +36,8 @@ class NeoCoreRegisterDeviceUseCase {
       final String? deviceModel;
 
       final resultArray = await Future.wait([
-        secureStorage.getDeviceId(),
-        secureStorage.getTokenId(),
+        secureStorage.read(NeoCoreParameterKey.secureStorageDeviceId),
+        secureStorage.read(NeoCoreParameterKey.secureStorageTokenId),
         deviceUtil.getDeviceInfo(),
       ]);
       deviceId = resultArray[0] ?? "";
@@ -56,7 +57,7 @@ class NeoCoreRegisterDeviceUseCase {
           ).toJson(),
         ),
       );
-      await secureStorage.setDeviceRegistrationToken(registrationToken: deviceToken);
+      await secureStorage.write(key: NeoCoreParameterKey.secureStorageDeviceRegistrationToken, value: deviceToken);
     } catch (e) {
       // No-op
     }
