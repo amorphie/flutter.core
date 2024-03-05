@@ -19,6 +19,8 @@ import 'package:neo_core/core/network/models/http_auth_response.dart';
 import 'package:neo_core/core/network/models/http_method.dart';
 import 'package:neo_core/core/network/models/neo_http_call.dart';
 import 'package:neo_core/core/network/models/neo_network_header_key.dart';
+import 'package:neo_core/core/storage/neo_core_parameter_key.dart';
+import 'package:neo_core/core/storage/neo_shared_prefs.dart';
 import 'package:neo_core/neo_core.dart';
 import 'package:uuid/uuid.dart';
 
@@ -57,22 +59,20 @@ class NeoNetworkManager {
 
   Future<Map<String, String>> get _defaultHeaders async {
     final results = await Future.wait([
-      secureStorage.getLanguageCode(),
-      secureStorage.getDeviceId(),
-      secureStorage.getTokenId(),
-      secureStorage.getDeviceInfo(),
+      secureStorage.read(NeoCoreParameterKey.secureStorageDeviceId),
+      secureStorage.read(NeoCoreParameterKey.secureStorageTokenId),
+      secureStorage.read(NeoCoreParameterKey.secureStorageDeviceInfo),
       _authHeader,
     ]);
 
-    final languageCode = results[0] as String? ?? "";
-    final deviceId = results[1] as String? ?? "";
-    final tokenId = results[2] as String? ?? "";
-    final deviceInfo = results[3] as String? ?? "";
-    final authHeader = results[4] as Map<String, String>? ?? {};
+    final deviceId = results[0] as String? ?? "";
+    final tokenId = results[1] as String? ?? "";
+    final deviceInfo = results[2] as String? ?? "";
+    final authHeader = results[3] as Map<String, String>? ?? {};
 
     return {
       NeoNetworkHeaderKey.contentType: _Constants.headerValueContentType,
-      NeoNetworkHeaderKey.acceptLanguage: '$languageCode-${languageCode.toUpperCase()}',
+      NeoNetworkHeaderKey.acceptLanguage: '$_languageCode-${_languageCode.toUpperCase()}',
       NeoNetworkHeaderKey.application: _Constants.headerValueApplication,
       NeoNetworkHeaderKey.deployment: DeviceUtil().getPlatformName(),
       NeoNetworkHeaderKey.deviceId: deviceId,
@@ -82,8 +82,13 @@ class NeoNetworkManager {
     }..addAll(authHeader);
   }
 
+  String get _languageCode {
+    final languageCodeReadResult = NeoSharedPrefs().read(NeoCoreParameterKey.sharedPrefsLanguageCode);
+    return languageCodeReadResult != null ? languageCodeReadResult as String : "";
+  }
+
   Future<Map<String, String>> get _authHeader async {
-    final authToken = await secureStorage.getAuthToken();
+    final authToken = await secureStorage.read(NeoCoreParameterKey.secureStorageAuthToken);
     return authToken == null ? {} : {NeoNetworkHeaderKey.authorization: 'Bearer $authToken'};
   }
 
@@ -212,7 +217,7 @@ class NeoNetworkManager {
         onRequestFailed?.call(error, call.endpoint);
         throw NeoException(error: error);
       }
-      if (await secureStorage.getRefreshToken() != null) {
+      if (await secureStorage.read(NeoCoreParameterKey.secureStorageRefreshToken) != null) {
         final isTokenRefreshed = await _refreshAuthDetailsByUsingRefreshToken();
         if (isTokenRefreshed) {
           return _retryLastCall(call);
@@ -267,14 +272,14 @@ class NeoNetworkManager {
           endpoint: _Constants.endpointGetToken,
           body: {
             _Constants.requestKeyGrantType: _Constants.requestValueGrantTypeRefreshToken,
-            _Constants.requestKeyRefreshToken: await secureStorage.getRefreshToken(),
+            _Constants.requestKeyRefreshToken: await secureStorage.read(NeoCoreParameterKey.secureStorageRefreshToken),
           },
         ),
       );
       final authResponse = HttpAuthResponse.fromJson(responseJson);
       await Future.wait([
         secureStorage.setAuthToken(authResponse.token),
-        secureStorage.setRefreshToken(authResponse.refreshToken),
+        secureStorage.write(key: NeoCoreParameterKey.secureStorageRefreshToken, value: authResponse.refreshToken),
       ]);
       return true;
     } catch (_) {
@@ -288,7 +293,7 @@ class NeoNetworkManager {
       return;
     }
     try {
-      final authToken = await secureStorage.getAuthToken();
+      final authToken = await secureStorage.read(NeoCoreParameterKey.secureStorageAuthToken);
       if (authToken != null && authToken.isNotEmpty) {
         return;
       }
@@ -307,7 +312,7 @@ class NeoNetworkManager {
       final authResponse = HttpAuthResponse.fromJson(responseJson);
       await Future.wait([
         secureStorage.setAuthToken(authResponse.token),
-        secureStorage.setRefreshToken(authResponse.refreshToken),
+        secureStorage.write(key: NeoCoreParameterKey.secureStorageRefreshToken, value: authResponse.refreshToken),
       ]);
     } catch (_) {
       // No-op
