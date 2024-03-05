@@ -21,6 +21,7 @@ class WorkflowFormBloc extends Bloc<WorkflowFormEvent, WorkflowFormState> {
     on<WorkflowFormEventAddAllParameters>((event, emit) {
       _formData.addAll(event.parameters);
     });
+    on<WorkflowFormEventAddParametersIntoArray>(_onAddParametersIntoArray);
     on<WorkflowFormEventValidateForm>((event, emit) {
       formKey.currentState?.validate();
     });
@@ -28,5 +29,16 @@ class WorkflowFormBloc extends Bloc<WorkflowFormEvent, WorkflowFormState> {
 
   void _onTextFormFieldUpdated(WorkflowFormEventUpdateTextFormField event) {
     _formData[event.key] = event.value;
+  }
+
+  void _onAddParametersIntoArray(WorkflowFormEventAddParametersIntoArray event, Emitter<WorkflowFormState> emit) {
+    final value = _formData[event.key];
+    final hasValue = value != null && value is List;
+    if (hasValue) {
+      value.add(event.value);
+      _formData[event.key] = value;
+    } else {
+      _formData[event.key] = [event.value];
+    }
   }
 }
