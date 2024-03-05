@@ -34,3 +34,15 @@ class WorkflowFormEventValidateForm extends WorkflowFormEvent {
   @override
   List<Object?> get props => [];
 }
+
+class WorkflowFormEventAddParametersIntoArray extends WorkflowFormEvent {
+  final dynamic itemIdentifierKey;
+  final String sharedDataKey;
+  final Map value;
+
+  const WorkflowFormEventAddParametersIntoArray(
+      {required this.itemIdentifierKey, required this.sharedDataKey, required this.value});
+
+  @override
+  List<Object?> get props => [sharedDataKey, value];
+}
