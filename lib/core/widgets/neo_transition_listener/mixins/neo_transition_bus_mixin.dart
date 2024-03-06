@@ -43,8 +43,20 @@ mixin NeoTransitionBus on Bloc<NeoTransitionListenerEvent, NeoTransitionListener
     }
   }
 
-  Future<Map<String, dynamic>> initWorkflow(String workflowName) {
-    return neoWorkflowManager.initWorkflow(workflowName: workflowName);
+  Future<Map<String, dynamic>> initWorkflow(String workflowName, [String? instanceId]) {
+    if (instanceId == null) {
+      return neoWorkflowManager.initWorkflow(workflowName: workflowName);
+    } else {
+      return neoWorkflowManager.getAvailableTransitions(instanceId);
+    }
+  }
+
+  Future<String?> getAvailableTransitionId(NeoSignalRTransition ongoingTransition) async {
+    if (ongoingTransition.viewSource == "transition") {
+      final workflowData = await neoWorkflowManager.getAvailableTransitions();
+      return workflowData["transition"]?.first["transition"];
+    }
+    return null;
   }
 
   Future<NeoSignalRTransition> postTransition(String transitionId, Map<String, dynamic> body) async {

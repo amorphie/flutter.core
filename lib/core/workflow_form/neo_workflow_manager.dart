@@ -25,6 +25,10 @@ class NeoWorkflowManager {
     _instanceId = const Uuid().v1();
   }
 
+  static void setInstanceId([String? _]) {
+    _instanceId = _ ?? _instanceId;
+  }
+
   String get instanceId => _instanceId;
 
   Future<Map<String, dynamic>> initWorkflow({required String workflowName}) async {
@@ -43,7 +47,8 @@ class NeoWorkflowManager {
     return response;
   }
 
-  Future<Map<String, dynamic>> getAvailableTransitions() async {
+  Future<Map<String, dynamic>> getAvailableTransitions([String? instanceId]) async {
+    setInstanceId(instanceId);
     final response = await neoNetworkManager.call(
       NeoHttpCall(
         endpoint: _Constants.endpointGetAvailableTransitions,
