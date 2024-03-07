@@ -44,5 +44,5 @@ class WorkflowFormEventAddParametersIntoArray extends WorkflowFormEvent {
       {required this.itemIdentifierKey, required this.sharedDataKey, required this.value});
 
   @override
-  List<Object?> get props => [sharedDataKey, value];
+  List<Object?> get props => [itemIdentifierKey, sharedDataKey, value];
 }
