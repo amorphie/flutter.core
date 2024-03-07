@@ -36,7 +36,7 @@ class WorkflowFormBloc extends Bloc<WorkflowFormEvent, WorkflowFormState> {
   }
 
   void _onAddParametersIntoArray(WorkflowFormEventAddParametersIntoArray event, Emitter<WorkflowFormState> emit) {
-    final List<Map> currentItemList = _formData[event.sharedDataKey] ?? <Map>[];
+    final List<Map> currentItemList = List<Map>.from(_formData[event.sharedDataKey] ?? []);
     final hasValue = currentItemList.isNotEmpty &&
         currentItemList.any((element) => element[_Constants.keyItemIdentifier] == event.itemIdentifierKey);
     if (hasValue) {
