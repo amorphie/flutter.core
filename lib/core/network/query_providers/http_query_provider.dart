@@ -11,7 +11,7 @@
  */
 
 class HttpQueryProvider {
-  final Map<String, String> queryParameters;
+  final Map<String, dynamic> queryParameters;
 
   HttpQueryProvider(this.queryParameters);
 }
