@@ -176,7 +176,7 @@ class NeoNetworkManager {
   }
 
   String _getFullPathWithQueries(String fullPath, List<HttpQueryProvider> queryProviders) {
-    final queryParameters = queryProviders.fold(
+    final Map<String, dynamic> queryParameters = queryProviders.fold(
       {},
       (previousValue, element) => previousValue..addAll(element.queryParameters),
     );
@@ -184,19 +184,8 @@ class NeoNetworkManager {
       return fullPath;
     }
 
-    String fullPathWithQueries = fullPath;
-    fullPathWithQueries += "?";
-
-    for (final queryParameter in queryParameters.entries) {
-      if (queryParameter.value != null) {
-        fullPathWithQueries += "${queryParameter.key}=${queryParameter.value}";
-        if (queryParameter.key != queryParameters.entries.last.key) {
-          fullPathWithQueries += "&";
-        }
-      }
-    }
-
-    return fullPathWithQueries;
+    final uri = Uri.parse(fullPath);
+    return uri.replace(queryParameters: queryParameters).toString();
   }
 
   Future<Map<String, dynamic>> _createResponseMap(http.Response response, NeoHttpCall call) async {
