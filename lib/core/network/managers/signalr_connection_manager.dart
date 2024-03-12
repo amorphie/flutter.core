@@ -11,7 +11,6 @@
  */
 
 import 'dart:convert';
-import 'dart:developer';
 
 import 'package:collection/collection.dart';
 import 'package:flutter/foundation.dart' show kDebugMode;
@@ -27,7 +26,7 @@ abstract class _Constants {
   static const eventNameSignalrInitSucceed = "[SignalrConnectionManager]: init is succeed!";
   static const eventNameSignalrInitFailed = "[SignalrConnectionManager]: init is failed!";
   static const transitionSubjectKey = "subject";
-  static const transitionSubjectValue = "worker-completed";
+  static const transitionSubjectValue = ["worker-completed", "transition-completed"];
   static const transitionResponseDataKey = "data";
 }
 
@@ -44,9 +43,7 @@ class SignalrConnectionManager {
   }) : _neoLogger = NeoLogger();
 
   Future init() async {
-    _hubConnection = HubConnectionBuilder()
-        .withUrl(serverUrl)
-        .withAutomaticReconnect(retryDelays: [2000, 5000, 10000, 20000]).build();
+    _hubConnection = HubConnectionBuilder().withUrl(serverUrl).withAutomaticReconnect(retryDelays: [2000, 5000, 10000, 20000]).build();
     _hubConnection?.onclose(({error}) {
       _neoLogger.logEvent(_Constants.eventNameSignalrOnClose);
       debugPrint(_Constants.eventNameSignalrOnClose);
@@ -75,7 +72,7 @@ class SignalrConnectionManager {
   void listenForTransitionEvents({required Function(NeoSignalRTransition transition) onTransition}) {
     _hubConnection?.on(methodName, (List<Object?>? transitions) {
       if (kDebugMode) {
-        log('\n[SignalrConnectionManager] Transition: $transitions');
+        debugPrint('\n[SignalrConnectionManager] Transition: $transitions');
       }
       if (transitions == null) {
         return;
@@ -93,7 +90,7 @@ class SignalrConnectionManager {
         .map((transition) {
           try {
             final transitionJsonDecoded = jsonDecode(transition is String ? transition : "{}");
-            if (transitionJsonDecoded[_Constants.transitionSubjectKey] != _Constants.transitionSubjectValue) {
+            if (!_Constants.transitionSubjectValue.contains(transitionJsonDecoded[_Constants.transitionSubjectKey])) {
               return null;
             }
             return NeoSignalRTransition.fromJson(transitionJsonDecoded[_Constants.transitionResponseDataKey]);
