@@ -47,7 +47,7 @@ mixin NeoTransitionBus on Bloc<NeoTransitionListenerEvent, NeoTransitionListener
     if (instanceId == null) {
       return neoWorkflowManager.initWorkflow(workflowName: workflowName, suffix: suffix);
     } else {
-      return neoWorkflowManager.getAvailableTransitions(instanceId);
+      return neoWorkflowManager.getAvailableTransitions(instanceId: instanceId);
     }
   }
 

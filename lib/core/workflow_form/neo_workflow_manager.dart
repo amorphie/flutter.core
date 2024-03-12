@@ -54,7 +54,7 @@ class NeoWorkflowManager {
     return response;
   }
 
-  Future<Map<String, dynamic>> getAvailableTransitions([String? instanceId]) async {
+  Future<Map<String, dynamic>> getAvailableTransitions({String? instanceId}) async {
     setInstanceId(instanceId);
     final response = await neoNetworkManager.call(
       NeoHttpCall(
