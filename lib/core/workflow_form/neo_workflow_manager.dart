@@ -26,8 +26,8 @@ class NeoWorkflowManager {
     _instanceId = const Uuid().v1();
   }
 
-  static void setInstanceId([String? _]) {
-    _instanceId = _ ?? _instanceId;
+  static void setInstanceId(String? newInstanceId) {
+    _instanceId = newInstanceId ?? _instanceId;
   }
 
   String get instanceId => _instanceId;
