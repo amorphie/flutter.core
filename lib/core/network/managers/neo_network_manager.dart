@@ -99,6 +99,7 @@ class NeoNetworkManager {
       NeoNetworkHeaderKey.behalfOfUser: const Uuid().v1(), // STOPSHIP: Delete it
     });
 
+  // TODO: Return result object to improve error handling
   Future<Map<String, dynamic>> call(NeoHttpCall neoCall) async {
     final fullPath = httpClientConfig.getServiceUrlByKey(
       neoCall.endpoint,
@@ -210,7 +211,6 @@ class NeoNetworkManager {
     } else if (response.statusCode == _Constants.responseCodeUnauthorized) {
       if (call.endpoint == _Constants.endpointGetToken) {
         final error = NeoError.defaultError();
-        onRequestFailed?.call(error, call.endpoint);
         throw NeoException(error: error);
       }
       if (await secureStorage.read(NeoCoreParameterKey.secureStorageRefreshToken) != null) {
@@ -219,7 +219,6 @@ class NeoNetworkManager {
           return _retryLastCall(call);
         } else {
           final error = NeoError.defaultError();
-          onRequestFailed?.call(error, call.endpoint);
           throw NeoException(error: error);
         }
       } else {
@@ -229,18 +228,18 @@ class NeoNetworkManager {
     } else {
       try {
         final error = NeoError.fromJson(responseJSON);
-        onRequestFailed?.call(error, call.endpoint);
         throw NeoException(error: error);
       } on MissingRequiredKeysException {
         final error = NeoError(responseCode: response.statusCode.toString());
-        onRequestFailed?.call(error, call.endpoint);
         throw NeoException(error: error);
       } catch (e) {
         if (e is NeoException) {
           onRequestFailed?.call(e.error, call.endpoint);
           rethrow;
+        } else {
+          onRequestFailed?.call(NeoError.defaultError(), call.endpoint);
+          throw NeoException(error: NeoError.defaultError());
         }
-        throw NeoException(error: const NeoError(responseCode: "-1"));
       }
     }
   }
