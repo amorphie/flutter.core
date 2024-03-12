@@ -176,22 +176,26 @@ class NeoNetworkManager {
   }
 
   String _getFullPathWithQueries(String fullPath, List<HttpQueryProvider> queryProviders) {
-    if (queryProviders.isEmpty) {
+    final queryParameters = queryProviders.fold(
+      {},
+      (previousValue, element) => previousValue..addAll(element.queryParameters),
+    );
+    if (queryParameters.isEmpty) {
       return fullPath;
     }
+
     String fullPathWithQueries = fullPath;
     fullPathWithQueries += "?";
-    for (final provider in queryProviders) {
-      for (final queryParameter in provider.queryParameters.entries) {
+
+    for (final queryParameter in queryParameters.entries) {
+      if (queryParameter.value != null) {
         fullPathWithQueries += "${queryParameter.key}=${queryParameter.value}";
-        if (queryParameter.key != provider.queryParameters.entries.last.key) {
+        if (queryParameter.key != queryParameters.entries.last.key) {
           fullPathWithQueries += "&";
         }
       }
-      if (queryProviders.indexOf(provider) != queryProviders.length - 1) {
-        fullPathWithQueries += "&";
-      }
     }
+
     return fullPathWithQueries;
   }
 
