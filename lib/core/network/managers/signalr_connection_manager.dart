@@ -11,6 +11,7 @@
  */
 
 import 'dart:convert';
+import 'dart:developer';
 
 import 'package:collection/collection.dart';
 import 'package:flutter/foundation.dart' show kDebugMode;
@@ -43,7 +44,9 @@ class SignalrConnectionManager {
   }) : _neoLogger = NeoLogger();
 
   Future init() async {
-    _hubConnection = HubConnectionBuilder().withUrl(serverUrl).withAutomaticReconnect(retryDelays: [2000, 5000, 10000, 20000]).build();
+    _hubConnection = HubConnectionBuilder()
+        .withUrl(serverUrl)
+        .withAutomaticReconnect(retryDelays: [2000, 5000, 10000, 20000]).build();
     _hubConnection?.onclose(({error}) {
       _neoLogger.logEvent(_Constants.eventNameSignalrOnClose);
       debugPrint(_Constants.eventNameSignalrOnClose);
@@ -72,7 +75,7 @@ class SignalrConnectionManager {
   void listenForTransitionEvents({required Function(NeoSignalRTransition transition) onTransition}) {
     _hubConnection?.on(methodName, (List<Object?>? transitions) {
       if (kDebugMode) {
-        debugPrint('\n[SignalrConnectionManager] Transition: $transitions');
+        log('\n[SignalrConnectionManager] Transition: $transitions');
       }
       if (transitions == null) {
         return;
