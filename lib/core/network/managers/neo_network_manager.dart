@@ -38,6 +38,7 @@ abstract class _Constants {
   static const String requestKeyRefreshToken = "refresh_token";
   static const String requestKeyScopes = "scopes";
   static const List<String> requestValueScopes = ["retail-customer"];
+  static const String languageCodeEn = "en";
 }
 
 class NeoNetworkManager {
@@ -72,7 +73,8 @@ class NeoNetworkManager {
 
     return {
       NeoNetworkHeaderKey.contentType: _Constants.headerValueContentType,
-      NeoNetworkHeaderKey.acceptLanguage: '$_languageCode-${_languageCode.toUpperCase()}',
+      NeoNetworkHeaderKey.acceptLanguage: _languageCode,
+      NeoNetworkHeaderKey.contentLanguage: _languageCode,
       NeoNetworkHeaderKey.application: _Constants.headerValueApplication,
       NeoNetworkHeaderKey.deployment: DeviceUtil().getPlatformName(),
       NeoNetworkHeaderKey.deviceId: deviceId,
@@ -84,7 +86,13 @@ class NeoNetworkManager {
 
   String get _languageCode {
     final languageCodeReadResult = NeoSharedPrefs().read(NeoCoreParameterKey.sharedPrefsLanguageCode);
-    return languageCodeReadResult != null ? languageCodeReadResult as String : "";
+    final String languageCode = languageCodeReadResult != null ? languageCodeReadResult as String : "";
+
+    if (languageCode == _Constants.languageCodeEn) {
+      return "$languageCode-US";
+    } else {
+      return '$languageCode-${languageCode.toUpperCase()}';
+    }
   }
 
   Future<Map<String, String>> get _authHeader async {
