@@ -41,10 +41,10 @@ class NeoTransitionListenerBloc extends Bloc<NeoTransitionListenerEvent, NeoTran
   }
 
   @override
-  Future<Map<String, dynamic>> initWorkflow(String workflowName) async {
+  Future<Map<String, dynamic>> initWorkflow(String workflowName, String? suffix) async {
     try {
       onLoadingStatusChanged(displayLoading: true);
-      return await super.initWorkflow(workflowName);
+      return await super.initWorkflow(workflowName, suffix);
     } catch (e) {
       rethrow;
     } finally {
