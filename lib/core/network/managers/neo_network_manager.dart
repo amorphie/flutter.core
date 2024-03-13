@@ -38,6 +38,7 @@ abstract class _Constants {
   static const String requestKeyRefreshToken = "refresh_token";
   static const String requestKeyScopes = "scopes";
   static const List<String> requestValueScopes = ["retail-customer"];
+  static const String languageCodeEn = "en";
 }
 
 class NeoNetworkManager {
@@ -72,7 +73,8 @@ class NeoNetworkManager {
 
     return {
       NeoNetworkHeaderKey.contentType: _Constants.headerValueContentType,
-      NeoNetworkHeaderKey.acceptLanguage: '$_languageCode-${_languageCode.toUpperCase()}',
+      NeoNetworkHeaderKey.acceptLanguage: _languageCode,
+      NeoNetworkHeaderKey.contentLanguage: _languageCode,
       NeoNetworkHeaderKey.application: _Constants.headerValueApplication,
       NeoNetworkHeaderKey.deployment: DeviceUtil().getPlatformName(),
       NeoNetworkHeaderKey.deviceId: deviceId,
@@ -84,7 +86,13 @@ class NeoNetworkManager {
 
   String get _languageCode {
     final languageCodeReadResult = NeoSharedPrefs().read(NeoCoreParameterKey.sharedPrefsLanguageCode);
-    return languageCodeReadResult != null ? languageCodeReadResult as String : "";
+    final String languageCode = languageCodeReadResult != null ? languageCodeReadResult as String : "";
+
+    if (languageCode == _Constants.languageCodeEn) {
+      return "$languageCode-US";
+    } else {
+      return '$languageCode-${languageCode.toUpperCase()}';
+    }
   }
 
   Future<Map<String, String>> get _authHeader async {
@@ -99,6 +107,7 @@ class NeoNetworkManager {
       NeoNetworkHeaderKey.behalfOfUser: const Uuid().v1(), // STOPSHIP: Delete it
     });
 
+  // TODO: Return result object to improve error handling
   Future<Map<String, dynamic>> call(NeoHttpCall neoCall) async {
     final fullPath = httpClientConfig.getServiceUrlByKey(
       neoCall.endpoint,
@@ -176,20 +185,16 @@ class NeoNetworkManager {
   }
 
   String _getFullPathWithQueries(String fullPath, List<HttpQueryProvider> queryProviders) {
-    if (queryProviders.isEmpty) {
+    final Map<String, dynamic> queryParameters = queryProviders.fold(
+      {},
+      (previousValue, element) => previousValue..addAll(element.queryParameters),
+    );
+    if (queryParameters.isEmpty) {
       return fullPath;
     }
-    String fullPathWithQueries = fullPath;
-    fullPathWithQueries += "?";
-    for (final provider in queryProviders) {
-      provider.queryParameters.forEach((key, value) {
-        fullPathWithQueries += "$key=$value";
-      });
-      if (queryProviders.indexOf(provider) != queryProviders.length - 1) {
-        fullPathWithQueries += "&";
-      }
-    }
-    return fullPathWithQueries;
+
+    final uri = Uri.parse(fullPath);
+    return uri.replace(queryParameters: queryParameters).toString();
   }
 
   Future<Map<String, dynamic>> _createResponseMap(http.Response response, NeoHttpCall call) async {
@@ -214,7 +219,6 @@ class NeoNetworkManager {
     } else if (response.statusCode == _Constants.responseCodeUnauthorized) {
       if (call.endpoint == _Constants.endpointGetToken) {
         final error = NeoError.defaultError();
-        onRequestFailed?.call(error, call.endpoint);
         throw NeoException(error: error);
       }
       if (await secureStorage.read(NeoCoreParameterKey.secureStorageRefreshToken) != null) {
@@ -223,7 +227,6 @@ class NeoNetworkManager {
           return _retryLastCall(call);
         } else {
           final error = NeoError.defaultError();
-          onRequestFailed?.call(error, call.endpoint);
           throw NeoException(error: error);
         }
       } else {
@@ -233,18 +236,18 @@ class NeoNetworkManager {
     } else {
       try {
         final error = NeoError.fromJson(responseJSON);
-        onRequestFailed?.call(error, call.endpoint);
         throw NeoException(error: error);
       } on MissingRequiredKeysException {
         final error = NeoError(responseCode: response.statusCode.toString());
-        onRequestFailed?.call(error, call.endpoint);
         throw NeoException(error: error);
       } catch (e) {
         if (e is NeoException) {
           onRequestFailed?.call(e.error, call.endpoint);
           rethrow;
+        } else {
+          onRequestFailed?.call(NeoError.defaultError(), call.endpoint);
+          throw NeoException(error: NeoError.defaultError());
         }
-        throw NeoException(error: const NeoError(responseCode: "-1"));
       }
     }
   }

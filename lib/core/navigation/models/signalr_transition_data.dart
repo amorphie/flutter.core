@@ -24,6 +24,7 @@ abstract class _Constant {
   static const keyTransitionId = "transitionId";
   static const keyStatusMessage = "statusMessage";
   static const keyStatusCode = "statusCode";
+  static const keyWorkflowSuffix = "workflowSuffix";
   static const statusCodeRedirectToLogin = "302";
 }
 
@@ -37,6 +38,7 @@ class SignalrTransitionData {
   final String transitionId;
   final String? statusMessage;
   final String? statusCode;
+  final String? workflowSuffix;
 
   SignalrTransitionData({
     required this.transitionId,
@@ -48,6 +50,7 @@ class SignalrTransitionData {
     this.isBackNavigation = false,
     this.statusMessage,
     this.statusCode,
+    this.workflowSuffix,
   });
 
   String encode() {
@@ -61,6 +64,7 @@ class SignalrTransitionData {
       _Constant.keyTransitionId: transitionId,
       _Constant.keyStatusMessage: statusMessage,
       _Constant.keyStatusCode: statusCode,
+      _Constant.keyWorkflowSuffix: workflowSuffix,
     });
   }
 
@@ -76,6 +80,7 @@ class SignalrTransitionData {
       transitionId: jsonMap[_Constant.keyTransitionId],
       statusMessage: jsonMap[_Constant.keyStatusMessage],
       statusCode: jsonMap[_Constant.keyStatusCode],
+      workflowSuffix: jsonMap[_Constant.keyWorkflowSuffix],
     );
   }
 }

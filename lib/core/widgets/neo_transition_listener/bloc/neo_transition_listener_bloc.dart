@@ -26,8 +26,7 @@ import 'package:neo_core/core/workflow_form/neo_workflow_manager.dart';
 part 'neo_transition_listener_event.dart';
 part 'neo_transition_listener_state.dart';
 
-class NeoTransitionListenerBloc extends Bloc<NeoTransitionListenerEvent, NeoTransitionListenerState>
-    with NeoTransitionBus {
+class NeoTransitionListenerBloc extends Bloc<NeoTransitionListenerEvent, NeoTransitionListenerState> with NeoTransitionBus {
   late final NeoCoreSecureStorage neoCoreSecureStorage = NeoCoreSecureStorage();
   late final Function(SignalrTransitionData navigationData) onTransitionSuccess;
   late final Function(EkycEventData ekycData) onEkycEvent;
@@ -41,10 +40,10 @@ class NeoTransitionListenerBloc extends Bloc<NeoTransitionListenerEvent, NeoTran
   }
 
   @override
-  Future<Map<String, dynamic>> initWorkflow(String workflowName) async {
+  Future<Map<String, dynamic>> initWorkflow({required String workflowName, String? suffix, String? instanceId}) async {
     try {
       onLoadingStatusChanged(displayLoading: true);
-      return await super.initWorkflow(workflowName);
+      return await super.initWorkflow(workflowName: workflowName, suffix: suffix, instanceId: instanceId);
     } catch (e) {
       rethrow;
     } finally {
@@ -74,7 +73,7 @@ class NeoTransitionListenerBloc extends Bloc<NeoTransitionListenerEvent, NeoTran
       final transitionResponse = await postTransition(event.transitionName, event.body);
       await _retrieveTokenIfExist(transitionResponse);
       onLoadingStatusChanged(displayLoading: false);
-      _handleTransitionResult(ongoingTransition: transitionResponse);
+      await _handleTransitionResult(ongoingTransition: transitionResponse);
     } catch (e) {
       debugPrint("NeoTransitionListenerBloc error ${e}");
       onLoadingStatusChanged(displayLoading: false);
@@ -92,7 +91,7 @@ class NeoTransitionListenerBloc extends Bloc<NeoTransitionListenerEvent, NeoTran
     }
   }
 
-  void _handleTransitionResult({required NeoSignalRTransition ongoingTransition}) {
+  Future<void> _handleTransitionResult({required NeoSignalRTransition ongoingTransition}) async {
     final navigationPath = ongoingTransition.pageDetails["pageRoute"]?["label"] as String?;
     final navigationType = ongoingTransition.pageDetails["type"] as String?;
     final isBackNavigation = ongoingTransition.buttonType == "Back";
@@ -115,7 +114,7 @@ class NeoTransitionListenerBloc extends Bloc<NeoTransitionListenerEvent, NeoTran
             ...ongoingTransition.initialData,
           },
           isBackNavigation: isBackNavigation,
-          transitionId: transitionId,
+          transitionId: await getAvailableTransitionId(ongoingTransition) ?? transitionId,
           statusCode: ongoingTransition.statusCode,
           statusMessage: ongoingTransition.statusMessage,
         ),

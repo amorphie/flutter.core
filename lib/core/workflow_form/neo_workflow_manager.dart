@@ -12,6 +12,7 @@ abstract class _Constants {
   static const pathParameterWorkflowName = "WORKFLOW_NAME";
   static const pathParameterInstanceId = "INSTANCE_ID";
   static const queryParameterInstanceId = "InstanceId";
+  static const queryParameterSuffix = "suffix";
 }
 
 class NeoWorkflowManager {
@@ -25,11 +26,20 @@ class NeoWorkflowManager {
     _instanceId = const Uuid().v1();
   }
 
+  static void setInstanceId(String? newInstanceId) {
+    _instanceId = newInstanceId ?? _instanceId;
+  }
+
   String get instanceId => _instanceId;
 
-  Future<Map<String, dynamic>> initWorkflow({required String workflowName}) async {
+  Future<Map<String, dynamic>> initWorkflow({required String workflowName, String? suffix}) async {
     NeoWorkflowManager.workflowName = workflowName;
     resetInstanceId();
+
+    final List<HttpQueryProvider> queryProviders = [];
+    if (suffix != null) {
+      queryProviders.add(HttpQueryProvider({_Constants.queryParameterSuffix: suffix}));
+    }
 
     final response = await neoNetworkManager.call(
       NeoHttpCall(
@@ -37,13 +47,15 @@ class NeoWorkflowManager {
         pathParameters: {
           _Constants.pathParameterWorkflowName: workflowName,
         },
+        queryProviders: queryProviders,
       ),
     );
     debugPrint('\n[NeoWorkflowManager] Init Workflow: $response');
     return response;
   }
 
-  Future<Map<String, dynamic>> getAvailableTransitions() async {
+  Future<Map<String, dynamic>> getAvailableTransitions({String? instanceId}) async {
+    setInstanceId(instanceId);
     final response = await neoNetworkManager.call(
       NeoHttpCall(
         endpoint: _Constants.endpointGetAvailableTransitions,
