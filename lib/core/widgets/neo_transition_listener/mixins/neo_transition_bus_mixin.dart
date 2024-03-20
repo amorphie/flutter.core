@@ -28,6 +28,7 @@ abstract class _Constants {
 mixin NeoTransitionBus on Bloc<NeoTransitionListenerEvent, NeoTransitionListenerState> {
   late final BehaviorSubject<NeoSignalRTransition> _transitionBus = BehaviorSubject();
   late final NeoWorkflowManager neoWorkflowManager;
+  late final NeoWorkflowManager neoSubWorkflowManager;
   late final SignalrConnectionManager signalrConnectionManager;
   late bool _bypassSignalr;
 
@@ -50,9 +51,17 @@ mixin NeoTransitionBus on Bloc<NeoTransitionListenerEvent, NeoTransitionListener
     bool isSubFlow = false,
   }) {
     if (instanceId == null) {
-      return neoWorkflowManager.initWorkflow(workflowName: workflowName, suffix: suffix, isSubFlow: isSubFlow);
+      if (isSubFlow) {
+        return neoSubWorkflowManager.initWorkflow(workflowName: workflowName, suffix: suffix);
+      } else {
+        return neoWorkflowManager.initWorkflow(workflowName: workflowName, suffix: suffix);
+      }
     } else {
-      return neoWorkflowManager.getAvailableTransitions(instanceId: instanceId, isSubFlow: isSubFlow);
+      if (isSubFlow) {
+        return neoSubWorkflowManager.getAvailableTransitions(instanceId: instanceId);
+      } else {
+        return neoWorkflowManager.getAvailableTransitions(instanceId: instanceId);
+      }
     }
   }
 
@@ -82,7 +91,11 @@ mixin NeoTransitionBus on Bloc<NeoTransitionListenerEvent, NeoTransitionListener
         }
       });
     }
-    await neoWorkflowManager.postTransition(transitionName: transitionId, body: body, isSubFlow: isSubFlow);
+    if (isSubFlow) {
+      await neoSubWorkflowManager.postTransition(transitionName: transitionId, body: body);
+    } else {
+      await neoWorkflowManager.postTransition(transitionName: transitionId, body: body);
+    }
 
     unawaited(_getTransitionWithLongPolling(completer, isSubFlow: isSubFlow));
 
@@ -121,7 +134,12 @@ mixin NeoTransitionBus on Bloc<NeoTransitionListenerEvent, NeoTransitionListener
       return;
     }
     try {
-      final response = await neoWorkflowManager.getLastTransitionByLongPolling(isSubFlow: isSubFlow);
+      Map<String, dynamic> response = {};
+      if (isSubFlow) {
+        response = await neoSubWorkflowManager.getLastTransitionByLongPolling();
+      } else {
+        response = await neoWorkflowManager.getLastTransitionByLongPolling();
+      }
       if (!completer.isCompleted) {
         completer.complete(NeoSignalRTransition.fromJson(response[_Constants.transitionResponseDataKey]));
       }
