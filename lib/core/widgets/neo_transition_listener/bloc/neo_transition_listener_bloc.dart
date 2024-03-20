@@ -21,6 +21,7 @@ import 'package:neo_core/core/storage/neo_core_parameter_key.dart';
 import 'package:neo_core/core/storage/neo_core_secure_storage.dart';
 import 'package:neo_core/core/widgets/neo_transition_listener/mixins/neo_transition_bus_mixin.dart';
 import 'package:neo_core/core/widgets/neo_transition_listener/usecases/get_workflow_query_parameters_usecase.dart';
+import 'package:neo_core/core/workflow_form/neo_sub_workflow_manager.dart';
 import 'package:neo_core/core/workflow_form/neo_workflow_manager.dart';
 
 part 'neo_transition_listener_event.dart';
@@ -70,7 +71,8 @@ class NeoTransitionListenerBloc extends Bloc<NeoTransitionListenerEvent, NeoTran
     onLoadingStatusChanged = event.onLoadingStatusChanged;
 
     await initTransitionBus(
-      neoWorkflowManager: NeoWorkflowManager(event.neoNetworkManager),
+      neoWorkflowManager: event.neoWorkflowManager,
+      neoSubWorkflowManager: event.neoSubWorkflowManager,
       signalrServerUrl: event.signalRServerUrl + await GetWorkflowQueryParametersUseCase().call(),
       signalrMethodName: event.signalRMethodName,
     );

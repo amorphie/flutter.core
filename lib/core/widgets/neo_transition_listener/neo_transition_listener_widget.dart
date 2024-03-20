@@ -2,13 +2,15 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:neo_core/core/navigation/models/ekyc_event_data.dart';
 import 'package:neo_core/core/navigation/models/signalr_transition_data.dart';
-import 'package:neo_core/core/network/managers/neo_network_manager.dart';
 import 'package:neo_core/core/network/models/neo_error.dart';
 import 'package:neo_core/core/widgets/neo_transition_listener/bloc/neo_transition_listener_bloc.dart';
+import 'package:neo_core/core/workflow_form/neo_sub_workflow_manager.dart';
+import 'package:neo_core/core/workflow_form/neo_workflow_manager.dart';
 
 class NeoTransitionListenerWidget extends StatelessWidget {
   final Widget child;
-  final NeoNetworkManager neoNetworkManager;
+  final NeoWorkflowManager neoWorkflowManager;
+  final NeoSubWorkflowManager neoSubWorkflowManager;
   final String signalRServerUrl;
   final String signalRMethodName;
   final Function(SignalrTransitionData navigationData) onPageNavigation;
@@ -19,7 +21,8 @@ class NeoTransitionListenerWidget extends StatelessWidget {
 
   const NeoTransitionListenerWidget({
     required this.child,
-    required this.neoNetworkManager,
+    required this.neoWorkflowManager,
+    required this.neoSubWorkflowManager,
     required this.signalRServerUrl,
     required this.signalRMethodName,
     required this.onPageNavigation,
@@ -36,7 +39,8 @@ class NeoTransitionListenerWidget extends StatelessWidget {
       create: (context) => NeoTransitionListenerBloc()
         ..add(
           NeoTransitionListenerEventInit(
-            neoNetworkManager: neoNetworkManager,
+            neoWorkflowManager: neoWorkflowManager,
+            neoSubWorkflowManager: neoSubWorkflowManager,
             signalRServerUrl: signalRServerUrl,
             signalRMethodName: signalRMethodName,
             onTransitionSuccess: onPageNavigation,
