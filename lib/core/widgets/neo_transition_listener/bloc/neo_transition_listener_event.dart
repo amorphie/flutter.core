@@ -15,17 +15,19 @@ part of 'neo_transition_listener_bloc.dart';
 sealed class NeoTransitionListenerEvent extends Equatable {}
 
 class NeoTransitionListenerEventInit extends NeoTransitionListenerEvent {
-  final NeoNetworkManager neoNetworkManager;
+  final NeoWorkflowManager neoWorkflowManager;
+  final NeoSubWorkflowManager neoSubWorkflowManager;
   final String signalRServerUrl;
   final String signalRMethodName;
   final Function(SignalrTransitionData navigationData) onTransitionSuccess;
-  final Function(EkycEventData flowdata) onEkycEvent;
+  final Function(EkycEventData eventData) onEkycEvent;
   final VoidCallback? onLoggedInSuccessfully;
   final Function(NeoError error)? onTransitionError;
   final Function({required bool displayLoading}) onLoadingStatusChanged;
 
   NeoTransitionListenerEventInit({
-    required this.neoNetworkManager,
+    required this.neoWorkflowManager,
+    required this.neoSubWorkflowManager,
     required this.signalRServerUrl,
     required this.signalRMethodName,
     required this.onTransitionSuccess,
@@ -37,10 +39,12 @@ class NeoTransitionListenerEventInit extends NeoTransitionListenerEvent {
 
   @override
   List<Object?> get props => [
-        neoNetworkManager,
+        neoWorkflowManager,
+        neoSubWorkflowManager,
         signalRServerUrl,
         signalRMethodName,
         onTransitionSuccess,
+        onEkycEvent,
         onLoggedInSuccessfully,
         onTransitionError,
         onLoadingStatusChanged,
