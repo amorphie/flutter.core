@@ -50,9 +50,10 @@ class NeoTransitionListenerEventInit extends NeoTransitionListenerEvent {
 class NeoTransitionListenerEventPostTransition extends NeoTransitionListenerEvent {
   final String transitionName;
   final Map<String, dynamic> body;
+  final bool isSubFlow;
 
-  NeoTransitionListenerEventPostTransition({required this.transitionName, required this.body});
+  NeoTransitionListenerEventPostTransition({required this.transitionName, required this.body, this.isSubFlow = false});
 
   @override
-  List<Object?> get props => [transitionName, body];
+  List<Object?> get props => [transitionName, body, isSubFlow];
 }
