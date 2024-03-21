@@ -21,12 +21,14 @@ import 'package:neo_core/core/storage/neo_core_parameter_key.dart';
 import 'package:neo_core/core/storage/neo_core_secure_storage.dart';
 import 'package:neo_core/core/widgets/neo_transition_listener/mixins/neo_transition_bus_mixin.dart';
 import 'package:neo_core/core/widgets/neo_transition_listener/usecases/get_workflow_query_parameters_usecase.dart';
+import 'package:neo_core/core/workflow_form/neo_sub_workflow_manager.dart';
 import 'package:neo_core/core/workflow_form/neo_workflow_manager.dart';
 
 part 'neo_transition_listener_event.dart';
 part 'neo_transition_listener_state.dart';
 
-class NeoTransitionListenerBloc extends Bloc<NeoTransitionListenerEvent, NeoTransitionListenerState> with NeoTransitionBus {
+class NeoTransitionListenerBloc extends Bloc<NeoTransitionListenerEvent, NeoTransitionListenerState>
+    with NeoTransitionBus {
   late final NeoCoreSecureStorage neoCoreSecureStorage = NeoCoreSecureStorage();
   late final Function(SignalrTransitionData navigationData) onTransitionSuccess;
   late final Function(EkycEventData ekycData) onEkycEvent;
@@ -40,10 +42,20 @@ class NeoTransitionListenerBloc extends Bloc<NeoTransitionListenerEvent, NeoTran
   }
 
   @override
-  Future<Map<String, dynamic>> initWorkflow({required String workflowName, String? suffix, String? instanceId}) async {
+  Future<Map<String, dynamic>> initWorkflow({
+    required String workflowName,
+    String? suffix,
+    String? instanceId,
+    bool isSubFlow = false,
+  }) async {
     try {
       onLoadingStatusChanged(displayLoading: true);
-      return await super.initWorkflow(workflowName: workflowName, suffix: suffix, instanceId: instanceId);
+      return await super.initWorkflow(
+        workflowName: workflowName,
+        suffix: suffix,
+        instanceId: instanceId,
+        isSubFlow: isSubFlow,
+      );
     } catch (e) {
       rethrow;
     } finally {
@@ -60,7 +72,8 @@ class NeoTransitionListenerBloc extends Bloc<NeoTransitionListenerEvent, NeoTran
     onLoadingStatusChanged = event.onLoadingStatusChanged;
 
     await initTransitionBus(
-      neoWorkflowManager: NeoWorkflowManager(event.neoNetworkManager),
+      neoWorkflowManager: event.neoWorkflowManager,
+      neoSubWorkflowManager: event.neoSubWorkflowManager,
       signalrServerUrl: event.signalRServerUrl + await GetWorkflowQueryParametersUseCase().call(),
       signalrMethodName: event.signalRMethodName,
     );
@@ -70,7 +83,7 @@ class NeoTransitionListenerBloc extends Bloc<NeoTransitionListenerEvent, NeoTran
     debugPrint("NeoTransitionListenerBloc _onPostTransition");
     try {
       onLoadingStatusChanged(displayLoading: true);
-      final transitionResponse = await postTransition(event.transitionName, event.body);
+      final transitionResponse = await postTransition(event.transitionName, event.body, isSubFlow: event.isSubFlow);
       await _retrieveTokenIfExist(transitionResponse);
       onLoadingStatusChanged(displayLoading: false);
       await _handleTransitionResult(ongoingTransition: transitionResponse);
