@@ -24,7 +24,10 @@ class NeoPageBloc extends Bloc<NeoPageEvent, NeoPageState> {
       formKey.currentState?.reset();
       _onValueChanged();
     });
-    on<NeoPageEventAddInitialParameters>((event, emit) => _formInitialData = event.parameters);
+    on<NeoPageEventAddInitialParameters>((event, emit) {
+      _formInitialData = event.parameters;
+      _formData.addAll(event.parameters);
+    });
     on<NeoPageEventAddAllParameters>((event, emit) {
       _formData.addAll(event.parameters);
       _onValueChanged();
