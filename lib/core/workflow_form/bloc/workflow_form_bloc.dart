@@ -11,28 +11,26 @@ abstract class _Constants {
 
 class WorkflowFormBloc extends Bloc<WorkflowFormEvent, WorkflowFormState> {
   final GlobalKey<FormState> formKey = GlobalKey<FormState>();
+  late final Map<String, dynamic> _formInitialData;
   final Map<String, dynamic> _formData = {};
+  bool _isStateChanged = false;
+
+  bool get isStateChanged => _isStateChanged;
 
   Map<String, dynamic> get formData => _formData;
 
   WorkflowFormBloc() : super(WorkflowFormInitial()) {
     on<WorkflowFormEventResetFrom>((event, emit) {
       formKey.currentState?.reset();
+      _onValueChanged();
     });
-    on<WorkflowFormEventUpdateTextFormField>((event, emit) {
-      _onTextFormFieldUpdated(event);
-    });
+    on<WorkflowFormEventAddInitialParameters>((event, emit) => _formInitialData = event.parameters);
     on<WorkflowFormEventAddAllParameters>((event, emit) {
       _formData.addAll(event.parameters);
+      _onValueChanged();
     });
     on<WorkflowFormEventAddParametersIntoArray>(_onAddParametersIntoArray);
-    on<WorkflowFormEventValidateForm>((event, emit) {
-      formKey.currentState?.validate();
-    });
-  }
-
-  void _onTextFormFieldUpdated(WorkflowFormEventUpdateTextFormField event) {
-    _formData[event.key] = event.value;
+    on<WorkflowFormEventValidateForm>((event, emit) => formKey.currentState?.validate());
   }
 
   void _onAddParametersIntoArray(WorkflowFormEventAddParametersIntoArray event, Emitter<WorkflowFormState> emit) {
@@ -46,5 +44,10 @@ class WorkflowFormBloc extends Bloc<WorkflowFormEvent, WorkflowFormState> {
     currentItemList.add({_Constants.keyItemIdentifier: event.itemIdentifierKey}..addAll(event.value));
 
     _formData[event.sharedDataKey] = currentItemList;
+    _onValueChanged();
+  }
+
+  void _onValueChanged() {
+    _isStateChanged = _formInitialData == _formData;
   }
 }

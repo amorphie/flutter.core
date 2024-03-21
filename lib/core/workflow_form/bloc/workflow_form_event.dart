@@ -4,21 +4,20 @@ sealed class WorkflowFormEvent extends Equatable {
   const WorkflowFormEvent();
 }
 
-class WorkflowFormEventUpdateTextFormField extends WorkflowFormEvent {
-  final String key;
-  final String value;
-
-  const WorkflowFormEventUpdateTextFormField({required this.key, required this.value});
-
-  @override
-  List<Object?> get props => [key, value];
-}
-
 class WorkflowFormEventResetFrom extends WorkflowFormEvent {
   const WorkflowFormEventResetFrom();
 
   @override
   List<Object?> get props => [];
+}
+
+class WorkflowFormEventAddInitialParameters extends WorkflowFormEvent {
+  final Map<String, dynamic> parameters;
+
+  const WorkflowFormEventAddInitialParameters(this.parameters);
+
+  @override
+  List<Object?> get props => [parameters];
 }
 
 class WorkflowFormEventAddAllParameters extends WorkflowFormEvent {
