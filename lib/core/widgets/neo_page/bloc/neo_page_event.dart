@@ -16,8 +16,8 @@ sealed class NeoPageEvent extends Equatable {
   const NeoPageEvent();
 }
 
-class NeoPageEventResetFrom extends NeoPageEvent {
-  const NeoPageEventResetFrom();
+class NeoPageEventResetForm extends NeoPageEvent {
+  const NeoPageEventResetForm();
 
   @override
   List<Object?> get props => [];

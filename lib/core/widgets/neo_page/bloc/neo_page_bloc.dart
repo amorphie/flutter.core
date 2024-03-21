@@ -1,3 +1,4 @@
+import 'package:collection/collection.dart';
 import 'package:equatable/equatable.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -20,7 +21,7 @@ class NeoPageBloc extends Bloc<NeoPageEvent, NeoPageState> {
   Map<String, dynamic> get formData => _formData;
 
   NeoPageBloc() : super(const NeoPageState()) {
-    on<NeoPageEventResetFrom>((event, emit) {
+    on<NeoPageEventResetForm>((event, emit) {
       formKey.currentState?.reset();
       _onValueChanged();
     });
@@ -51,6 +52,6 @@ class NeoPageBloc extends Bloc<NeoPageEvent, NeoPageState> {
   }
 
   void _onValueChanged() {
-    _isStateChanged = _formInitialData == _formData;
+    _isStateChanged = !const DeepCollectionEquality().equals(_formInitialData, _formData);
   }
 }
