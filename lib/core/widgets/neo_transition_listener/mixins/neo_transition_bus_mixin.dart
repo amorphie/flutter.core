@@ -16,6 +16,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:neo_core/core/feature_flags/neo_feature_flag_util.dart';
 import 'package:neo_core/core/network/neo_network.dart';
 import 'package:neo_core/core/widgets/neo_transition_listener/bloc/neo_transition_listener_bloc.dart';
+import 'package:neo_core/core/workflow_form/neo_sub_workflow_manager.dart';
 import 'package:neo_core/core/workflow_form/neo_workflow_manager.dart';
 import 'package:rxdart/rxdart.dart';
 
@@ -28,26 +29,38 @@ abstract class _Constants {
 mixin NeoTransitionBus on Bloc<NeoTransitionListenerEvent, NeoTransitionListenerState> {
   late final BehaviorSubject<NeoSignalRTransition> _transitionBus = BehaviorSubject();
   late final NeoWorkflowManager neoWorkflowManager;
+  late final NeoSubWorkflowManager neoSubWorkflowManager;
   late final SignalrConnectionManager signalrConnectionManager;
   late bool _bypassSignalr;
 
+  NeoWorkflowManager currentWorkflowManager({required bool isSubFlow}) {
+    return isSubFlow ? neoSubWorkflowManager : neoWorkflowManager;
+  }
+
   Future<void> initTransitionBus({
     required NeoWorkflowManager neoWorkflowManager,
+    required NeoSubWorkflowManager neoSubWorkflowManager,
     required String signalrServerUrl,
     required String signalrMethodName,
   }) async {
     this.neoWorkflowManager = neoWorkflowManager;
+    this.neoSubWorkflowManager = neoSubWorkflowManager;
     _bypassSignalr = await NeoFeatureFlagUtil.bypassSignalR();
     if (!_bypassSignalr) {
       await _initSignalrConnectionManager(signalrServerUrl: signalrServerUrl, signalrMethodName: signalrMethodName);
     }
   }
 
-  Future<Map<String, dynamic>> initWorkflow({required String workflowName, String? suffix, String? instanceId}) {
+  Future<Map<String, dynamic>> initWorkflow({
+    required String workflowName,
+    String? suffix,
+    String? instanceId,
+    bool isSubFlow = false,
+  }) {
     if (instanceId == null) {
-      return neoWorkflowManager.initWorkflow(workflowName: workflowName, suffix: suffix);
+      return currentWorkflowManager(isSubFlow: isSubFlow).initWorkflow(workflowName: workflowName, suffix: suffix);
     } else {
-      return neoWorkflowManager.getAvailableTransitions(instanceId: instanceId);
+      return currentWorkflowManager(isSubFlow: isSubFlow).getAvailableTransitions(instanceId: instanceId);
     }
   }
 
@@ -59,7 +72,11 @@ mixin NeoTransitionBus on Bloc<NeoTransitionListenerEvent, NeoTransitionListener
     return null;
   }
 
-  Future<NeoSignalRTransition> postTransition(String transitionId, Map<String, dynamic> body) async {
+  Future<NeoSignalRTransition> postTransition(
+    String transitionId,
+    Map<String, dynamic> body, {
+    bool isSubFlow = false,
+  }) async {
     final completer = Completer<NeoSignalRTransition>();
     StreamSubscription<NeoSignalRTransition>? transitionBusSubscription;
 
@@ -73,9 +90,9 @@ mixin NeoTransitionBus on Bloc<NeoTransitionListenerEvent, NeoTransitionListener
         }
       });
     }
-    await neoWorkflowManager.postTransition(transitionName: transitionId, body: body);
+    await currentWorkflowManager(isSubFlow: isSubFlow).postTransition(transitionName: transitionId, body: body);
 
-    unawaited(_getTransitionWithLongPolling(completer));
+    unawaited(_getTransitionWithLongPolling(completer, isSubFlow: isSubFlow));
 
     return completer.future.whenComplete(() async {
       await transitionBusSubscription?.cancel();
@@ -102,14 +119,18 @@ mixin NeoTransitionBus on Bloc<NeoTransitionListenerEvent, NeoTransitionListener
     );
   }
 
-  Future<void> _getTransitionWithLongPolling(Completer<NeoSignalRTransition> completer) async {
+  Future<void> _getTransitionWithLongPolling(
+    Completer<NeoSignalRTransition> completer, {
+    required bool isSubFlow,
+  }) async {
     await Future.delayed(_bypassSignalr ? _Constants.signalrBypassDelayDuration : _Constants.signalrTimeOutDuration);
 
     if (completer.isCompleted) {
       return;
     }
     try {
-      final response = await neoWorkflowManager.getLastTransitionByLongPolling();
+      final response = await currentWorkflowManager(isSubFlow: isSubFlow).getLastTransitionByLongPolling();
+
       if (!completer.isCompleted) {
         completer.complete(NeoSignalRTransition.fromJson(response[_Constants.transitionResponseDataKey]));
       }

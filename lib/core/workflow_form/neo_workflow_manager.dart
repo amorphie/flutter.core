@@ -17,16 +17,16 @@ abstract class _Constants {
 
 class NeoWorkflowManager {
   final NeoNetworkManager neoNetworkManager;
-  static String _instanceId = const Uuid().v1();
+  String _instanceId = const Uuid().v1();
   static String workflowName = "";
 
   NeoWorkflowManager(this.neoNetworkManager);
 
-  static void resetInstanceId() {
+  void resetInstanceId() {
     _instanceId = const Uuid().v1();
   }
 
-  static void setInstanceId(String? newInstanceId) {
+  void setInstanceId(String? newInstanceId) {
     _instanceId = newInstanceId ?? _instanceId;
   }
 
