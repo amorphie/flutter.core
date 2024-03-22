@@ -16,6 +16,13 @@ NeoError _$NeoErrorFromJson(Map<String, dynamic> json) => NeoError(
       message: json['message'] as String? ?? _Constants.defaultErrorMessage,
     );
 
+Map<String, dynamic> _$NeoErrorToJson(NeoError instance) => <String, dynamic>{
+      'response-code': instance.responseCode,
+      'display-mode': _$NeoErrorDisplayMethodEnumMap[instance.displayMode]!,
+      'title': instance.title,
+      'message': instance.message,
+    };
+
 const _$NeoErrorDisplayMethodEnumMap = {
   NeoErrorDisplayMethod.popup: 'popup',
   NeoErrorDisplayMethod.inline: 'inline',
