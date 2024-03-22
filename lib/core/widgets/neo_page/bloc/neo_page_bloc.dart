@@ -12,7 +12,7 @@ abstract class _Constants {
 
 class NeoPageBloc extends Bloc<NeoPageEvent, NeoPageState> {
   final GlobalKey<FormState> formKey = GlobalKey<FormState>();
-  late final Map<String, dynamic> _formInitialData;
+  final Map<String, dynamic> _formInitialData = {};
   final Map<String, dynamic> _formData = {};
   bool _isStateChanged = false;
 
@@ -26,7 +26,7 @@ class NeoPageBloc extends Bloc<NeoPageEvent, NeoPageState> {
       _onValueChanged();
     });
     on<NeoPageEventAddInitialParameters>((event, emit) {
-      _formInitialData = event.parameters;
+      _formInitialData.addAll(event.parameters);
       _formData.addAll(event.parameters);
     });
     on<NeoPageEventAddAllParameters>((event, emit) {
