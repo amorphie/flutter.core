@@ -50,10 +50,15 @@ class NeoPageEventAddParametersIntoArray extends NeoPageEvent {
   final dynamic itemIdentifierKey;
   final String sharedDataKey;
   final Map value;
+  final bool isInitialValue;
 
-  const NeoPageEventAddParametersIntoArray(
-      {required this.itemIdentifierKey, required this.sharedDataKey, required this.value});
+  const NeoPageEventAddParametersIntoArray({
+    required this.itemIdentifierKey,
+    required this.sharedDataKey,
+    required this.value,
+    this.isInitialValue = false,
+  });
 
   @override
-  List<Object?> get props => [itemIdentifierKey, sharedDataKey, value];
+  List<Object?> get props => [itemIdentifierKey, sharedDataKey, value, isInitialValue];
 }

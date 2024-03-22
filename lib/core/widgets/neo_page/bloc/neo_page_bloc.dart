@@ -48,6 +48,9 @@ class NeoPageBloc extends Bloc<NeoPageEvent, NeoPageState> {
     currentItemList.add({_Constants.keyItemIdentifier: event.itemIdentifierKey}..addAll(event.value));
 
     _formData[event.sharedDataKey] = currentItemList;
+    if (event.isInitialValue) {
+      _formInitialData[event.sharedDataKey] = currentItemList;
+    }
     _onValueChanged();
   }
 
