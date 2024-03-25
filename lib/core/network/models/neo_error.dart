@@ -23,7 +23,7 @@ abstract class _Constants {
   static const defaultErrorMessage = "general_noResponse_text";
 }
 
-@JsonSerializable(createToJson: false)
+@JsonSerializable()
 class NeoError extends Equatable {
   @JsonKey(name: "response-code")
   final String responseCode;
@@ -46,6 +46,8 @@ class NeoError extends Equatable {
     this.title = _Constants.defaultErrorTitle,
     this.message = _Constants.defaultErrorMessage,
   });
+
+  Map<String, dynamic> toJson() => _$NeoErrorToJson(this);
 
   factory NeoError.fromJson(Map<String, dynamic> json) => _$NeoErrorFromJson(json);
 
