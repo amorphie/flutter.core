@@ -14,16 +14,14 @@ class NeoPageBloc extends Bloc<NeoPageEvent, NeoPageState> {
   final GlobalKey<FormState> formKey = GlobalKey<FormState>();
   final Map<String, dynamic> _formInitialData = {};
   final Map<String, dynamic> _formData = {};
-  bool _isStateChanged = false;
 
-  bool get isStateChanged => _isStateChanged;
+  bool isStateChanged() => !const DeepCollectionEquality.unordered().equals(_formInitialData, _formData);
 
   Map<String, dynamic> get formData => _formData;
 
   NeoPageBloc() : super(const NeoPageState()) {
     on<NeoPageEventResetForm>((event, emit) {
       formKey.currentState?.reset();
-      _onValueChanged();
     });
     on<NeoPageEventAddInitialParameters>((event, emit) {
       _formInitialData.addAll(event.parameters);
@@ -31,7 +29,6 @@ class NeoPageBloc extends Bloc<NeoPageEvent, NeoPageState> {
     });
     on<NeoPageEventAddAllParameters>((event, emit) {
       _formData.addAll(event.parameters);
-      _onValueChanged();
     });
     on<NeoPageEventAddParametersIntoArray>(_onAddParametersIntoArray);
     on<NeoPageEventValidateForm>((event, emit) => formKey.currentState?.validate());
@@ -48,10 +45,5 @@ class NeoPageBloc extends Bloc<NeoPageEvent, NeoPageState> {
     currentItemList.add({_Constants.keyItemIdentifier: event.itemIdentifierKey}..addAll(event.value));
 
     _formData[event.sharedDataKey] = currentItemList;
-    _onValueChanged();
-  }
-
-  void _onValueChanged() {
-    _isStateChanged = !const DeepCollectionEquality().equals(_formInitialData, _formData);
   }
 }
