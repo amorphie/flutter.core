@@ -62,3 +62,12 @@ class NeoPageEventAddParametersIntoArray extends NeoPageEvent {
   @override
   List<Object?> get props => [itemIdentifierKey, sharedDataKey, value, isInitialValue];
 }
+
+class NeoPageEventAddParametersWithPath extends NeoPageEvent {
+  final String dataPath;
+  final Map value;
+
+  const NeoPageEventAddParametersWithPath({required this.dataPath, required this.value});
+  @override
+  List<Object?> get props => [dataPath, value];
+}
