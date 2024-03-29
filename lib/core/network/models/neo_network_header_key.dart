@@ -20,6 +20,8 @@ abstract class NeoNetworkHeaderKey {
   static const tokenId = "X-Token-Id";
   static const requestId = "X-Request-Id";
   static const deviceInfo = "X-Device-Info";
+  static const deviceVersion = "X-Device-Version";
+  static const devicePlatform = "X-Device-Platform";
   static const authorization = "Authorization";
   static const user = "User";
   static const behalfOfUser = "Behalf-Of-User";

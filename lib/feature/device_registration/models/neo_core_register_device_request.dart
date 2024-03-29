@@ -31,12 +31,16 @@ class NeoCoreRegisterDeviceRequest {
   @JsonKey(name: "devicePlatform", defaultValue: "")
   final String devicePlatform;
 
+  @JsonKey(name: "deviceVersion", defaultValue: "")
+  final String deviceVersion;
+
   const NeoCoreRegisterDeviceRequest({
     required this.deviceId,
     required this.installationId,
     required this.deviceToken,
     required this.deviceModel,
     required this.devicePlatform,
+    required this.deviceVersion,
   });
 
   Map<String, dynamic> toJson() => _$NeoCoreRegisterDeviceRequestToJson(this);

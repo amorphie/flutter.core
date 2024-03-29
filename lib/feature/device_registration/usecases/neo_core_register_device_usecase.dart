@@ -14,7 +14,8 @@ import 'package:neo_core/core/network/managers/neo_network_manager.dart';
 import 'package:neo_core/core/network/models/neo_http_call.dart';
 import 'package:neo_core/core/storage/neo_core_parameter_key.dart';
 import 'package:neo_core/core/storage/neo_core_secure_storage.dart';
-import 'package:neo_core/core/util/device_util.dart';
+import 'package:neo_core/core/util/device_util/device_util.dart';
+import 'package:neo_core/core/util/device_util/models/neo_device_info.dart';
 import 'package:neo_core/feature/device_registration/models/neo_core_register_device_request.dart';
 
 abstract class _Constants {
@@ -31,20 +32,16 @@ class NeoCoreRegisterDeviceUseCase {
       }
 
       final deviceUtil = DeviceUtil();
-      final String? deviceId;
-      final String? tokenId;
-      final String? deviceModel;
 
       final resultArray = await Future.wait([
         secureStorage.read(NeoCoreParameterKey.secureStorageDeviceId),
         secureStorage.read(NeoCoreParameterKey.secureStorageTokenId),
         deviceUtil.getDeviceInfo(),
       ]);
-      deviceId = resultArray[0] ?? "";
-      tokenId = resultArray[1] ?? "";
-      deviceModel = resultArray[2] ?? "";
+      final deviceId = resultArray[0] as String? ?? "";
+      final tokenId = resultArray[1] as String? ?? "";
+      final deviceModel = resultArray[2] != null ? NeoDeviceInfo.decode(resultArray[2] as String? ?? "") : null;
 
-      final devicePlatform = deviceUtil.getPlatformName();
       await networkManager.call(
         NeoHttpCall(
           endpoint: _Constants.registerDeviceEndpoint,
@@ -52,8 +49,9 @@ class NeoCoreRegisterDeviceUseCase {
             deviceId: deviceId,
             installationId: tokenId,
             deviceToken: deviceToken,
-            deviceModel: deviceModel,
-            devicePlatform: devicePlatform,
+            deviceModel: deviceModel?.model ?? "",
+            devicePlatform: deviceModel?.platform ?? "",
+            deviceVersion: deviceModel?.version ?? "",
           ).toJson(),
         ),
       );
