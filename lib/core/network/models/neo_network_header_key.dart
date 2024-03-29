@@ -11,17 +11,18 @@
  */
 
 abstract class NeoNetworkHeaderKey {
-  static const contentType = "Content-Type";
   static const acceptLanguage = "Accept-Language";
-  static const contentLanguage = "Content-Language";
-  static const application = "X-Application";
-  static const deployment = "X-Deployment";
-  static const deviceId = "X-Device-Id";
-  static const tokenId = "X-Token-Id";
-  static const requestId = "X-Request-Id";
-  static const deviceInfo = "X-Device-Info";
-  static const authorization = "Authorization";
-  static const user = "User";
-  static const behalfOfUser = "Behalf-Of-User";
   static const accessToken = "access_token";
+  static const application = "X-Application";
+  static const authorization = "Authorization";
+  static const behalfOfUser = "Behalf-Of-User";
+  static const contentLanguage = "Content-Language";
+  static const contentType = "Content-Type";
+  static const deviceId = "X-Device-Id";
+  static const deviceModel = "X-Device-Model";
+  static const devicePlatform = "X-Device-Platform";
+  static const deviceVersion = "X-Device-Version";
+  static const requestId = "X-Request-Id";
+  static const tokenId = "X-Token-Id";
+  static const user = "User";
 }
