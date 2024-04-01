@@ -109,6 +109,11 @@ class NeoCoreSecureStorage {
         value: "$customerName $customerSurname",
       );
     }
+
+    final businessLine = decodedToken["business_line"];
+    if (businessLine is String && businessLine.isNotEmpty) {
+      await write(key: NeoCoreParameterKey.secureStorageBusinessLine, value: businessLine);
+    }
   }
 
   Future deleteTokens() async {
