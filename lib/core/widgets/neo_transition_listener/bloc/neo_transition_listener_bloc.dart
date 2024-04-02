@@ -118,16 +118,41 @@ class NeoTransitionListenerBloc extends Bloc<NeoTransitionListenerEvent, NeoTran
           navigationType: NeoNavigationType.fromJson(navigationType ?? ""),
           pageId: ongoingTransition.state,
           viewSource: ongoingTransition.viewSource,
-          initialData: {
-            ...ongoingTransition.additionalData ?? {},
-            ...ongoingTransition.initialData,
-          },
+          initialData: _mergeDataWithAdditionalData(
+            ongoingTransition.initialData,
+            ongoingTransition.additionalData ?? {},
+          ),
           isBackNavigation: isBackNavigation,
           transitionId: await getAvailableTransitionId(ongoingTransition) ?? transitionId,
           statusCode: ongoingTransition.statusCode,
           statusMessage: ongoingTransition.statusMessage,
         ),
       );
+    }
+  }
+
+  Map<String, dynamic> _mergeDataWithAdditionalData(Map data, Map additionalData) {
+    final Map<String, dynamic> mergedMap = {};
+    data.forEach((key, value) {
+      if (additionalData.containsKey(key)) {
+        mergedMap[key] = _mergeValues(data[key], additionalData[key]);
+      } else {
+        mergedMap[key] = value;
+      }
+    });
+    additionalData.forEach((key, value) {
+      if (!data.containsKey(key)) {
+        mergedMap[key] = value;
+      }
+    });
+    return mergedMap;
+  }
+
+  dynamic _mergeValues(dynamic value1, dynamic value2) {
+    if (value1 is List && value2 is List) {
+      return [...value1, ...value2];
+    } else {
+      return value2; // Default behavior, override value1 with value2
     }
   }
 }
