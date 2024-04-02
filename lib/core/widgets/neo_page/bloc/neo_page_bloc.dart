@@ -1,3 +1,5 @@
+import 'dart:developer';
+
 import 'package:collection/collection.dart';
 import 'package:equatable/equatable.dart';
 import 'package:flutter/material.dart';
@@ -52,46 +54,55 @@ class NeoPageBloc extends Bloc<NeoPageEvent, NeoPageState> {
   }
 
   void _onNeoPageEventAddParametersWithPath(NeoPageEventAddParametersWithPath event, Emitter<NeoPageState> emit) {
-    final RegExp pathPartPattern = RegExp(r'\[([0-9]+)\]|[^\.]+');
-    final Iterable<Match> matches = pathPartPattern.allMatches(event.dataPath);
+    final RegExp exp = RegExp(r"(\w+|\[.*?\])");
+    final Iterable<Match> matches = exp.allMatches(event.dataPath);
     final List<dynamic> path = [];
 
-    for (Match match in matches) {
+    for (final Match match in matches) {
       if (match.group(1) != null) {
-        path.add(int.parse(match.group(1) ?? ""));
+        path.add(match.group(1) ?? "");
       } else if (match.group(0) != '\$') {
         path.add(match.group(0));
       }
     }
 
-    void setNestedMapValue(Map map, List<dynamic> path, dynamic value) {
-      dynamic current = map;
-
-      for (int i = 0; i < path.length; i++) {
-        if (i == path.length - 1) {
-          if (current is List) {
-            if (value is Map && current[path[i]] is Map) {
-              current[path[i]].addAll(value); // Merge the maps if both the current value and the new value are maps
-            } else {
-              current[path[i]] = value;
-            }
-          } else if (current is Map) {
-            if (value is Map && current[path[i]] is Map) {
-              current[path[i]].addAll(value); // Merge the maps if both the current value and the new value are maps
-            } else {
-              current[path[i]] = value;
-            }
-          }
-        } else {
-          if (current[path[i]] is Map) {
-            current = current[path[i]];
-          } else if (current[path[i]] is List) {
-            current = current[path[i]];
-          }
-        }
-      }
-    }
-
-    setNestedMapValue(_formData, path, event.value);
+    _formData.addAll(setNestedMapValue(_formData, path, event.value));
+    debugPrint("${event.dataPath}\n$_formData");
   }
+}
+
+dynamic setNestedMapValue(dynamic map, List<dynamic> path, dynamic value, [int i = 0]) {
+  dynamic current = map;
+  final String currentPath = path[i];
+
+  final bool isList = currentPath.startsWith("[") && currentPath.endsWith("]");
+  // var index = list.indexWhere((item) => item['_id'] == id);
+  final bool isEmpty = (isList && (current == null || current.isEmpty)) || (!isList && (current[currentPath] == null || current[currentPath].isEmpty));
+  final bool isLast = i == path.length - 1;
+  if (isEmpty) {
+    if (isList) {
+      current = [];
+    } else {
+      current[currentPath] = {};
+    }
+  }
+
+  if (isLast) {
+    if (current is List) {
+      final String? id = isList ? currentPath.substring(1, currentPath.length - 1) : null;
+      final int index = current.indexWhere((item) => item['_id'] == id);
+      if (index > -1) {
+        current[index].addAll(value);
+      } else {
+        value['_id'] = id;
+        current.add(value);
+      }
+    } else {
+      current[currentPath].addAll(value);
+    }
+  } else {
+    current[currentPath] = setNestedMapValue(current[currentPath], path, value, i + 1);
+  }
+
+  return current;
 }
