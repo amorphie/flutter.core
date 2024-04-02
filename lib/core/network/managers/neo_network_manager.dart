@@ -21,6 +21,7 @@ import 'package:neo_core/core/network/models/neo_http_call.dart';
 import 'package:neo_core/core/network/models/neo_network_header_key.dart';
 import 'package:neo_core/core/storage/neo_core_parameter_key.dart';
 import 'package:neo_core/core/storage/neo_shared_prefs.dart';
+import 'package:neo_core/core/util/device_util/models/neo_device_info.dart';
 import 'package:neo_core/neo_core.dart';
 import 'package:uuid/uuid.dart';
 
@@ -68,7 +69,7 @@ class NeoNetworkManager {
 
     final deviceId = results[0] as String? ?? "";
     final tokenId = results[1] as String? ?? "";
-    final deviceInfo = results[2] as String? ?? "";
+    final deviceInfo = results[2] != null ? NeoDeviceInfo.decode(results[2] as String? ?? "") : null;
     final authHeader = results[3] as Map<String, String>? ?? {};
 
     return {
@@ -76,11 +77,14 @@ class NeoNetworkManager {
       NeoNetworkHeaderKey.acceptLanguage: _languageCode,
       NeoNetworkHeaderKey.contentLanguage: _languageCode,
       NeoNetworkHeaderKey.application: _Constants.headerValueApplication,
-      NeoNetworkHeaderKey.deployment: DeviceUtil().getPlatformName(),
       NeoNetworkHeaderKey.deviceId: deviceId,
       NeoNetworkHeaderKey.tokenId: tokenId,
       NeoNetworkHeaderKey.requestId: const Uuid().v1(),
-      NeoNetworkHeaderKey.deviceInfo: deviceInfo,
+      NeoNetworkHeaderKey.deviceInfo: deviceInfo?.model ?? "",
+      NeoNetworkHeaderKey.deviceModel: deviceInfo?.model ?? "",
+      NeoNetworkHeaderKey.deviceVersion: deviceInfo?.version ?? "",
+      NeoNetworkHeaderKey.devicePlatform: deviceInfo?.platform ?? "",
+      NeoNetworkHeaderKey.deployment: deviceInfo?.platform ?? "",
     }..addAll(authHeader);
   }
 

@@ -45,7 +45,10 @@ class SignalrConnectionManager {
 
   Future init() async {
     _hubConnection = HubConnectionBuilder()
-        .withUrl(serverUrl)
+        .withUrl(
+      serverUrl,
+      options: HttpConnectionOptions(transport: HttpTransportType.WebSockets, skipNegotiation: true),
+    )
         .withAutomaticReconnect(retryDelays: [2000, 5000, 10000, 20000]).build();
     _hubConnection?.onclose(({error}) {
       _neoLogger.logEvent(_Constants.eventNameSignalrOnClose);

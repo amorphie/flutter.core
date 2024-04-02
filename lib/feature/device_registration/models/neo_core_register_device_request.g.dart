@@ -14,4 +14,5 @@ Map<String, dynamic> _$NeoCoreRegisterDeviceRequestToJson(
       'deviceToken': instance.deviceToken,
       'deviceModel': instance.deviceModel,
       'devicePlatform': instance.devicePlatform,
+      'deviceVersion': instance.deviceVersion,
     };

@@ -20,7 +20,7 @@ import 'package:universal_io/io.dart';
 export 'core/bus/neo_bus.dart';
 export 'core/network/neo_network.dart';
 export 'core/storage/neo_storage.dart';
-export 'core/util/device_util.dart';
+export 'core/util/device_util/device_util.dart';
 export 'core/widgets/neo_widgets.dart';
 
 class NeoCore {
