@@ -80,9 +80,11 @@ class NeoNetworkManager {
       NeoNetworkHeaderKey.deviceId: deviceId,
       NeoNetworkHeaderKey.tokenId: tokenId,
       NeoNetworkHeaderKey.requestId: const Uuid().v1(),
+      NeoNetworkHeaderKey.deviceInfo: deviceInfo?.model ?? "",
       NeoNetworkHeaderKey.deviceModel: deviceInfo?.model ?? "",
       NeoNetworkHeaderKey.deviceVersion: deviceInfo?.version ?? "",
       NeoNetworkHeaderKey.devicePlatform: deviceInfo?.platform ?? "",
+      NeoNetworkHeaderKey.deployment: deviceInfo?.platform ?? "",
     }..addAll(authHeader);
   }
 
