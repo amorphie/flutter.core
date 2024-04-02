@@ -83,6 +83,7 @@ class NeoNetworkManager {
       NeoNetworkHeaderKey.deviceModel: deviceInfo?.model ?? "",
       NeoNetworkHeaderKey.deviceVersion: deviceInfo?.version ?? "",
       NeoNetworkHeaderKey.devicePlatform: deviceInfo?.platform ?? "",
+      NeoNetworkHeaderKey.deployment: deviceInfo?.platform ?? "",
     }..addAll(authHeader);
   }
 
