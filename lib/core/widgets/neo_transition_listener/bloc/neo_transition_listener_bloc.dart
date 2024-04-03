@@ -132,16 +132,11 @@ class NeoTransitionListenerBloc extends Bloc<NeoTransitionListenerEvent, NeoTran
   }
 
   Map<String, dynamic> _mergeDataWithAdditionalData(Map data, Map additionalData) {
-    final Map<String, dynamic> mergedMap = {};
-    data.forEach((key, value) {
-      if (additionalData.containsKey(key)) {
-        mergedMap[key] = _mergeValues(data[key], additionalData[key]);
-      } else {
-        mergedMap[key] = value;
-      }
-    });
+    final Map<String, dynamic> mergedMap = Map.from(data);
     additionalData.forEach((key, value) {
-      if (!data.containsKey(key)) {
+      if (mergedMap.containsKey(key)) {
+        mergedMap[key] = _mergeValues(mergedMap[key], additionalData[key]);
+      } else {
         mergedMap[key] = value;
       }
     });
