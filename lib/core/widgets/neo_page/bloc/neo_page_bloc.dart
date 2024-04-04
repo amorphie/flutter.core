@@ -38,7 +38,7 @@ class NeoPageBloc extends Bloc<NeoPageEvent, NeoPageState> {
     final List<Map> currentItemList = List<Map>.from(_formData[event.sharedDataKey] ?? []);
     final hasValue = currentItemList.isNotEmpty &&
         currentItemList.any((element) => element[_Constants.keyItemIdentifier] == event.itemIdentifierKey);
-    
+
     if (hasValue) {
       currentItemList
           .removeWhere((currentItem) => currentItem[_Constants.keyItemIdentifier] == event.itemIdentifierKey);
@@ -46,9 +46,34 @@ class NeoPageBloc extends Bloc<NeoPageEvent, NeoPageState> {
     currentItemList.add({_Constants.keyItemIdentifier: event.itemIdentifierKey}..addAll(event.value));
 
     _formData[event.sharedDataKey] = currentItemList;
-    
+
     if (event.isInitialValue) {
       _formInitialData[event.sharedDataKey] = currentItemList;
     }
+  }
+
+  Map<String, dynamic> getChangedFormData() {
+    final Map<String, dynamic> stateDifference = {};
+
+    formData.forEach((key, value) {
+      if (_formInitialData.containsKey(key)) {
+        if (value is List) {
+          final List<dynamic> initialList = _formInitialData[key] ?? [];
+          final List<dynamic> updatedList = value;
+
+          final List<dynamic> diffList = updatedList.where((item) => !initialList.contains(item)).toList();
+
+          if (diffList.isNotEmpty) {
+            stateDifference[key] = diffList;
+          }
+        } else if (!const DeepCollectionEquality.unordered().equals(formData[key], _formInitialData[key])) {
+          stateDifference[key] = formData[key];
+        }
+      } else {
+        stateDifference[key] = formData[key];
+      }
+    });
+
+    return stateDifference;
   }
 }
