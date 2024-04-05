@@ -42,7 +42,7 @@ class NeoPageBloc extends Bloc<NeoPageEvent, NeoPageState> {
     final index = currentItemList
         .indexWhere((currentItem) => currentItem[_Constants.keyItemIdentifier] == event.itemIdentifierKey);
 
-    if (currentItemList.isNotEmpty && index != -1) {
+    if (index != -1) {
       if (!const DeepCollectionEquality.unordered().equals(currentItemList[index], newValue)) {
         currentItemList[index] = newValue;
       }
