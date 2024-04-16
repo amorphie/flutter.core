@@ -110,6 +110,18 @@ class NeoCoreSecureStorage {
       );
     }
 
+    final customerNameUppercase = decodedToken["uppercase_name"];
+    final customerSurnameUppercase = decodedToken["uppercase_surname"];
+    if (customerNameUppercase is String &&
+        customerNameUppercase.isNotEmpty &&
+        customerSurnameUppercase is String &&
+        customerSurnameUppercase.isNotEmpty) {
+      await write(
+        key: NeoCoreParameterKey.secureStorageCustomerNameAndSurnameUppercase,
+        value: "$customerNameUppercase $customerSurnameUppercase",
+      );
+    }
+
     final businessLine = decodedToken["business_line"];
     if (businessLine is String && businessLine.isNotEmpty) {
       await write(key: NeoCoreParameterKey.secureStorageBusinessLine, value: businessLine);
