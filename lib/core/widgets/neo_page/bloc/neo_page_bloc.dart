@@ -35,15 +35,20 @@ class NeoPageBloc extends Bloc<NeoPageEvent, NeoPageState> {
   }
 
   void _onAddParametersIntoArray(NeoPageEventAddParametersIntoArray event, Emitter<NeoPageState> emit) {
-    final List<Map> currentItemList = List<Map>.from(_formData[event.sharedDataKey] ?? []);
-    final hasValue = currentItemList.isNotEmpty &&
-        currentItemList.any((element) => element[_Constants.keyItemIdentifier] == event.itemIdentifierKey);
+    final newValue = event.value;
+    newValue[_Constants.keyItemIdentifier] = event.itemIdentifierKey;
 
-    if (hasValue) {
-      currentItemList
-          .removeWhere((currentItem) => currentItem[_Constants.keyItemIdentifier] == event.itemIdentifierKey);
+    final List<Map> currentItemList = List<Map>.from(_formData[event.sharedDataKey] ?? []);
+    final index = currentItemList
+        .indexWhere((currentItem) => currentItem[_Constants.keyItemIdentifier] == event.itemIdentifierKey);
+
+    if (index != -1) {
+      if (!const DeepCollectionEquality.unordered().equals(currentItemList[index], newValue)) {
+        currentItemList[index] = newValue;
+      }
+    } else {
+      currentItemList.add(event.value);
     }
-    currentItemList.add({_Constants.keyItemIdentifier: event.itemIdentifierKey}..addAll(event.value));
 
     _formData[event.sharedDataKey] = currentItemList;
 
@@ -55,10 +60,19 @@ class NeoPageBloc extends Bloc<NeoPageEvent, NeoPageState> {
   Map<String, dynamic> getChangedFormData() {
     final Map<String, dynamic> stateDifference = {};
 
-    formData.forEach((key, value) {
+    for (final entry in formData.entries) {
+      final key = entry.key;
+      final value = entry.value;
+
+      final initialData = _formInitialData[key];
+
       if (_formInitialData.containsKey(key)) {
         if (value is List) {
-          final List<dynamic> initialList = _formInitialData[key] ?? [];
+          if (const DeepCollectionEquality.unordered().equals(value, initialData)) {
+            continue;
+          }
+
+          final List<dynamic> initialList = initialData ?? [];
           final List<dynamic> updatedList = value;
 
           final List<dynamic> diffList = updatedList.where((item) => !initialList.contains(item)).toList();
@@ -66,13 +80,15 @@ class NeoPageBloc extends Bloc<NeoPageEvent, NeoPageState> {
           if (diffList.isNotEmpty) {
             stateDifference[key] = diffList;
           }
-        } else if (!const DeepCollectionEquality.unordered().equals(formData[key], _formInitialData[key])) {
-          stateDifference[key] = formData[key];
+        } else if (initialData != value) {
+          stateDifference[key] = value;
         }
       } else {
-        stateDifference[key] = formData[key];
+        if (initialData != value) {
+          stateDifference[key] = value;
+        }
       }
-    });
+    }
 
     return stateDifference;
   }
