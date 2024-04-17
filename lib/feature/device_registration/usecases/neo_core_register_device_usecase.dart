@@ -55,7 +55,7 @@ class NeoCoreRegisterDeviceUseCase {
           ).toJson(),
         ),
       );
-      await secureStorage.write(key: NeoCoreParameterKey.secureStorageDeviceRegistrationToken, value: deviceToken);
+      secureStorage.write(key: NeoCoreParameterKey.secureStorageDeviceRegistrationToken, value: deviceToken);
     } catch (e) {
       // No-op
     }
