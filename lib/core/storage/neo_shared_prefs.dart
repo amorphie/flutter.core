@@ -25,6 +25,8 @@ class NeoSharedPrefs {
 
   SharedPreferences? _preferences;
 
+  final Map<String, dynamic> _cachedValues = {};
+
   Future<SharedPreferences> init() async {
     if (_preferences != null) {
       return _preferences!;
@@ -34,34 +36,43 @@ class NeoSharedPrefs {
   }
 
   Object? read(String key) {
-    return _preferences!.get(key);
+    if (_cachedValues.containsKey(key)) {
+      return _cachedValues[key];
+    }
+
+    final data = _preferences!.get(key);
+    _cachedValues[key] = data;
+
+    return data;
   }
 
-  Future<bool> write(String key, Object value) async {
-    bool resultStatus = false;
+  void write(String key, Object value) {
+    _cachedValues[key] = value;
+
     try {
       if (value is bool) {
-        resultStatus = await _preferences!.setBool(key, value);
+        _preferences!.setBool(key, value);
       } else if (value is int) {
-        resultStatus = await _preferences!.setInt(key, value);
+        _preferences!.setInt(key, value);
       } else if (value is double) {
-        resultStatus = await _preferences!.setDouble(key, value);
+        _preferences!.setDouble(key, value);
       } else if (value is String) {
-        resultStatus = await _preferences!.setString(key, value);
+        _preferences!.setString(key, value);
       }
     } catch (e) {
       const errorMessage = "[NeoSharedPrefs: Write error]";
       debugPrint(errorMessage);
       NeoLogger().logError(errorMessage);
     }
-    return resultStatus;
   }
 
-  Future<bool> delete(String key) {
-    return _preferences!.remove(key);
+  void delete(String key) {
+    _cachedValues.remove(key);
+    _preferences!.remove(key);
   }
 
-  Future<bool> clear() {
-    return _preferences!.clear();
+  void clear() {
+    _cachedValues.clear();
+    _preferences!.clear();
   }
 }
