@@ -3,30 +3,30 @@ import 'dart:convert';
 class _Constant {
   static const keyFlowState = "state";
   static const keyEkycState = "state";
-  static const keyMessage = "message";
+  static const keyInitialData = "initialData";
 }
 
 class EkycEventData {
-  final String state;
+  final String flowState;
   final String ekycState;
-  final String message;
+  final Map<String, dynamic> initialData;
 
-  EkycEventData({required this.state, required this.ekycState, required this.message});
+  EkycEventData({required this.flowState, required this.ekycState, required this.initialData});
 
   String encode() {
     return jsonEncode({
-      _Constant.keyFlowState: state,
+      _Constant.keyFlowState: flowState,
       _Constant.keyEkycState: ekycState,
-      _Constant.keyMessage: message,
+      _Constant.keyInitialData: initialData,
     });
   }
 
   factory EkycEventData.decode(String jsonString) {
     final Map<String, dynamic> jsonMap = jsonDecode(jsonString);
     return EkycEventData(
-      state: jsonMap[_Constant.keyFlowState],
+      flowState: jsonMap[_Constant.keyFlowState],
       ekycState: jsonMap[_Constant.keyEkycState],
-      message: jsonMap[_Constant.keyMessage],
+      initialData: jsonMap[_Constant.keyInitialData],
     );
   }
 }
