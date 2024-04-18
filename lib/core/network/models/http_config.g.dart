@@ -11,4 +11,9 @@ HttpConfig _$HttpConfigFromJson(Map<String, dynamic> json) => HttpConfig(
       logLevel: json['log-level'] == null
           ? Level.off
           : HttpConfig._logLevelFromJson(json['log-level'] as String),
+      services: (json['services'] as List<dynamic>?)
+              ?.map((e) =>
+                  HttpOutsourceService.fromJson(e as Map<String, dynamic>))
+              .toList() ??
+          [],
     );

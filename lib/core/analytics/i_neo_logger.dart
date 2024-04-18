@@ -14,6 +14,7 @@
 
 import 'package:flutter/material.dart';
 import 'package:logger/logger.dart';
+import 'package:neo_core/core/network/models/neo_page_type.dart';
 
 abstract class INeoLogger {
   List<NavigatorObserver> get observers;
@@ -30,9 +31,9 @@ abstract class INeoLogger {
     Map<String, dynamic>? options,
   });
 
-  void logPageBuildStartingTime(String pageId, PageType pageType);
+  void logPageBuildStartingTime(String pageId, NeoPageType pageType);
 
-  void logPageBuildSuccessTime(String pageId, PageType pageType);
+  void logPageBuildSuccessTime(String pageId, NeoPageType pageType);
 
   void logCustom(dynamic message, Level logLevel);
 
@@ -45,13 +46,4 @@ abstract class INeoLogger {
   /// If automatic data collection is disabled, this method queues up all the
   /// reports on a device to send to Crashlytics. Otherwise, this method is a no-op.
   Future<void> sendUnsentReports();
-}
-
-enum PageType {
-  component('Component Page'),
-  workflow('Workflow Page');
-
-  const PageType(this.type);
-
-  final String type;
 }

@@ -3,22 +3,20 @@ import "dart:convert";
 import "package:flutter/foundation.dart";
 import "package:http/http.dart" as http;
 
-abstract class _Constants {
-  static const String url = "https://dmztest-apisix.burgan.com.tr/ebanking/collect/log";
-}
-
 class NeoElastic {
-  const NeoElastic();
+  const NeoElastic(this.url);
+
+  final String url;
 
   Future<void> logCustom(dynamic message, String level) async {
-    final url = Uri.parse(_Constants.url);
+    final uri = Uri.parse(url);
     final body = {
       "message": message,
       "level": level,
     };
 
     try {
-      final response = await http.post(url, headers: {'Content-Type': 'application/json'}, body: jsonEncode(body));
+      final response = await http.post(uri, headers: {'Content-Type': 'application/json'}, body: jsonEncode(body));
 
       if (response.statusCode != 200) {
         throw Exception("Failed to log message");

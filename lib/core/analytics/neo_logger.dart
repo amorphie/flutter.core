@@ -12,13 +12,17 @@
  * 
  */
 
+import 'package:collection/collection.dart';
 import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
+import 'package:get_it/get_it.dart';
 import 'package:logger/logger.dart';
 import 'package:neo_core/core/analytics/i_neo_logger.dart';
 import 'package:neo_core/core/analytics/neo_crashlytics.dart';
 import 'package:neo_core/core/analytics/neo_elastic.dart';
 import 'package:neo_core/core/analytics/neo_posthog.dart';
+import 'package:neo_core/core/network/models/neo_page_type.dart';
+import 'package:neo_core/core/network/neo_network.dart';
 import 'package:posthog_flutter/posthog_flutter.dart';
 import 'package:universal_io/io.dart';
 
@@ -35,7 +39,9 @@ class NeoLogger implements INeoLogger {
 
   NeoCrashlytics? _neoCrashlytics;
   final NeoPosthog _neoPosthog = NeoPosthog();
-  final NeoElastic _neoElastic = const NeoElastic();
+  final NeoElastic _neoElastic = NeoElastic(
+    GetIt.I.get<HttpClientConfig>().config.services.firstWhereOrNull((service) => service.key == 'elastic')?.url ?? '',
+  );
   final Logger _logger = Logger(
     printer: PrettyPrinter(printTime: true),
   );
@@ -75,14 +81,14 @@ class NeoLogger implements INeoLogger {
   }
 
   @override
-  void logPageBuildStartingTime(String pageId, PageType pageType) {
+  void logPageBuildStartingTime(String pageId, NeoPageType pageType) {
     final startTime = DateTime.now();
     _timeMap[pageId] = startTime;
     logCustom('[Building Time]: $pageId - ${pageType.type} is started to build.', Level.trace);
   }
 
   @override
-  void logPageBuildSuccessTime(String pageId, PageType pageType) {
+  void logPageBuildSuccessTime(String pageId, NeoPageType pageType) {
     final endTime = DateTime.now();
     final startTime = _timeMap[pageId];
     final duration = startTime != null ? endTime.difference(startTime) : null;
