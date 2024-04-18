@@ -12,6 +12,7 @@ HttpClientConfig _$HttpClientConfigFromJson(Map<String, dynamic> json) =>
               ?.map((e) => HttpHostDetails.fromJson(e as Map<String, dynamic>))
               .toList() ??
           [],
+      config: HttpConfig.fromJson(json['config'] as Map<String, dynamic>),
       services: (json['services'] as List<dynamic>?)
               ?.map((e) => HttpService.fromJson(e as Map<String, dynamic>))
               .toList() ??

@@ -12,6 +12,7 @@
 
 import 'package:collection/collection.dart';
 import 'package:json_annotation/json_annotation.dart';
+import 'package:neo_core/core/network/models/http_config.dart';
 import 'package:neo_core/core/network/models/http_host_details.dart';
 import 'package:neo_core/core/network/models/http_method.dart';
 import 'package:neo_core/core/network/models/http_service.dart';
@@ -23,10 +24,13 @@ class HttpClientConfig {
   @JsonKey(name: 'hosts', defaultValue: [])
   final List<HttpHostDetails> hosts;
 
+  @JsonKey(name: 'config')
+  final HttpConfig config;
+
   @JsonKey(name: 'services', defaultValue: [])
   final List<HttpService> services;
 
-  HttpClientConfig({required this.hosts, required this.services});
+  HttpClientConfig({required this.hosts, required this.config, required this.services});
 
   factory HttpClientConfig.fromJson(Map<String, dynamic> json) => _$HttpClientConfigFromJson(json);
 
