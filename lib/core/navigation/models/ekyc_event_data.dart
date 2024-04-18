@@ -1,7 +1,7 @@
 import 'dart:convert';
 
 class _Constant {
-  static const keyFlowState = "state";
+  static const keyFlowState = "transition";
   static const keyEkycState = "state";
   static const keyInitialData = "initialData";
 }
