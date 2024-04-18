@@ -1,3 +1,5 @@
+import "dart:convert";
+
 import "package:flutter/foundation.dart";
 import "package:http/http.dart" as http;
 
@@ -16,7 +18,7 @@ class NeoElastic {
     };
 
     try {
-      final response = await http.post(url, body: body);
+      final response = await http.post(url, headers: {'Content-Type': 'application/json'}, body: jsonEncode(body));
 
       if (response.statusCode != 200) {
         throw Exception("Failed to log message");
