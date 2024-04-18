@@ -108,10 +108,9 @@ class NeoTransitionListenerBloc extends Bloc<NeoTransitionListenerEvent, NeoTran
     final transitionId = ongoingTransition.transitionId;
     final isEkyc = ongoingTransition.additionalData != null && ongoingTransition.additionalData?["isEkyc"] == true;
     if (isEkyc) {
-      final ekycState = ongoingTransition.additionalData?["state"] as String;
       onEkycEvent(EkycEventData(
-        flowState: ongoingTransition.state,
-        ekycState: ekycState,
+        flowState: ongoingTransition.transitionId,
+        ekycState: ongoingTransition.state,
         initialData: ongoingTransition.additionalData!,
       ));
     } else {
