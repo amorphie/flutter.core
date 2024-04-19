@@ -8,6 +8,7 @@ part of 'http_config.dart';
 
 HttpConfig _$HttpConfigFromJson(Map<String, dynamic> json) => HttpConfig(
       cachePages: json['cache-pages'] as bool? ?? false,
+      cacheStorage: json['cache-storage'] as bool? ?? false,
       logLevel: json['log-level'] == null
           ? Level.off
           : HttpConfig._logLevelFromJson(json['log-level'] as String),
