@@ -8,12 +8,17 @@ part 'http_config.g.dart';
 class HttpConfig {
   const HttpConfig({
     required this.cachePages,
+    required this.cacheStorage,
     required this.logLevel,
     required this.services,
   });
 
+
   @JsonKey(name: 'cache-pages', defaultValue: false)
   final bool cachePages;
+
+  @JsonKey(name: 'cache-storage', defaultValue: false)
+  final bool cacheStorage;
 
   @JsonKey(name: 'log-level', fromJson: _logLevelFromJson, defaultValue: Level.off)
   final Level logLevel;
