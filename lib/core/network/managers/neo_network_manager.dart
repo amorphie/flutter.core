@@ -80,6 +80,7 @@ class NeoNetworkManager {
       NeoNetworkHeaderKey.deviceId: deviceId,
       NeoNetworkHeaderKey.tokenId: tokenId,
       NeoNetworkHeaderKey.requestId: const Uuid().v1(),
+      NeoNetworkHeaderKey.deviceInfo: deviceInfo?.model ?? "",
       NeoNetworkHeaderKey.deviceModel: deviceInfo?.model ?? "",
       NeoNetworkHeaderKey.deviceVersion: deviceInfo?.version ?? "",
       NeoNetworkHeaderKey.devicePlatform: deviceInfo?.platform ?? "",
@@ -283,10 +284,9 @@ class NeoNetworkManager {
         ),
       );
       final authResponse = HttpAuthResponse.fromJson(responseJson);
-      await Future.wait([
-        secureStorage.setAuthToken(authResponse.token),
-        secureStorage.write(key: NeoCoreParameterKey.secureStorageRefreshToken, value: authResponse.refreshToken),
-      ]);
+      await secureStorage.setAuthToken(authResponse.token);
+      secureStorage.write(key: NeoCoreParameterKey.secureStorageRefreshToken, value: authResponse.refreshToken);
+
       return true;
     } catch (_) {
       return false;
@@ -316,10 +316,8 @@ class NeoNetworkManager {
         ),
       );
       final authResponse = HttpAuthResponse.fromJson(responseJson);
-      await Future.wait([
-        secureStorage.setAuthToken(authResponse.token),
-        secureStorage.write(key: NeoCoreParameterKey.secureStorageRefreshToken, value: authResponse.refreshToken),
-      ]);
+      await secureStorage.setAuthToken(authResponse.token);
+      secureStorage.write(key: NeoCoreParameterKey.secureStorageRefreshToken, value: authResponse.refreshToken);
     } catch (_) {
       // No-op
     }
