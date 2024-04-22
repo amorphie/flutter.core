@@ -139,6 +139,11 @@ class NeoCoreSecureStorage {
     if (businessLine is String && businessLine.isNotEmpty) {
       write(key: NeoCoreParameterKey.secureStorageBusinessLine, value: businessLine);
     }
+
+    final phoneNumber = decodedToken["phone_number"];
+    if (phoneNumber is String && phoneNumber.isNotEmpty) {
+      write(key: NeoCoreParameterKey.secureStoragePhoneNumber, value: phoneNumber);
+    }
   }
 
   void deleteTokens() {
