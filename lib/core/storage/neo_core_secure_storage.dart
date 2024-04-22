@@ -155,6 +155,9 @@ class NeoCoreSecureStorage {
     deleteTokens();
     delete(NeoCoreParameterKey.secureStorageCustomerId);
     delete(NeoCoreParameterKey.secureStorageCustomerNameAndSurname);
+    delete(NeoCoreParameterKey.secureStorageCustomerNameAndSurnameUppercase);
+    delete(NeoCoreParameterKey.secureStorageBusinessLine);
+    delete(NeoCoreParameterKey.secureStoragePhoneNumber);
   }
 // endregion
 }
