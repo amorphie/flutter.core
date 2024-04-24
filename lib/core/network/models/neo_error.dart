@@ -17,34 +17,32 @@ import 'package:neo_core/core/network/models/neo_error_display_method.dart';
 part 'neo_error.g.dart';
 
 abstract class _Constants {
-  static const defaultErrorCode = "400";
+  static const defaultErrorCode = 400;
   static const defaultErrorDisplayMode = NeoErrorDisplayMethod.popup;
   static const defaultErrorTitle = "general_noResponse_title";
   static const defaultErrorMessage = "general_noResponse_text";
+  static const defaultErrorIcon = "error";
+  static const defaultErrorCloseButtonText = "general_okay_button";
 }
 
 @JsonSerializable()
 class NeoError extends Equatable {
-  @JsonKey(name: "response-code")
-  final String responseCode;
+  @JsonKey(name: "errorCode")
+  final int errorCode;
 
-  @JsonKey(name: "display-mode")
-  final NeoErrorDisplayMethod displayMode;
+  @JsonKey(name: "errorType")
+  final NeoErrorDisplayMethod errorType;
 
-  @JsonKey(name: "title")
-  final String title;
-
-  @JsonKey(name: "message")
-  final String message;
+  @JsonKey(name: "error")
+  final NeoErrorDetail error;
 
   @override
-  List<Object?> get props => [responseCode, displayMode, title];
+  List<Object?> get props => [errorCode, errorType, error];
 
   const NeoError({
-    this.responseCode = _Constants.defaultErrorCode,
-    this.displayMode = _Constants.defaultErrorDisplayMode,
-    this.title = _Constants.defaultErrorTitle,
-    this.message = _Constants.defaultErrorMessage,
+    this.errorCode = _Constants.defaultErrorCode,
+    this.errorType = _Constants.defaultErrorDisplayMode,
+    this.error = const NeoErrorDetail(),
   });
 
   Map<String, dynamic> toJson() => _$NeoErrorToJson(this);
@@ -52,4 +50,33 @@ class NeoError extends Equatable {
   factory NeoError.fromJson(Map<String, dynamic> json) => _$NeoErrorFromJson(json);
 
   factory NeoError.defaultError() => const NeoError();
+}
+
+@JsonSerializable()
+class NeoErrorDetail extends Equatable {
+  @JsonKey(name: "icon")
+  final String icon;
+
+  @JsonKey(name: "title")
+  final String title;
+
+  @JsonKey(name: "description")
+  final String description;
+
+  @JsonKey(name: "closeButton")
+  final String closeButton;
+
+  @override
+  List<Object?> get props => [icon, title, description, closeButton];
+
+  const NeoErrorDetail({
+    this.icon = _Constants.defaultErrorIcon,
+    this.title = _Constants.defaultErrorTitle,
+    this.description = _Constants.defaultErrorMessage,
+    this.closeButton = _Constants.defaultErrorCloseButtonText,
+  });
+
+  Map<String, dynamic> toJson() => _$NeoErrorDetailToJson(this);
+
+  factory NeoErrorDetail.fromJson(Map<String, dynamic> json) => _$NeoErrorDetailFromJson(json);
 }
