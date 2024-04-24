@@ -28,20 +28,20 @@ abstract class _Constants {
 @JsonSerializable()
 class NeoError extends Equatable {
   @JsonKey(name: "errorCode")
-  final int errorCode;
+  final int responseCode;
 
   @JsonKey(name: "errorType")
-  final NeoErrorDisplayMethod errorType;
+  final NeoErrorDisplayMethod displayMode;
 
   @JsonKey(name: "error")
   final NeoErrorDetail error;
 
   @override
-  List<Object?> get props => [errorCode, errorType, error];
+  List<Object?> get props => [responseCode, displayMode, error];
 
   const NeoError({
-    this.errorCode = _Constants.defaultErrorCode,
-    this.errorType = _Constants.defaultErrorDisplayMode,
+    this.responseCode = _Constants.defaultErrorCode,
+    this.displayMode = _Constants.defaultErrorDisplayMode,
     this.error = const NeoErrorDetail(),
   });
 
