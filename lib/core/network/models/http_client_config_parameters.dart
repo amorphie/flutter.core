@@ -1,18 +1,15 @@
 import 'package:json_annotation/json_annotation.dart';
 import 'package:logger/logger.dart';
-import 'package:neo_core/core/network/models/http_outsource_service.dart';
 
-part 'http_config.g.dart';
+part 'http_client_config_parameters.g.dart';
 
 @JsonSerializable(createToJson: false)
-class HttpConfig {
-  const HttpConfig({
+class HttpClientConfigParameters {
+  const HttpClientConfigParameters({
     required this.cachePages,
     required this.cacheStorage,
     required this.logLevel,
-    required this.services,
   });
-
 
   @JsonKey(name: 'cache-pages', defaultValue: false)
   final bool cachePages;
@@ -23,12 +20,9 @@ class HttpConfig {
   @JsonKey(name: 'log-level', fromJson: _logLevelFromJson, defaultValue: Level.off)
   final Level logLevel;
 
-  @JsonKey(name: 'services', defaultValue: [])
-  final List<HttpOutsourceService> services;
-
   static Level _logLevelFromJson(String value) {
     return Level.values.firstWhere((level) => level.name == value, orElse: () => Level.off);
   }
 
-  factory HttpConfig.fromJson(Map<String, dynamic> json) => _$HttpConfigFromJson(json);
+  factory HttpClientConfigParameters.fromJson(Map<String, dynamic> json) => _$HttpClientConfigParametersFromJson(json);
 }

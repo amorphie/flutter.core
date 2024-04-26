@@ -1,26 +1,25 @@
-import "dart:convert";
-
 import "package:flutter/foundation.dart";
-import "package:http/http.dart" as http;
+import "package:get_it/get_it.dart";
+import "package:neo_core/core/network/managers/neo_network_manager.dart";
+import "package:neo_core/core/network/models/neo_http_call.dart";
+
+abstract class _Constants {
+  static const endpoint = "elastic";
+}
 
 class NeoElastic {
-  const NeoElastic(this.url);
+  NeoElastic();
 
-  final String url;
+  late final NeoNetworkManager _neoNetworkManager = GetIt.I.get<NeoNetworkManager>();
 
   Future<void> logCustom(dynamic message, String level) async {
-    final uri = Uri.parse(url);
     final body = {
       "message": message,
       "level": level,
     };
 
     try {
-      final response = await http.post(uri, headers: {'Content-Type': 'application/json'}, body: jsonEncode(body));
-
-      if (response.statusCode != 200) {
-        throw Exception("Failed to log message");
-      }
+      await _neoNetworkManager.call(NeoHttpCall(endpoint: _Constants.endpoint, body: body));
     } catch (e) {
       debugPrint("Failed to log message: $e");
     }

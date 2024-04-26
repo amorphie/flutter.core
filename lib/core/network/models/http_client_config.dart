@@ -12,7 +12,7 @@
 
 import 'package:collection/collection.dart';
 import 'package:json_annotation/json_annotation.dart';
-import 'package:neo_core/core/network/models/http_config.dart';
+import 'package:neo_core/core/network/models/http_client_config_parameters.dart';
 import 'package:neo_core/core/network/models/http_host_details.dart';
 import 'package:neo_core/core/network/models/http_method.dart';
 import 'package:neo_core/core/network/models/http_service.dart';
@@ -25,7 +25,7 @@ class HttpClientConfig {
   final List<HttpHostDetails> hosts;
 
   @JsonKey(name: 'config')
-  final HttpConfig config;
+  final HttpClientConfigParameters config;
 
   @JsonKey(name: 'services', defaultValue: [])
   final List<HttpService> services;
