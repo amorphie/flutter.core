@@ -156,6 +156,11 @@ class NeoCoreSecureStorage {
     if (businessLine is String && businessLine.isNotEmpty) {
       await write(key: NeoCoreParameterKey.secureStorageBusinessLine, value: businessLine);
     }
+
+    final phoneNumber = decodedToken["phone_number"];
+    if (phoneNumber is String && phoneNumber.isNotEmpty) {
+      await write(key: NeoCoreParameterKey.secureStoragePhoneNumber, value: phoneNumber);
+    }
   }
 
   Future<void> deleteTokens() {
@@ -170,6 +175,9 @@ class NeoCoreSecureStorage {
       deleteTokens(),
       delete(NeoCoreParameterKey.secureStorageCustomerId),
       delete(NeoCoreParameterKey.secureStorageCustomerNameAndSurname),
+      delete(NeoCoreParameterKey.secureStorageCustomerNameAndSurnameUppercase),
+      delete(NeoCoreParameterKey.secureStorageBusinessLine),
+      delete(NeoCoreParameterKey.secureStoragePhoneNumber),
     ]);
   }
 // endregion
