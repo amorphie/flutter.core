@@ -95,8 +95,11 @@ class NeoTransitionListenerBloc extends Bloc<NeoTransitionListenerEvent, NeoTran
     final String? token = ongoingTransition.additionalData?["access_token"];
     final String? refreshToken = ongoingTransition.additionalData?["refresh_token"];
     if (token != null && token.isNotEmpty) {
-      await neoCoreSecureStorage.setAuthToken(token);
-      neoCoreSecureStorage.write(key: NeoCoreParameterKey.secureStorageRefreshToken, value: refreshToken ?? "");
+      await Future.wait([
+        neoCoreSecureStorage.setAuthToken(token),
+        neoCoreSecureStorage.write(key: NeoCoreParameterKey.secureStorageRefreshToken, value: refreshToken ?? ""),
+      ]);
+
       onLoggedInSuccessfully?.call();
     }
   }

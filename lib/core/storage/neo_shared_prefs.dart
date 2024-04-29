@@ -11,7 +11,9 @@
  */
 
 import 'package:flutter/cupertino.dart';
+import 'package:get_it/get_it.dart';
 import 'package:neo_core/core/analytics/neo_logger.dart';
+import 'package:neo_core/core/network/models/http_client_config.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 class NeoSharedPrefs {
@@ -21,7 +23,9 @@ class NeoSharedPrefs {
     return _singleton;
   }
 
-  NeoSharedPrefs._internal();
+  NeoSharedPrefs._internal() : isCachingEnabled = GetIt.I.get<HttpClientConfig>().config.cacheStorage;
+
+  final bool isCachingEnabled;
 
   SharedPreferences? _preferences;
 
@@ -36,7 +40,7 @@ class NeoSharedPrefs {
   }
 
   Object? read(String key) {
-    if (_cachedValues.containsKey(key)) {
+    if (isCachingEnabled && _cachedValues.containsKey(key)) {
       return _cachedValues[key];
     }
 
@@ -46,33 +50,44 @@ class NeoSharedPrefs {
     return data;
   }
 
-  void write(String key, Object value) {
-    _cachedValues[key] = value;
+  Future<bool> write(String key, Object value) {
+    if (isCachingEnabled) {
+      _cachedValues[key] = value;
+    }
 
     try {
       if (value is bool) {
-        _preferences!.setBool(key, value);
+        return _preferences!.setBool(key, value);
       } else if (value is int) {
-        _preferences!.setInt(key, value);
+        return _preferences!.setInt(key, value);
       } else if (value is double) {
-        _preferences!.setDouble(key, value);
+        return _preferences!.setDouble(key, value);
       } else if (value is String) {
-        _preferences!.setString(key, value);
+        return _preferences!.setString(key, value);
       }
+
+      return Future.value(false);
     } catch (e) {
       const errorMessage = "[NeoSharedPrefs: Write error]";
       debugPrint(errorMessage);
       NeoLogger().logError(errorMessage);
+      return Future.value(false);
     }
   }
 
-  void delete(String key) {
-    _cachedValues.remove(key);
-    _preferences!.remove(key);
+  Future<bool> delete(String key) {
+    if (isCachingEnabled) {
+      _cachedValues.remove(key);
+    }
+
+    return _preferences!.remove(key);
   }
 
-  void clear() {
-    _cachedValues.clear();
-    _preferences!.clear();
+  Future<bool> clear() {
+    if (isCachingEnabled) {
+      _cachedValues.clear();
+    }
+
+    return _preferences!.clear();
   }
 }
