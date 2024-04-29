@@ -242,7 +242,7 @@ class NeoNetworkManager {
         final error = NeoError.fromJson(responseJSON);
         throw NeoException(error: error);
       } on MissingRequiredKeysException {
-        final error = NeoError(responseCode: response.statusCode.toString());
+        final error = NeoError(responseCode: response.statusCode);
         throw NeoException(error: error);
       } catch (e) {
         if (e is NeoException) {
@@ -288,6 +288,7 @@ class NeoNetworkManager {
         secureStorage.setAuthToken(authResponse.token),
         secureStorage.write(key: NeoCoreParameterKey.secureStorageRefreshToken, value: authResponse.refreshToken),
       ]);
+
       return true;
     } catch (_) {
       return false;

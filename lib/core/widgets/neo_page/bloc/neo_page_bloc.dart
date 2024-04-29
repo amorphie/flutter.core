@@ -38,18 +38,29 @@ class NeoPageBloc extends Bloc<NeoPageEvent, NeoPageState> {
   }
 
   void _onAddParametersIntoArray(NeoPageEventAddParametersIntoArray event, Emitter<NeoPageState> emit) {
+    final newValue = event.value;
+    newValue[_Constants.keyItemIdentifier] = event.itemIdentifierKey;
+
     final List<Map> currentItemList = List<Map>.from(_formData[event.sharedDataKey] ?? []);
     final hasValue = currentItemList.isNotEmpty && currentItemList.any((element) => element[_Constants.keyItemIdentifier] == event.itemIdentifierKey);
 
     if (hasValue) {
       currentItemList.removeWhere((currentItem) => currentItem[_Constants.keyItemIdentifier] == event.itemIdentifierKey);
-    }
-    currentItemList.add({_Constants.keyItemIdentifier: event.itemIdentifierKey}..addAll(event.value));
+      final index = currentItemList.indexWhere((currentItem) => currentItem[_Constants.keyItemIdentifier] == event.itemIdentifierKey);
 
-    _formData[event.sharedDataKey] = currentItemList;
+      if (index != -1) {
+        if (!const DeepCollectionEquality.unordered().equals(currentItemList[index], newValue)) {
+          currentItemList[index] = newValue;
+        }
+      } else {
+        currentItemList.add(event.value);
+      }
 
-    if (event.isInitialValue) {
-      _formInitialData[event.sharedDataKey] = currentItemList;
+      _formData[event.sharedDataKey] = currentItemList;
+
+      if (event.isInitialValue) {
+        _formInitialData[event.sharedDataKey] = currentItemList;
+      }
     }
   }
 
@@ -68,6 +79,42 @@ class NeoPageBloc extends Bloc<NeoPageEvent, NeoPageState> {
 
     _formData.addAll(setNestedMapValue(_formData, path, event.value));
     debugPrint("${event.dataPath}\n$_formData");
+  }
+
+  Map<String, dynamic> getChangedFormData() {
+    final Map<String, dynamic> stateDifference = {};
+
+    for (final entry in formData.entries) {
+      final key = entry.key;
+      final value = entry.value;
+
+      final initialData = _formInitialData[key];
+
+      if (_formInitialData.containsKey(key)) {
+        if (value is List) {
+          if (const DeepCollectionEquality.unordered().equals(value, initialData)) {
+            continue;
+          }
+
+          final List<dynamic> initialList = initialData ?? [];
+          final List<dynamic> updatedList = value;
+
+          final List<dynamic> diffList = updatedList.where((item) => !initialList.contains(item)).toList();
+
+          if (diffList.isNotEmpty) {
+            stateDifference[key] = diffList;
+          }
+        } else if (initialData != value) {
+          stateDifference[key] = value;
+        }
+      } else {
+        if (initialData != value) {
+          stateDifference[key] = value;
+        }
+      }
+    }
+
+    return stateDifference;
   }
 }
 

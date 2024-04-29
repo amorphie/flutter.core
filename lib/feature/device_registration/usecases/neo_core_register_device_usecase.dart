@@ -42,20 +42,22 @@ class NeoCoreRegisterDeviceUseCase {
       final tokenId = resultArray[1] as String? ?? "";
       final deviceInfo = resultArray[2] as NeoDeviceInfo?;
 
-      await networkManager.call(
-        NeoHttpCall(
-          endpoint: _Constants.registerDeviceEndpoint,
-          body: NeoCoreRegisterDeviceRequest(
-            deviceId: deviceId,
-            installationId: tokenId,
-            deviceToken: deviceToken,
-            deviceModel: deviceInfo?.model ?? "",
-            devicePlatform: deviceInfo?.platform ?? "",
-            deviceVersion: deviceInfo?.version ?? "",
-          ).toJson(),
+      await Future.wait([
+        networkManager.call(
+          NeoHttpCall(
+            endpoint: _Constants.registerDeviceEndpoint,
+            body: NeoCoreRegisterDeviceRequest(
+              deviceId: deviceId,
+              installationId: tokenId,
+              deviceToken: deviceToken,
+              deviceModel: deviceInfo?.model ?? "",
+              devicePlatform: deviceInfo?.platform ?? "",
+              deviceVersion: deviceInfo?.version ?? "",
+            ).toJson(),
+          ),
         ),
-      );
-      await secureStorage.write(key: NeoCoreParameterKey.secureStorageDeviceRegistrationToken, value: deviceToken);
+        secureStorage.write(key: NeoCoreParameterKey.secureStorageDeviceRegistrationToken, value: deviceToken),
+      ]);
     } catch (e) {
       // No-op
     }
