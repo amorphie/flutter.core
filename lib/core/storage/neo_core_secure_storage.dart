@@ -13,6 +13,7 @@
 import 'dart:async';
 
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
+import 'package:get_it/get_it.dart';
 import 'package:neo_core/core/encryption/jwt_decoder.dart';
 import 'package:neo_core/core/storage/neo_core_parameter_key.dart';
 import 'package:neo_core/core/storage/neo_shared_prefs.dart';
@@ -30,19 +31,24 @@ class NeoCoreSecureStorage {
     return _singleton;
   }
 
-  NeoCoreSecureStorage._internal();
+  NeoCoreSecureStorage._internal() : isCachingEnabled = GetIt.I.get<HttpClientConfig>().config.cacheStorage;
 
   FlutterSecureStorage? _storage;
 
+  final bool isCachingEnabled;
+
   final Map<String, String?> _cachedValues = {};
 
-  void write({required String key, required String? value}) {
-    _cachedValues[key] = value;
-    unawaited(_storage!.write(key: key, value: value));
+  Future<void> write({required String key, required String? value}) {
+    if (isCachingEnabled) {
+      _cachedValues[key] = value;
+    }
+
+    return _storage!.write(key: key, value: value);
   }
 
   Future<String?> read(String key) async {
-    if (_cachedValues.containsKey(key)) {
+    if (isCachingEnabled && _cachedValues.containsKey(key)) {
       return _cachedValues[key];
     } else if (await _storage!.containsKey(key: key)) {
       final value = await _storage!.read(key: key);
@@ -53,13 +59,24 @@ class NeoCoreSecureStorage {
     return null;
   }
 
-  void delete(String key) {
-    _cachedValues.remove(key);
-    unawaited(_storage!.delete(key: key));
+  Future<void> delete(String key) {
+    if (isCachingEnabled) {
+      _cachedValues.remove(key);
+    }
+
+    return _storage!.delete(key: key);
+  }
+
+  Future<void> deleteAll() {
+    if (isCachingEnabled) {
+      _cachedValues.clear();
+    }
+
+    return _storage!.deleteAll();
   }
 
   // region: Initial Settings
-  Future init() async {
+  Future<void> init() async {
     if (_storage != null) {
       return;
     }
@@ -74,30 +91,29 @@ class NeoCoreSecureStorage {
     await _setInitialParameters();
   }
 
-  Future _checkFirstRun() async {
+  Future<bool> _checkFirstRun() async {
     final neoSharedPrefs = NeoSharedPrefs();
     final isFirstRun = neoSharedPrefs.read(NeoCoreParameterKey.sharedPrefsFirstRun);
 
     if (isFirstRun == null || isFirstRun as bool) {
-      _cachedValues.clear();
-      await _storage!.deleteAll();
+      await deleteAll();
     }
 
-    neoSharedPrefs.write(NeoCoreParameterKey.sharedPrefsFirstRun, false);
+    return neoSharedPrefs.write(NeoCoreParameterKey.sharedPrefsFirstRun, false);
   }
 
-  _setInitialParameters() async {
+  Future<void> _setInitialParameters() async {
     final deviceUtil = DeviceUtil();
     final deviceId = await deviceUtil.getDeviceId();
     final deviceInfo = await deviceUtil.getDeviceInfo();
     if (!await _storage!.containsKey(key: NeoCoreParameterKey.secureStorageDeviceId) && deviceId != null) {
-      write(key: NeoCoreParameterKey.secureStorageDeviceId, value: deviceId);
+      await write(key: NeoCoreParameterKey.secureStorageDeviceId, value: deviceId);
     }
     if (!await _storage!.containsKey(key: NeoCoreParameterKey.secureStorageDeviceInfo) && deviceInfo != null) {
-      write(key: NeoCoreParameterKey.secureStorageDeviceInfo, value: deviceInfo.encode());
+      await write(key: NeoCoreParameterKey.secureStorageDeviceInfo, value: deviceInfo.encode());
     }
     if (!await _storage!.containsKey(key: NeoCoreParameterKey.secureStorageTokenId)) {
-      write(key: NeoCoreParameterKey.secureStorageTokenId, value: const Uuid().v1());
+      await write(key: NeoCoreParameterKey.secureStorageTokenId, value: const Uuid().v1());
     }
   }
 
@@ -106,18 +122,19 @@ class NeoCoreSecureStorage {
   // region: Custom Operations
   /// Set auth token(JWT), customerId and customerNameAndSurname from encoded JWT
   Future setAuthToken(String token) async {
-    write(key: NeoCoreParameterKey.secureStorageAuthToken, value: token);
+    await write(key: NeoCoreParameterKey.secureStorageAuthToken, value: token);
+
     final Map<String, dynamic> decodedToken = JwtDecoder.decode(token);
 
     final customerId = decodedToken["user.reference"];
     if (customerId is String && customerId.isNotEmpty) {
-      write(key: NeoCoreParameterKey.secureStorageCustomerId, value: customerId);
+      await write(key: NeoCoreParameterKey.secureStorageCustomerId, value: customerId);
     }
 
     final customerName = decodedToken["given_name"];
     final customerSurname = decodedToken["family_name"];
     if (customerName is String && customerName.isNotEmpty && customerSurname is String && customerSurname.isNotEmpty) {
-      write(
+      await write(
         key: NeoCoreParameterKey.secureStorageCustomerNameAndSurname,
         value: "$customerName $customerSurname",
       );
@@ -129,7 +146,7 @@ class NeoCoreSecureStorage {
         customerNameUppercase.isNotEmpty &&
         customerSurnameUppercase is String &&
         customerSurnameUppercase.isNotEmpty) {
-      write(
+      await write(
         key: NeoCoreParameterKey.secureStorageCustomerNameAndSurnameUppercase,
         value: "$customerNameUppercase $customerSurnameUppercase",
       );
@@ -137,27 +154,31 @@ class NeoCoreSecureStorage {
 
     final businessLine = decodedToken["business_line"];
     if (businessLine is String && businessLine.isNotEmpty) {
-      write(key: NeoCoreParameterKey.secureStorageBusinessLine, value: businessLine);
+      await write(key: NeoCoreParameterKey.secureStorageBusinessLine, value: businessLine);
     }
 
     final phoneNumber = decodedToken["phone_number"];
     if (phoneNumber is String && phoneNumber.isNotEmpty) {
-      write(key: NeoCoreParameterKey.secureStoragePhoneNumber, value: phoneNumber);
+      await write(key: NeoCoreParameterKey.secureStoragePhoneNumber, value: phoneNumber);
     }
   }
 
-  void deleteTokens() {
-    delete(NeoCoreParameterKey.secureStorageAuthToken);
-    delete(NeoCoreParameterKey.secureStorageRefreshToken);
+  Future<void> deleteTokens() {
+    return Future.wait([
+      delete(NeoCoreParameterKey.secureStorageAuthToken),
+      delete(NeoCoreParameterKey.secureStorageRefreshToken),
+    ]);
   }
 
-  void deleteCustomer() {
-    deleteTokens();
-    delete(NeoCoreParameterKey.secureStorageCustomerId);
-    delete(NeoCoreParameterKey.secureStorageCustomerNameAndSurname);
-    delete(NeoCoreParameterKey.secureStorageCustomerNameAndSurnameUppercase);
-    delete(NeoCoreParameterKey.secureStorageBusinessLine);
-    delete(NeoCoreParameterKey.secureStoragePhoneNumber);
+  Future<void> deleteCustomer() {
+    return Future.wait([
+      deleteTokens(),
+      delete(NeoCoreParameterKey.secureStorageCustomerId),
+      delete(NeoCoreParameterKey.secureStorageCustomerNameAndSurname),
+      delete(NeoCoreParameterKey.secureStorageCustomerNameAndSurnameUppercase),
+      delete(NeoCoreParameterKey.secureStorageBusinessLine),
+      delete(NeoCoreParameterKey.secureStoragePhoneNumber),
+    ]);
   }
 // endregion
 }

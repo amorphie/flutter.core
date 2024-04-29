@@ -284,8 +284,10 @@ class NeoNetworkManager {
         ),
       );
       final authResponse = HttpAuthResponse.fromJson(responseJson);
-      await secureStorage.setAuthToken(authResponse.token);
-      secureStorage.write(key: NeoCoreParameterKey.secureStorageRefreshToken, value: authResponse.refreshToken);
+      await Future.wait([
+        secureStorage.setAuthToken(authResponse.token),
+        secureStorage.write(key: NeoCoreParameterKey.secureStorageRefreshToken, value: authResponse.refreshToken),
+      ]);
 
       return true;
     } catch (_) {
@@ -316,8 +318,10 @@ class NeoNetworkManager {
         ),
       );
       final authResponse = HttpAuthResponse.fromJson(responseJson);
-      await secureStorage.setAuthToken(authResponse.token);
-      secureStorage.write(key: NeoCoreParameterKey.secureStorageRefreshToken, value: authResponse.refreshToken);
+      await Future.wait([
+        secureStorage.setAuthToken(authResponse.token),
+        secureStorage.write(key: NeoCoreParameterKey.secureStorageRefreshToken, value: authResponse.refreshToken),
+      ]);
     } catch (_) {
       // No-op
     }
