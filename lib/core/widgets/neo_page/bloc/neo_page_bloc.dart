@@ -64,23 +64,6 @@ class NeoPageBloc extends Bloc<NeoPageEvent, NeoPageState> {
     }
   }
 
-  void _onNeoPageEventAddParametersWithPath(NeoPageEventAddParametersWithPath event, Emitter<NeoPageState> emit) {
-    final RegExp exp = RegExp(r"(\w+|\[.*?\])");
-    final Iterable<Match> matches = exp.allMatches(event.dataPath);
-    final List<dynamic> path = [];
-
-    for (final Match match in matches) {
-      if (match.group(1) != null) {
-        path.add(match.group(1) ?? "");
-      } else if (match.group(0) != '\$') {
-        path.add(match.group(0));
-      }
-    }
-
-    _formData.addAll(setNestedMapValue(_formData, path, event.value));
-    debugPrint("${event.dataPath}\n$_formData");
-  }
-
   Map<String, dynamic> getChangedFormData() {
     final Map<String, dynamic> stateDifference = {};
 
@@ -115,6 +98,23 @@ class NeoPageBloc extends Bloc<NeoPageEvent, NeoPageState> {
     }
 
     return stateDifference;
+  }
+
+  void _onNeoPageEventAddParametersWithPath(NeoPageEventAddParametersWithPath event, Emitter<NeoPageState> emit) {
+    final RegExp exp = RegExp(r"(\w+|\[.*?\])");
+    final Iterable<Match> matches = exp.allMatches(event.dataPath);
+    final List<dynamic> path = [];
+
+    for (final Match match in matches) {
+      if (match.group(1) != null) {
+        path.add(match.group(1) ?? "");
+      } else if (match.group(0) != '\$') {
+        path.add(match.group(0));
+      }
+    }
+
+    _formData.addAll(setNestedMapValue(_formData, path, event.value));
+    debugPrint("${event.dataPath}\n$_formData");
   }
 }
 
