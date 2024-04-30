@@ -24,6 +24,7 @@ class NeoTransitionListenerEventInit extends NeoTransitionListenerEvent {
   final VoidCallback? onLoggedInSuccessfully;
   final Function(NeoError error)? onTransitionError;
   final Function({required bool displayLoading}) onLoadingStatusChanged;
+  final bool bypassSignalr;
 
   NeoTransitionListenerEventInit({
     required this.neoWorkflowManager,
@@ -35,6 +36,7 @@ class NeoTransitionListenerEventInit extends NeoTransitionListenerEvent {
     required this.onLoggedInSuccessfully,
     required this.onTransitionError,
     required this.onLoadingStatusChanged,
+    required this.bypassSignalr,
   });
 
   @override
@@ -48,6 +50,7 @@ class NeoTransitionListenerEventInit extends NeoTransitionListenerEvent {
         onLoggedInSuccessfully,
         onTransitionError,
         onLoadingStatusChanged,
+        bypassSignalr,
       ];
 }
 

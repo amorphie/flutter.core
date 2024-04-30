@@ -42,10 +42,11 @@ mixin NeoTransitionBus on Bloc<NeoTransitionListenerEvent, NeoTransitionListener
     required NeoSubWorkflowManager neoSubWorkflowManager,
     required String signalrServerUrl,
     required String signalrMethodName,
+    required bool bypassSignalr,
   }) async {
     this.neoWorkflowManager = neoWorkflowManager;
     this.neoSubWorkflowManager = neoSubWorkflowManager;
-    _bypassSignalr = await NeoFeatureFlagUtil.bypassSignalR();
+    _bypassSignalr = bypassSignalr || await NeoFeatureFlagUtil.bypassSignalR();
     if (!_bypassSignalr) {
       await _initSignalrConnectionManager(signalrServerUrl: signalrServerUrl, signalrMethodName: signalrMethodName);
     }

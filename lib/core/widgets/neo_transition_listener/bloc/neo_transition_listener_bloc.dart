@@ -75,6 +75,7 @@ class NeoTransitionListenerBloc extends Bloc<NeoTransitionListenerEvent, NeoTran
       neoSubWorkflowManager: event.neoSubWorkflowManager,
       signalrServerUrl: event.signalRServerUrl + await GetWorkflowQueryParametersUseCase().call(),
       signalrMethodName: event.signalRMethodName,
+      bypassSignalr: event.bypassSignalr,
     );
   }
 
