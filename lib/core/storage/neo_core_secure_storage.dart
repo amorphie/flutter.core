@@ -12,8 +12,10 @@
 
 import 'dart:async';
 
+import 'package:flutter/foundation.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:get_it/get_it.dart';
+import 'package:neo_core/core/analytics/neo_logger.dart';
 import 'package:neo_core/core/encryption/jwt_decoder.dart';
 import 'package:neo_core/core/storage/neo_core_parameter_key.dart';
 import 'package:neo_core/core/storage/neo_shared_prefs.dart';
@@ -51,7 +53,14 @@ class NeoCoreSecureStorage {
     if (isCachingEnabled && _cachedValues.containsKey(key)) {
       return _cachedValues[key];
     } else if (await _storage!.containsKey(key: key)) {
-      final value = await _storage!.read(key: key);
+      String? value;
+      try {
+        value = await _storage!.read(key: key);
+      } catch (e) {
+        final errorMessage = '[NeoCoreSecureStorage]: Error occurred while reading value of $key';
+        debugPrint(errorMessage);
+        NeoLogger().logError(errorMessage);
+      }
       _cachedValues[key] = value;
       return value;
     }

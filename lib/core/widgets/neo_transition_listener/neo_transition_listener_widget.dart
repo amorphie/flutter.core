@@ -18,6 +18,7 @@ class NeoTransitionListenerWidget extends StatelessWidget {
   final VoidCallback? onLoggedInSuccessfully;
   final Function(NeoError error)? onError;
   final Function({required bool displayLoading}) onLoadingStatusChanged;
+  final bool bypassSignalr;
 
   const NeoTransitionListenerWidget({
     required this.child,
@@ -30,6 +31,7 @@ class NeoTransitionListenerWidget extends StatelessWidget {
     required this.onLoadingStatusChanged,
     this.onLoggedInSuccessfully,
     this.onError,
+    this.bypassSignalr = false,
     Key? key,
   }) : super(key: key);
 
@@ -48,6 +50,7 @@ class NeoTransitionListenerWidget extends StatelessWidget {
             onLoggedInSuccessfully: onLoggedInSuccessfully,
             onTransitionError: onError,
             onLoadingStatusChanged: onLoadingStatusChanged,
+            bypassSignalr: bypassSignalr,
           ),
         ),
       child: BlocBuilder<NeoTransitionListenerBloc, NeoTransitionListenerState>(
