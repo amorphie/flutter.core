@@ -12,10 +12,11 @@ class NeoElastic {
 
   late final NeoNetworkManager _neoNetworkManager = GetIt.I.get<NeoNetworkManager>();
 
-  Future<void> logCustom(dynamic message, String level) async {
+  Future<void> logCustom(dynamic message, String level, {Map<String, dynamic>? parameters}) async {
     final body = {
       "message": message,
       "level": level,
+      if (parameters != null) ...parameters,
     };
 
     try {
