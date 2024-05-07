@@ -39,7 +39,6 @@ class NeoLogger implements INeoLogger {
 
   NeoCrashlytics? _neoCrashlytics;
   final DeviceUtil _deviceUtil = DeviceUtil();
-  final NeoCoreSecureStorage _secureStorage = NeoCoreSecureStorage();
   final NeoPosthog _neoPosthog = NeoPosthog();
   final NeoElastic _neoElastic = NeoElastic();
   final Logger _logger = Logger(
@@ -95,16 +94,12 @@ class NeoLogger implements INeoLogger {
         '[Building Time]: $pageId - ${pageType.type} is built successfully.${duration != null ? ' Duration: ${duration}ms' : ''}';
 
     final platform = _deviceUtil.getPlatformName();
-    final (customerId, device) = await (
-      _secureStorage.read(NeoCoreParameterKey.secureStorageCustomerId),
-      _deviceUtil.getDeviceInfo(),
-    ).wait;
+    final device = await _deviceUtil.getDeviceInfo();
 
     final parameters = {
       'pageId': pageId,
       'pageType': pageType.type,
       'duration': duration,
-      'customerId': customerId,
       'device_model': device?.model,
       'device_version': device?.version,
       'platform': platform,
