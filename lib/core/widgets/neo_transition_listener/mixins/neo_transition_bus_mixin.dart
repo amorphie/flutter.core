@@ -13,6 +13,7 @@
 import 'dart:async';
 
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:neo_core/core/analytics/neo_logger.dart';
 import 'package:neo_core/core/feature_flags/neo_feature_flag_util.dart';
 import 'package:neo_core/core/network/neo_network.dart';
 import 'package:neo_core/core/widgets/neo_transition_listener/bloc/neo_transition_listener_bloc.dart';
@@ -32,6 +33,8 @@ mixin NeoTransitionBus on Bloc<NeoTransitionListenerEvent, NeoTransitionListener
   late final NeoSubWorkflowManager neoSubWorkflowManager;
   late final SignalrConnectionManager signalrConnectionManager;
   late bool _bypassSignalr;
+
+  late final NeoLogger _neoLogger = NeoLogger();
 
   NeoWorkflowManager currentWorkflowManager({required bool isSubFlow}) {
     return isSubFlow ? neoSubWorkflowManager : neoWorkflowManager;
@@ -129,6 +132,10 @@ mixin NeoTransitionBus on Bloc<NeoTransitionListenerEvent, NeoTransitionListener
     if (completer.isCompleted) {
       return;
     }
+    _neoLogger.logError(
+      "[NeoTransitionListener]: No transition event within timeout limit ${_Constants.signalrTimeOutDuration.inSeconds} seconds! Retrieving last event by long polling...",
+    );
+
     try {
       final response = await currentWorkflowManager(isSubFlow: isSubFlow).getLastTransitionByLongPolling();
 
@@ -136,6 +143,7 @@ mixin NeoTransitionBus on Bloc<NeoTransitionListenerEvent, NeoTransitionListener
         completer.complete(NeoSignalRTransition.fromJson(response[_Constants.transitionResponseDataKey]));
       }
     } catch (e) {
+      _neoLogger.logError("[NeoTransitionListener]: Retrieving last event by long polling is failed!");
       if (!completer.isCompleted) {
         completer.completeError(NeoError.defaultError());
       }
