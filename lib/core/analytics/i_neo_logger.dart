@@ -35,7 +35,7 @@ abstract class INeoLogger {
 
   void logPageBuildSuccessTime(String pageId, NeoPageType pageType);
 
-  void logCustom(dynamic message, Level logLevel);
+  void logCustom(dynamic message, Level logLevel, {Map<String, dynamic>? parameters});
 
   Future<bool?> isFeatureEnabled(String key);
   Future<void> reloadFeatureFlags();

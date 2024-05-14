@@ -15,6 +15,7 @@ import 'dart:convert';
 import 'package:flutter/foundation.dart' show debugPrint;
 import 'package:http/http.dart' as http;
 import 'package:json_annotation/json_annotation.dart';
+import 'package:neo_core/core/analytics/neo_logger.dart';
 import 'package:neo_core/core/network/models/http_auth_response.dart';
 import 'package:neo_core/core/network/models/http_method.dart';
 import 'package:neo_core/core/network/models/neo_http_call.dart';
@@ -49,6 +50,7 @@ class NeoNetworkManager {
   final String workflowClientSecret;
   final Function(String requestId)? onRequestSucceed;
   final Function(NeoError neoError, String requestId)? onRequestFailed;
+  late final NeoLogger _neoLogger = NeoLogger();
 
   NeoNetworkManager({
     required this.httpClientConfig,
@@ -223,6 +225,7 @@ class NeoNetworkManager {
     } else if (response.statusCode == _Constants.responseCodeUnauthorized) {
       if (call.endpoint == _Constants.endpointGetToken) {
         final error = NeoError.defaultError();
+        _neoLogger.logError("[NeoNetworkManager]: Token service error!");
         throw NeoException(error: error);
       }
       if (await secureStorage.read(NeoCoreParameterKey.secureStorageRefreshToken) != null) {
@@ -231,6 +234,7 @@ class NeoNetworkManager {
           return _retryLastCall(call);
         } else {
           final error = NeoError.defaultError();
+          _neoLogger.logError("[NeoNetworkManager]: Token refresh service error!");
           throw NeoException(error: error);
         }
       } else {
@@ -245,6 +249,9 @@ class NeoNetworkManager {
         final error = NeoError(responseCode: response.statusCode);
         throw NeoException(error: error);
       } catch (e) {
+        _neoLogger.logError(
+          "[NeoNetworkManager]: Service call failed! Status code: ${response.statusCode}.Endpoint: ${call.endpoint}",
+        );
         if (e is NeoException) {
           onRequestFailed?.call(e.error, call.endpoint);
           rethrow;
@@ -323,7 +330,7 @@ class NeoNetworkManager {
         secureStorage.write(key: NeoCoreParameterKey.secureStorageRefreshToken, value: authResponse.refreshToken),
       ]);
     } catch (_) {
-      // No-op
+      _neoLogger.logError("[NeoNetworkManager]: Temporary token (for not logged in user) service error!");
     }
   }
 }

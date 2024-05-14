@@ -1,15 +1,15 @@
 /*
- * 
+ *
  * flutter.core
- * 
+ *
  * Created on 11/12/2023.
  * Copyright (c) 2023 Commencis. All rights reserved.
- * 
+ *
  * Save to the extent permitted by law, you may not use, copy, modify,
  * distribute or create derivative works of this material or any part
  * of it without the prior written consent of Commencis.
  * Any reproduction of this material must contain this notice.
- * 
+ *
  */
 
 import 'package:flutter/foundation.dart' show kIsWeb;
@@ -20,11 +20,14 @@ import 'package:neo_core/core/analytics/neo_crashlytics.dart';
 import 'package:neo_core/core/analytics/neo_elastic.dart';
 import 'package:neo_core/core/analytics/neo_posthog.dart';
 import 'package:neo_core/core/network/models/neo_page_type.dart';
+import 'package:neo_core/core/storage/neo_core_parameter_key.dart';
+import 'package:neo_core/core/storage/neo_core_secure_storage.dart';
+import 'package:neo_core/core/util/device_util/device_util.dart';
 import 'package:posthog_flutter/posthog_flutter.dart';
 import 'package:universal_io/io.dart';
 
 abstract class _Constants {
-  static const criticalBuildingDuration = Duration(seconds: 1);
+  static const criticalBuildingDurationInMilliseconds = 1000;
 }
 
 class NeoLogger implements INeoLogger {
@@ -35,6 +38,7 @@ class NeoLogger implements INeoLogger {
   final Map<String, DateTime> _timeMap = {};
 
   NeoCrashlytics? _neoCrashlytics;
+  final DeviceUtil _deviceUtil = DeviceUtil();
   final NeoPosthog _neoPosthog = NeoPosthog();
   final NeoElastic _neoElastic = NeoElastic();
   final Logger _logger = Logger(
@@ -79,29 +83,39 @@ class NeoLogger implements INeoLogger {
   void logPageBuildStartingTime(String pageId, NeoPageType pageType) {
     final startTime = DateTime.now();
     _timeMap[pageId] = startTime;
-    logCustom('[Building Time]: $pageId - ${pageType.type} is started to build.', Level.trace);
   }
 
   @override
-  void logPageBuildSuccessTime(String pageId, NeoPageType pageType) {
+  Future<void> logPageBuildSuccessTime(String pageId, NeoPageType pageType) async {
     final endTime = DateTime.now();
-    final startTime = _timeMap[pageId];
-    final duration = startTime != null ? endTime.difference(startTime) : null;
+    final startTime = _timeMap.remove(pageId);
+    final duration = startTime != null ? endTime.difference(startTime).inMilliseconds : null;
     final message =
-        '[Building Time]: $pageId - ${pageType.type} is built successfully.${duration != null ? ' Duration: ${duration.inMilliseconds}ms' : ''}';
+        '[Building Time]: $pageId - ${pageType.type} is built successfully.${duration != null ? ' Duration: ${duration}ms' : ''}';
 
-    if (duration != null && duration.compareTo(_Constants.criticalBuildingDuration) >= 0) {
-      logCustom(message, Level.warning);
+    final platform = _deviceUtil.getPlatformName();
+    final device = await _deviceUtil.getDeviceInfo();
+
+    final parameters = {
+      'pageId': pageId,
+      'pageType': pageType.type,
+      'duration': duration,
+      'device_model': device?.model,
+      'device_version': device?.version,
+      'platform': platform,
+    };
+
+    if (duration != null && duration.compareTo(_Constants.criticalBuildingDurationInMilliseconds) >= 0) {
+      logCustom(message, Level.warning, parameters: parameters);
     } else {
-      logCustom(message, Level.trace);
+      logCustom(message, Level.trace, parameters: parameters);
     }
-    _timeMap.remove(pageId);
   }
 
   @override
-  void logCustom(dynamic message, Level logLevel) {
+  void logCustom(dynamic message, Level logLevel, {Map<String, dynamic>? parameters}) {
     _logger.log(logLevel, message);
-    _neoElastic.logCustom(message, logLevel.name);
+    _neoElastic.logCustom(message, logLevel.name, parameters: parameters);
   }
 
   @override
