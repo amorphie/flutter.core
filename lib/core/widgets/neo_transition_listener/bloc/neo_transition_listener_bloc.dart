@@ -94,7 +94,7 @@ class NeoTransitionListenerBloc extends Bloc<NeoTransitionListenerEvent, NeoTran
       if (event.displayLoading) {
         onLoadingStatusChanged(displayLoading: false);
       }
-      onTransitionError?.call(NeoError.defaultError());
+      onTransitionError?.call(const NeoError());
     }
   }
 
