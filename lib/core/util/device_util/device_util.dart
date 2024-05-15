@@ -38,7 +38,7 @@ class DeviceUtil {
       return NeoDeviceInfo(model: "", platform: getPlatformName(), version: "");
     } else if (Platform.isIOS) {
       final iosInfo = await deviceInfo.iosInfo;
-      return NeoDeviceInfo(model: iosInfo.name, platform: getPlatformName(), version: iosInfo.systemVersion);
+      return NeoDeviceInfo(model: iosInfo.utsname.machine, platform: getPlatformName(), version: iosInfo.systemVersion);
     } else if (Platform.isAndroid) {
       final androidInfo = await deviceInfo.androidInfo;
       final brand = androidInfo.brand.isNotEmpty
