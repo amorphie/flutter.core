@@ -243,6 +243,10 @@ class NeoNetworkManager {
       }
     } else {
       try {
+        final hasErrorCode = responseJSON.containsKey("errorCode");
+        if (!hasErrorCode) {
+          responseJSON.addAll({'errorCode': response.statusCode});
+        }
         final error = NeoError.fromJson(responseJSON);
         throw NeoException(error: error);
       } on MissingRequiredKeysException {
