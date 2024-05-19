@@ -12,6 +12,7 @@
 
 import 'dart:convert';
 
+import 'package:chucker_flutter/chucker_flutter.dart';
 import 'package:flutter/foundation.dart' show debugPrint;
 import 'package:http/http.dart' as http;
 import 'package:json_annotation/json_annotation.dart';
@@ -51,6 +52,7 @@ class NeoNetworkManager {
   final Function(String requestId)? onRequestSucceed;
   final Function(NeoError neoError, String requestId)? onRequestFailed;
   late final NeoLogger _neoLogger = NeoLogger();
+  final _chuckerHttpClient = ChuckerHttpClient(http.Client());
 
   NeoNetworkManager({
     required this.httpClientConfig,
@@ -143,7 +145,7 @@ class NeoNetworkManager {
 
   Future<Map<String, dynamic>> _requestGet(String fullPath, NeoHttpCall neoCall) async {
     final fullPathWithQueries = _getFullPathWithQueries(fullPath, neoCall.queryProviders);
-    final response = await http.get(
+    final response = await _chuckerHttpClient.get(
       Uri.parse(fullPathWithQueries),
       headers: (await _defaultHeaders)..addAll(neoCall.headerParameters),
     );
@@ -152,7 +154,7 @@ class NeoNetworkManager {
 
   Future<Map<String, dynamic>> _requestPost(String fullPath, NeoHttpCall neoCall) async {
     final fullPathWithQueries = _getFullPathWithQueries(fullPath, neoCall.queryProviders);
-    final response = await http.post(
+    final response = await _chuckerHttpClient.post(
       Uri.parse(fullPathWithQueries),
       headers: (await _defaultPostHeaders)..addAll(neoCall.headerParameters),
       body: json.encode(neoCall.body),
@@ -162,7 +164,7 @@ class NeoNetworkManager {
 
   Future<Map<String, dynamic>> _requestDelete(String fullPath, NeoHttpCall neoCall) async {
     final fullPathWithQueries = _getFullPathWithQueries(fullPath, neoCall.queryProviders);
-    final response = await http.delete(
+    final response = await _chuckerHttpClient.delete(
       Uri.parse(fullPathWithQueries),
       headers: (await _defaultHeaders)..addAll(neoCall.headerParameters),
       body: json.encode(neoCall.body),
@@ -172,7 +174,7 @@ class NeoNetworkManager {
 
   Future<Map<String, dynamic>> _requestPut(String fullPath, NeoHttpCall neoCall) async {
     final fullPathWithQueries = _getFullPathWithQueries(fullPath, neoCall.queryProviders);
-    final response = await http.put(
+    final response = await _chuckerHttpClient.put(
       Uri.parse(fullPathWithQueries),
       headers: await _defaultPostHeaders,
       body: json.encode(neoCall.body),
@@ -182,7 +184,7 @@ class NeoNetworkManager {
 
   Future<Map<String, dynamic>> _requestPatch(String fullPath, NeoHttpCall neoCall) async {
     final fullPathWithQueries = _getFullPathWithQueries(fullPath, neoCall.queryProviders);
-    final response = await http.patch(
+    final response = await _chuckerHttpClient.patch(
       Uri.parse(fullPathWithQueries),
       headers: await _defaultPostHeaders,
       body: json.encode(neoCall.body),

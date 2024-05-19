@@ -12,6 +12,7 @@
  *
  */
 
+import 'package:chucker_flutter/chucker_flutter.dart';
 import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
 import 'package:logger/logger.dart';
@@ -20,8 +21,6 @@ import 'package:neo_core/core/analytics/neo_crashlytics.dart';
 import 'package:neo_core/core/analytics/neo_elastic.dart';
 import 'package:neo_core/core/analytics/neo_posthog.dart';
 import 'package:neo_core/core/network/models/neo_page_type.dart';
-import 'package:neo_core/core/storage/neo_core_parameter_key.dart';
-import 'package:neo_core/core/storage/neo_core_secure_storage.dart';
 import 'package:neo_core/core/util/device_util/device_util.dart';
 import 'package:posthog_flutter/posthog_flutter.dart';
 import 'package:universal_io/io.dart';
@@ -51,7 +50,7 @@ class NeoLogger implements INeoLogger {
 
   NeoLogger._internal();
 
-  Future<void> init({bool enableCrashlytics = false, bool enablePosthog = false}) async {
+  Future<void> init({bool enableCrashlytics = false, bool enablePosthog = false, bool enableChucker = false}) async {
     if (Platform.isMacOS || Platform.isWindows) {
       return;
     }
@@ -66,6 +65,12 @@ class NeoLogger implements INeoLogger {
     if (enablePosthog) {
       observers = [PosthogObserver()];
       await _neoPosthog.setEnabled(enabled: enablePosthog);
+    }
+
+    if (enableChucker) {
+      ChuckerFlutter.showOnRelease = enableChucker;
+      ChuckerFlutter.showNotification = enableChucker;
+      observers.add(ChuckerFlutter.navigatorObserver);
     }
   }
 
