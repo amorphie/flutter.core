@@ -22,7 +22,7 @@ class NeoFieldMaxValidation extends INeoFieldValidation {
     }
     try {
       final int? valueInt = int.tryParse(value!);
-      if (valueInt != null && valueInt >= max!) {
+      if (valueInt != null && valueInt <= max!) {
         return null;
       }
       return validateMessage();

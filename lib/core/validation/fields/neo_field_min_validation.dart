@@ -22,7 +22,7 @@ class NeoFieldMinValidation extends INeoFieldValidation {
     }
     try {
       final int? valueInt = int.tryParse(value!);
-      if (valueInt != null && valueInt <= min!) {
+      if (valueInt != null && valueInt >= min!) {
         return null;
       }
 

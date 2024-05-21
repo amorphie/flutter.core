@@ -60,8 +60,13 @@ class NeoValidatorManager implements INeoValidatorManager {
 
 void main() {
   final stringValidators = {
-    "required": {"message": "The field is required"},
-    "length": {"length": 4, "message": "This field must be {length} characters long."},
+    "required": {
+      "message": "The field is required",
+    },
+    "length": {
+      "length": 4,
+      "message": "This field must be {length} characters long.",
+    },
   };
   final stringManager = NeoValidatorManager(validators: stringValidators);
   final stringResult = stringManager.validator("");
