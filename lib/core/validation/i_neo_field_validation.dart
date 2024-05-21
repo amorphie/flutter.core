@@ -12,7 +12,7 @@ abstract class INeoFieldValidation {
   String get defaultMessage;
 
   String validateMessage() {
-    String msg = message!;
+    String msg = message ?? defaultMessage;
 
     final data = toJson();
 
