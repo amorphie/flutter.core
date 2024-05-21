@@ -86,15 +86,11 @@ class NeoTransitionListenerBloc extends Bloc<NeoTransitionListenerEvent, NeoTran
       }
       final transitionResponse = await postTransition(event.transitionName, event.body, isSubFlow: event.isSubFlow);
       await _retrieveTokenIfExist(transitionResponse);
-      if (event.displayLoading) {
-        onLoadingStatusChanged(displayLoading: false);
-      }
+      onLoadingStatusChanged(displayLoading: false);
       await _handleTransitionResult(ongoingTransition: transitionResponse);
     } catch (e) {
-      if (event.displayLoading) {
-        onLoadingStatusChanged(displayLoading: false);
-      }
-      onTransitionError?.call(NeoError.defaultError());
+      onLoadingStatusChanged(displayLoading: false);
+      onTransitionError?.call(const NeoError());
     }
   }
 

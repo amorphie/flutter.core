@@ -145,7 +145,7 @@ mixin NeoTransitionBus on Bloc<NeoTransitionListenerEvent, NeoTransitionListener
     } catch (e) {
       _neoLogger.logError("[NeoTransitionListener]: Retrieving last event by long polling is failed!");
       if (!completer.isCompleted) {
-        completer.completeError(NeoError.defaultError());
+        completer.completeError(const NeoError());
       }
     }
   }

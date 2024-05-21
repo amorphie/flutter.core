@@ -123,7 +123,7 @@ class NeoNetworkManager {
     final method = httpClientConfig.getServiceMethodByKey(neoCall.endpoint);
     if (fullPath == null || method == null) {
       // TODO: Throw custom exception
-      throw NeoException(error: NeoError.defaultError());
+      throw NeoException(error: const NeoError());
     }
     await _getTemporaryTokenForNotLoggedInUser(neoCall);
 
@@ -224,7 +224,7 @@ class NeoNetworkManager {
       return responseJSON;
     } else if (response.statusCode == _Constants.responseCodeUnauthorized) {
       if (call.endpoint == _Constants.endpointGetToken) {
-        final error = NeoError.defaultError();
+        final error = NeoError(responseCode: response.statusCode);
         _neoLogger.logError("[NeoNetworkManager]: Token service error!");
         throw NeoException(error: error);
       }
@@ -233,7 +233,7 @@ class NeoNetworkManager {
         if (isTokenRefreshed) {
           return _retryLastCall(call);
         } else {
-          final error = NeoError.defaultError();
+          final error = NeoError(responseCode: response.statusCode);
           _neoLogger.logError("[NeoNetworkManager]: Token refresh service error!");
           throw NeoException(error: error);
         }
@@ -243,6 +243,10 @@ class NeoNetworkManager {
       }
     } else {
       try {
+        final hasErrorCode = responseJSON.containsKey("errorCode");
+        if (!hasErrorCode) {
+          responseJSON.addAll({'errorCode': response.statusCode});
+        }
         final error = NeoError.fromJson(responseJSON);
         throw NeoException(error: error);
       } on MissingRequiredKeysException {
@@ -256,8 +260,9 @@ class NeoNetworkManager {
           onRequestFailed?.call(e.error, call.endpoint);
           rethrow;
         } else {
-          onRequestFailed?.call(NeoError.defaultError(), call.endpoint);
-          throw NeoException(error: NeoError.defaultError());
+          final error = NeoError(responseCode: response.statusCode);
+          onRequestFailed?.call(error, call.endpoint);
+          throw NeoException(error: error);
         }
       }
     }
@@ -271,7 +276,7 @@ class NeoNetworkManager {
       neoHttpCall.decreaseRetryCount();
       return call(neoHttpCall);
     } else {
-      throw NeoException(error: NeoError.defaultError());
+      throw NeoException(error: const NeoError());
     }
   }
 

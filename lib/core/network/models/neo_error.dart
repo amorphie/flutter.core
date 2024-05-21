@@ -48,8 +48,6 @@ class NeoError extends Equatable {
   Map<String, dynamic> toJson() => _$NeoErrorToJson(this);
 
   factory NeoError.fromJson(Map<String, dynamic> json) => _$NeoErrorFromJson(json);
-
-  factory NeoError.defaultError() => const NeoError();
 }
 
 @JsonSerializable()
