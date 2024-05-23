@@ -36,17 +36,17 @@ class NeoError extends Equatable {
   @JsonKey(name: "error")
   final NeoErrorDetail error;
 
-  @JsonKey(name: "errorBody")
-  final dynamic errorBody;
+  @JsonKey(name: "data")
+  final dynamic data;
 
   @override
-  List<Object?> get props => [responseCode, displayMode, error, errorBody];
+  List<Object?> get props => [responseCode, displayMode, error, data];
 
   const NeoError({
     this.responseCode = _Constants.defaultErrorCode,
     this.displayMode = _Constants.defaultErrorDisplayMode,
     this.error = const NeoErrorDetail(),
-    this.errorBody,
+    this.data,
   });
 
   Map<String, dynamic> toJson() => _$NeoErrorToJson(this);

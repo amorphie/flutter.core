@@ -14,12 +14,14 @@ NeoError _$NeoErrorFromJson(Map<String, dynamic> json) => NeoError(
       error: json['error'] == null
           ? const NeoErrorDetail()
           : NeoErrorDetail.fromJson(json['error'] as Map<String, dynamic>),
+      data: json['data'],
     );
 
 Map<String, dynamic> _$NeoErrorToJson(NeoError instance) => <String, dynamic>{
       'errorCode': instance.responseCode,
       'errorType': _$NeoErrorDisplayMethodEnumMap[instance.displayMode]!,
       'error': instance.error,
+      'data': instance.data,
     };
 
 const _$NeoErrorDisplayMethodEnumMap = {
