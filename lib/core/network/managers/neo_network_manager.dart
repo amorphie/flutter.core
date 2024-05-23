@@ -245,7 +245,7 @@ class NeoNetworkManager {
       try {
         final hasErrorCode = responseJSON.containsKey("errorCode");
         if (!hasErrorCode) {
-          responseJSON.addAll({'errorCode': response.statusCode, 'errorBody': response.body});
+          responseJSON.addAll({'errorCode': response.statusCode, 'errorBody': responseJSON['data']});
         }
         final error = NeoError.fromJson(responseJSON);
         throw NeoException(error: error);
