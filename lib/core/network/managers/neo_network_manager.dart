@@ -243,6 +243,7 @@ class NeoNetworkManager {
       }
     } else {
       try {
+        responseJSON.addAll({'body': response.body});
         final hasErrorCode = responseJSON.containsKey("errorCode");
         if (!hasErrorCode) {
           responseJSON.addAll({'errorCode': response.statusCode});
