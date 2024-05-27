@@ -69,7 +69,7 @@ class NeoLogger implements INeoLogger {
 
     if (enableChucker) {
       ChuckerFlutter.showOnRelease = enableChucker;
-      ChuckerFlutter.showNotification = enableChucker;
+      ChuckerFlutter.showNotification = false;
       observers.add(ChuckerFlutter.navigatorObserver);
     }
   }
