@@ -10,8 +10,6 @@
  * Any reproduction of this material must contain this notice.
  */
 
-import 'package:firebase_core/firebase_core.dart';
-import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:neo_core/core/analytics/neo_logger.dart';
 import 'package:neo_core/core/storage/neo_core_secure_storage.dart';
 import 'package:neo_core/core/storage/neo_shared_prefs.dart';
@@ -33,9 +31,6 @@ class NeoCore {
     await NeoSharedPrefs().init();
     // Order is important, NeoCoreSecureStorage uses NeoSharedPrefs
     await NeoCoreSecureStorage().init();
-    if (!kIsWeb && !Platform.isMacOS) {
-      await Firebase.initializeApp();
-    }
     if (!Platform.isMacOS) {
       await NeoLogger().init(enableCrashlytics: enableCrashlytics, enablePosthog: enablePosthog);
     }
