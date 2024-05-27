@@ -16,6 +16,7 @@ import 'dart:developer';
 import 'package:collection/collection.dart';
 import 'package:flutter/foundation.dart' show kDebugMode;
 import 'package:flutter/material.dart';
+import 'package:logging/logging.dart';
 import 'package:neo_core/core/analytics/neo_logger.dart';
 import 'package:neo_core/core/network/models/neo_signalr_transition.dart';
 import 'package:signalr_netcore/ihub_protocol.dart';
@@ -52,12 +53,22 @@ class SignalrConnectionManager {
   }) : _neoLogger = NeoLogger();
 
   Future init() async {
+    // Configer the logging
+    Logger.root.level = Level.ALL;
+// Writes the log messages to the console
+    Logger.root.onRecord.listen((LogRecord rec) {
+      print('${rec.level.name}: ${rec.time}: ${rec.message}');
+    });
+
+// If you want only to log out the message for the higer level hub protocol:
+    final logger = Logger("SignalR - hub");
     final defaultHeaders = MessageHeaders();
     defaultHeaders.setHeaderValue("X-Device-Id", xDeviceId);
     defaultHeaders.setHeaderValue("X-Token-Id", xTokenId);
 
     final httpConnectionOptions = new HttpConnectionOptions(
-        httpClient: WebSupportingHttpClient(null),
+        httpClient: WebSupportingHttpClient(logger),
+        logger: logger,
         accessTokenFactory: () => Future.value(token),
         logMessageContent: true,
         headers: defaultHeaders);
