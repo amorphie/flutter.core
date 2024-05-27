@@ -16,6 +16,8 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:neo_core/core/analytics/neo_logger.dart';
 import 'package:neo_core/core/feature_flags/neo_feature_flag_util.dart';
 import 'package:neo_core/core/network/neo_network.dart';
+import 'package:neo_core/core/storage/neo_core_parameter_key.dart';
+import 'package:neo_core/core/storage/neo_core_secure_storage.dart';
 import 'package:neo_core/core/widgets/neo_transition_listener/bloc/neo_transition_listener_bloc.dart';
 import 'package:neo_core/core/workflow_form/neo_sub_workflow_manager.dart';
 import 'package:neo_core/core/workflow_form/neo_workflow_manager.dart';
@@ -107,7 +109,20 @@ mixin NeoTransitionBus on Bloc<NeoTransitionListenerEvent, NeoTransitionListener
     required String signalrServerUrl,
     required String signalrMethodName,
   }) async {
+    final secureStorage = NeoCoreSecureStorage();
+    final results = await Future.wait([
+      secureStorage.read(NeoCoreParameterKey.secureStorageDeviceId),
+      secureStorage.read(NeoCoreParameterKey.secureStorageTokenId),
+      secureStorage.read(NeoCoreParameterKey.secureStorageAuthToken),
+    ]);
+
+    final deviceId = results[0] ?? "";
+    final tokenId = results[1] ?? "";
+    final authToken = results[2] ?? "";
     signalrConnectionManager = SignalrConnectionManager(
+      token: authToken,
+      xTokenId: tokenId,
+      xDeviceId: deviceId,
       serverUrl: signalrServerUrl,
       methodName: signalrMethodName,
     );

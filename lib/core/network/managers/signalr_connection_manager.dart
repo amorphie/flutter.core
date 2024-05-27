@@ -18,6 +18,8 @@ import 'package:flutter/foundation.dart' show kDebugMode;
 import 'package:flutter/material.dart';
 import 'package:neo_core/core/analytics/neo_logger.dart';
 import 'package:neo_core/core/network/models/neo_signalr_transition.dart';
+import 'package:signalr_netcore/ihub_protocol.dart';
+import 'package:signalr_netcore/msgpack_hub_protocol.dart';
 import 'package:signalr_netcore/signalr_client.dart';
 
 abstract class _Constants {
@@ -32,6 +34,9 @@ abstract class _Constants {
 }
 
 class SignalrConnectionManager {
+  final String token;
+  final String xDeviceId;
+  final String xTokenId;
   final String serverUrl;
   final String methodName;
   final NeoLogger _neoLogger;
@@ -39,17 +44,29 @@ class SignalrConnectionManager {
   HubConnection? _hubConnection;
 
   SignalrConnectionManager({
+    required this.token,
+    required this.xDeviceId,
+    required this.xTokenId,
     required this.serverUrl,
     required this.methodName,
   }) : _neoLogger = NeoLogger();
 
   Future init() async {
+    final defaultHeaders = MessageHeaders();
+    defaultHeaders.setHeaderValue("X-Device-Id", xDeviceId);
+    defaultHeaders.setHeaderValue("X-Token-Id", xTokenId);
+
+    final httpConnectionOptions = new HttpConnectionOptions(
+        httpClient: WebSupportingHttpClient(null),
+        accessTokenFactory: () => Future.value(token),
+        logMessageContent: true,
+        headers: defaultHeaders);
+
     _hubConnection = HubConnectionBuilder()
-        .withUrl(
-      serverUrl,
-      options: HttpConnectionOptions(transport: HttpTransportType.WebSockets, skipNegotiation: true),
-    )
+        .withUrl(serverUrl, options: httpConnectionOptions)
+        .withHubProtocol(MessagePackHubProtocol())
         .withAutomaticReconnect(retryDelays: [2000, 5000, 10000, 20000]).build();
+
     _hubConnection?.onclose(({error}) {
       _neoLogger.logEvent(_Constants.eventNameSignalrOnClose);
       debugPrint(_Constants.eventNameSignalrOnClose);
