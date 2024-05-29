@@ -16,12 +16,9 @@ import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
 import 'package:logger/logger.dart';
 import 'package:neo_core/core/analytics/i_neo_logger.dart';
-import 'package:neo_core/core/analytics/neo_crashlytics.dart';
 import 'package:neo_core/core/analytics/neo_elastic.dart';
 import 'package:neo_core/core/analytics/neo_posthog.dart';
 import 'package:neo_core/core/network/models/neo_page_type.dart';
-import 'package:neo_core/core/storage/neo_core_parameter_key.dart';
-import 'package:neo_core/core/storage/neo_core_secure_storage.dart';
 import 'package:neo_core/core/util/device_util/device_util.dart';
 import 'package:posthog_flutter/posthog_flutter.dart';
 import 'package:universal_io/io.dart';
@@ -37,7 +34,6 @@ class NeoLogger implements INeoLogger {
   List<NavigatorObserver> observers = [];
   final Map<String, DateTime> _timeMap = {};
 
-  NeoCrashlytics? _neoCrashlytics;
   final DeviceUtil _deviceUtil = DeviceUtil();
   final NeoPosthog _neoPosthog = NeoPosthog();
   final NeoElastic _neoElastic = NeoElastic();
@@ -54,13 +50,6 @@ class NeoLogger implements INeoLogger {
   Future<void> init({bool enableCrashlytics = false, bool enablePosthog = false}) async {
     if (Platform.isMacOS || Platform.isWindows) {
       return;
-    }
-    if (!kIsWeb) {
-      if (enableCrashlytics) {
-        _neoCrashlytics = NeoCrashlytics();
-        await _neoCrashlytics?.initializeCrashlytics();
-        await _neoCrashlytics?.setEnabled(enabled: enableCrashlytics);
-      }
     }
 
     if (enablePosthog) {
@@ -133,7 +122,6 @@ class NeoLogger implements INeoLogger {
     if (kIsWeb) {
       return;
     }
-    _neoCrashlytics?.logError(message);
   }
 
   @override
@@ -141,7 +129,6 @@ class NeoLogger implements INeoLogger {
     if (kIsWeb) {
       return;
     }
-    _neoCrashlytics?.logException(exception, stackTrace);
   }
 
   @override
@@ -149,6 +136,5 @@ class NeoLogger implements INeoLogger {
     if (kIsWeb) {
       return;
     }
-    await _neoCrashlytics?.sendUnsentReports();
   }
 }
