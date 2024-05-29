@@ -36,9 +36,6 @@ dependencies:
   # Utility
   uuid: ^4.1.0
 
-  # Feature
-  flutter_local_notifications: ^16.2.0
-
   # Posthog
   posthog_flutter: ^3.3.0
   logger: ^2.2.0
