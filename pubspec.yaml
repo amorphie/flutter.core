@@ -36,8 +36,6 @@ dependencies:
   # Utility
   uuid: ^4.1.0
 
-  # Posthog
-  posthog_flutter: ^3.3.0
   logger: ^2.2.0
 
 dependency_overrides:

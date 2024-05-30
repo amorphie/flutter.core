@@ -20,7 +20,6 @@ import 'package:neo_core/core/analytics/neo_elastic.dart';
 import 'package:neo_core/core/analytics/neo_posthog.dart';
 import 'package:neo_core/core/network/models/neo_page_type.dart';
 import 'package:neo_core/core/util/device_util/device_util.dart';
-import 'package:posthog_flutter/posthog_flutter.dart';
 import 'package:universal_io/io.dart';
 
 abstract class _Constants {
@@ -53,7 +52,7 @@ class NeoLogger implements INeoLogger {
     }
 
     if (enablePosthog) {
-      observers = [PosthogObserver()];
+      observers = [];
       await _neoPosthog.setEnabled(enabled: enablePosthog);
     }
   }

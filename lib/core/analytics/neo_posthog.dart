@@ -14,21 +14,17 @@
 
 import 'dart:async';
 
-import 'package:neo_core/core/storage/neo_core_parameter_key.dart';
-import 'package:neo_core/core/storage/neo_core_secure_storage.dart';
-import 'package:posthog_flutter/posthog_flutter.dart';
-
 class NeoPosthog {
   NeoPosthog() {
     _init();
   }
 
-  final Posthog _posthog = Posthog();
-
   Future<void> _init() async {
+    /*
     unawaited(
       _posthog.identify(userId: await NeoCoreSecureStorage().read(NeoCoreParameterKey.secureStorageTokenId) ?? ""),
     );
+     */
   }
 
   Future<void> setScreen(
@@ -36,7 +32,7 @@ class NeoPosthog {
     Map<String, dynamic>? properties,
     Map<String, dynamic>? options,
   }) async {
-    await _posthog.screen(screenName: screenName, properties: properties, options: options);
+    //await _posthog.screen(screenName: screenName, properties: properties, options: options);
   }
 
   Future<void> logEvent(
@@ -44,18 +40,18 @@ class NeoPosthog {
     Map<String, dynamic>? properties,
     Map<String, dynamic>? options,
   }) async {
-    await _posthog.capture(eventName: eventName, properties: properties, options: options);
+    //await _posthog.capture(eventName: eventName, properties: properties, options: options);
   }
 
   Future<bool?> isFeatureEnabled(String key) async {
-    return _posthog.isFeatureEnabled(key);
+    // return _posthog.isFeatureEnabled(key);
   }
 
   Future<void> reloadFeatureFlags() async {
-    await _posthog.reloadFeatureFlags();
+    //await _posthog.reloadFeatureFlags();
   }
 
   Future<void> setEnabled({required bool enabled}) async {
-    return enabled ? _posthog.enable() : _posthog.disable();
+    // return enabled ? _posthog.enable() : _posthog.disable();
   }
 }
