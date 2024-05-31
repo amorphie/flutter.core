@@ -21,11 +21,9 @@ class NeoElastic {
     final results = await Future.wait([
       secureStorage.read(NeoCoreParameterKey.secureStorageDeviceId),
       secureStorage.read(NeoCoreParameterKey.secureStorageTokenId),
-      secureStorage.read(NeoCoreParameterKey.secureStorageCustomerId),
     ]);
     final deviceId = results[0];
     final tokenId = results[1];
-    final customerId = results[2];
 
     // ignore: do_not_use_environment
     const environment = String.fromEnvironment('environment');
@@ -35,7 +33,6 @@ class NeoElastic {
       "level": level,
       "deviceId": deviceId,
       "tokenId": tokenId,
-      "customerId": customerId,
       "applicationName": environment,
       'appVersion': packageInfo.version,
       'appBuildNumber': packageInfo.buildNumber,
