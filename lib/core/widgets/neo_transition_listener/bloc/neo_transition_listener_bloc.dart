@@ -38,29 +38,8 @@ class NeoTransitionListenerBloc extends Bloc<NeoTransitionListenerEvent, NeoTran
 
   NeoTransitionListenerBloc() : super(NeoTransitionListenerState()) {
     on<NeoTransitionListenerEventInit>((event, emit) => _onInit(event));
+    on<NeoTransitionListenerEventInitWorkflow>((event, emit) => _onInitWorkflow(event));
     on<NeoTransitionListenerEventPostTransition>((event, emit) => _onPostTransition(event));
-  }
-
-  @override
-  Future<Map<String, dynamic>> initWorkflow({
-    required String workflowName,
-    String? suffix,
-    String? instanceId,
-    bool isSubFlow = false,
-  }) async {
-    try {
-      onLoadingStatusChanged(displayLoading: true);
-      return await super.initWorkflow(
-        workflowName: workflowName,
-        suffix: suffix,
-        instanceId: instanceId,
-        isSubFlow: isSubFlow,
-      );
-    } catch (e) {
-      rethrow;
-    } finally {
-      onLoadingStatusChanged(displayLoading: false);
-    }
   }
 
   Future<void> _onInit(NeoTransitionListenerEventInit event) async {
@@ -77,6 +56,32 @@ class NeoTransitionListenerBloc extends Bloc<NeoTransitionListenerEvent, NeoTran
       signalrMethodName: event.signalRMethodName,
       bypassSignalr: event.bypassSignalr,
     );
+  }
+
+  Future<void> _onInitWorkflow(NeoTransitionListenerEventInitWorkflow event) async {
+    try {
+      if (event.displayLoading) {
+        onLoadingStatusChanged(displayLoading: true);
+      }
+      final response =
+          await initWorkflow(workflowName: event.workflowName, suffix: event.suffix, isSubFlow: event.isSubFlow);
+      onLoadingStatusChanged(displayLoading: false);
+      onTransitionSuccess(
+        SignalrTransitionData(
+          navigationPath: response["init-page-name"],
+          // STOPSHIP: Get from API
+          navigationType: NeoNavigationType.push,
+          pageId: response["state"],
+          viewSource: response["view-source"],
+          initialData: {},
+          transitionId: (response["transition"] as List?)?.firstOrNull["transition"] ?? "",
+          workflowSuffix: event.suffix,
+        ),
+      );
+    } catch (e) {
+      onLoadingStatusChanged(displayLoading: false);
+      onTransitionError?.call(const NeoError());
+    }
   }
 
   Future<void> _onPostTransition(NeoTransitionListenerEventPostTransition event) async {
@@ -114,11 +119,13 @@ class NeoTransitionListenerBloc extends Bloc<NeoTransitionListenerEvent, NeoTran
     final transitionId = ongoingTransition.transitionId;
     final isEkyc = ongoingTransition.additionalData != null && ongoingTransition.additionalData?["isEkyc"] == true;
     if (isEkyc) {
-      onEkycEvent(EkycEventData(
-        flowState: ongoingTransition.transitionId,
-        ekycState: ongoingTransition.state,
-        initialData: ongoingTransition.additionalData!,
-      ));
+      onEkycEvent(
+        EkycEventData(
+          flowState: ongoingTransition.transitionId,
+          ekycState: ongoingTransition.state,
+          initialData: ongoingTransition.additionalData!,
+        ),
+      );
     } else {
       onTransitionSuccess(
         SignalrTransitionData(
