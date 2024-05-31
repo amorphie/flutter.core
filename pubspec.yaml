@@ -23,6 +23,7 @@ dependencies:
   flutter_secure_storage: ^9.0.0
   shared_preferences: ^2.2.2
   device_info_plus: ^9.1.0
+  package_info_plus: ^8.0.0
   collection: ^1.17.1
   meta: ^1.9.1
   universal_io: ^2.2.2
