@@ -14,6 +14,7 @@ import 'dart:async';
 
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:neo_core/core/analytics/neo_logger.dart';
+import 'package:neo_core/core/analytics/neo_posthog.dart';
 import 'package:neo_core/core/feature_flags/neo_feature_flag_util.dart';
 import 'package:neo_core/core/network/neo_network.dart';
 import 'package:neo_core/core/widgets/neo_transition_listener/bloc/neo_transition_listener_bloc.dart';
@@ -22,9 +23,12 @@ import 'package:neo_core/core/workflow_form/neo_workflow_manager.dart';
 import 'package:rxdart/rxdart.dart';
 
 abstract class _Constants {
-  static const signalrTimeOutDuration = Duration(seconds: 10);
+  static const signalrTimeOutDuration = Duration(seconds: 5);
+  static const signalrLongPollingMaxRetryCount = 6;
   static const signalrBypassDelayDuration = Duration(seconds: 2);
   static const transitionResponseDataKey = "data";
+  static const transitionBaseStateKey = "base-state";
+  static const transitionBaseStateInProgressValue = "InProgress";
 }
 
 mixin NeoTransitionBus on Bloc<NeoTransitionListenerEvent, NeoTransitionListenerState> {
@@ -96,7 +100,13 @@ mixin NeoTransitionBus on Bloc<NeoTransitionListenerEvent, NeoTransitionListener
     }
     await currentWorkflowManager(isSubFlow: isSubFlow).postTransition(transitionName: transitionId, body: body);
 
-    unawaited(_getTransitionWithLongPolling(completer, isSubFlow: isSubFlow));
+    unawaited(
+      _getTransitionWithLongPolling(
+        completer,
+        isSubFlow: isSubFlow,
+        retryCount: _Constants.signalrLongPollingMaxRetryCount,
+      ),
+    );
 
     return completer.future.whenComplete(() async {
       await transitionBusSubscription?.cancel();
@@ -126,24 +136,35 @@ mixin NeoTransitionBus on Bloc<NeoTransitionListenerEvent, NeoTransitionListener
   Future<void> _getTransitionWithLongPolling(
     Completer<NeoSignalRTransition> completer, {
     required bool isSubFlow,
+    required int retryCount,
   }) async {
+    if (retryCount == 0) {
+      completer.completeError(const NeoError());
+      return;
+    }
     await Future.delayed(_bypassSignalr ? _Constants.signalrBypassDelayDuration : _Constants.signalrTimeOutDuration);
 
     if (completer.isCompleted) {
       return;
     }
-    _neoLogger.logError(
-      "[NeoTransitionListener]: No transition event within timeout limit ${_Constants.signalrTimeOutDuration.inSeconds} seconds! Retrieving last event by long polling...",
+    _neoLogger.logEvent(
+      "[NeoTransitionListener]: No transition event within ${_Constants.signalrTimeOutDuration.inSeconds} seconds! Retrieving last event by long polling...",
     );
 
     try {
       final response = await currentWorkflowManager(isSubFlow: isSubFlow).getLastTransitionByLongPolling();
 
       if (!completer.isCompleted) {
-        completer.complete(NeoSignalRTransition.fromJson(response[_Constants.transitionResponseDataKey]));
+        final isTransitionInProgress =
+            response[_Constants.transitionBaseStateKey] == _Constants.transitionBaseStateInProgressValue;
+        if (isTransitionInProgress) {
+          return _getTransitionWithLongPolling(completer, isSubFlow: isSubFlow, retryCount: retryCount - 1);
+        } else {
+          completer.complete(NeoSignalRTransition.fromJson(response[_Constants.transitionResponseDataKey]));
+        }
       }
     } catch (e) {
-      _neoLogger.logError("[NeoTransitionListener]: Retrieving last event by long polling is failed!");
+      _neoLogger.logEvent("[NeoTransitionListener]: Retrieving last event by long polling is failed!");
       if (!completer.isCompleted) {
         completer.completeError(const NeoError());
       }
