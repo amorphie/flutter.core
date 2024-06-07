@@ -10,6 +10,8 @@
  * Any reproduction of this material must contain this notice.
  */
 
+import 'dart:developer';
+
 import 'package:equatable/equatable.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -113,6 +115,7 @@ class NeoTransitionListenerBloc extends Bloc<NeoTransitionListenerEvent, NeoTran
   }
 
   Future<void> _handleTransitionResult({required NeoSignalRTransition ongoingTransition}) async {
+    log("ongoingTransition: ${ongoingTransition.toJson()}");
     final navigationPath = ongoingTransition.pageDetails["pageRoute"]?["label"] as String?;
     final navigationType = ongoingTransition.pageDetails["type"] as String?;
     final isBackNavigation = ongoingTransition.buttonType == "Back";

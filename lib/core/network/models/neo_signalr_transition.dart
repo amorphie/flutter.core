@@ -15,7 +15,7 @@ import 'package:json_annotation/json_annotation.dart';
 
 part 'neo_signalr_transition.g.dart';
 
-@JsonSerializable(createToJson: false)
+@JsonSerializable()
 class NeoSignalRTransition extends Equatable {
   @JsonKey(name: "transition")
   final String transitionId;
@@ -75,6 +75,7 @@ class NeoSignalRTransition extends Equatable {
         buttonType,
         time,
       ];
+  Map<String, dynamic> toJson() => _$NeoSignalRTransitionToJson(this);
 
   factory NeoSignalRTransition.fromJson(Map<String, dynamic> json) => _$NeoSignalRTransitionFromJson(json);
 }
