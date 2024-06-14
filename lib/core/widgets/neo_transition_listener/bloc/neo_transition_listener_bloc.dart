@@ -15,6 +15,7 @@ import 'dart:developer';
 import 'package:equatable/equatable.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:get_it/get_it.dart';
 import 'package:neo_core/core/navigation/models/ekyc_event_data.dart';
 import 'package:neo_core/core/navigation/models/neo_navigation_type.dart';
 import 'package:neo_core/core/navigation/models/signalr_transition_data.dart';
@@ -25,6 +26,7 @@ import 'package:neo_core/core/widgets/neo_transition_listener/mixins/neo_transit
 import 'package:neo_core/core/widgets/neo_transition_listener/usecases/get_workflow_query_parameters_usecase.dart';
 import 'package:neo_core/core/workflow_form/neo_sub_workflow_manager.dart';
 import 'package:neo_core/core/workflow_form/neo_workflow_manager.dart';
+import 'package:universal_io/io.dart';
 
 part 'neo_transition_listener_event.dart';
 part 'neo_transition_listener_state.dart';
@@ -121,6 +123,7 @@ class NeoTransitionListenerBloc extends Bloc<NeoTransitionListenerEvent, NeoTran
     final isBackNavigation = ongoingTransition.buttonType == "Back";
     final transitionId = ongoingTransition.transitionId;
     final isEkyc = ongoingTransition.additionalData != null && ongoingTransition.additionalData?["isEkyc"] == true;
+    _handleRedirectionSettings(ongoingTransition);
     if (isEkyc) {
       onEkycEvent(
         EkycEventData(
@@ -146,6 +149,13 @@ class NeoTransitionListenerBloc extends Bloc<NeoTransitionListenerEvent, NeoTran
           statusMessage: ongoingTransition.statusMessage,
         ),
       );
+    }
+  }
+
+  void _handleRedirectionSettings(NeoSignalRTransition ongoingTransition) {
+    final redirectedWorkflowId = ongoingTransition.additionalData?["amorphieWorkFlowId"];
+    if (ongoingTransition.statusCode == HttpStatus.permanentRedirect.toString() && redirectedWorkflowId != null) {
+      GetIt.I.get<NeoWorkflowManager>().setInstanceId(redirectedWorkflowId);
     }
   }
 
