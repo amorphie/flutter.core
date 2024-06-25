@@ -57,12 +57,14 @@ class NeoTransitionListenerEventInit extends NeoTransitionListenerEvent {
 class NeoTransitionListenerEventPostTransition extends NeoTransitionListenerEvent {
   final String transitionName;
   final Map<String, dynamic> body;
+  final String? instanceId;
   final bool isSubFlow;
   final bool displayLoading;
 
   NeoTransitionListenerEventPostTransition({
     required this.transitionName,
     required this.body,
+    this.instanceId,
     this.isSubFlow = false,
     this.displayLoading = true,
   });
