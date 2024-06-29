@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
 part 'neo_page_event.dart';
+
 part 'neo_page_state.dart';
 
 abstract class _Constants {
@@ -14,6 +15,8 @@ class NeoPageBloc extends Bloc<NeoPageEvent, NeoPageState> {
   final GlobalKey<FormState> formKey = GlobalKey<FormState>();
   final Map<String, dynamic> _formInitialData = {};
   final Map<String, dynamic> _formData = {};
+
+  final Map<String, dynamic> _localVariables = {};
 
   bool isStateChanged() => !const DeepCollectionEquality.unordered().equals(_formInitialData, _formData);
 
@@ -32,6 +35,14 @@ class NeoPageBloc extends Bloc<NeoPageEvent, NeoPageState> {
     });
     on<NeoPageEventAddParametersIntoArray>(_onAddParametersIntoArray);
     on<NeoPageEventValidateForm>((event, emit) => formKey.currentState?.validate());
+  }
+
+  dynamic getLocalVariable(String variableName) {
+    return _localVariables[variableName];
+  }
+
+  void setLocalVariable(String variableName, dynamic value) {
+    _localVariables[variableName] = value;
   }
 
   void _onAddParametersIntoArray(NeoPageEventAddParametersIntoArray event, Emitter<NeoPageState> emit) {
