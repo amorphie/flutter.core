@@ -27,6 +27,7 @@ import 'package:neo_core/core/workflow_form/neo_workflow_manager.dart';
 import 'package:universal_io/io.dart';
 
 part 'neo_transition_listener_event.dart';
+
 part 'neo_transition_listener_state.dart';
 
 class NeoTransitionListenerBloc extends Bloc<NeoTransitionListenerEvent, NeoTransitionListenerState>
@@ -35,7 +36,7 @@ class NeoTransitionListenerBloc extends Bloc<NeoTransitionListenerEvent, NeoTran
   late final Function(SignalrTransitionData navigationData) onTransitionSuccess;
   late final Function(EkycEventData ekycData) onEkycEvent;
   late final Function(NeoError error)? onTransitionError;
-  late final VoidCallback? onLoggedInSuccessfully;
+  late final Function({required bool isTwoFactorAuthenticated})? onLoggedInSuccessfully;
   late final Function({required bool displayLoading}) onLoadingStatusChanged;
 
   NeoTransitionListenerBloc() : super(NeoTransitionListenerState()) {
@@ -104,13 +105,11 @@ class NeoTransitionListenerBloc extends Bloc<NeoTransitionListenerEvent, NeoTran
   Future<void> _retrieveTokenIfExist(NeoSignalRTransition ongoingTransition) async {
     final String? token = ongoingTransition.additionalData?["access_token"];
     final String? refreshToken = ongoingTransition.additionalData?["refresh_token"];
-    if (token != null && token.isNotEmpty) {
-      await Future.wait([
-        neoCoreSecureStorage.setAuthToken(token),
-        neoCoreSecureStorage.write(key: NeoCoreParameterKey.secureStorageRefreshToken, value: refreshToken ?? ""),
-      ]);
 
-      onLoggedInSuccessfully?.call();
+    if (token != null && token.isNotEmpty) {
+      final bool isTwoFactorAuthenticated = await neoCoreSecureStorage.setAuthToken(token);
+      await neoCoreSecureStorage.write(key: NeoCoreParameterKey.secureStorageRefreshToken, value: refreshToken ?? "");
+      onLoggedInSuccessfully?.call(isTwoFactorAuthenticated: isTwoFactorAuthenticated);
     }
   }
 
