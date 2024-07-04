@@ -15,7 +15,7 @@ class NeoTransitionListenerWidget extends StatelessWidget {
   final String signalRMethodName;
   final Function(SignalrTransitionData navigationData) onPageNavigation;
   final Function(EkycEventData eventData) onEkycEvent;
-  final VoidCallback? onLoggedInSuccessfully;
+  final Function({required bool isTwoFactorAuthenticated})? onLoggedInSuccessfully;
   final Function(NeoError error)? onError;
   final Function({required bool displayLoading}) onLoadingStatusChanged;
   final bool bypassSignalr;
