@@ -47,6 +47,11 @@ dependencies:
   posthog_flutter: ^3.3.0
   logger: ^2.2.0
 
+  # Dynamic Widget Building
+  json_dynamic_widget: ^7.1.0+7
+  child_builder: ^2.0.1
+  template_expressions: ^3.1.5
+
 dependency_overrides:
   uuid: ^4.1.0 # Delete this overrides when signalr_netcore package is updated
 
