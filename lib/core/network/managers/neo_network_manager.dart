@@ -48,7 +48,7 @@ class NeoNetworkManager {
   final HttpClientConfig httpClientConfig;
   final String workflowClientId;
   final String workflowClientSecret;
-  final Function(String requestId)? onRequestSucceed;
+  final Function(String endpoint, String? requestId)? onRequestSucceed;
   final Function(NeoError neoError, String requestId)? onRequestFailed;
   late final NeoLogger _neoLogger = NeoLogger();
 
@@ -220,7 +220,7 @@ class NeoNetworkManager {
     debugPrint("[NeoNetworkManager] Response code: ${response.statusCode}. Body: ${response.body}");
 
     if (response.statusCode >= 200 && response.statusCode < 300) {
-      onRequestSucceed?.call(call.endpoint);
+      onRequestSucceed?.call(call.endpoint, call.requestId);
       return responseJSON;
     } else if (response.statusCode == _Constants.responseCodeUnauthorized) {
       if (call.endpoint == _Constants.endpointGetToken) {
