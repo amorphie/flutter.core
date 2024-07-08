@@ -14,6 +14,10 @@ abstract class _Constants {
 
 class NeoPageBloc extends Bloc<NeoPageEvent, NeoPageState> {
   final JsonWidgetRegistry jsonWidgetRegistry;
+  late BuildContext _pageContext;
+
+  BuildContext get pageContext => _pageContext;
+
   final GlobalKey<FormState> formKey = GlobalKey<FormState>();
   final Map<String, dynamic> _formInitialData = {};
   final Map<String, dynamic> _formData = {};
@@ -94,5 +98,9 @@ class NeoPageBloc extends Bloc<NeoPageEvent, NeoPageState> {
     }
 
     return stateDifference;
+  }
+
+  void setPageContext(BuildContext context) {
+    _pageContext = context;
   }
 }
