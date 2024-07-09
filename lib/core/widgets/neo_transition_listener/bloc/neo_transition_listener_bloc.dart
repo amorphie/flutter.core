@@ -69,6 +69,7 @@ class NeoTransitionListenerBloc extends Bloc<NeoTransitionListenerEvent, NeoTran
       final response =
           await initWorkflow(workflowName: event.workflowName, suffix: event.suffix, isSubFlow: event.isSubFlow);
       onLoadingStatusChanged(displayLoading: false);
+      final additionalData = response["additionalData"];
       onTransitionSuccess(
         SignalrTransitionData(
           navigationPath: response["init-page-name"],
@@ -76,7 +77,7 @@ class NeoTransitionListenerBloc extends Bloc<NeoTransitionListenerEvent, NeoTran
           navigationType: NeoNavigationType.push,
           pageId: response["state"],
           viewSource: response["view-source"],
-          initialData: {},
+          initialData: additionalData is Map ? additionalData.cast() : {"data": additionalData},
           transitionId: (response["transition"] as List?)?.firstOrNull["transition"] ?? "",
           workflowSuffix: event.suffix,
         ),
