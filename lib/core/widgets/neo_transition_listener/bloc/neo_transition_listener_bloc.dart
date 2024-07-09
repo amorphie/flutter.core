@@ -66,8 +66,11 @@ class NeoTransitionListenerBloc extends Bloc<NeoTransitionListenerEvent, NeoTran
       if (event.displayLoading) {
         onLoadingStatusChanged(displayLoading: true);
       }
-      final response =
-          await initWorkflow(workflowName: event.workflowName, suffix: event.suffix, isSubFlow: event.isSubFlow);
+      final response = await initWorkflow(
+        workflowName: event.workflowName,
+        queryParameters: event.queryParameters,
+        isSubFlow: event.isSubFlow,
+      );
       onLoadingStatusChanged(displayLoading: false);
       final additionalData = response["additionalData"];
       onTransitionSuccess(
@@ -79,7 +82,7 @@ class NeoTransitionListenerBloc extends Bloc<NeoTransitionListenerEvent, NeoTran
           viewSource: response["view-source"],
           initialData: additionalData is Map ? additionalData.cast() : {"data": additionalData},
           transitionId: (response["transition"] as List?)?.firstOrNull["transition"] ?? "",
-          workflowSuffix: event.suffix,
+          queryParameters: event.queryParameters,
         ),
       );
     } catch (e) {
