@@ -13,7 +13,6 @@
 import 'package:equatable/equatable.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:get_it/get_it.dart';
 import 'package:neo_core/core/navigation/models/ekyc_event_data.dart';
 import 'package:neo_core/core/navigation/models/neo_navigation_type.dart';
 import 'package:neo_core/core/navigation/models/signalr_transition_data.dart';
@@ -73,6 +72,10 @@ class NeoTransitionListenerBloc extends Bloc<NeoTransitionListenerEvent, NeoTran
       );
       onLoadingStatusChanged(displayLoading: false);
       final additionalData = response["additionalData"];
+      final instanceId = response["instanceId"];
+      if (instanceId != null && instanceId is String) {
+        currentWorkflowManager(isSubFlow: event.isSubFlow).setInstanceId(instanceId);
+      }
       onTransitionSuccess(
         SignalrTransitionData(
           navigationPath: response["init-page-name"],
@@ -99,7 +102,7 @@ class NeoTransitionListenerBloc extends Bloc<NeoTransitionListenerEvent, NeoTran
       final transitionResponse = await postTransition(event.transitionName, event.body, isSubFlow: event.isSubFlow);
       await _retrieveTokenIfExist(transitionResponse);
       onLoadingStatusChanged(displayLoading: false);
-      await _handleTransitionResult(ongoingTransition: transitionResponse);
+      await _handleTransitionResult(ongoingTransition: transitionResponse, isSubFlow: event.isSubFlow);
     } catch (e) {
       onLoadingStatusChanged(displayLoading: false);
       onTransitionError?.call(const NeoError());
@@ -117,13 +120,16 @@ class NeoTransitionListenerBloc extends Bloc<NeoTransitionListenerEvent, NeoTran
     }
   }
 
-  Future<void> _handleTransitionResult({required NeoSignalRTransition ongoingTransition}) async {
+  Future<void> _handleTransitionResult({
+    required NeoSignalRTransition ongoingTransition,
+    required bool isSubFlow,
+  }) async {
     final navigationPath = ongoingTransition.pageDetails["pageRoute"]?["label"] as String?;
     final navigationType = ongoingTransition.pageDetails["type"] as String?;
     final isBackNavigation = ongoingTransition.buttonType == "Back";
     final transitionId = ongoingTransition.transitionId;
     final isEkyc = ongoingTransition.additionalData != null && ongoingTransition.additionalData?["isEkyc"] == true;
-    _handleRedirectionSettings(ongoingTransition);
+    _handleRedirectionSettings(ongoingTransition, isSubFlow: isSubFlow);
     if (isEkyc) {
       onEkycEvent(
         EkycEventData(
@@ -152,10 +158,10 @@ class NeoTransitionListenerBloc extends Bloc<NeoTransitionListenerEvent, NeoTran
     }
   }
 
-  void _handleRedirectionSettings(NeoSignalRTransition ongoingTransition) {
+  void _handleRedirectionSettings(NeoSignalRTransition ongoingTransition, {required bool isSubFlow}) {
     final redirectedWorkflowId = ongoingTransition.additionalData?["amorphieWorkFlowId"];
     if (ongoingTransition.statusCode == HttpStatus.permanentRedirect.toString() && redirectedWorkflowId != null) {
-      GetIt.I.get<NeoWorkflowManager>().setInstanceId(redirectedWorkflowId);
+      currentWorkflowManager(isSubFlow: isSubFlow).setInstanceId(redirectedWorkflowId);
     }
   }
 
