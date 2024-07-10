@@ -56,19 +56,19 @@ class NeoTransitionListenerEventInit extends NeoTransitionListenerEvent {
 
 class NeoTransitionListenerEventInitWorkflow extends NeoTransitionListenerEvent {
   final String workflowName;
-  final String? suffix;
+  final Map<String, dynamic>? queryParameters;
   final bool displayLoading;
   final bool isSubFlow;
 
   NeoTransitionListenerEventInitWorkflow({
     required this.workflowName,
-    this.suffix,
+    this.queryParameters,
     this.isSubFlow = false,
     this.displayLoading = true,
   });
 
   @override
-  List<Object?> get props => [workflowName, suffix, isSubFlow, displayLoading];
+  List<Object?> get props => [workflowName, queryParameters, isSubFlow, displayLoading];
 }
 
 class NeoTransitionListenerEventPostTransition extends NeoTransitionListenerEvent {

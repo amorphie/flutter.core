@@ -61,12 +61,15 @@ mixin NeoTransitionBus on Bloc<NeoTransitionListenerEvent, NeoTransitionListener
 
   Future<Map<String, dynamic>> initWorkflow({
     required String workflowName,
-    String? suffix,
+    Map<String, dynamic>? queryParameters,
     String? instanceId,
     bool isSubFlow = false,
   }) {
     if (instanceId == null) {
-      return currentWorkflowManager(isSubFlow: isSubFlow).initWorkflow(workflowName: workflowName, suffix: suffix);
+      return currentWorkflowManager(isSubFlow: isSubFlow).initWorkflow(
+        workflowName: workflowName,
+        queryParameters: queryParameters,
+      );
     } else {
       return currentWorkflowManager(isSubFlow: isSubFlow).getAvailableTransitions(instanceId: instanceId);
     }
