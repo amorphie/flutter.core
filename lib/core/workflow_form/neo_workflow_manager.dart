@@ -12,7 +12,6 @@ abstract class _Constants {
   static const pathParameterWorkflowName = "WORKFLOW_NAME";
   static const pathParameterInstanceId = "INSTANCE_ID";
   static const queryParameterInstanceId = "InstanceId";
-  static const queryParameterSuffix = "suffix";
 }
 
 class NeoWorkflowManager {
@@ -32,13 +31,13 @@ class NeoWorkflowManager {
 
   String get instanceId => _instanceId;
 
-  Future<Map<String, dynamic>> initWorkflow({required String workflowName, String? suffix}) async {
+  Future<Map<String, dynamic>> initWorkflow({required String workflowName, Map<String, dynamic>? queryParameters}) async {
     NeoWorkflowManager.workflowName = workflowName;
     resetInstanceId();
 
     final List<HttpQueryProvider> queryProviders = [];
-    if (suffix != null) {
-      queryProviders.add(HttpQueryProvider({_Constants.queryParameterSuffix: suffix}));
+    if (queryParameters != null) {
+      queryProviders.add(HttpQueryProvider(queryParameters));
     }
 
     final response = await neoNetworkManager.call(
