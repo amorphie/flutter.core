@@ -1,6 +1,6 @@
 enum NeoAdjustEvent {
   // STOPSHIP: Update event id from Adjust panel when event created
-  neoLoginSuccess("testId");
+  loginSuccess("testId");
 
   const NeoAdjustEvent(this.id);
   final String id;
