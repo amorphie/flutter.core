@@ -43,9 +43,10 @@ dependencies:
   flutter_local_notifications: ^16.2.0
   firebase_messaging: ^14.7.9
 
-  # Posthog
+  # Analytics
   posthog_flutter: ^3.3.0
   logger: ^2.2.0
+  adjust_sdk: ^4.38.1
 
 dependency_overrides:
   uuid: ^4.1.0 # Delete this overrides when signalr_netcore package is updated
