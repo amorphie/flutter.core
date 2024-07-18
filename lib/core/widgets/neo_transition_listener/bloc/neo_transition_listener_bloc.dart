@@ -10,6 +10,7 @@
  * Any reproduction of this material must contain this notice.
  */
 
+import 'package:bloc_concurrency/bloc_concurrency.dart';
 import 'package:equatable/equatable.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -26,7 +27,6 @@ import 'package:neo_core/core/workflow_form/neo_workflow_manager.dart';
 import 'package:universal_io/io.dart';
 
 part 'neo_transition_listener_event.dart';
-
 part 'neo_transition_listener_state.dart';
 
 class NeoTransitionListenerBloc extends Bloc<NeoTransitionListenerEvent, NeoTransitionListenerState>
@@ -38,10 +38,23 @@ class NeoTransitionListenerBloc extends Bloc<NeoTransitionListenerEvent, NeoTran
   late final Function({required bool isTwoFactorAuthenticated})? onLoggedInSuccessfully;
   late final Function({required bool displayLoading}) onLoadingStatusChanged;
 
-  NeoTransitionListenerBloc() : super(NeoTransitionListenerState()) {
+  /// Determines whether multiple transitions can occur at the same time.
+  ///
+  /// If [allowParallelTransitions] is set to false, transition event is
+  /// triggered while another transition event is still being processed,
+  /// the new transition request will be dropped and will not be processed.
+  final bool allowParallelTransitions;
+
+  NeoTransitionListenerBloc({this.allowParallelTransitions = false}) : super(NeoTransitionListenerState()) {
     on<NeoTransitionListenerEventInit>((event, emit) => _onInit(event));
-    on<NeoTransitionListenerEventInitWorkflow>((event, emit) => _onInitWorkflow(event));
-    on<NeoTransitionListenerEventPostTransition>((event, emit) => _onPostTransition(event));
+    on<NeoTransitionListenerEventInitWorkflow>(
+      (event, emit) => _onInitWorkflow(event),
+      transformer: allowParallelTransitions ? null : droppable(),
+    );
+    on<NeoTransitionListenerEventPostTransition>(
+      (event, emit) => _onPostTransition(event),
+      transformer: allowParallelTransitions ? null : droppable(),
+    );
   }
 
   Future<void> _onInit(NeoTransitionListenerEventInit event) async {
