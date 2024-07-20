@@ -35,13 +35,15 @@ class NeoCoreFirebaseMessaging extends StatefulWidget {
   final String? androidDefaultIcon;
   final Function(String)? onDeeplinkNavigation;
 
+  static FirebaseMessaging get firebaseMessaging => _firebaseMessaging;
+
+  static final FirebaseMessaging _firebaseMessaging = FirebaseMessaging.instance;
+
   @override
   State<NeoCoreFirebaseMessaging> createState() => _NeoCoreFirebaseMessagingState();
 }
 
 class _NeoCoreFirebaseMessagingState extends State<NeoCoreFirebaseMessaging> {
-  late FirebaseMessaging _firebaseMessaging;
-
   final _androidChannel = const AndroidNotificationChannel(
     _Constant.androidNotificationChannelID,
     _Constant.androidNotificationChannelName,
@@ -60,7 +62,6 @@ class _NeoCoreFirebaseMessagingState extends State<NeoCoreFirebaseMessaging> {
     if (kIsWeb) {
       return;
     }
-    _firebaseMessaging = FirebaseMessaging.instance;
     _initNotifications();
     _initPushNotifications();
     if (Platform.isAndroid) {
@@ -69,13 +70,11 @@ class _NeoCoreFirebaseMessagingState extends State<NeoCoreFirebaseMessaging> {
   }
 
   Future<void> _initNotifications() async {
-    await _firebaseMessaging.requestPermission();
-
     final token = await _getTokenBasedOnPlatform();
     if (token != null) {
       _onTokenChange(token);
     }
-    _firebaseMessaging.onTokenRefresh.listen(_onTokenChange);
+    NeoCoreFirebaseMessaging.firebaseMessaging.onTokenRefresh.listen(_onTokenChange);
   }
 
   void _onTokenChange(String token) {
@@ -83,10 +82,11 @@ class _NeoCoreFirebaseMessagingState extends State<NeoCoreFirebaseMessaging> {
   }
 
   Future<void> _initPushNotifications() async {
-    await _firebaseMessaging.setForegroundNotificationPresentationOptions(alert: true, badge: true, sound: true);
+    await NeoCoreFirebaseMessaging.firebaseMessaging
+        .setForegroundNotificationPresentationOptions(alert: true, badge: true, sound: true);
 
     // Get any messages which caused the application to open from a terminated state.
-    await _firebaseMessaging.getInitialMessage().then(_handleMessage);
+    await NeoCoreFirebaseMessaging.firebaseMessaging.getInitialMessage().then(_handleMessage);
 
     // Also handle any interaction when the app is in the background via Stream listener
     FirebaseMessaging.onMessageOpenedApp.listen(_handleMessage);
@@ -143,9 +143,9 @@ class _NeoCoreFirebaseMessagingState extends State<NeoCoreFirebaseMessaging> {
     if (kIsWeb) {
       return null;
     } else if (Platform.isIOS) {
-      token = await _firebaseMessaging.getAPNSToken();
+      token = await NeoCoreFirebaseMessaging.firebaseMessaging.getAPNSToken();
     } else if (Platform.isAndroid) {
-      token = await _firebaseMessaging.getToken();
+      token = await NeoCoreFirebaseMessaging.firebaseMessaging.getToken();
     }
     return token;
   }
