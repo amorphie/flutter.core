@@ -258,11 +258,11 @@ class NeoNetworkManager {
           "[NeoNetworkManager]: Service call failed! Status code: ${response.statusCode}.Endpoint: ${call.endpoint}",
         );
         if (e is NeoException) {
-          onRequestFailed?.call(e.error, call.endpoint);
+          onRequestFailed?.call(e.error, call.requestId ?? call.endpoint);
           rethrow;
         } else {
           final error = NeoError(responseCode: response.statusCode);
-          onRequestFailed?.call(error, call.endpoint);
+          onRequestFailed?.call(error, call.requestId ?? call.endpoint);
           throw NeoException(error: error);
         }
       }
