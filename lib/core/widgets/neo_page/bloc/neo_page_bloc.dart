@@ -12,14 +12,17 @@ abstract class _Constants {
 
 class NeoPageBloc extends Bloc<NeoPageEvent, NeoPageState> {
   final GlobalKey<FormState> formKey = GlobalKey<FormState>();
-  final Map<String, dynamic> _formInitialData = {};
-  final Map<String, dynamic> _formData = {};
+  final Map<String, dynamic> _formInitialData;
+  final Map<String, dynamic> _formData;
 
   bool isStateChanged() => !const DeepCollectionEquality.unordered().equals(_formInitialData, _formData);
 
   Map<String, dynamic> get formData => _formData;
 
-  NeoPageBloc() : super(const NeoPageState()) {
+  NeoPageBloc({Map<String, dynamic> initialPageData = const {}})
+      : _formInitialData = initialPageData,
+        _formData = initialPageData,
+        super(const NeoPageState()) {
     on<NeoPageEventResetForm>((event, emit) {
       formKey.currentState?.reset();
     });
