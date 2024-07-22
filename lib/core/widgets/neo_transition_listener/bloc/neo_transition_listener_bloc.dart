@@ -107,7 +107,7 @@ class NeoTransitionListenerBloc extends Bloc<NeoTransitionListenerEvent, NeoTran
           navigationType: NeoNavigationType.push,
           pageId: response["state"],
           viewSource: response["view-source"],
-          initialData: {"data": additionalData},
+          initialData: additionalData is Map ? additionalData.cast() : {"data": additionalData},
           transitionId: (response["transition"] as List?)?.firstOrNull["transition"] ?? "",
           queryParameters: event.queryParameters,
         ),
