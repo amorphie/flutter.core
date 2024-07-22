@@ -144,7 +144,7 @@ class NeoLogger implements INeoLogger {
     _neoElastic.logCustom(
       exception,
       Level.fatal.toString(),
-      parameters: {"stackTrace": stackTrace}..addAll(parameters ?? {}),
+      parameters: {"stackTrace": stackTrace.toString()}..addAll(parameters ?? {}),
     );
   }
 
