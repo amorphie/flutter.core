@@ -19,6 +19,8 @@ import 'package:neo_core/core/network/query_providers/http_query_provider.dart';
 class NeoHttpCall extends Equatable {
   final String endpoint;
 
+  final String? requestId;
+
   final Map<String, dynamic> body;
 
   final Map<String, String>? pathParameters;
@@ -34,10 +36,11 @@ class NeoHttpCall extends Equatable {
   int? get retryCount => _retryCount;
 
   @override
-  List<Object?> get props => [endpoint, body, pathParameters, queryProviders, useHttps];
+  List<Object?> get props => [requestId, endpoint, body, pathParameters, queryProviders, useHttps];
 
   NeoHttpCall({
     required this.endpoint,
+    this.requestId,
     this.body = const {},
     this.queryProviders = const [],
     this.useHttps = true,
