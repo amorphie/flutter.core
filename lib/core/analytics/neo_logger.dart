@@ -136,7 +136,7 @@ class NeoLogger implements INeoLogger {
   }
 
   @override
-  void logException(dynamic exception, StackTrace stackTrace, Map<String, dynamic> parameters) {
+  void logException(dynamic exception, StackTrace stackTrace, {Map<String, dynamic>? parameters}) {
     if (kIsWeb) {
       return;
     }
@@ -144,7 +144,7 @@ class NeoLogger implements INeoLogger {
     _neoElastic.logCustom(
       exception,
       Level.fatal.toString(),
-      parameters: parameters..addAll({"stackTrace": stackTrace}),
+      parameters: {"stackTrace": stackTrace}..addAll(parameters ?? {}),
     );
   }
 
