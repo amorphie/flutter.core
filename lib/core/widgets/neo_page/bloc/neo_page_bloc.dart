@@ -2,8 +2,10 @@ import 'package:collection/collection.dart';
 import 'package:equatable/equatable.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:json_dynamic_widget/json_dynamic_widget.dart';
 
 part 'neo_page_event.dart';
+
 part 'neo_page_state.dart';
 
 abstract class _Constants {
@@ -11,6 +13,8 @@ abstract class _Constants {
 }
 
 class NeoPageBloc extends Bloc<NeoPageEvent, NeoPageState> {
+  final JsonWidgetRegistry jsonWidgetRegistry;
+
   final GlobalKey<FormState> formKey = GlobalKey<FormState>();
   final Map<String, dynamic> _formInitialData;
   final Map<String, dynamic> _formData;
@@ -19,7 +23,7 @@ class NeoPageBloc extends Bloc<NeoPageEvent, NeoPageState> {
 
   Map<String, dynamic> get formData => _formData;
 
-  NeoPageBloc({Map<String, dynamic>? initialPageData})
+  NeoPageBloc({required this.jsonWidgetRegistry, Map<String, dynamic>? initialPageData})
       : _formInitialData = initialPageData ??  {},
         _formData = initialPageData ??  {},
         super(const NeoPageState()) {
