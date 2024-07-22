@@ -1,6 +1,5 @@
 import 'package:collection/collection.dart';
 import 'package:equatable/equatable.dart';
-import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:json_dynamic_widget/json_dynamic_widget.dart';
 
@@ -24,8 +23,8 @@ class NeoPageBloc extends Bloc<NeoPageEvent, NeoPageState> {
   Map<String, dynamic> get formData => _formData;
 
   NeoPageBloc({required this.jsonWidgetRegistry, Map<String, dynamic>? initialPageData})
-      : _formInitialData = initialPageData ??  {},
-        _formData = initialPageData ??  {},
+      : _formInitialData = initialPageData ?? {},
+        _formData = initialPageData ?? {},
         super(const NeoPageState()) {
     on<NeoPageEventResetForm>((event, emit) {
       formKey.currentState?.reset();
