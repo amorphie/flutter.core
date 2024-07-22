@@ -19,9 +19,9 @@ class NeoPageBloc extends Bloc<NeoPageEvent, NeoPageState> {
 
   Map<String, dynamic> get formData => _formData;
 
-  NeoPageBloc({Map<String, dynamic> initialPageData = const {}})
-      : _formInitialData = initialPageData,
-        _formData = initialPageData,
+  NeoPageBloc({Map<String, dynamic>? initialPageData})
+      : _formInitialData = initialPageData ??  {},
+        _formData = initialPageData ??  {},
         super(const NeoPageState()) {
     on<NeoPageEventResetForm>((event, emit) {
       formKey.currentState?.reset();
