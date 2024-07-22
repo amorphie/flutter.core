@@ -132,6 +132,7 @@ class NeoLogger implements INeoLogger {
       return;
     }
     _neoCrashlytics?.logError(message);
+    _neoElastic.logCustom(message, Level.error.toString());
   }
 
   @override
@@ -140,6 +141,7 @@ class NeoLogger implements INeoLogger {
       return;
     }
     _neoCrashlytics?.logException(exception, stackTrace);
+    _neoElastic.logCustom(exception, Level.fatal.toString(), parameters: {"stackTrace": stackTrace});
   }
 
   @override
