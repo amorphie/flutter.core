@@ -97,8 +97,7 @@ class NeoTransitionListenerBloc extends Bloc<NeoTransitionListenerEvent, NeoTran
       onTransitionSuccess(
         SignalrTransitionData(
           navigationPath: response["init-page-name"],
-          // STOPSHIP: Get from API
-          navigationType: NeoNavigationType.push,
+          navigationType: NeoNavigationType.fromJson(response["navigation"]) ?? NeoNavigationType.push,
           pageId: response["state"],
           viewSource: response["view-source"],
           initialData: additionalData is Map ? additionalData.cast() : {"data": additionalData},
