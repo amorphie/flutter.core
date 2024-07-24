@@ -84,7 +84,12 @@ class NeoTransitionListenerBloc extends Bloc<NeoTransitionListenerEvent, NeoTran
         isSubFlow: event.isSubFlow,
       );
       onLoadingStatusChanged(displayLoading: false);
-      final additionalData = response["additionalData"];
+
+      final additionalData = response["additionalData"] ?? {};
+      if (additionalData is Map) {
+        additionalData.addAll(event.initialData ?? {});
+      }
+
       final instanceId = response["instanceId"];
       if (instanceId != null && instanceId is String) {
         currentWorkflowManager(isSubFlow: event.isSubFlow).setInstanceId(instanceId);
