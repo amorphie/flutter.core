@@ -16,7 +16,6 @@ import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
 import 'package:logger/logger.dart';
 import 'package:neo_core/core/analytics/i_neo_logger.dart';
-import 'package:neo_core/core/analytics/neo_adjust/events/neo_adjust_events.dart';
 import 'package:neo_core/core/analytics/neo_adjust/neo_adjust.dart';
 import 'package:neo_core/core/analytics/neo_crashlytics.dart';
 import 'package:neo_core/core/analytics/neo_elastic.dart';
@@ -114,10 +113,9 @@ class NeoLogger implements INeoLogger {
     }
 
     if (logTypes.contains(NeoAnalytics.adjust)) {
-      final NeoAdjustEvent? adjustEvent = NeoAdjustEvent.getAdjustEventFromString(message);
-
-      if (adjustEvent != null) {
-        _neoAdjust.logEvent(adjustEvent);
+      final String? eventId = message;
+      if (eventId != null) {
+        _neoAdjust.logEvent(eventId);
       }
     }
   }

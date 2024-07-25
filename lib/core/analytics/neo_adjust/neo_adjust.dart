@@ -2,7 +2,6 @@ import 'package:adjust_sdk/adjust.dart';
 import 'package:adjust_sdk/adjust_config.dart';
 import 'package:adjust_sdk/adjust_event.dart';
 import 'package:flutter/foundation.dart';
-import 'package:neo_core/core/analytics/neo_adjust/events/neo_adjust_events.dart';
 import 'package:neo_core/neo_core.dart';
 
 class NeoAdjust {
@@ -18,7 +17,7 @@ class NeoAdjust {
     Adjust.start(adjustConfig);
   }
 
-  void logEvent(NeoAdjustEvent event) {
-    Adjust.trackEvent(AdjustEvent(event.id));
+  void logEvent(String eventId) {
+    Adjust.trackEvent(AdjustEvent(eventId));
   }
 }
