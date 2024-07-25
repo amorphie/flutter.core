@@ -19,6 +19,7 @@ import 'package:neo_core/core/analytics/i_neo_logger.dart';
 import 'package:neo_core/core/analytics/neo_adjust.dart';
 import 'package:neo_core/core/analytics/neo_crashlytics.dart';
 import 'package:neo_core/core/analytics/neo_elastic.dart';
+import 'package:neo_core/core/analytics/neo_logger_type.dart';
 import 'package:neo_core/core/analytics/neo_posthog.dart';
 import 'package:neo_core/core/network/models/neo_page_type.dart';
 import 'package:neo_core/core/util/device_util/device_util.dart';
@@ -29,13 +30,6 @@ abstract class _Constants {
   static const criticalBuildingDurationInMilliseconds = 1000;
   static const eventNameAdjustInitSucceed = "[NeoAdjust]: init is succeed!";
   static const eventNameAdjustInitFailed = "[NeoAdjust]: init is failed!";
-}
-
-enum NeoAnalytics {
-  adjust,
-  posthog,
-  elastic,
-  logger,
 }
 
 class NeoLogger implements INeoLogger {
@@ -58,11 +52,11 @@ class NeoLogger implements INeoLogger {
   factory NeoLogger() => _instance;
   NeoLogger._internal();
 
-  static const List<NeoAnalytics> defaultAnalytics = [
-    NeoAnalytics.adjust,
-    NeoAnalytics.posthog,
-    NeoAnalytics.elastic,
-    NeoAnalytics.logger,
+  static const List<NeoLoggerType> defaultAnalytics = [
+    NeoLoggerType.adjust,
+    NeoLoggerType.posthog,
+    NeoLoggerType.elastic,
+    NeoLoggerType.logger,
   ];
 
   Future<void> init({required String? adjustAppToken, bool enableLogging = false}) async {
@@ -79,7 +73,7 @@ class NeoLogger implements INeoLogger {
         await _neoAdjust.init(appToken: adjustAppToken);
         logCustom(
           _Constants.eventNameAdjustInitSucceed,
-          logTypes: [NeoAnalytics.posthog, NeoAnalytics.logger],
+          logTypes: [NeoLoggerType.posthog, NeoLoggerType.logger],
         );
       } on Exception catch (e, stacktrace) {
         logException("${_Constants.eventNameAdjustInitFailed} $e", stacktrace);
@@ -93,20 +87,20 @@ class NeoLogger implements INeoLogger {
   void logCustom(
     dynamic message, {
     Level logLevel = Level.info,
-    List<NeoAnalytics> logTypes = defaultAnalytics,
+    List<NeoLoggerType> logTypes = defaultAnalytics,
     Map<String, dynamic>? properties,
     Map<String, dynamic>? options,
   }) {
-    if (logTypes.contains(NeoAnalytics.logger)) {
+    if (logTypes.contains(NeoLoggerType.logger)) {
       _logger.log(logLevel, message);
     }
-    if (logTypes.contains(NeoAnalytics.elastic)) {
+    if (logTypes.contains(NeoLoggerType.elastic)) {
       _neoElastic.logCustom(message, logLevel.name, parameters: properties);
     }
-    if (logTypes.contains(NeoAnalytics.posthog)) {
+    if (logTypes.contains(NeoLoggerType.posthog)) {
       _neoPosthog.logEvent(message, properties: properties, options: options);
     }
-    if (logTypes.contains(NeoAnalytics.adjust)) {
+    if (logTypes.contains(NeoLoggerType.adjust)) {
       final String? eventId = message;
       if (eventId != null) {
         _neoAdjust.logEvent(eventId);
@@ -147,14 +141,14 @@ class NeoLogger implements INeoLogger {
         message,
         logLevel: Level.warning,
         properties: parameters,
-        logTypes: [NeoAnalytics.logger, NeoAnalytics.elastic],
+        logTypes: [NeoLoggerType.logger, NeoLoggerType.elastic],
       );
     } else {
       logCustom(
         message,
         logLevel: Level.trace,
         properties: parameters,
-        logTypes: [NeoAnalytics.logger, NeoAnalytics.elastic],
+        logTypes: [NeoLoggerType.logger, NeoLoggerType.elastic],
       );
     }
   }
@@ -175,7 +169,7 @@ class NeoLogger implements INeoLogger {
       return;
     }
     _neoCrashlytics?.logError(message);
-    logCustom(message, logLevel: Level.error, logTypes: [NeoAnalytics.elastic]);
+    logCustom(message, logLevel: Level.error, logTypes: [NeoLoggerType.elastic]);
   }
 
   @override
@@ -184,7 +178,7 @@ class NeoLogger implements INeoLogger {
       return;
     }
     _neoCrashlytics?.logException(exception, stackTrace);
-    logCustom(exception, logLevel: Level.fatal, properties: parameters, logTypes: [NeoAnalytics.elastic]);
+    logCustom(exception, logLevel: Level.fatal, properties: parameters, logTypes: [NeoLoggerType.elastic]);
   }
 
   @override

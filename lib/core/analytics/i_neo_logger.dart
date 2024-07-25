@@ -14,7 +14,7 @@
 
 import 'package:flutter/material.dart';
 import 'package:logger/logger.dart';
-import 'package:neo_core/core/analytics/neo_logger.dart';
+import 'package:neo_core/core/analytics/neo_logger_type.dart';
 import 'package:neo_core/core/network/models/neo_page_type.dart';
 
 abstract class INeoLogger {
@@ -30,7 +30,7 @@ abstract class INeoLogger {
   void logCustom(
     dynamic message, {
     Level logLevel,
-    List<NeoAnalytics> logTypes,
+    List<NeoLoggerType> logTypes,
     Map<String, dynamic>? properties,
     Map<String, dynamic>? options,
   });

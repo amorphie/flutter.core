@@ -14,6 +14,7 @@ import 'dart:async';
 
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:neo_core/core/analytics/neo_logger.dart';
+import 'package:neo_core/core/analytics/neo_logger_type.dart';
 import 'package:neo_core/core/feature_flags/neo_feature_flag_util.dart';
 import 'package:neo_core/core/network/neo_network.dart';
 import 'package:neo_core/core/widgets/neo_transition_listener/bloc/neo_transition_listener_bloc.dart';
@@ -151,7 +152,7 @@ mixin NeoTransitionBus on Bloc<NeoTransitionListenerEvent, NeoTransitionListener
     }
     _neoLogger.logCustom(
       "[NeoTransitionListener]: No transition event within ${_Constants.signalrTimeOutDuration.inSeconds} seconds! Retrieving last event by long polling...",
-      logTypes: [NeoAnalytics.posthog],
+      logTypes: [NeoLoggerType.posthog],
     );
 
     try {
@@ -169,7 +170,7 @@ mixin NeoTransitionBus on Bloc<NeoTransitionListenerEvent, NeoTransitionListener
     } catch (e) {
       _neoLogger.logCustom(
         "[NeoTransitionListener]: Retrieving last event by long polling is failed!",
-        logTypes: [NeoAnalytics.posthog],
+        logTypes: [NeoLoggerType.posthog],
       );
       if (!completer.isCompleted) {
         completer.completeError(const NeoError());

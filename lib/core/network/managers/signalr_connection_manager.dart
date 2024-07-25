@@ -17,6 +17,7 @@ import 'package:collection/collection.dart';
 import 'package:flutter/foundation.dart' show kDebugMode;
 import 'package:flutter/material.dart';
 import 'package:neo_core/core/analytics/neo_logger.dart';
+import 'package:neo_core/core/analytics/neo_logger_type.dart';
 import 'package:neo_core/core/network/models/neo_signalr_transition.dart';
 import 'package:signalr_netcore/signalr_client.dart';
 
@@ -53,19 +54,19 @@ class SignalrConnectionManager {
     _hubConnection?.onclose(({error}) {
       _neoLogger.logCustom(
         _Constants.eventNameSignalrOnClose,
-        logTypes: [NeoAnalytics.posthog, NeoAnalytics.logger],
+        logTypes: [NeoLoggerType.posthog, NeoLoggerType.logger],
       );
     });
     _hubConnection?.onreconnecting(({error}) {
       _neoLogger.logCustom(
         _Constants.eventNameSignalrOnReconnecting,
-        logTypes: [NeoAnalytics.posthog, NeoAnalytics.logger],
+        logTypes: [NeoLoggerType.posthog, NeoLoggerType.logger],
       );
     });
     _hubConnection?.onreconnected(({connectionId}) {
       _neoLogger.logCustom(
         _Constants.eventNameSignalrOnReconnected,
-        logTypes: [NeoAnalytics.posthog, NeoAnalytics.logger],
+        logTypes: [NeoLoggerType.posthog, NeoLoggerType.logger],
       );
     });
 
@@ -74,7 +75,7 @@ class SignalrConnectionManager {
         await _hubConnection?.start();
         _neoLogger.logCustom(
           _Constants.eventNameSignalrInitSucceed,
-          logTypes: [NeoAnalytics.posthog, NeoAnalytics.logger],
+          logTypes: [NeoLoggerType.posthog, NeoLoggerType.logger],
         );
         debugPrint(_Constants.eventNameSignalrInitSucceed);
       } on Exception catch (e, stacktrace) {
