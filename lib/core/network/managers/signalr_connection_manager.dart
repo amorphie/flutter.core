@@ -51,22 +51,31 @@ class SignalrConnectionManager {
     )
         .withAutomaticReconnect(retryDelays: [2000, 5000, 10000, 20000]).build();
     _hubConnection?.onclose(({error}) {
-      _neoLogger.logEvent(_Constants.eventNameSignalrOnClose);
-      debugPrint(_Constants.eventNameSignalrOnClose);
+      _neoLogger.logCustom(
+        _Constants.eventNameSignalrOnClose,
+        logTypes: [NeoAnalytics.posthog, NeoAnalytics.logger],
+      );
     });
     _hubConnection?.onreconnecting(({error}) {
-      _neoLogger.logEvent(_Constants.eventNameSignalrOnReconnecting);
-      debugPrint(_Constants.eventNameSignalrOnReconnecting);
+      _neoLogger.logCustom(
+        _Constants.eventNameSignalrOnReconnecting,
+        logTypes: [NeoAnalytics.posthog, NeoAnalytics.logger],
+      );
     });
     _hubConnection?.onreconnected(({connectionId}) {
-      _neoLogger.logEvent(_Constants.eventNameSignalrOnReconnected);
-      debugPrint(_Constants.eventNameSignalrOnReconnected);
+      _neoLogger.logCustom(
+        _Constants.eventNameSignalrOnReconnected,
+        logTypes: [NeoAnalytics.posthog, NeoAnalytics.logger],
+      );
     });
 
     if (_hubConnection?.state != HubConnectionState.Connected) {
       try {
         await _hubConnection?.start();
-        _neoLogger.logEvent(_Constants.eventNameSignalrInitSucceed);
+        _neoLogger.logCustom(
+          _Constants.eventNameSignalrInitSucceed,
+          logTypes: [NeoAnalytics.posthog, NeoAnalytics.logger],
+        );
         debugPrint(_Constants.eventNameSignalrInitSucceed);
       } on Exception catch (e, stacktrace) {
         _neoLogger.logException("${_Constants.eventNameSignalrInitFailed} $e", stacktrace);

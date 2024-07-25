@@ -16,6 +16,8 @@ import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
 import 'package:logger/logger.dart';
 import 'package:neo_core/core/analytics/i_neo_logger.dart';
+import 'package:neo_core/core/analytics/neo_adjust/events/neo_adjust_events.dart';
+import 'package:neo_core/core/analytics/neo_adjust/neo_adjust.dart';
 import 'package:neo_core/core/analytics/neo_crashlytics.dart';
 import 'package:neo_core/core/analytics/neo_elastic.dart';
 import 'package:neo_core/core/analytics/neo_posthog.dart';
@@ -28,6 +30,13 @@ abstract class _Constants {
   static const criticalBuildingDurationInMilliseconds = 1000;
 }
 
+enum NeoAnalytics {
+  adjust,
+  posthog,
+  elastic,
+  logger,
+}
+
 class NeoLogger implements INeoLogger {
   static final NeoLogger _instance = NeoLogger._internal();
 
@@ -37,33 +46,70 @@ class NeoLogger implements INeoLogger {
 
   NeoCrashlytics? _neoCrashlytics;
   final DeviceUtil _deviceUtil = DeviceUtil();
+
   final NeoPosthog _neoPosthog = NeoPosthog();
+  final NeoAdjust _neoAdjust = NeoAdjust();
   final NeoElastic _neoElastic = NeoElastic();
   final Logger _logger = Logger(
     printer: PrettyPrinter(printTime: true),
   );
 
-  factory NeoLogger() {
-    return _instance;
-  }
+  factory NeoLogger() => _instance;
 
   NeoLogger._internal();
 
-  Future<void> init({bool enableCrashlytics = false, bool enablePosthog = false}) async {
-    if (Platform.isMacOS || Platform.isWindows) {
+  static const List<NeoAnalytics> defaultAnalytics = [
+    NeoAnalytics.adjust,
+    NeoAnalytics.posthog,
+    NeoAnalytics.elastic,
+    NeoAnalytics.logger,
+  ];
+
+  Future<void> init({required String? adjustAppToken, bool enableLogging = false}) async {
+    if (!enableLogging || Platform.isMacOS || Platform.isWindows) {
       return;
     }
+
     if (!kIsWeb) {
-      if (enableCrashlytics) {
-        _neoCrashlytics = NeoCrashlytics();
-        await _neoCrashlytics?.initializeCrashlytics();
-        await _neoCrashlytics?.setEnabled(enabled: enableCrashlytics);
-      }
+      _neoCrashlytics = NeoCrashlytics();
+      await _neoCrashlytics?.initializeCrashlytics();
+      await _neoCrashlytics?.setEnabled(enabled: true);
     }
 
-    if (enablePosthog) {
-      observers = [PosthogObserver()];
-      await _neoPosthog.setEnabled(enabled: enablePosthog);
+    if (adjustAppToken != null) {
+      await _neoAdjust.init(appToken: adjustAppToken);
+    }
+
+    observers = [PosthogObserver()];
+    await _neoPosthog.setEnabled(enabled: true);
+  }
+
+  @override
+  void logCustom(
+    dynamic message, {
+    Level logLevel = Level.info,
+    List<NeoAnalytics> logTypes = defaultAnalytics,
+    Map<String, dynamic>? properties,
+    Map<String, dynamic>? options,
+  }) {
+    if (logTypes.contains(NeoAnalytics.logger)) {
+      _logger.log(logLevel, message);
+    }
+
+    if (logTypes.contains(NeoAnalytics.elastic)) {
+      _neoElastic.logCustom(message, logLevel.name, parameters: properties);
+    }
+
+    if (logTypes.contains(NeoAnalytics.posthog)) {
+      _neoPosthog.logEvent(message, properties: properties, options: options);
+    }
+
+    if (logTypes.contains(NeoAnalytics.adjust)) {
+      final NeoAdjustEvent? adjustEvent = NeoAdjustEvent.getAdjustEventFromString(message);
+
+      if (adjustEvent != null) {
+        _neoAdjust.logEvent(adjustEvent);
+      }
     }
   }
 
@@ -73,12 +119,7 @@ class NeoLogger implements INeoLogger {
   }
 
   @override
-  void logEvent(String eventName, {Map<String, dynamic>? properties, Map<String, dynamic>? options}) {
-    _neoPosthog.logEvent(eventName, properties: properties, options: options);
-  }
-
-  @override
-  void logPageBuildStartingTime(String pageId, NeoPageType pageType) {
+  void setPageBuildStartingTime(String pageId, NeoPageType pageType) {
     final startTime = DateTime.now();
     _timeMap[pageId] = startTime;
   }
@@ -104,16 +145,20 @@ class NeoLogger implements INeoLogger {
     };
 
     if (duration != null && duration.compareTo(_Constants.criticalBuildingDurationInMilliseconds) >= 0) {
-      logCustom(message, Level.warning, parameters: parameters);
+      logCustom(
+        message,
+        logLevel: Level.warning,
+        properties: parameters,
+        logTypes: [NeoAnalytics.logger, NeoAnalytics.elastic],
+      );
     } else {
-      logCustom(message, Level.trace, parameters: parameters);
+      logCustom(
+        message,
+        logLevel: Level.trace,
+        properties: parameters,
+        logTypes: [NeoAnalytics.logger, NeoAnalytics.elastic],
+      );
     }
-  }
-
-  @override
-  void logCustom(dynamic message, Level logLevel, {Map<String, dynamic>? parameters}) {
-    _logger.log(logLevel, message);
-    _neoElastic.logCustom(message, logLevel.name, parameters: parameters);
   }
 
   @override
@@ -132,7 +177,8 @@ class NeoLogger implements INeoLogger {
       return;
     }
     _neoCrashlytics?.logError(message);
-    _neoElastic.logCustom(message, Level.error.toString());
+
+    logCustom(message, logLevel: Level.error, logTypes: [NeoAnalytics.elastic]);
   }
 
   @override
@@ -141,7 +187,7 @@ class NeoLogger implements INeoLogger {
       return;
     }
     _neoCrashlytics?.logException(exception, stackTrace);
-    _neoElastic.logCustom(exception, Level.fatal.toString(), parameters: parameters);
+    logCustom(exception, logLevel: Level.fatal, properties: parameters);
   }
 
   @override

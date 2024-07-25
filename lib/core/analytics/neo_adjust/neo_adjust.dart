@@ -27,7 +27,10 @@ class NeoAdjust {
             ..externalDeviceId = deviceId;
 
       Adjust.start(adjustConfig);
-      _neoLogger.logEvent(_Constants.eventNameAdjustInitSucceed);
+      _neoLogger.logCustom(
+        _Constants.eventNameAdjustInitSucceed,
+        logTypes: [NeoAnalytics.posthog, NeoAnalytics.logger],
+      );
     } on Exception catch (e, stacktrace) {
       _neoLogger.logException("${_Constants.eventNameAdjustInitFailed} $e", stacktrace);
     }

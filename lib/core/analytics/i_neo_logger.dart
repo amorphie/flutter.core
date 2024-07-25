@@ -14,6 +14,7 @@
 
 import 'package:flutter/material.dart';
 import 'package:logger/logger.dart';
+import 'package:neo_core/core/analytics/neo_logger.dart';
 import 'package:neo_core/core/network/models/neo_page_type.dart';
 
 abstract class INeoLogger {
@@ -25,17 +26,17 @@ abstract class INeoLogger {
     Map<String, dynamic>? options,
   });
 
-  void logEvent(
-    String eventName, {
-    Map<String, dynamic>? properties,
-    Map<String, dynamic>? options,
-  });
-
-  void logPageBuildStartingTime(String pageId, NeoPageType pageType);
+  void setPageBuildStartingTime(String pageId, NeoPageType pageType);
 
   void logPageBuildSuccessTime(String pageId, NeoPageType pageType);
 
-  void logCustom(dynamic message, Level logLevel, {Map<String, dynamic>? parameters});
+  void logCustom(
+    dynamic message, {
+    Level logLevel,
+    List<NeoAnalytics> logTypes,
+    Map<String, dynamic>? properties,
+    Map<String, dynamic>? options,
+  });
 
   Future<bool?> isFeatureEnabled(String key);
   Future<void> reloadFeatureFlags();
