@@ -17,6 +17,7 @@ import 'package:collection/collection.dart';
 import 'package:flutter/foundation.dart' show kDebugMode;
 import 'package:flutter/material.dart';
 import 'package:neo_core/core/analytics/neo_logger.dart';
+import 'package:neo_core/core/analytics/neo_logger_type.dart';
 import 'package:neo_core/core/network/models/neo_signalr_transition.dart';
 import 'package:signalr_netcore/signalr_client.dart';
 
@@ -51,22 +52,31 @@ class SignalrConnectionManager {
     )
         .withAutomaticReconnect(retryDelays: [2000, 5000, 10000, 20000]).build();
     _hubConnection?.onclose(({error}) {
-      _neoLogger.logEvent(_Constants.eventNameSignalrOnClose);
-      debugPrint(_Constants.eventNameSignalrOnClose);
+      _neoLogger.logCustom(
+        _Constants.eventNameSignalrOnClose,
+        logTypes: [NeoLoggerType.posthog, NeoLoggerType.logger],
+      );
     });
     _hubConnection?.onreconnecting(({error}) {
-      _neoLogger.logEvent(_Constants.eventNameSignalrOnReconnecting);
-      debugPrint(_Constants.eventNameSignalrOnReconnecting);
+      _neoLogger.logCustom(
+        _Constants.eventNameSignalrOnReconnecting,
+        logTypes: [NeoLoggerType.posthog, NeoLoggerType.logger],
+      );
     });
     _hubConnection?.onreconnected(({connectionId}) {
-      _neoLogger.logEvent(_Constants.eventNameSignalrOnReconnected);
-      debugPrint(_Constants.eventNameSignalrOnReconnected);
+      _neoLogger.logCustom(
+        _Constants.eventNameSignalrOnReconnected,
+        logTypes: [NeoLoggerType.posthog, NeoLoggerType.logger],
+      );
     });
 
     if (_hubConnection?.state != HubConnectionState.Connected) {
       try {
         await _hubConnection?.start();
-        _neoLogger.logEvent(_Constants.eventNameSignalrInitSucceed);
+        _neoLogger.logCustom(
+          _Constants.eventNameSignalrInitSucceed,
+          logTypes: [NeoLoggerType.posthog, NeoLoggerType.logger],
+        );
         debugPrint(_Constants.eventNameSignalrInitSucceed);
       } on Exception catch (e, stacktrace) {
         _neoLogger.logException("${_Constants.eventNameSignalrInitFailed} $e", stacktrace);
