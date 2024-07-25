@@ -19,6 +19,7 @@ class NeoTransitionListenerWidget extends StatelessWidget {
   final Function(NeoError error)? onError;
   final Function({required bool displayLoading}) onLoadingStatusChanged;
   final bool bypassSignalr;
+  final bool allowParallelTransitions;
 
   const NeoTransitionListenerWidget({
     required this.child,
@@ -32,13 +33,14 @@ class NeoTransitionListenerWidget extends StatelessWidget {
     this.onLoggedInSuccessfully,
     this.onError,
     this.bypassSignalr = false,
+    this.allowParallelTransitions = false,
     Key? key,
   }) : super(key: key);
 
   @override
   Widget build(BuildContext context) {
     return BlocProvider(
-      create: (context) => NeoTransitionListenerBloc()
+      create: (context) => NeoTransitionListenerBloc(allowParallelTransitions: allowParallelTransitions)
         ..add(
           NeoTransitionListenerEventInit(
             neoWorkflowManager: neoWorkflowManager,
@@ -54,6 +56,7 @@ class NeoTransitionListenerWidget extends StatelessWidget {
           ),
         ),
       child: BlocBuilder<NeoTransitionListenerBloc, NeoTransitionListenerState>(
+        buildWhen: (previous, current) => false,
         builder: (context, state) {
           return child;
         },

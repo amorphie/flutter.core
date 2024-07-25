@@ -12,6 +12,7 @@
 
 import 'dart:developer';
 
+import 'package:bloc_concurrency/bloc_concurrency.dart';
 import 'package:equatable/equatable.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -39,10 +40,23 @@ class NeoTransitionListenerBloc extends Bloc<NeoTransitionListenerEvent, NeoTran
   late final Function({required bool isTwoFactorAuthenticated})? onLoggedInSuccessfully;
   late final Function({required bool displayLoading}) onLoadingStatusChanged;
 
-  NeoTransitionListenerBloc() : super(NeoTransitionListenerState()) {
+  /// Determines whether multiple transitions can occur at the same time.
+  ///
+  /// If [allowParallelTransitions] is set to false, transition event is
+  /// triggered while another transition event is still being processed,
+  /// the new transition request will be dropped and will not be processed.
+  final bool allowParallelTransitions;
+
+  NeoTransitionListenerBloc({this.allowParallelTransitions = false}) : super(NeoTransitionListenerState()) {
     on<NeoTransitionListenerEventInit>((event, emit) => _onInit(event));
-    on<NeoTransitionListenerEventInitWorkflow>((event, emit) => _onInitWorkflow(event));
-    on<NeoTransitionListenerEventPostTransition>((event, emit) => _onPostTransition(event));
+    on<NeoTransitionListenerEventInitWorkflow>(
+      (event, emit) => _onInitWorkflow(event),
+      transformer: allowParallelTransitions ? null : droppable(),
+    );
+    on<NeoTransitionListenerEventPostTransition>(
+      (event, emit) => _onPostTransition(event),
+      transformer: allowParallelTransitions ? null : droppable(),
+    );
   }
 
   Future<void> _onInit(NeoTransitionListenerEventInit event) async {
@@ -72,7 +86,12 @@ class NeoTransitionListenerBloc extends Bloc<NeoTransitionListenerEvent, NeoTran
         isSubFlow: event.isSubFlow,
       );
       onLoadingStatusChanged(displayLoading: false);
-      final additionalData = response["additionalData"];
+
+      final additionalData = response["additionalData"] ?? {};
+      if (additionalData is Map) {
+        additionalData.addAll(event.initialData ?? {});
+      }
+
       final instanceId = response["instanceId"];
       if (instanceId != null && instanceId is String) {
         currentWorkflowManager(isSubFlow: event.isSubFlow).setInstanceId(instanceId);
@@ -80,8 +99,7 @@ class NeoTransitionListenerBloc extends Bloc<NeoTransitionListenerEvent, NeoTran
       onTransitionSuccess(
         SignalrTransitionData(
           navigationPath: response["init-page-name"],
-          // STOPSHIP: Get from API
-          navigationType: NeoNavigationType.push,
+          navigationType: NeoNavigationType.fromJson(response["navigation"]) ?? NeoNavigationType.push,
           pageId: response["state"],
           viewSource: response["view-source"],
           initialData: additionalData is Map ? additionalData.cast() : {"data": additionalData},
