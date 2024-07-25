@@ -187,7 +187,7 @@ class NeoLogger implements INeoLogger {
       return;
     }
     _neoCrashlytics?.logException(exception, stackTrace);
-    logCustom(exception, logLevel: Level.fatal, properties: parameters);
+    logCustom(exception, logLevel: Level.fatal, properties: parameters, logTypes: [NeoAnalytics.elastic]);
   }
 
   @override
