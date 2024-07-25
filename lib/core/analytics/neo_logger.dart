@@ -16,7 +16,7 @@ import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
 import 'package:logger/logger.dart';
 import 'package:neo_core/core/analytics/i_neo_logger.dart';
-import 'package:neo_core/core/analytics/neo_adjust/neo_adjust.dart';
+import 'package:neo_core/core/analytics/neo_adjust.dart';
 import 'package:neo_core/core/analytics/neo_crashlytics.dart';
 import 'package:neo_core/core/analytics/neo_elastic.dart';
 import 'package:neo_core/core/analytics/neo_posthog.dart';
