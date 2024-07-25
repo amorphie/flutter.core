@@ -28,6 +28,8 @@ import 'package:universal_io/io.dart';
 
 abstract class _Constants {
   static const criticalBuildingDurationInMilliseconds = 1000;
+  static const eventNameAdjustInitSucceed = "[NeoAdjust]: init is succeed!";
+  static const eventNameAdjustInitFailed = "[NeoAdjust]: init is failed!";
 }
 
 enum NeoAnalytics {
@@ -75,9 +77,16 @@ class NeoLogger implements INeoLogger {
       await _neoCrashlytics?.initializeCrashlytics();
       await _neoCrashlytics?.setEnabled(enabled: true);
     }
-
     if (adjustAppToken != null) {
-      await _neoAdjust.init(appToken: adjustAppToken);
+      try {
+        await _neoAdjust.init(appToken: adjustAppToken);
+        logCustom(
+          _Constants.eventNameAdjustInitSucceed,
+          logTypes: [NeoAnalytics.posthog, NeoAnalytics.logger],
+        );
+      } on Exception catch (e, stacktrace) {
+        logException("${_Constants.eventNameAdjustInitFailed} $e", stacktrace);
+      }
     }
 
     observers = [PosthogObserver()];
