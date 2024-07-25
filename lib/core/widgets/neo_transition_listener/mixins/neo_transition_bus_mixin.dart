@@ -149,8 +149,9 @@ mixin NeoTransitionBus on Bloc<NeoTransitionListenerEvent, NeoTransitionListener
     if (completer.isCompleted) {
       return;
     }
-    _neoLogger.logEvent(
+    _neoLogger.logCustom(
       "[NeoTransitionListener]: No transition event within ${_Constants.signalrTimeOutDuration.inSeconds} seconds! Retrieving last event by long polling...",
+      logTypes: [NeoAnalytics.posthog],
     );
 
     try {
@@ -166,7 +167,10 @@ mixin NeoTransitionBus on Bloc<NeoTransitionListenerEvent, NeoTransitionListener
         }
       }
     } catch (e) {
-      _neoLogger.logEvent("[NeoTransitionListener]: Retrieving last event by long polling is failed!");
+      _neoLogger.logCustom(
+        "[NeoTransitionListener]: Retrieving last event by long polling is failed!",
+        logTypes: [NeoAnalytics.posthog],
+      );
       if (!completer.isCompleted) {
         completer.completeError(const NeoError());
       }
