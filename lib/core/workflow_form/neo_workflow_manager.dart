@@ -16,10 +16,11 @@ abstract class _Constants {
 
 class NeoWorkflowManager {
   final NeoNetworkManager neoNetworkManager;
+  final bool enableLogging;
   String _instanceId = const Uuid().v1();
   static String workflowName = "";
 
-  NeoWorkflowManager(this.neoNetworkManager);
+  NeoWorkflowManager(this.neoNetworkManager, {this.enableLogging = true});
 
   void resetInstanceId() {
     _instanceId = const Uuid().v1();
@@ -31,7 +32,8 @@ class NeoWorkflowManager {
 
   String get instanceId => _instanceId;
 
-  Future<Map<String, dynamic>> initWorkflow({required String workflowName, Map<String, dynamic>? queryParameters}) async {
+  Future<Map<String, dynamic>> initWorkflow(
+      {required String workflowName, Map<String, dynamic>? queryParameters}) async {
     NeoWorkflowManager.workflowName = workflowName;
     resetInstanceId();
 
@@ -49,7 +51,9 @@ class NeoWorkflowManager {
         queryProviders: queryProviders,
       ),
     );
-    debugPrint('\n[NeoWorkflowManager] Init Workflow: $response');
+    if (enableLogging) {
+      debugPrint('\n[NeoWorkflowManager] Init Workflow: $response');
+    }
     return response;
   }
 
@@ -63,7 +67,9 @@ class NeoWorkflowManager {
         },
       ),
     );
-    debugPrint('\n[NeoWorkflowManager] Get Transitions: $response');
+    if (enableLogging) {
+      debugPrint('\n[NeoWorkflowManager] Get Transitions: $response');
+    }
     return response;
   }
 

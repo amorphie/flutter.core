@@ -12,6 +12,9 @@ abstract class _Constants {
 }
 
 class NeoPageBloc extends Bloc<NeoPageEvent, NeoPageState> {
+  static const String workflowFormDataJsonKey = "workflowFormData";
+  static const String workflowFormInitialDataJsonKey = "workflowFormInitialData";
+
   final JsonWidgetRegistry jsonWidgetRegistry;
 
   final GlobalKey<FormState> formKey = GlobalKey<FormState>();
@@ -26,15 +29,17 @@ class NeoPageBloc extends Bloc<NeoPageEvent, NeoPageState> {
       : _formInitialData = initialPageData ?? {},
         _formData = initialPageData ?? {},
         super(const NeoPageState()) {
-    on<NeoPageEventResetForm>((event, emit) {
-      formKey.currentState?.reset();
-    });
+    on<NeoPageEventResetForm>((event, emit) => formKey.currentState?.reset());
     on<NeoPageEventAddInitialParameters>((event, emit) {
       _formInitialData.addAll(event.parameters);
       _formData.addAll(event.parameters);
+      jsonWidgetRegistry
+        ..setValue(workflowFormInitialDataJsonKey, event.parameters)
+        ..setValue(workflowFormDataJsonKey, event.parameters);
     });
     on<NeoPageEventAddAllParameters>((event, emit) {
       _formData.addAll(event.parameters);
+      jsonWidgetRegistry.setValue(workflowFormDataJsonKey, event.parameters);
     });
     on<NeoPageEventAddParametersIntoArray>(_onAddParametersIntoArray);
     on<NeoPageEventValidateForm>((event, emit) => formKey.currentState?.validate());
@@ -57,16 +62,18 @@ class NeoPageBloc extends Bloc<NeoPageEvent, NeoPageState> {
     }
 
     _formData[event.sharedDataKey] = currentItemList;
+    jsonWidgetRegistry.setValue(workflowFormDataJsonKey, {event.sharedDataKey: currentItemList});
 
     if (event.isInitialValue) {
       _formInitialData[event.sharedDataKey] = currentItemList;
+      jsonWidgetRegistry.setValue(workflowFormInitialDataJsonKey, {event.sharedDataKey: currentItemList});
     }
   }
 
   Map<String, dynamic> getChangedFormData() {
     final Map<String, dynamic> stateDifference = {};
 
-    for (final entry in formData.entries) {
+    for (final entry in _formData.entries) {
       final key = entry.key;
       final value = entry.value;
 
