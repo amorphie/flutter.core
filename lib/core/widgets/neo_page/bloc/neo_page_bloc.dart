@@ -29,6 +29,10 @@ class NeoPageBloc extends Bloc<NeoPageEvent, NeoPageState> {
       : _formInitialData = initialPageData ?? {},
         _formData = initialPageData ?? {},
         super(const NeoPageState()) {
+    jsonWidgetRegistry
+      ..setValue(workflowFormInitialDataJsonKey, _formInitialData)
+      ..setValue(workflowFormDataJsonKey, _formData);
+
     on<NeoPageEventResetForm>((event, emit) => formKey.currentState?.reset());
     on<NeoPageEventAddInitialParameters>((event, emit) {
       _formInitialData.addAll(event.parameters);
