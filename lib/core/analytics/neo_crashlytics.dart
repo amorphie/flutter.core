@@ -13,7 +13,7 @@
  */
 
 import 'package:firebase_crashlytics/firebase_crashlytics.dart';
-import 'package:flutter/foundation.dart' show kIsWeb, FlutterError, PlatformDispatcher;
+import 'package:flutter/foundation.dart' show FlutterError, PlatformDispatcher;
 
 class NeoCrashlytics {
   final FirebaseCrashlytics _crashlytics = FirebaseCrashlytics.instance;
@@ -40,7 +40,7 @@ class NeoCrashlytics {
   }
 
   Future<void> setEnabled({required bool enabled}) async {
-    await _crashlytics.setCrashlyticsCollectionEnabled(enabled && !kIsWeb);
+    await _crashlytics.setCrashlyticsCollectionEnabled(enabled);
   }
 
   Future<void> sendUnsentReports() async {

@@ -27,8 +27,8 @@ class NeoCore {
   NeoCore._();
 
   static Future init({
-    bool enableCrashlytics = false,
-    bool enablePosthog = false,
+    bool enableLogging = false,
+    String? adjustAppToken,
   }) async {
     await NeoSharedPrefs().init();
     // Order is important, NeoCoreSecureStorage uses NeoSharedPrefs
@@ -36,8 +36,7 @@ class NeoCore {
     if (!kIsWeb && !Platform.isMacOS) {
       await Firebase.initializeApp();
     }
-    if (!Platform.isMacOS) {
-      await NeoLogger().init(enableCrashlytics: enableCrashlytics, enablePosthog: enablePosthog);
-    }
+
+    await NeoLogger().init(enableLogging: enableLogging, adjustAppToken: adjustAppToken);
   }
 }

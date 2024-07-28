@@ -10,6 +10,7 @@
  * Any reproduction of this material must contain this notice.
  */
 
+import 'package:bloc_concurrency/bloc_concurrency.dart';
 import 'package:equatable/equatable.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -23,6 +24,7 @@ import 'package:neo_core/core/widgets/neo_transition_listener/mixins/neo_transit
 import 'package:neo_core/core/widgets/neo_transition_listener/usecases/get_workflow_query_parameters_usecase.dart';
 import 'package:neo_core/core/workflow_form/neo_sub_workflow_manager.dart';
 import 'package:neo_core/core/workflow_form/neo_workflow_manager.dart';
+import 'package:universal_io/io.dart';
 
 part 'neo_transition_listener_event.dart';
 part 'neo_transition_listener_state.dart';
@@ -33,34 +35,26 @@ class NeoTransitionListenerBloc extends Bloc<NeoTransitionListenerEvent, NeoTran
   late final Function(SignalrTransitionData navigationData) onTransitionSuccess;
   late final Function(EkycEventData ekycData) onEkycEvent;
   late final Function(NeoError error)? onTransitionError;
-  late final VoidCallback? onLoggedInSuccessfully;
+  late final Function({required bool isTwoFactorAuthenticated})? onLoggedInSuccessfully;
   late final Function({required bool displayLoading}) onLoadingStatusChanged;
 
-  NeoTransitionListenerBloc() : super(NeoTransitionListenerState()) {
-    on<NeoTransitionListenerEventInit>((event, emit) => _onInit(event));
-    on<NeoTransitionListenerEventPostTransition>((event, emit) => _onPostTransition(event));
-  }
+  /// Determines whether multiple transitions can occur at the same time.
+  ///
+  /// If [allowParallelTransitions] is set to false, transition event is
+  /// triggered while another transition event is still being processed,
+  /// the new transition request will be dropped and will not be processed.
+  final bool allowParallelTransitions;
 
-  @override
-  Future<Map<String, dynamic>> initWorkflow({
-    required String workflowName,
-    String? suffix,
-    String? instanceId,
-    bool isSubFlow = false,
-  }) async {
-    try {
-      onLoadingStatusChanged(displayLoading: true);
-      return await super.initWorkflow(
-        workflowName: workflowName,
-        suffix: suffix,
-        instanceId: instanceId,
-        isSubFlow: isSubFlow,
-      );
-    } catch (e) {
-      rethrow;
-    } finally {
-      onLoadingStatusChanged(displayLoading: false);
-    }
+  NeoTransitionListenerBloc({this.allowParallelTransitions = false}) : super(NeoTransitionListenerState()) {
+    on<NeoTransitionListenerEventInit>((event, emit) => _onInit(event));
+    on<NeoTransitionListenerEventInitWorkflow>(
+      (event, emit) => _onInitWorkflow(event),
+      transformer: allowParallelTransitions ? null : droppable(),
+    );
+    on<NeoTransitionListenerEventPostTransition>(
+      (event, emit) => _onPostTransition(event),
+      transformer: allowParallelTransitions ? null : droppable(),
+    );
   }
 
   Future<void> _onInit(NeoTransitionListenerEventInit event) async {
@@ -79,6 +73,44 @@ class NeoTransitionListenerBloc extends Bloc<NeoTransitionListenerEvent, NeoTran
     );
   }
 
+  Future<void> _onInitWorkflow(NeoTransitionListenerEventInitWorkflow event) async {
+    try {
+      if (event.displayLoading) {
+        onLoadingStatusChanged(displayLoading: true);
+      }
+      final response = await initWorkflow(
+        workflowName: event.workflowName,
+        queryParameters: event.queryParameters,
+        isSubFlow: event.isSubFlow,
+      );
+      onLoadingStatusChanged(displayLoading: false);
+
+      final additionalData = response["additionalData"] ?? {};
+      if (additionalData is Map) {
+        additionalData.addAll(event.initialData ?? {});
+      }
+
+      final instanceId = response["instanceId"];
+      if (instanceId != null && instanceId is String) {
+        currentWorkflowManager(isSubFlow: event.isSubFlow).setInstanceId(instanceId);
+      }
+      onTransitionSuccess(
+        SignalrTransitionData(
+          navigationPath: response["init-page-name"],
+          navigationType: NeoNavigationType.fromJson(response["navigation"]) ?? NeoNavigationType.push,
+          pageId: response["state"],
+          viewSource: response["view-source"],
+          initialData: additionalData is Map ? additionalData.cast() : {"data": additionalData},
+          transitionId: (response["transition"] as List?)?.firstOrNull["transition"] ?? "",
+          queryParameters: event.queryParameters,
+        ),
+      );
+    } catch (e) {
+      onLoadingStatusChanged(displayLoading: false);
+      onTransitionError?.call(const NeoError());
+    }
+  }
+
   Future<void> _onPostTransition(NeoTransitionListenerEventPostTransition event) async {
     try {
       if (event.displayLoading) {
@@ -91,43 +123,43 @@ class NeoTransitionListenerBloc extends Bloc<NeoTransitionListenerEvent, NeoTran
         instanceId: event.instanceId,
       );
       await _retrieveTokenIfExist(transitionResponse);
-      if (event.displayLoading) {
-        onLoadingStatusChanged(displayLoading: false);
-      }
-      await _handleTransitionResult(ongoingTransition: transitionResponse);
+      onLoadingStatusChanged(displayLoading: false);
+      await _handleTransitionResult(ongoingTransition: transitionResponse, isSubFlow: event.isSubFlow);
     } catch (e) {
-      if (event.displayLoading) {
-        onLoadingStatusChanged(displayLoading: false);
-      }
-      onTransitionError?.call(NeoError.defaultError());
+      onLoadingStatusChanged(displayLoading: false);
+      onTransitionError?.call(const NeoError());
     }
   }
 
   Future<void> _retrieveTokenIfExist(NeoSignalRTransition ongoingTransition) async {
     final String? token = ongoingTransition.additionalData?["access_token"];
     final String? refreshToken = ongoingTransition.additionalData?["refresh_token"];
-    if (token != null && token.isNotEmpty) {
-      await Future.wait([
-        neoCoreSecureStorage.setAuthToken(token),
-        neoCoreSecureStorage.write(key: NeoCoreParameterKey.secureStorageRefreshToken, value: refreshToken ?? ""),
-      ]);
 
-      onLoggedInSuccessfully?.call();
+    if (token != null && token.isNotEmpty) {
+      final bool isTwoFactorAuthenticated = await neoCoreSecureStorage.setAuthToken(token);
+      await neoCoreSecureStorage.write(key: NeoCoreParameterKey.secureStorageRefreshToken, value: refreshToken ?? "");
+      onLoggedInSuccessfully?.call(isTwoFactorAuthenticated: isTwoFactorAuthenticated);
     }
   }
 
-  Future<void> _handleTransitionResult({required NeoSignalRTransition ongoingTransition}) async {
+  Future<void> _handleTransitionResult({
+    required NeoSignalRTransition ongoingTransition,
+    required bool isSubFlow,
+  }) async {
     final navigationPath = ongoingTransition.pageDetails["pageRoute"]?["label"] as String?;
     final navigationType = ongoingTransition.pageDetails["type"] as String?;
     final isBackNavigation = ongoingTransition.buttonType == "Back";
     final transitionId = ongoingTransition.transitionId;
     final isEkyc = ongoingTransition.additionalData != null && ongoingTransition.additionalData?["isEkyc"] == true;
+    _handleRedirectionSettings(ongoingTransition, isSubFlow: isSubFlow);
     if (isEkyc) {
-      onEkycEvent(EkycEventData(
-        flowState: ongoingTransition.transitionId,
-        ekycState: ongoingTransition.state,
-        initialData: ongoingTransition.additionalData!,
-      ));
+      onEkycEvent(
+        EkycEventData(
+          flowState: ongoingTransition.transitionId,
+          ekycState: ongoingTransition.state,
+          initialData: ongoingTransition.additionalData!,
+        ),
+      );
     } else {
       onTransitionSuccess(
         SignalrTransitionData(
@@ -145,6 +177,13 @@ class NeoTransitionListenerBloc extends Bloc<NeoTransitionListenerEvent, NeoTran
           statusMessage: ongoingTransition.statusMessage,
         ),
       );
+    }
+  }
+
+  void _handleRedirectionSettings(NeoSignalRTransition ongoingTransition, {required bool isSubFlow}) {
+    final redirectedWorkflowId = ongoingTransition.additionalData?["amorphieWorkFlowId"];
+    if (ongoingTransition.statusCode == HttpStatus.permanentRedirect.toString() && redirectedWorkflowId != null) {
+      currentWorkflowManager(isSubFlow: isSubFlow).setInstanceId(redirectedWorkflowId);
     }
   }
 

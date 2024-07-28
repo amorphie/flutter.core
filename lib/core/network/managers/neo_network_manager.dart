@@ -48,7 +48,7 @@ class NeoNetworkManager {
   final HttpClientConfig httpClientConfig;
   final String workflowClientId;
   final String workflowClientSecret;
-  final Function(String requestId)? onRequestSucceed;
+  final Function(String endpoint, String? requestId)? onRequestSucceed;
   final Function(NeoError neoError, String requestId)? onRequestFailed;
   late final NeoLogger _neoLogger = NeoLogger();
 
@@ -123,7 +123,7 @@ class NeoNetworkManager {
     final method = httpClientConfig.getServiceMethodByKey(neoCall.endpoint);
     if (fullPath == null || method == null) {
       // TODO: Throw custom exception
-      throw NeoException(error: NeoError.defaultError());
+      throw NeoException(error: const NeoError());
     }
     await _getTemporaryTokenForNotLoggedInUser(neoCall);
 
@@ -220,11 +220,11 @@ class NeoNetworkManager {
     debugPrint("[NeoNetworkManager] Response code: ${response.statusCode}. Body: ${response.body}");
 
     if (response.statusCode >= 200 && response.statusCode < 300) {
-      onRequestSucceed?.call(call.endpoint);
+      onRequestSucceed?.call(call.endpoint, call.requestId);
       return responseJSON;
     } else if (response.statusCode == _Constants.responseCodeUnauthorized) {
       if (call.endpoint == _Constants.endpointGetToken) {
-        final error = NeoError.defaultError();
+        final error = NeoError(responseCode: response.statusCode);
         _neoLogger.logError("[NeoNetworkManager]: Token service error!");
         throw NeoException(error: error);
       }
@@ -233,7 +233,7 @@ class NeoNetworkManager {
         if (isTokenRefreshed) {
           return _retryLastCall(call);
         } else {
-          final error = NeoError.defaultError();
+          final error = NeoError(responseCode: response.statusCode);
           _neoLogger.logError("[NeoNetworkManager]: Token refresh service error!");
           throw NeoException(error: error);
         }
@@ -243,6 +243,11 @@ class NeoNetworkManager {
       }
     } else {
       try {
+        responseJSON.addAll({'body': response.body});
+        final hasErrorCode = responseJSON.containsKey("errorCode");
+        if (!hasErrorCode) {
+          responseJSON.addAll({'errorCode': response.statusCode});
+        }
         final error = NeoError.fromJson(responseJSON);
         throw NeoException(error: error);
       } on MissingRequiredKeysException {
@@ -253,11 +258,12 @@ class NeoNetworkManager {
           "[NeoNetworkManager]: Service call failed! Status code: ${response.statusCode}.Endpoint: ${call.endpoint}",
         );
         if (e is NeoException) {
-          onRequestFailed?.call(e.error, call.endpoint);
+          onRequestFailed?.call(e.error, call.requestId ?? call.endpoint);
           rethrow;
         } else {
-          onRequestFailed?.call(NeoError.defaultError(), call.endpoint);
-          throw NeoException(error: NeoError.defaultError());
+          final error = NeoError(responseCode: response.statusCode);
+          onRequestFailed?.call(error, call.requestId ?? call.endpoint);
+          throw NeoException(error: error);
         }
       }
     }
@@ -271,7 +277,7 @@ class NeoNetworkManager {
       neoHttpCall.decreaseRetryCount();
       return call(neoHttpCall);
     } else {
-      throw NeoException(error: NeoError.defaultError());
+      throw NeoException(error: const NeoError());
     }
   }
 
