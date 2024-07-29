@@ -21,4 +21,8 @@ class NeoFeatureFlagUtil {
   static Future<bool> bypassSignalR() async {
     return await _posthog.isFeatureEnabled(NeoFeatureFlagKey.bypassSignalR.value) ?? false;
   }
+
+  static Future<bool> bypassSslPinning() async {
+    return await _posthog.isFeatureEnabled(NeoFeatureFlagKey.bypassSslPinning.value) ?? false;
+  }
 }

@@ -11,7 +11,8 @@
  */
 
 enum NeoFeatureFlagKey {
-  bypassSignalR("bypass-signalr");
+  bypassSignalR("bypass-signalr"),
+  bypassSslPinning("bypass-ssl-pinning");
 
   final String value;
 
