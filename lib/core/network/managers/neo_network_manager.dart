@@ -14,6 +14,7 @@ import 'dart:convert';
 
 import 'package:flutter/foundation.dart' show debugPrint;
 import 'package:flutter/services.dart';
+import 'package:get_it/get_it.dart';
 import 'package:http/http.dart' as http;
 import 'package:http/io_client.dart';
 import 'package:json_annotation/json_annotation.dart';
@@ -47,19 +48,21 @@ abstract class _Constants {
 }
 
 class NeoNetworkManager {
-  final NeoCoreSecureStorage secureStorage;
   final HttpClientConfig httpClientConfig;
+  final NeoCoreSecureStorage secureStorage;
+  final NeoSharedPrefs neoSharedPrefs;
   final String workflowClientId;
   final String workflowClientSecret;
   final String? sslCertificateFilePath;
   final bool enableSslPinning;
   final Function(String endpoint, String? requestId)? onRequestSucceed;
   final Function(NeoError neoError, String requestId)? onRequestFailed;
-  late final NeoLogger _neoLogger = NeoLogger();
+  late final NeoLogger _neoLogger = GetIt.I.get();
 
   NeoNetworkManager({
     required this.httpClientConfig,
     required this.secureStorage,
+    required this.neoSharedPrefs,
     required this.workflowClientId,
     required this.workflowClientSecret,
     required this.enableSslPinning,
@@ -98,7 +101,7 @@ class NeoNetworkManager {
   }
 
   String get _languageCode {
-    final languageCodeReadResult = NeoSharedPrefs().read(NeoCoreParameterKey.sharedPrefsLanguageCode);
+    final languageCodeReadResult = neoSharedPrefs.read(NeoCoreParameterKey.sharedPrefsLanguageCode);
     final String languageCode = languageCodeReadResult != null ? languageCodeReadResult as String : "";
 
     if (languageCode == _Constants.languageCodeEn) {

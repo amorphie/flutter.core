@@ -16,6 +16,7 @@ import 'dart:developer';
 import 'package:collection/collection.dart';
 import 'package:flutter/foundation.dart' show kDebugMode;
 import 'package:flutter/material.dart';
+import 'package:get_it/get_it.dart';
 import 'package:neo_core/core/analytics/neo_logger.dart';
 import 'package:neo_core/core/analytics/neo_logger_type.dart';
 import 'package:neo_core/core/network/models/neo_signalr_transition.dart';
@@ -35,14 +36,13 @@ abstract class _Constants {
 class SignalrConnectionManager {
   final String serverUrl;
   final String methodName;
-  final NeoLogger _neoLogger;
 
   HubConnection? _hubConnection;
 
-  SignalrConnectionManager({
-    required this.serverUrl,
-    required this.methodName,
-  }) : _neoLogger = NeoLogger();
+  SignalrConnectionManager({required this.serverUrl, required this.methodName});
+
+  NeoLogger get _neoLogger => GetIt.I.get();
+
 
   Future init() async {
     _hubConnection = HubConnectionBuilder()

@@ -11,36 +11,28 @@
  */
 
 import 'package:flutter/cupertino.dart';
-import 'package:get_it/get_it.dart';
-import 'package:neo_core/core/analytics/neo_logger.dart';
-import 'package:neo_core/core/network/models/http_client_config.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 class NeoSharedPrefs {
-  static final NeoSharedPrefs _singleton = NeoSharedPrefs._internal();
+  final bool enableCaching;
 
-  factory NeoSharedPrefs() {
-    return _singleton;
-  }
-
-  NeoSharedPrefs._internal() : isCachingEnabled = GetIt.I.get<HttpClientConfig>().config.cacheStorage;
-
-  final bool isCachingEnabled;
+  NeoSharedPrefs({
+    required this.enableCaching,
+  });
 
   SharedPreferences? _preferences;
 
   final Map<String, dynamic> _cachedValues = {};
 
-  Future<SharedPreferences> init() async {
+  Future<void> init() async {
     if (_preferences != null) {
-      return _preferences!;
+      return;
     }
     _preferences = await SharedPreferences.getInstance();
-    return _preferences!;
   }
 
   Object? read(String key) {
-    if (isCachingEnabled && _cachedValues.containsKey(key)) {
+    if (enableCaching && _cachedValues.containsKey(key)) {
       return _cachedValues[key];
     }
 
@@ -51,7 +43,7 @@ class NeoSharedPrefs {
   }
 
   Future<bool> write(String key, Object value) {
-    if (isCachingEnabled) {
+    if (enableCaching) {
       _cachedValues[key] = value;
     }
 
@@ -70,13 +62,12 @@ class NeoSharedPrefs {
     } catch (e) {
       const errorMessage = "[NeoSharedPrefs: Write error]";
       debugPrint(errorMessage);
-      NeoLogger().logError(errorMessage);
       return Future.value(false);
     }
   }
 
   Future<bool> delete(String key) {
-    if (isCachingEnabled) {
+    if (enableCaching) {
       _cachedValues.remove(key);
     }
 
@@ -84,7 +75,7 @@ class NeoSharedPrefs {
   }
 
   Future<bool> clear() {
-    if (isCachingEnabled) {
+    if (enableCaching) {
       _cachedValues.clear();
     }
 

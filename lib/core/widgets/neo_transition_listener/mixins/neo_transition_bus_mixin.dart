@@ -13,9 +13,11 @@
 import 'dart:async';
 
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:get_it/get_it.dart';
 import 'package:neo_core/core/analytics/neo_logger.dart';
 import 'package:neo_core/core/analytics/neo_logger_type.dart';
-import 'package:neo_core/core/feature_flags/neo_feature_flag_util.dart';
+import 'package:neo_core/core/analytics/neo_posthog.dart';
+import 'package:neo_core/core/feature_flags/neo_feature_flag_key.dart';
 import 'package:neo_core/core/network/neo_network.dart';
 import 'package:neo_core/core/widgets/neo_transition_listener/bloc/neo_transition_listener_bloc.dart';
 import 'package:neo_core/core/workflow_form/neo_sub_workflow_manager.dart';
@@ -38,7 +40,7 @@ mixin NeoTransitionBus on Bloc<NeoTransitionListenerEvent, NeoTransitionListener
   late final SignalrConnectionManager signalrConnectionManager;
   late bool _bypassSignalr;
 
-  late final NeoLogger _neoLogger = NeoLogger();
+  late final NeoLogger _neoLogger = GetIt.I.get();
 
   NeoWorkflowManager currentWorkflowManager({required bool isSubFlow}) {
     return isSubFlow ? neoSubWorkflowManager : neoWorkflowManager;
@@ -47,13 +49,15 @@ mixin NeoTransitionBus on Bloc<NeoTransitionListenerEvent, NeoTransitionListener
   Future<void> initTransitionBus({
     required NeoWorkflowManager neoWorkflowManager,
     required NeoSubWorkflowManager neoSubWorkflowManager,
+    required NeoPosthog neoPosthog,
     required String signalrServerUrl,
     required String signalrMethodName,
     required bool bypassSignalr,
   }) async {
     this.neoWorkflowManager = neoWorkflowManager;
     this.neoSubWorkflowManager = neoSubWorkflowManager;
-    _bypassSignalr = bypassSignalr || await NeoFeatureFlagUtil.bypassSignalR();
+    _bypassSignalr =
+        bypassSignalr || (await neoPosthog.isFeatureEnabled(NeoFeatureFlagKey.bypassSignalR.value) ?? false);
     if (!_bypassSignalr) {
       await _initSignalrConnectionManager(signalrServerUrl: signalrServerUrl, signalrMethodName: signalrMethodName);
     }

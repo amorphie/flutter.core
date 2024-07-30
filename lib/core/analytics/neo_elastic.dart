@@ -11,12 +11,12 @@ abstract class _Constants {
 }
 
 class NeoElastic {
-  NeoElastic();
+  NeoElastic({required this.neoNetworkManager, required this.secureStorage});
 
-  late final NeoNetworkManager _neoNetworkManager = GetIt.I.get<NeoNetworkManager>();
+  final NeoNetworkManager neoNetworkManager;
+  final NeoCoreSecureStorage secureStorage;
 
   Future<void> logCustom(dynamic message, String level, {Map<String, dynamic>? parameters}) async {
-    final secureStorage = NeoCoreSecureStorage();
     final packageInfo = await PackageInfo.fromPlatform();
     final results = await Future.wait([
       secureStorage.read(NeoCoreParameterKey.secureStorageDeviceId),
@@ -40,7 +40,7 @@ class NeoElastic {
     };
 
     try {
-      await _neoNetworkManager.call(NeoHttpCall(endpoint: _Constants.endpoint, body: body));
+      await neoNetworkManager.call(NeoHttpCall(endpoint: _Constants.endpoint, body: body));
     } catch (e) {
       debugPrint("Failed to log message: $e");
     }
