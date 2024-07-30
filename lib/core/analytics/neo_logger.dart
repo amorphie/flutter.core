@@ -69,14 +69,11 @@ class NeoLogger implements INeoLogger {
       await _neoCrashlytics?.initializeCrashlytics();
       await _neoCrashlytics?.setEnabled(enabled: true);
     }
-    try {
-      logCustom(
-        _Constants.eventNameAdjustInitSucceed,
-        logTypes: [NeoLoggerType.posthog, NeoLoggerType.logger],
-      );
-    } on Exception catch (e, stacktrace) {
-      logException("${_Constants.eventNameAdjustInitFailed} $e", stacktrace);
-    }
+
+    logCustom(
+      _Constants.eventNameAdjustInitSucceed,
+      logTypes: [NeoLoggerType.posthog, NeoLoggerType.logger],
+    );
 
     observers = [PosthogObserver()];
     await neoPosthog.setEnabled(enabled: true);
