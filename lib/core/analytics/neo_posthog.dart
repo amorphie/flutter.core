@@ -26,8 +26,10 @@ class NeoPosthog {
   final Posthog _posthog = Posthog();
 
   Future<void> _init() async {
+    final secureStorage = NeoCoreSecureStorage();
+    await secureStorage.init();
     unawaited(
-      _posthog.identify(userId: await NeoCoreSecureStorage().read(NeoCoreParameterKey.secureStorageTokenId) ?? ""),
+      _posthog.identify(userId: await secureStorage.read(NeoCoreParameterKey.secureStorageTokenId) ?? ""),
     );
   }
 
