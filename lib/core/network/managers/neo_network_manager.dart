@@ -13,7 +13,10 @@
 import 'dart:convert';
 
 import 'package:flutter/foundation.dart' show debugPrint;
+import 'package:flutter/services.dart';
+import 'package:get_it/get_it.dart';
 import 'package:http/http.dart' as http;
+import 'package:http/io_client.dart';
 import 'package:json_annotation/json_annotation.dart';
 import 'package:neo_core/core/analytics/neo_logger.dart';
 import 'package:neo_core/core/network/models/http_auth_response.dart';
@@ -24,6 +27,7 @@ import 'package:neo_core/core/storage/neo_core_parameter_key.dart';
 import 'package:neo_core/core/storage/neo_shared_prefs.dart';
 import 'package:neo_core/core/util/device_util/models/neo_device_info.dart';
 import 'package:neo_core/neo_core.dart';
+import 'package:universal_io/io.dart';
 import 'package:uuid/uuid.dart';
 
 abstract class _Constants {
@@ -44,19 +48,25 @@ abstract class _Constants {
 }
 
 class NeoNetworkManager {
-  final NeoCoreSecureStorage secureStorage;
   final HttpClientConfig httpClientConfig;
+  final NeoCoreSecureStorage secureStorage;
+  final NeoSharedPrefs neoSharedPrefs;
   final String workflowClientId;
   final String workflowClientSecret;
+  final String? sslCertificateFilePath;
+  final bool enableSslPinning;
   final Function(String endpoint, String? requestId)? onRequestSucceed;
   final Function(NeoError neoError, String requestId)? onRequestFailed;
-  late final NeoLogger _neoLogger = NeoLogger();
+  late final NeoLogger _neoLogger = GetIt.I.get();
 
   NeoNetworkManager({
     required this.httpClientConfig,
     required this.secureStorage,
+    required this.neoSharedPrefs,
     required this.workflowClientId,
     required this.workflowClientSecret,
+    required this.enableSslPinning,
+    this.sslCertificateFilePath,
     this.onRequestSucceed,
     this.onRequestFailed,
   });
@@ -91,7 +101,7 @@ class NeoNetworkManager {
   }
 
   String get _languageCode {
-    final languageCodeReadResult = NeoSharedPrefs().read(NeoCoreParameterKey.sharedPrefsLanguageCode);
+    final languageCodeReadResult = neoSharedPrefs.read(NeoCoreParameterKey.sharedPrefsLanguageCode);
     final String languageCode = languageCodeReadResult != null ? languageCodeReadResult as String : "";
 
     if (languageCode == _Constants.languageCodeEn) {
@@ -113,6 +123,15 @@ class NeoNetworkManager {
       NeoNetworkHeaderKey.behalfOfUser: const Uuid().v1(), // STOPSHIP: Delete it
     });
 
+  Future<SecurityContext?> get _getSecurityContext async {
+    if (sslCertificateFilePath == null) {
+      return null;
+    }
+    final sslCertificate = await rootBundle.load(sslCertificateFilePath!);
+    final securityContext = SecurityContext()..setTrustedCertificatesBytes(sslCertificate.buffer.asInt8List());
+    return securityContext;
+  }
+
   // TODO: Return result object to improve error handling
   Future<Map<String, dynamic>> call(NeoHttpCall neoCall) async {
     final fullPath = httpClientConfig.getServiceUrlByKey(
@@ -126,22 +145,23 @@ class NeoNetworkManager {
       throw NeoException(error: const NeoError());
     }
     await _getTemporaryTokenForNotLoggedInUser(neoCall);
+    final http = await _getSSLPinningClient();
 
     switch (method) {
       case HttpMethod.get:
-        return _requestGet(fullPath, neoCall);
+        return _requestGet(http, fullPath, neoCall);
       case HttpMethod.post:
-        return _requestPost(fullPath, neoCall);
+        return _requestPost(http, fullPath, neoCall);
       case HttpMethod.delete:
-        return _requestDelete(fullPath, neoCall);
+        return _requestDelete(http, fullPath, neoCall);
       case HttpMethod.put:
-        return _requestPut(fullPath, neoCall);
+        return _requestPut(http, fullPath, neoCall);
       case HttpMethod.patch:
-        return _requestPatch(fullPath, neoCall);
+        return _requestPatch(http, fullPath, neoCall);
     }
   }
 
-  Future<Map<String, dynamic>> _requestGet(String fullPath, NeoHttpCall neoCall) async {
+  Future<Map<String, dynamic>> _requestGet(http.Client http, String fullPath, NeoHttpCall neoCall) async {
     final fullPathWithQueries = _getFullPathWithQueries(fullPath, neoCall.queryProviders);
     final response = await http.get(
       Uri.parse(fullPathWithQueries),
@@ -150,7 +170,7 @@ class NeoNetworkManager {
     return _createResponseMap(response, neoCall);
   }
 
-  Future<Map<String, dynamic>> _requestPost(String fullPath, NeoHttpCall neoCall) async {
+  Future<Map<String, dynamic>> _requestPost(http.Client http, String fullPath, NeoHttpCall neoCall) async {
     final fullPathWithQueries = _getFullPathWithQueries(fullPath, neoCall.queryProviders);
     final response = await http.post(
       Uri.parse(fullPathWithQueries),
@@ -160,7 +180,7 @@ class NeoNetworkManager {
     return _createResponseMap(response, neoCall);
   }
 
-  Future<Map<String, dynamic>> _requestDelete(String fullPath, NeoHttpCall neoCall) async {
+  Future<Map<String, dynamic>> _requestDelete(http.Client http, String fullPath, NeoHttpCall neoCall) async {
     final fullPathWithQueries = _getFullPathWithQueries(fullPath, neoCall.queryProviders);
     final response = await http.delete(
       Uri.parse(fullPathWithQueries),
@@ -170,7 +190,7 @@ class NeoNetworkManager {
     return _createResponseMap(response, neoCall);
   }
 
-  Future<Map<String, dynamic>> _requestPut(String fullPath, NeoHttpCall neoCall) async {
+  Future<Map<String, dynamic>> _requestPut(http.Client http, String fullPath, NeoHttpCall neoCall) async {
     final fullPathWithQueries = _getFullPathWithQueries(fullPath, neoCall.queryProviders);
     final response = await http.put(
       Uri.parse(fullPathWithQueries),
@@ -180,7 +200,7 @@ class NeoNetworkManager {
     return _createResponseMap(response, neoCall);
   }
 
-  Future<Map<String, dynamic>> _requestPatch(String fullPath, NeoHttpCall neoCall) async {
+  Future<Map<String, dynamic>> _requestPatch(http.Client http, String fullPath, NeoHttpCall neoCall) async {
     final fullPathWithQueries = _getFullPathWithQueries(fullPath, neoCall.queryProviders);
     final response = await http.patch(
       Uri.parse(fullPathWithQueries),
@@ -338,5 +358,14 @@ class NeoNetworkManager {
     } catch (_) {
       _neoLogger.logError("[NeoNetworkManager]: Temporary token (for not logged in user) service error!");
     }
+  }
+
+  Future<http.Client> _getSSLPinningClient() async {
+    if (!enableSslPinning) {
+      return http.Client();
+    }
+    final HttpClient client = HttpClient(context: await _getSecurityContext)
+      ..badCertificateCallback = (X509Certificate cert, String host, int port) => false;
+    return IOClient(client);
   }
 }

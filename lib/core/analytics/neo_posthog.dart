@@ -19,15 +19,15 @@ import 'package:neo_core/core/storage/neo_core_secure_storage.dart';
 import 'package:posthog_flutter/posthog_flutter.dart';
 
 class NeoPosthog {
-  NeoPosthog() {
-    _init();
-  }
+  final NeoCoreSecureStorage neoCoreSecureStorage;
+
+  NeoPosthog({required this.neoCoreSecureStorage});
 
   final Posthog _posthog = Posthog();
 
-  Future<void> _init() async {
+  Future<void> init() async {
     unawaited(
-      _posthog.identify(userId: await NeoCoreSecureStorage().read(NeoCoreParameterKey.secureStorageTokenId) ?? ""),
+      _posthog.identify(userId: await neoCoreSecureStorage.read(NeoCoreParameterKey.secureStorageTokenId) ?? ""),
     );
   }
 

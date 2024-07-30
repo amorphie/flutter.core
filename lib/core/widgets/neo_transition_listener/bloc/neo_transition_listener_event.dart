@@ -17,6 +17,7 @@ sealed class NeoTransitionListenerEvent extends Equatable {}
 class NeoTransitionListenerEventInit extends NeoTransitionListenerEvent {
   final NeoWorkflowManager neoWorkflowManager;
   final NeoSubWorkflowManager neoSubWorkflowManager;
+  final NeoPosthog neoPosthog;
   final String signalRServerUrl;
   final String signalRMethodName;
   final Function(SignalrTransitionData navigationData) onTransitionSuccess;
@@ -29,6 +30,7 @@ class NeoTransitionListenerEventInit extends NeoTransitionListenerEvent {
   NeoTransitionListenerEventInit({
     required this.neoWorkflowManager,
     required this.neoSubWorkflowManager,
+    required this.neoPosthog,
     required this.signalRServerUrl,
     required this.signalRMethodName,
     required this.onTransitionSuccess,
