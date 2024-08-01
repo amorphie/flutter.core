@@ -16,6 +16,7 @@ import 'package:bloc_concurrency/bloc_concurrency.dart';
 import 'package:equatable/equatable.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:neo_core/core/analytics/neo_posthog.dart';
 import 'package:neo_core/core/navigation/models/ekyc_event_data.dart';
 import 'package:neo_core/core/navigation/models/neo_navigation_type.dart';
 import 'package:neo_core/core/navigation/models/signalr_transition_data.dart';
@@ -29,11 +30,12 @@ import 'package:neo_core/core/workflow_form/neo_workflow_manager.dart';
 import 'package:universal_io/io.dart';
 
 part 'neo_transition_listener_event.dart';
+
 part 'neo_transition_listener_state.dart';
 
 class NeoTransitionListenerBloc extends Bloc<NeoTransitionListenerEvent, NeoTransitionListenerState>
     with NeoTransitionBus {
-  late final NeoCoreSecureStorage neoCoreSecureStorage = NeoCoreSecureStorage();
+  final NeoCoreSecureStorage neoCoreSecureStorage;
   late final Function(SignalrTransitionData navigationData) onTransitionSuccess;
   late final Function(EkycEventData ekycData) onEkycEvent;
   late final Function(NeoError error)? onTransitionError;
@@ -47,7 +49,10 @@ class NeoTransitionListenerBloc extends Bloc<NeoTransitionListenerEvent, NeoTran
   /// the new transition request will be dropped and will not be processed.
   final bool allowParallelTransitions;
 
-  NeoTransitionListenerBloc({this.allowParallelTransitions = false}) : super(NeoTransitionListenerState()) {
+  NeoTransitionListenerBloc({
+    required this.neoCoreSecureStorage,
+    this.allowParallelTransitions = false,
+  }) : super(NeoTransitionListenerState()) {
     on<NeoTransitionListenerEventInit>((event, emit) => _onInit(event));
     on<NeoTransitionListenerEventInitWorkflow>(
       (event, emit) => _onInitWorkflow(event),
@@ -69,7 +74,8 @@ class NeoTransitionListenerBloc extends Bloc<NeoTransitionListenerEvent, NeoTran
     await initTransitionBus(
       neoWorkflowManager: event.neoWorkflowManager,
       neoSubWorkflowManager: event.neoSubWorkflowManager,
-      signalrServerUrl: event.signalRServerUrl + await GetWorkflowQueryParametersUseCase().call(),
+      neoPosthog: event.neoPosthog,
+      signalrServerUrl: event.signalRServerUrl + await GetWorkflowQueryParametersUseCase().call(neoCoreSecureStorage),
       signalrMethodName: event.signalRMethodName,
       bypassSignalr: event.bypassSignalr,
     );

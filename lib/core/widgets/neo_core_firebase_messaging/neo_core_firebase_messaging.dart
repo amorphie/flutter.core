@@ -6,6 +6,7 @@ import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:neo_core/core/network/managers/neo_network_manager.dart';
+import 'package:neo_core/core/storage/neo_core_secure_storage.dart';
 import 'package:neo_core/feature/device_registration/usecases/neo_core_register_device_usecase.dart';
 import 'package:universal_io/io.dart';
 
@@ -25,6 +26,7 @@ class NeoCoreFirebaseMessaging extends StatefulWidget {
   const NeoCoreFirebaseMessaging({
     required this.child,
     required this.networkManager,
+    required this.neoCoreSecureStorage,
     this.androidDefaultIcon,
     this.onDeeplinkNavigation,
     super.key,
@@ -32,6 +34,7 @@ class NeoCoreFirebaseMessaging extends StatefulWidget {
 
   final Widget child;
   final NeoNetworkManager networkManager;
+  final NeoCoreSecureStorage neoCoreSecureStorage;
   final String? androidDefaultIcon;
   final Function(String)? onDeeplinkNavigation;
 
@@ -78,7 +81,11 @@ class _NeoCoreFirebaseMessagingState extends State<NeoCoreFirebaseMessaging> {
   }
 
   void _onTokenChange(String token) {
-    NeoCoreRegisterDeviceUseCase().call(networkManager: widget.networkManager, deviceToken: token);
+    NeoCoreRegisterDeviceUseCase().call(
+      networkManager: widget.networkManager,
+      secureStorage: widget.neoCoreSecureStorage,
+      deviceToken: token,
+    );
   }
 
   Future<void> _initPushNotifications() async {

@@ -23,9 +23,12 @@ abstract class _Constants {
 }
 
 class NeoCoreRegisterDeviceUseCase {
-  Future<void> call({required NeoNetworkManager networkManager, required String deviceToken}) async {
+  Future<void> call({
+    required NeoNetworkManager networkManager,
+    required NeoCoreSecureStorage secureStorage,
+    required String deviceToken,
+  }) async {
     try {
-      final secureStorage = NeoCoreSecureStorage();
       final existingToken = await secureStorage.read(NeoCoreParameterKey.secureStorageDeviceRegistrationToken);
       if (deviceToken == existingToken) {
         return;

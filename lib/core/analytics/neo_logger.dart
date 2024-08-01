@@ -33,24 +33,25 @@ abstract class _Constants {
 }
 
 class NeoLogger implements INeoLogger {
-  static final NeoLogger _instance = NeoLogger._internal();
+  final NeoPosthog neoPosthog;
+  final NeoAdjust neoAdjust;
+  final NeoElastic neoElastic;
+
+  NeoLogger({
+    required this.neoPosthog,
+    required this.neoAdjust,
+    required this.neoElastic,
+  });
+
+  final DeviceUtil _deviceUtil = DeviceUtil();
+
+  final Logger _logger = Logger(printer: PrettyPrinter(printTime: true));
+
+  NeoCrashlytics? _neoCrashlytics;
 
   @override
   List<NavigatorObserver> observers = [];
   final Map<String, DateTime> _timeMap = {};
-
-  NeoCrashlytics? _neoCrashlytics;
-
-  final DeviceUtil _deviceUtil = DeviceUtil();
-  final NeoPosthog _neoPosthog = NeoPosthog();
-  final NeoAdjust _neoAdjust = NeoAdjust();
-  final NeoElastic _neoElastic = NeoElastic();
-  final Logger _logger = Logger(
-    printer: PrettyPrinter(printTime: true),
-  );
-
-  factory NeoLogger() => _instance;
-  NeoLogger._internal();
 
   static const List<NeoLoggerType> defaultAnalytics = [
     NeoLoggerType.adjust,
@@ -59,7 +60,7 @@ class NeoLogger implements INeoLogger {
     NeoLoggerType.logger,
   ];
 
-  Future<void> init({required String? adjustAppToken, bool enableLogging = false}) async {
+  Future<void> init({bool enableLogging = false}) async {
     if (!enableLogging || Platform.isMacOS || Platform.isWindows) {
       return;
     }
@@ -68,19 +69,14 @@ class NeoLogger implements INeoLogger {
       await _neoCrashlytics?.initializeCrashlytics();
       await _neoCrashlytics?.setEnabled(enabled: true);
     }
-    if (adjustAppToken != null) {
-      try {
-        await _neoAdjust.init(appToken: adjustAppToken);
-        logCustom(
-          _Constants.eventNameAdjustInitSucceed,
-          logTypes: [NeoLoggerType.posthog, NeoLoggerType.logger],
-        );
-      } on Exception catch (e, stacktrace) {
-        logException("${_Constants.eventNameAdjustInitFailed} $e", stacktrace);
-      }
-    }
+
+    logCustom(
+      _Constants.eventNameAdjustInitSucceed,
+      logTypes: [NeoLoggerType.posthog, NeoLoggerType.logger],
+    );
+
     observers = [PosthogObserver()];
-    await _neoPosthog.setEnabled(enabled: true);
+    await neoPosthog.setEnabled(enabled: true);
   }
 
   @override
@@ -95,22 +91,22 @@ class NeoLogger implements INeoLogger {
       _logger.log(logLevel, message);
     }
     if (logTypes.contains(NeoLoggerType.elastic)) {
-      _neoElastic.logCustom(message, logLevel.name, parameters: properties);
+      neoElastic.logCustom(message, logLevel.name, parameters: properties);
     }
     if (logTypes.contains(NeoLoggerType.posthog)) {
-      _neoPosthog.logEvent(message, properties: properties, options: options);
+      neoPosthog.logEvent(message, properties: properties, options: options);
     }
     if (logTypes.contains(NeoLoggerType.adjust)) {
       final String? eventId = message;
       if (eventId != null) {
-        _neoAdjust.logEvent(eventId);
+        neoAdjust.logEvent(eventId);
       }
     }
   }
 
   @override
   void logScreenEvent(String screenName, {Map<String, dynamic>? properties, Map<String, dynamic>? options}) {
-    _neoPosthog.setScreen(screenName, properties: properties, options: options);
+    neoPosthog.setScreen(screenName, properties: properties, options: options);
   }
 
   @override
@@ -155,12 +151,12 @@ class NeoLogger implements INeoLogger {
 
   @override
   Future<bool?> isFeatureEnabled(String key) async {
-    return _neoPosthog.isFeatureEnabled(key);
+    return neoPosthog.isFeatureEnabled(key);
   }
 
   @override
   Future<void> reloadFeatureFlags() async {
-    await _neoPosthog.reloadFeatureFlags();
+    await neoPosthog.reloadFeatureFlags();
   }
 
   @override

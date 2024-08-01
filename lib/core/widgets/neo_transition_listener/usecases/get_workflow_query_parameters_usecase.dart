@@ -16,8 +16,7 @@ import 'package:neo_core/core/storage/neo_core_secure_storage.dart';
 import 'package:uuid/uuid.dart';
 
 class GetWorkflowQueryParametersUseCase {
-  Future<String> call() async {
-    final secureStorage = NeoCoreSecureStorage();
+  Future<String> call(NeoCoreSecureStorage secureStorage) async {
     final results = await Future.wait([
       secureStorage.read(NeoCoreParameterKey.secureStorageDeviceId),
       secureStorage.read(NeoCoreParameterKey.secureStorageTokenId),

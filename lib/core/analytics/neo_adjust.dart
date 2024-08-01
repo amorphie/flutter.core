@@ -6,6 +6,7 @@ import 'package:neo_core/neo_core.dart';
 
 class NeoAdjust {
   NeoAdjust();
+
   Future<void> init({required String appToken}) async {
     final String? deviceId = await DeviceUtil().getDeviceId();
     final AdjustConfig adjustConfig =

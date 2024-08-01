@@ -14,8 +14,6 @@ import 'dart:async';
 
 import 'package:flutter/foundation.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
-import 'package:get_it/get_it.dart';
-import 'package:neo_core/core/analytics/neo_logger.dart';
 import 'package:neo_core/core/encryption/jwt_decoder.dart';
 import 'package:neo_core/core/storage/neo_core_parameter_key.dart';
 import 'package:neo_core/core/storage/neo_shared_prefs.dart';
@@ -27,22 +25,17 @@ class _Constants {
 }
 
 class NeoCoreSecureStorage {
-  static final NeoCoreSecureStorage _singleton = NeoCoreSecureStorage._internal();
+  final bool enableCaching;
+  final NeoSharedPrefs neoSharedPrefs;
 
-  factory NeoCoreSecureStorage() {
-    return _singleton;
-  }
-
-  NeoCoreSecureStorage._internal() : isCachingEnabled = GetIt.I.get<HttpClientConfig>().config.cacheStorage;
+  NeoCoreSecureStorage({required this.neoSharedPrefs, required this.enableCaching});
 
   FlutterSecureStorage? _storage;
-
-  final bool isCachingEnabled;
 
   final Map<String, String?> _cachedValues = {};
 
   Future<void> write({required String key, required String? value}) {
-    if (isCachingEnabled) {
+    if (enableCaching) {
       _cachedValues[key] = value;
     }
 
@@ -50,7 +43,7 @@ class NeoCoreSecureStorage {
   }
 
   Future<String?> read(String key) async {
-    if (isCachingEnabled && _cachedValues.containsKey(key)) {
+    if (enableCaching && _cachedValues.containsKey(key)) {
       return _cachedValues[key];
     } else if (await _storage!.containsKey(key: key)) {
       String? value;
@@ -59,7 +52,6 @@ class NeoCoreSecureStorage {
       } catch (e) {
         final errorMessage = '[NeoCoreSecureStorage]: Error occurred while reading value of $key';
         debugPrint(errorMessage);
-        NeoLogger().logError(errorMessage);
       }
       _cachedValues[key] = value;
       return value;
@@ -69,7 +61,7 @@ class NeoCoreSecureStorage {
   }
 
   Future<void> delete(String key) {
-    if (isCachingEnabled) {
+    if (enableCaching) {
       _cachedValues.remove(key);
     }
 
@@ -77,7 +69,7 @@ class NeoCoreSecureStorage {
   }
 
   Future<void> deleteAll() {
-    if (isCachingEnabled) {
+    if (enableCaching) {
       _cachedValues.clear();
     }
 
@@ -101,7 +93,6 @@ class NeoCoreSecureStorage {
   }
 
   Future<bool> _checkFirstRun() async {
-    final neoSharedPrefs = NeoSharedPrefs();
     final isFirstRun = neoSharedPrefs.read(NeoCoreParameterKey.sharedPrefsFirstRun);
 
     if (isFirstRun == null || isFirstRun as bool) {
