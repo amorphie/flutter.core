@@ -10,6 +10,8 @@
  * Any reproduction of this material must contain this notice.
  */
 
+import 'dart:async';
+
 import 'package:bloc_concurrency/bloc_concurrency.dart';
 import 'package:equatable/equatable.dart';
 import 'package:flutter/foundation.dart';
@@ -122,8 +124,20 @@ class NeoTransitionListenerBloc extends Bloc<NeoTransitionListenerEvent, NeoTran
       if (event.displayLoading) {
         onLoadingStatusChanged(displayLoading: true);
       }
+      if (event.ignoreResponse) {
+        unawaited(
+          postTransition(
+            event.transitionName,
+            event.body,
+            isSubFlow: event.isSubFlow,
+            ignoreResponse: event.ignoreResponse,
+          ),
+        );
+        onLoadingStatusChanged(displayLoading: false);
+        return;
+      }
       final transitionResponse = await postTransition(event.transitionName, event.body, isSubFlow: event.isSubFlow);
-      await _retrieveTokenIfExist(transitionResponse);
+      await _retrieveTokenIfExist(transitionResponse!);
       onLoadingStatusChanged(displayLoading: false);
       await _handleTransitionResult(ongoingTransition: transitionResponse, isSubFlow: event.isSubFlow);
     } catch (e) {

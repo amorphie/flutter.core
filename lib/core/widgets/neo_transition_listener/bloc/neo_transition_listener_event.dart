@@ -80,14 +80,16 @@ class NeoTransitionListenerEventPostTransition extends NeoTransitionListenerEven
   final Map<String, dynamic> body;
   final bool isSubFlow;
   final bool displayLoading;
+  final bool ignoreResponse;
 
   NeoTransitionListenerEventPostTransition({
     required this.transitionName,
     required this.body,
     this.isSubFlow = false,
     this.displayLoading = true,
+    this.ignoreResponse = false,
   });
 
   @override
-  List<Object?> get props => [transitionName, body, isSubFlow, displayLoading];
+  List<Object?> get props => [transitionName, body, isSubFlow, displayLoading, ignoreResponse];
 }
