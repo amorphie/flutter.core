@@ -15,6 +15,7 @@ class NeoPageBloc extends Bloc<NeoPageEvent, NeoPageState> {
   final JsonWidgetRegistry jsonWidgetRegistry;
 
   final GlobalKey<FormState> formKey = GlobalKey<FormState>();
+  bool hasFormFailure = false;
   final Map<String, dynamic> _formInitialData;
   final Map<String, dynamic> _formData;
 
