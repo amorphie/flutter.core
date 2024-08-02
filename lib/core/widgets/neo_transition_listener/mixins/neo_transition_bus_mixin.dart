@@ -87,10 +87,11 @@ mixin NeoTransitionBus on Bloc<NeoTransitionListenerEvent, NeoTransitionListener
     return null;
   }
 
-  Future<NeoSignalRTransition> postTransition(
+  Future<NeoSignalRTransition?> postTransition(
     String transitionId,
     Map<String, dynamic> body, {
     bool isSubFlow = false,
+    bool ignoreResponse = false,
   }) async {
     final completer = Completer<NeoSignalRTransition>();
     StreamSubscription<NeoSignalRTransition>? transitionBusSubscription;
@@ -107,6 +108,9 @@ mixin NeoTransitionBus on Bloc<NeoTransitionListenerEvent, NeoTransitionListener
     }
     await currentWorkflowManager(isSubFlow: isSubFlow).postTransition(transitionName: transitionId, body: body);
 
+    if (ignoreResponse) {
+      return null;
+    }
     unawaited(
       _getTransitionWithLongPolling(
         completer,

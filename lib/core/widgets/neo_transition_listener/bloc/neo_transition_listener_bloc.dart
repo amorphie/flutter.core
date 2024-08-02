@@ -10,6 +10,7 @@
  * Any reproduction of this material must contain this notice.
  */
 
+import 'dart:async';
 import 'dart:developer';
 
 import 'package:bloc_concurrency/bloc_concurrency.dart';
@@ -30,7 +31,6 @@ import 'package:neo_core/core/workflow_form/neo_workflow_manager.dart';
 import 'package:universal_io/io.dart';
 
 part 'neo_transition_listener_event.dart';
-
 part 'neo_transition_listener_state.dart';
 
 class NeoTransitionListenerBloc extends Bloc<NeoTransitionListenerEvent, NeoTransitionListenerState>
@@ -124,8 +124,20 @@ class NeoTransitionListenerBloc extends Bloc<NeoTransitionListenerEvent, NeoTran
       if (event.displayLoading) {
         onLoadingStatusChanged(displayLoading: true);
       }
+      if (event.ignoreResponse) {
+        unawaited(
+          postTransition(
+            event.transitionName,
+            event.body,
+            isSubFlow: event.isSubFlow,
+            ignoreResponse: event.ignoreResponse,
+          ),
+        );
+        onLoadingStatusChanged(displayLoading: false);
+        return;
+      }
       final transitionResponse = await postTransition(event.transitionName, event.body, isSubFlow: event.isSubFlow);
-      await _retrieveTokenIfExist(transitionResponse);
+      await _retrieveTokenIfExist(transitionResponse!);
       onLoadingStatusChanged(displayLoading: false);
       await _handleTransitionResult(ongoingTransition: transitionResponse, isSubFlow: event.isSubFlow);
     } catch (e) {

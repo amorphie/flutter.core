@@ -47,7 +47,7 @@ dependencies:
   # Analytics
   posthog_flutter: ^3.3.0
   logger: ^2.2.0
-  adjust_sdk: ^4.38.1
+  adjust_sdk: 4.38.1
 
   # Dynamic Widget Building
   json_dynamic_widget: ^7.1.0+7
