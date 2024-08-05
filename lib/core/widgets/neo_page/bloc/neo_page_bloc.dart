@@ -33,14 +33,16 @@ class NeoPageBloc extends Bloc<NeoPageEvent, NeoPageState> {
       _formInitialData.addAll(event.parameters);
       _formData.addAll(event.parameters);
     });
-    on<NeoPageEventAddAllParameters>((event, emit) {
-      _formData.addAll(event.parameters);
-    });
-    on<NeoPageEventAddParametersIntoArray>(_onAddParametersIntoArray);
+    on<NeoPageEventAddAllParameters>((event, emit) => addAllParameters(event));
+    on<NeoPageEventAddParametersIntoArray>((event, emit) => addParametersIntoArray(event));
     on<NeoPageEventValidateForm>((event, emit) => formKey.currentState?.validate());
   }
 
-  void _onAddParametersIntoArray(NeoPageEventAddParametersIntoArray event, Emitter<NeoPageState> emit) {
+  void addAllParameters(NeoPageEventAddAllParameters event) {
+    _formData.addAll(event.parameters);
+  }
+
+  void addParametersIntoArray(NeoPageEventAddParametersIntoArray event) {
     final newValue = event.value;
     newValue[_Constants.keyItemIdentifier] = event.itemIdentifierKey;
 
