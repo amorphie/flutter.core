@@ -139,6 +139,10 @@ class NeoCoreSecureStorage {
     if (customerId is String && customerId.isNotEmpty) {
       await write(key: NeoCoreParameterKey.secureStorageCustomerId, value: customerId);
     }
+    final role = decodedToken["role"];
+    if (role is String && role.isNotEmpty) {
+      await write(key: NeoCoreParameterKey.secureStorageRole, value: role);
+    }
 
     final customerName = decodedToken["given_name"];
     final customerSurname = decodedToken["family_name"];
