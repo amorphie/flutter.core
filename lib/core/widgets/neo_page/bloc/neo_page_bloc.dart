@@ -40,11 +40,14 @@ class NeoPageBloc extends Bloc<NeoPageEvent, NeoPageState> {
     newValue[_Constants.keyItemIdentifier] = event.itemIdentifierKey;
 
     final List<Map> currentItemList = List<Map>.from(_formData[event.sharedDataKey] ?? []);
-    final hasValue = currentItemList.isNotEmpty && currentItemList.any((element) => element[_Constants.keyItemIdentifier] == event.itemIdentifierKey);
+    final hasValue = currentItemList.isNotEmpty &&
+        currentItemList.any((element) => element[_Constants.keyItemIdentifier] == event.itemIdentifierKey);
 
     if (hasValue) {
-      currentItemList.removeWhere((currentItem) => currentItem[_Constants.keyItemIdentifier] == event.itemIdentifierKey);
-      final index = currentItemList.indexWhere((currentItem) => currentItem[_Constants.keyItemIdentifier] == event.itemIdentifierKey);
+      currentItemList
+          .removeWhere((currentItem) => currentItem[_Constants.keyItemIdentifier] == event.itemIdentifierKey);
+      final index = currentItemList
+          .indexWhere((currentItem) => currentItem[_Constants.keyItemIdentifier] == event.itemIdentifierKey);
 
       if (index != -1) {
         if (!const DeepCollectionEquality.unordered().equals(currentItemList[index], newValue)) {
@@ -122,7 +125,8 @@ dynamic setNestedMapValue(dynamic map, List<dynamic> path, dynamic value, [int i
 
   final bool isList = currentPath.startsWith("[") && currentPath.endsWith("]");
   // var index = list.indexWhere((item) => item['_id'] == id);
-  final bool isEmpty = (isList && (current == null || current.isEmpty)) || (!isList && (current[currentPath] == null || current[currentPath].isEmpty));
+  final bool isEmpty = (isList && (current == null || current.isEmpty)) ||
+      (!isList && (current[currentPath] == null || current[currentPath].isEmpty));
   final bool isLast = i == path.length - 1;
   if (isEmpty) {
     if (isList) {
