@@ -15,13 +15,14 @@ class NeoPageBloc extends Bloc<NeoPageEvent, NeoPageState> {
   final JsonWidgetRegistry jsonWidgetRegistry;
 
   final GlobalKey<FormState> formKey = GlobalKey<FormState>();
-  bool hasFormFailure = false;
   final Map<String, dynamic> _formInitialData;
   final Map<String, dynamic> _formData;
+  FocusNode? _failureFocusNode;
 
   bool isStateChanged() => !const DeepCollectionEquality.unordered().equals(_formInitialData, _formData);
 
   Map<String, dynamic> get formData => _formData;
+  FocusNode? get failureFocusNode => _failureFocusNode;
 
   NeoPageBloc({required this.jsonWidgetRegistry, Map<String, dynamic>? initialPageData})
       : _formInitialData = initialPageData ?? {},
@@ -39,6 +40,8 @@ class NeoPageBloc extends Bloc<NeoPageEvent, NeoPageState> {
     });
     on<NeoPageEventAddParametersIntoArray>(_onAddParametersIntoArray);
     on<NeoPageEventValidateForm>((event, emit) => formKey.currentState?.validate());
+    on<NeoPageEventClearFailureFocus>((event, emit) => _failureFocusNode = null);
+    on<NeoPageEventSetFailureFocus>((event, emit) => _failureFocusNode ??= event.failureFocusNode);
   }
 
   void _onAddParametersIntoArray(NeoPageEventAddParametersIntoArray event, Emitter<NeoPageState> emit) {

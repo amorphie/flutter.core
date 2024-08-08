@@ -62,3 +62,17 @@ class NeoPageEventAddParametersIntoArray extends NeoPageEvent {
   @override
   List<Object?> get props => [itemIdentifierKey, sharedDataKey, value, isInitialValue];
 }
+
+class NeoPageEventClearFailureFocus extends NeoPageEvent {
+  @override
+  List<Object?> get props => [];
+}
+
+class NeoPageEventSetFailureFocus extends NeoPageEvent {
+  const NeoPageEventSetFailureFocus(this.failureFocusNode);
+
+  final FocusNode? failureFocusNode;
+
+  @override
+  List<Object?> get props => [failureFocusNode];
+}
