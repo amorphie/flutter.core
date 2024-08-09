@@ -17,7 +17,10 @@ class NeoPageBloc extends Bloc<NeoPageEvent, NeoPageState> {
   final GlobalKey<FormState> formKey = GlobalKey<FormState>();
   final Map<String, dynamic> _formInitialData;
   final Map<String, dynamic> _formData;
-  FocusNode? failureFocusNode;
+  FocusNode? _failureFocusNode;
+
+  FocusNode? get failureFocusNode => _failureFocusNode;
+  set failureFocusNode(FocusNode? focusNode) => _failureFocusNode ??= focusNode;
 
   bool isStateChanged() => !const DeepCollectionEquality.unordered().equals(_formInitialData, _formData);
 
@@ -29,6 +32,7 @@ class NeoPageBloc extends Bloc<NeoPageEvent, NeoPageState> {
         super(const NeoPageState()) {
     on<NeoPageEventResetForm>((event, emit) {
       formKey.currentState?.reset();
+      _failureFocusNode = null;
     });
     on<NeoPageEventAddInitialParameters>((event, emit) {
       _formInitialData.addAll(event.parameters);
@@ -37,6 +41,7 @@ class NeoPageBloc extends Bloc<NeoPageEvent, NeoPageState> {
     on<NeoPageEventAddAllParameters>((event, emit) => addAllParameters(event));
     on<NeoPageEventAddParametersIntoArray>((event, emit) => addParametersIntoArray(event));
     on<NeoPageEventValidateForm>((event, emit) {
+      _failureFocusNode = null;
       final isValid = formKey.currentState?.validate();
       if (isValid != true && failureFocusNode != null) {
         failureFocusNode!.requestFocus();
