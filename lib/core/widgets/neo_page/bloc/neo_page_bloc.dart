@@ -1,5 +1,6 @@
 import 'package:collection/collection.dart';
 import 'package:equatable/equatable.dart';
+import 'package:flutter/scheduler.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:json_dynamic_widget/json_dynamic_widget.dart';
 
@@ -18,19 +19,6 @@ class NeoPageBloc extends Bloc<NeoPageEvent, NeoPageState> {
   final Map<String, dynamic> _formInitialData;
   final Map<String, dynamic> _formData;
   FocusNode? _failureFocusNode;
-
-  FocusNode? get failureFocusNode => _failureFocusNode;
-  set failureFocusNode(FocusNode? focusNode) {
-    if (_failureFocusNode == null) {
-      print("GOKTUG: Main focus is set as [${focusNode?.debugLabel?.toUpperCase()}]");
-    }
-    _failureFocusNode ??= focusNode;
-  }
-
-  void clearFailureFocusNode() {
-    _failureFocusNode = null;
-    print("GOKTUG: Focus node is cleared");
-  }
 
   bool isStateChanged() => !const DeepCollectionEquality.unordered().equals(_formInitialData, _formData);
 
@@ -123,5 +111,23 @@ class NeoPageBloc extends Bloc<NeoPageEvent, NeoPageState> {
       print('GOKTUG: Focused on => $_failureFocusNode');
     }
     return isValid ?? false;
+  }
+
+  FocusNode? get failureFocusNode => _failureFocusNode;
+  set failureFocusNode(FocusNode? focusNode) {
+    if (_failureFocusNode == null) {
+      print("GOKTUG: Main focus is set as [${focusNode?.debugLabel?.toUpperCase()}]");
+    }
+    _failureFocusNode ??= focusNode;
+  }
+
+  void clearFailureFocusNode() {
+    _failureFocusNode?.unfocus();
+    _failureFocusNode = null;
+
+    if (SchedulerBinding.instance.schedulerPhase != SchedulerPhase.persistentCallbacks) {
+      FocusManager.instance.applyFocusChangesIfNeeded();
+    }
+    print("GOKTUG: Focus node is cleared");
   }
 }
