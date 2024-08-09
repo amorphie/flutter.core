@@ -50,14 +50,6 @@ class NeoPageBloc extends Bloc<NeoPageEvent, NeoPageState> {
     });
     on<NeoPageEventAddAllParameters>((event, emit) => addAllParameters(event));
     on<NeoPageEventAddParametersIntoArray>((event, emit) => addParametersIntoArray(event));
-    on<NeoPageEventValidateForm>((event, emit) {
-      clearFailureFocusNode();
-      final isValid = formKey.currentState?.validate();
-      if (isValid != true && failureFocusNode != null) {
-        failureFocusNode!.requestFocus();
-        print('GOKTUG: Focused on => $failureFocusNode');
-      }
-    });
   }
 
   void addAllParameters(NeoPageEventAddAllParameters event) {
@@ -121,5 +113,14 @@ class NeoPageBloc extends Bloc<NeoPageEvent, NeoPageState> {
     }
 
     return stateDifference;
+  }
+
+  void validateForm() {
+    clearFailureFocusNode();
+    final isValid = formKey.currentState?.validate();
+    if (isValid != true && _failureFocusNode != null) {
+      _failureFocusNode!.requestFocus();
+      print('GOKTUG: Focused on => $_failureFocusNode');
+    }
   }
 }
