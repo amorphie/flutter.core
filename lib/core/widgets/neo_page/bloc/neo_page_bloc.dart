@@ -20,7 +20,12 @@ class NeoPageBloc extends Bloc<NeoPageEvent, NeoPageState> {
   FocusNode? _failureFocusNode;
 
   FocusNode? get failureFocusNode => _failureFocusNode;
-  set failureFocusNode(FocusNode? focusNode) => _failureFocusNode ??= focusNode;
+  set failureFocusNode(FocusNode? focusNode) {
+    if (_failureFocusNode == null) {
+      print("GOKTUG: Main focus is set as [${focusNode?.debugLabel?.toUpperCase()}]");
+    }
+    _failureFocusNode ??= focusNode;
+  }
 
   bool isStateChanged() => !const DeepCollectionEquality.unordered().equals(_formInitialData, _formData);
 
