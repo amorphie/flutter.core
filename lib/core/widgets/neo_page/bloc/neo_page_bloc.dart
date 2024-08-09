@@ -108,16 +108,12 @@ class NeoPageBloc extends Bloc<NeoPageEvent, NeoPageState> {
     final isValid = formKey.currentState?.validate();
     if (isValid != true && _failureFocusNode != null) {
       _failureFocusNode!.requestFocus();
-      print('GOKTUG: Focused on => $_failureFocusNode');
     }
     return isValid ?? false;
   }
 
   FocusNode? get failureFocusNode => _failureFocusNode;
   set failureFocusNode(FocusNode? focusNode) {
-    if (_failureFocusNode == null) {
-      print("GOKTUG: Main focus is set as [${focusNode?.debugLabel?.toUpperCase()}]");
-    }
     _failureFocusNode ??= focusNode;
   }
 
@@ -128,6 +124,5 @@ class NeoPageBloc extends Bloc<NeoPageEvent, NeoPageState> {
     if (SchedulerBinding.instance.schedulerPhase != SchedulerPhase.persistentCallbacks) {
       FocusManager.instance.applyFocusChangesIfNeeded();
     }
-    print("GOKTUG: Focus node is cleared");
   }
 }
