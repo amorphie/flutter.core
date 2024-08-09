@@ -115,12 +115,13 @@ class NeoPageBloc extends Bloc<NeoPageEvent, NeoPageState> {
     return stateDifference;
   }
 
-  void validateForm() {
+  bool validateForm() {
     clearFailureFocusNode();
     final isValid = formKey.currentState?.validate();
     if (isValid != true && _failureFocusNode != null) {
       _failureFocusNode!.requestFocus();
       print('GOKTUG: Focused on => $_failureFocusNode');
     }
+    return isValid ?? false;
   }
 }
