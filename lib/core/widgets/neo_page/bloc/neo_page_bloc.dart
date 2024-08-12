@@ -1,10 +1,11 @@
+import 'dart:async';
+
 import 'package:collection/collection.dart';
 import 'package:equatable/equatable.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:json_dynamic_widget/json_dynamic_widget.dart';
 
 part 'neo_page_event.dart';
-
 part 'neo_page_state.dart';
 
 abstract class _Constants {
@@ -17,6 +18,12 @@ class NeoPageBloc extends Bloc<NeoPageEvent, NeoPageState> {
   final GlobalKey<FormState> formKey = GlobalKey<FormState>();
   final Map<String, dynamic> _formInitialData;
   final Map<String, dynamic> _formData;
+
+  final List<StreamSubscription> _subscriptionList = [];
+
+  void addToDisposeList(StreamSubscription subscription) {
+    _subscriptionList.add(subscription);
+  }
 
   bool isStateChanged() => !const DeepCollectionEquality.unordered().equals(_formInitialData, _formData);
 
@@ -99,5 +106,13 @@ class NeoPageBloc extends Bloc<NeoPageEvent, NeoPageState> {
     }
 
     return stateDifference;
+  }
+
+  @override
+  Future<void> close() {
+    for (final subscription in _subscriptionList) {
+      subscription.cancel();
+    }
+    return super.close();
   }
 }
