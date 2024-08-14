@@ -41,11 +41,6 @@ class NeoPageEventAddAllParameters extends NeoPageEvent {
   List<Object?> get props => [parameters];
 }
 
-class NeoPageEventValidateForm extends NeoPageEvent {
-  @override
-  List<Object?> get props => [];
-}
-
 class NeoPageEventAddParametersIntoArray extends NeoPageEvent {
   final dynamic itemIdentifierKey;
   final String sharedDataKey;
