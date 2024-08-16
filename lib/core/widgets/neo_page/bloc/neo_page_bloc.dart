@@ -115,6 +115,10 @@ class NeoPageBloc extends Bloc<NeoPageEvent, NeoPageState> {
     final isValid = formKey.currentState?.validate();
     if (isValid != true && _failureFocusNode != null) {
       _failureFocusNode!.requestFocus();
+      final failureContext = _failureFocusNode!.context;
+      if (failureContext != null) {
+        Scrollable.ensureVisible(failureContext);
+      }
     }
     return isValid ?? false;
   }
