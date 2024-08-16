@@ -20,8 +20,9 @@ import 'package:neo_core/core/storage/neo_shared_prefs.dart';
 import 'package:neo_core/neo_core.dart';
 import 'package:uuid/uuid.dart';
 
-class _Constants {
+abstract class _Constants {
   static const StorageCipherAlgorithm storageCipherAlgorithm = StorageCipherAlgorithm.AES_GCM_NoPadding;
+  static const roleViewer = "Viewer";
 }
 
 class NeoCoreSecureStorage {
@@ -165,6 +166,8 @@ class NeoCoreSecureStorage {
     if (phoneNumber is String && phoneNumber.isNotEmpty) {
       await write(key: NeoCoreParameterKey.secureStoragePhoneNumber, value: phoneNumber);
     }
+    final userRole = decodedToken["role"];
+    await write(key: NeoCoreParameterKey.secureStorageUserRole, value: userRole);
     return true;
   }
 
