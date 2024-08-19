@@ -117,8 +117,10 @@ class NeoPageBloc extends Bloc<NeoPageEvent, NeoPageState> {
       _failureFocusNode!.requestFocus();
       final failureContext = _failureFocusNode!.context;
       if (failureContext != null) {
-        failureContext.findRenderObject()?.showOnScreen();
-        // Scrollable.ensureVisible(failureContext, alignment: 0.5);
+        final renderObject = failureContext.findRenderObject();
+        if (renderObject == null) {
+          Scrollable.ensureVisible(failureContext, alignment: 0.2);
+        }
       }
     }
     return isValid ?? false;
