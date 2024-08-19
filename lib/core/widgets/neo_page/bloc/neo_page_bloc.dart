@@ -111,7 +111,7 @@ class NeoPageBloc extends Bloc<NeoPageEvent, NeoPageState> {
   }
 
   bool validateForm() {
-    // clearFailureFocusNode();
+    clearFailureFocusNode();
     final isValid = formKey.currentState?.validate();
     if (isValid != true && _failureFocusNode != null) {
       _failureFocusNode!.requestFocus();
@@ -129,12 +129,12 @@ class NeoPageBloc extends Bloc<NeoPageEvent, NeoPageState> {
   }
 
   void clearFailureFocusNode() {
-    _failureFocusNode?.unfocus();
+    // _failureFocusNode?.unfocus();
     _failureFocusNode = null;
 
-    if (SchedulerBinding.instance.schedulerPhase != SchedulerPhase.persistentCallbacks) {
-      FocusManager.instance.applyFocusChangesIfNeeded();
-    }
+    // if (SchedulerBinding.instance.schedulerPhase != SchedulerPhase.persistentCallbacks) {
+    //   FocusManager.instance.applyFocusChangesIfNeeded();
+    // }
   }
 
   @override
