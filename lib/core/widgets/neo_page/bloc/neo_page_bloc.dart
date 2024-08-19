@@ -111,7 +111,7 @@ class NeoPageBloc extends Bloc<NeoPageEvent, NeoPageState> {
   }
 
   bool validateForm() {
-    clearFailureFocusNode();
+    // clearFailureFocusNode();
     final isValid = formKey.currentState?.validate();
     if (isValid != true && _failureFocusNode != null) {
       _failureFocusNode!.requestFocus();
