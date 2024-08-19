@@ -119,7 +119,7 @@ class NeoPageBloc extends Bloc<NeoPageEvent, NeoPageState> {
       if (failureContext != null) {
         final renderObject = failureContext.findRenderObject();
         if (renderObject == null) {
-          Scrollable.ensureVisible(failureContext, alignment: 0.3);
+          Scrollable.ensureVisible(failureContext, alignment: 1);
         }
       }
     }
