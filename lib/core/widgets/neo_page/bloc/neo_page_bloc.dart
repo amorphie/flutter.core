@@ -50,6 +50,11 @@ class NeoPageBloc extends Bloc<NeoPageEvent, NeoPageState> {
     _formData.addAll(event.parameters);
   }
 
+  void removeParameter(String key) {
+    _formData.remove(key);
+    _formInitialData.remove(key);
+  }
+
   void addParametersIntoArray(NeoPageEventAddParametersIntoArray event) {
     final newValue = event.value;
     newValue[_Constants.keyItemIdentifier] = event.itemIdentifierKey;
@@ -123,6 +128,7 @@ class NeoPageBloc extends Bloc<NeoPageEvent, NeoPageState> {
   }
 
   FocusNode? get failureFocusNode => _failureFocusNode;
+
   set failureFocusNode(FocusNode? focusNode) {
     _failureFocusNode ??= focusNode;
   }
