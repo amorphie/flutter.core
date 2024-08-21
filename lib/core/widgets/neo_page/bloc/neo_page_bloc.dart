@@ -2,7 +2,6 @@ import 'dart:async';
 
 import 'package:collection/collection.dart';
 import 'package:equatable/equatable.dart';
-import 'package:flutter/scheduler.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:json_dynamic_widget/json_dynamic_widget.dart';
 
@@ -49,6 +48,11 @@ class NeoPageBloc extends Bloc<NeoPageEvent, NeoPageState> {
 
   void addAllParameters(NeoPageEventAddAllParameters event) {
     _formData.addAll(event.parameters);
+  }
+
+  void removeParameter(String key) {
+    _formData.remove(key);
+    _formInitialData.remove(key);
   }
 
   void addParametersIntoArray(NeoPageEventAddParametersIntoArray event) {
@@ -115,22 +119,22 @@ class NeoPageBloc extends Bloc<NeoPageEvent, NeoPageState> {
     final isValid = formKey.currentState?.validate();
     if (isValid != true && _failureFocusNode != null) {
       _failureFocusNode!.requestFocus();
+      final failureContext = _failureFocusNode!.context;
+      if (failureContext != null) {
+        Scrollable.ensureVisible(failureContext, alignment: 0.2);
+      }
     }
     return isValid ?? false;
   }
 
   FocusNode? get failureFocusNode => _failureFocusNode;
+
   set failureFocusNode(FocusNode? focusNode) {
     _failureFocusNode ??= focusNode;
   }
 
   void clearFailureFocusNode() {
-    _failureFocusNode?.unfocus();
     _failureFocusNode = null;
-
-    if (SchedulerBinding.instance.schedulerPhase != SchedulerPhase.persistentCallbacks) {
-      FocusManager.instance.applyFocusChangesIfNeeded();
-    }
   }
 
   @override
