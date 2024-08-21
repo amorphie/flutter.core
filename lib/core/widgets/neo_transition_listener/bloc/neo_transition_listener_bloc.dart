@@ -112,6 +112,7 @@ class NeoTransitionListenerBloc extends Bloc<NeoTransitionListenerEvent, NeoTran
           initialData: additionalData is Map ? additionalData.cast() : {"data": additionalData},
           transitionId: (response["transition"] as List?)?.firstOrNull["transition"] ?? "",
           queryParameters: event.queryParameters,
+          useSubNavigator: event.useSubNavigator,
         ),
       );
     } catch (e) {
