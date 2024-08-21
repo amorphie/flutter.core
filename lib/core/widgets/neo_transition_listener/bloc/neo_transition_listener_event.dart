@@ -62,6 +62,7 @@ class NeoTransitionListenerEventInitWorkflow extends NeoTransitionListenerEvent 
   final bool displayLoading;
   final bool isSubFlow;
   final Map<String, dynamic>? initialData;
+  final NeoNavigationType? navigationType;
 
   NeoTransitionListenerEventInitWorkflow({
     required this.workflowName,
@@ -69,6 +70,7 @@ class NeoTransitionListenerEventInitWorkflow extends NeoTransitionListenerEvent 
     this.isSubFlow = false,
     this.displayLoading = true,
     this.initialData,
+    this.navigationType,
   });
 
   @override
