@@ -105,12 +105,14 @@ class NeoTransitionListenerBloc extends Bloc<NeoTransitionListenerEvent, NeoTran
       onTransitionSuccess(
         SignalrTransitionData(
           navigationPath: response["init-page-name"],
-          navigationType: NeoNavigationType.fromJson(response["navigation"]) ?? NeoNavigationType.push,
+          navigationType:
+              event.navigationType ?? NeoNavigationType.fromJson(response["navigation"]) ?? NeoNavigationType.push,
           pageId: response["state"],
           viewSource: response["view-source"],
           initialData: additionalData is Map ? additionalData.cast() : {"data": additionalData},
           transitionId: (response["transition"] as List?)?.firstOrNull["transition"] ?? "",
           queryParameters: event.queryParameters,
+          useSubNavigator: event.useSubNavigator,
         ),
       );
     } catch (e) {

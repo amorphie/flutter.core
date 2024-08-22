@@ -25,6 +25,7 @@ abstract class _Constant {
   static const keyStatusMessage = "statusMessage";
   static const keyStatusCode = "statusCode";
   static const keyWorkflowSuffix = "queryParameters";
+  static const keyUseSubNavigator = "useSubNavigator";
   static const statusCodeRedirectToLogin = "302";
 }
 
@@ -39,6 +40,7 @@ class SignalrTransitionData {
   final String? statusMessage;
   final String? statusCode;
   final Map<String, dynamic>? queryParameters;
+  final bool useSubNavigator;
 
   SignalrTransitionData({
     required this.transitionId,
@@ -51,6 +53,7 @@ class SignalrTransitionData {
     this.statusMessage,
     this.statusCode,
     this.queryParameters,
+    this.useSubNavigator = false,
   });
 
   String encode() {
@@ -65,6 +68,7 @@ class SignalrTransitionData {
       _Constant.keyStatusMessage: statusMessage,
       _Constant.keyStatusCode: statusCode,
       _Constant.keyWorkflowSuffix: queryParameters,
+      _Constant.keyUseSubNavigator: useSubNavigator,
     });
   }
 
@@ -81,6 +85,7 @@ class SignalrTransitionData {
       statusMessage: jsonMap[_Constant.keyStatusMessage],
       statusCode: jsonMap[_Constant.keyStatusCode],
       queryParameters: jsonMap[_Constant.keyWorkflowSuffix],
+      useSubNavigator: jsonMap[_Constant.keyUseSubNavigator],
     );
   }
 }
