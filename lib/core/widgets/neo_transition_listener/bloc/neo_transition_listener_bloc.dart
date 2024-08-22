@@ -117,7 +117,7 @@ class NeoTransitionListenerBloc extends Bloc<NeoTransitionListenerEvent, NeoTran
       );
     } catch (e) {
       onLoadingStatusChanged(displayLoading: false);
-      onTransitionError?.call(const NeoError());
+      onTransitionError?.call(e is NeoException ? e.error : const NeoError());
     }
   }
 
@@ -144,7 +144,7 @@ class NeoTransitionListenerBloc extends Bloc<NeoTransitionListenerEvent, NeoTran
       await _handleTransitionResult(ongoingTransition: transitionResponse, isSubFlow: event.isSubFlow);
     } catch (e) {
       onLoadingStatusChanged(displayLoading: false);
-      onTransitionError?.call(const NeoError());
+      onTransitionError?.call(e is NeoException ? e.error : const NeoError());
     }
   }
 

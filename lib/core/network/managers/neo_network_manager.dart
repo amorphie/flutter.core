@@ -21,6 +21,7 @@ import 'package:json_annotation/json_annotation.dart';
 import 'package:neo_core/core/analytics/neo_logger.dart';
 import 'package:neo_core/core/network/models/http_auth_response.dart';
 import 'package:neo_core/core/network/models/http_method.dart';
+import 'package:neo_core/core/network/models/neo_error_type.dart';
 import 'package:neo_core/core/network/models/neo_http_call.dart';
 import 'package:neo_core/core/network/models/neo_network_header_key.dart';
 import 'package:neo_core/core/storage/neo_core_parameter_key.dart';
@@ -249,18 +250,11 @@ class NeoNetworkManager {
         throw NeoException(error: error);
       }
       if (await secureStorage.read(NeoCoreParameterKey.secureStorageRefreshToken) != null) {
-        final isTokenRefreshed = await _refreshAuthDetailsByUsingRefreshToken();
-        if (isTokenRefreshed) {
-          return _retryLastCall(call);
-        } else {
-          final error = NeoError(responseCode: response.statusCode);
-          _neoLogger.logError("[NeoNetworkManager]: Token refresh service error!");
-          throw NeoException(error: error);
-        }
+        await _refreshAuthDetailsByUsingRefreshToken();
       } else {
         await _getTemporaryTokenForNotLoggedInUser(call);
-        return _retryLastCall(call);
       }
+      return _retryLastCall(call);
     } else {
       try {
         responseJSON.addAll({'body': response.body});
@@ -305,27 +299,21 @@ class NeoNetworkManager {
     return (call.retryCount ?? 0) > 0;
   }
 
-  Future<bool> _refreshAuthDetailsByUsingRefreshToken() async {
-    try {
-      final responseJson = await call(
-        NeoHttpCall(
-          endpoint: _Constants.endpointGetToken,
-          body: {
-            _Constants.requestKeyGrantType: _Constants.requestValueGrantTypeRefreshToken,
-            _Constants.requestKeyRefreshToken: await secureStorage.read(NeoCoreParameterKey.secureStorageRefreshToken),
-          },
-        ),
-      );
-      final authResponse = HttpAuthResponse.fromJson(responseJson);
-      await Future.wait([
-        secureStorage.setAuthToken(authResponse.token),
-        secureStorage.write(key: NeoCoreParameterKey.secureStorageRefreshToken, value: authResponse.refreshToken),
-      ]);
-
-      return true;
-    } catch (_) {
-      return false;
-    }
+  Future<void> _refreshAuthDetailsByUsingRefreshToken() async {
+    final responseJson = await call(
+      NeoHttpCall(
+        endpoint: _Constants.endpointGetToken,
+        body: {
+          _Constants.requestKeyGrantType: _Constants.requestValueGrantTypeRefreshToken,
+          _Constants.requestKeyRefreshToken: await secureStorage.read(NeoCoreParameterKey.secureStorageRefreshToken),
+        },
+      ),
+    );
+    final authResponse = HttpAuthResponse.fromJson(responseJson);
+    await Future.wait([
+      secureStorage.setAuthToken(authResponse.token),
+      secureStorage.write(key: NeoCoreParameterKey.secureStorageRefreshToken, value: authResponse.refreshToken),
+    ]);
   }
 
   Future<void> _getTemporaryTokenForNotLoggedInUser(NeoHttpCall currentCall) async {
