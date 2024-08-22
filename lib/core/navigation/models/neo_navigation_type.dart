@@ -27,7 +27,9 @@ enum NeoNavigationType {
   @JsonValue('bottom-sheet')
   bottomSheet,
   @JsonValue('pop')
-  pop;
+  pop,
+  @JsonValue('none')
+  none;
 
   static const Map<String, NeoNavigationType> _jsonValues = {
     'pop-until': NeoNavigationType.popUntil,
@@ -37,6 +39,8 @@ enum NeoNavigationType {
     'popup': NeoNavigationType.popup,
     'bottom-sheet': NeoNavigationType.bottomSheet,
     'pop': NeoNavigationType.pop,
+    'none': NeoNavigationType.none,
+    '': NeoNavigationType.none,
   };
 
   static NeoNavigationType? fromJson(String json) {
