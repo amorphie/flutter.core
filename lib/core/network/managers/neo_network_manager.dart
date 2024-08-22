@@ -244,7 +244,7 @@ class NeoNetworkManager {
       return responseJSON;
     } else if (response.statusCode == _Constants.responseCodeUnauthorized) {
       if (call.endpoint == _Constants.endpointGetToken) {
-        final error = NeoError(responseCode: response.statusCode);
+        final error = NeoError.fromJson(responseJSON);
         _neoLogger.logError("[NeoNetworkManager]: Token service error!");
         throw NeoException(error: error);
       }
