@@ -31,7 +31,7 @@ class NeoWorkflowManager {
 
   String get instanceId => _instanceId;
 
-  Future<Map<String, dynamic>> initWorkflow({required String workflowName, Map<String, dynamic>? queryParameters}) async {
+  Future<NeoResponse> initWorkflow({required String workflowName, Map<String, dynamic>? queryParameters}) async {
     NeoWorkflowManager.workflowName = workflowName;
     resetInstanceId();
 
@@ -53,7 +53,7 @@ class NeoWorkflowManager {
     return response;
   }
 
-  Future<Map<String, dynamic>> getAvailableTransitions({String? instanceId}) async {
+  Future<NeoResponse> getAvailableTransitions({String? instanceId}) async {
     setInstanceId(instanceId);
     final response = await neoNetworkManager.call(
       NeoHttpCall(
@@ -83,7 +83,7 @@ class NeoWorkflowManager {
     );
   }
 
-  Future<Map<String, dynamic>> getLastTransitionByLongPolling() async {
+  Future<NeoResponse> getLastTransitionByLongPolling() async {
     return neoNetworkManager.call(
       NeoHttpCall(
         endpoint: _Constants.endpointGetLastEventByLongPolling,
