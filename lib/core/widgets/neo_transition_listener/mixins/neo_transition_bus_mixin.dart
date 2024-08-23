@@ -66,6 +66,7 @@ mixin NeoTransitionBus on Bloc<NeoTransitionListenerEvent, NeoTransitionListener
   Future<NeoResponse> initWorkflow({
     required String workflowName,
     Map<String, dynamic>? queryParameters,
+    Map<String, String>? headerParameters,
     String? instanceId,
     bool isSubFlow = false,
   }) {
@@ -73,6 +74,7 @@ mixin NeoTransitionBus on Bloc<NeoTransitionListenerEvent, NeoTransitionListener
       return currentWorkflowManager(isSubFlow: isSubFlow).initWorkflow(
         workflowName: workflowName,
         queryParameters: queryParameters,
+        headerParameters: headerParameters,
       );
     } else {
       return currentWorkflowManager(isSubFlow: isSubFlow).getAvailableTransitions(instanceId: instanceId);
@@ -92,6 +94,7 @@ mixin NeoTransitionBus on Bloc<NeoTransitionListenerEvent, NeoTransitionListener
   Future<NeoSignalRTransition?> postTransition(
     String transitionId,
     Map<String, dynamic> body, {
+    Map<String, String>? headerParameters,
     bool isSubFlow = false,
     bool ignoreResponse = false,
   }) async {
@@ -108,7 +111,11 @@ mixin NeoTransitionBus on Bloc<NeoTransitionListenerEvent, NeoTransitionListener
         }
       });
     }
-    await currentWorkflowManager(isSubFlow: isSubFlow).postTransition(transitionName: transitionId, body: body);
+    await currentWorkflowManager(isSubFlow: isSubFlow).postTransition(
+      transitionName: transitionId,
+      body: body,
+      headerParameters: headerParameters,
+    );
 
     if (ignoreResponse) {
       return null;
