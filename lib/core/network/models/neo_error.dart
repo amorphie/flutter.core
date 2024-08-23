@@ -12,13 +12,14 @@
 
 import 'package:equatable/equatable.dart';
 import 'package:json_annotation/json_annotation.dart';
-import 'package:neo_core/core/network/models/neo_error_display_method.dart';
+import 'package:neo_core/core/network/models/neo_error_type.dart';
+import 'package:universal_io/io.dart';
 
 part 'neo_error.g.dart';
 
 abstract class _Constants {
   static const defaultErrorCode = 400;
-  static const defaultErrorDisplayMode = NeoErrorDisplayMethod.popup;
+  static const defaultErrorDisplayMode = NeoErrorType.popup;
   static const defaultErrorTitle = "general_noResponse_title";
   static const defaultErrorMessage = "general_noResponse_text";
   static const defaultErrorIcon = "error";
@@ -31,7 +32,7 @@ class NeoError extends Equatable {
   final int responseCode;
 
   @JsonKey(name: "errorType")
-  final NeoErrorDisplayMethod displayMode;
+  final NeoErrorType errorType;
 
   @JsonKey(name: "error")
   final NeoErrorDetail error;
@@ -40,11 +41,11 @@ class NeoError extends Equatable {
   final dynamic body;
 
   @override
-  List<Object?> get props => [responseCode, displayMode, error, body];
+  List<Object?> get props => [responseCode, errorType, error, body];
 
   const NeoError({
     this.responseCode = _Constants.defaultErrorCode,
-    this.displayMode = _Constants.defaultErrorDisplayMode,
+    this.errorType = _Constants.defaultErrorDisplayMode,
     this.error = const NeoErrorDetail(),
     this.body,
   });
@@ -52,6 +53,8 @@ class NeoError extends Equatable {
   Map<String, dynamic> toJson() => _$NeoErrorToJson(this);
 
   factory NeoError.fromJson(Map<String, dynamic> json) => _$NeoErrorFromJson(json);
+
+  bool get isInvalidTokenError => responseCode == HttpStatus.unauthorized && errorType == NeoErrorType.invalidToken;
 }
 
 @JsonSerializable()
