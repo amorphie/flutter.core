@@ -24,6 +24,14 @@ sealed class NeoResponse {
 
   bool get isError => !isSuccess;
 
+  NeoSuccessResponse get asSuccess {
+    return this as NeoSuccessResponse;
+  }
+
+  NeoErrorResponse get asError {
+    return this as NeoErrorResponse;
+  }
+
   factory NeoResponse.success(Map<String, dynamic> response) => NeoSuccessResponse(response);
 
   factory NeoResponse.error(NeoError response) => NeoErrorResponse(response);

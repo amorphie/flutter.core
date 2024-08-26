@@ -12,9 +12,11 @@
 import 'package:json_annotation/json_annotation.dart';
 
 @JsonEnum()
-enum NeoErrorDisplayMethod {
+enum NeoErrorType {
   @JsonValue('popup')
   popup,
   @JsonValue('inline')
   inline,
+  @JsonValue('invalid_token')
+  invalidToken,
 }
