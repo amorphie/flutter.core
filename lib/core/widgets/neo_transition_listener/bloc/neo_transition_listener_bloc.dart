@@ -88,6 +88,7 @@ class NeoTransitionListenerBloc extends Bloc<NeoTransitionListenerEvent, NeoTran
     final response = await initWorkflow(
       workflowName: event.workflowName,
       queryParameters: event.queryParameters,
+      headerParameters: event.headerParameters,
       isSubFlow: event.isSubFlow,
     );
     if (response.isSuccess) {
@@ -132,6 +133,7 @@ class NeoTransitionListenerBloc extends Bloc<NeoTransitionListenerEvent, NeoTran
           postTransition(
             event.transitionName,
             event.body,
+            headerParameters: event.headerParameters,
             isSubFlow: event.isSubFlow,
             ignoreResponse: event.ignoreResponse,
           ),
@@ -139,7 +141,12 @@ class NeoTransitionListenerBloc extends Bloc<NeoTransitionListenerEvent, NeoTran
         onLoadingStatusChanged(displayLoading: false);
         return;
       }
-      final transitionResponse = await postTransition(event.transitionName, event.body, isSubFlow: event.isSubFlow);
+      final transitionResponse = await postTransition(
+        event.transitionName,
+        event.body,
+        headerParameters: event.headerParameters,
+        isSubFlow: event.isSubFlow,
+      );
       await _retrieveTokenIfExist(transitionResponse!);
       onLoadingStatusChanged(displayLoading: false);
       await _handleTransitionResult(ongoingTransition: transitionResponse, isSubFlow: event.isSubFlow);
