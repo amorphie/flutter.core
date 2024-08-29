@@ -57,6 +57,7 @@ class NeoNetworkManager {
   final bool enableSslPinning;
   final Function(String endpoint, String? requestId)? onRequestSucceed;
   final Function(NeoError neoError, String requestId)? onRequestFailed;
+  final Function()? onInvalidTokenError;
   late final NeoLogger _neoLogger = GetIt.I.get();
 
   NeoNetworkManager({
@@ -69,6 +70,7 @@ class NeoNetworkManager {
     this.sslCertificateFilePath,
     this.onRequestSucceed,
     this.onRequestFailed,
+    this.onInvalidTokenError,
   });
 
   Future<Map<String, String>> get _defaultHeaders async {
@@ -244,7 +246,7 @@ class NeoNetworkManager {
       if (call.endpoint == _Constants.endpointGetToken) {
         final error = NeoError.fromJson(responseJSON);
         _neoLogger.logError("[NeoNetworkManager]: Token service error!");
-        return NeoResponse.error(error);
+        return _handleErrorResponse(error, call);
       }
       if (await secureStorage.read(NeoCoreParameterKey.secureStorageRefreshToken) != null) {
         final result = await _refreshAuthDetailsByUsingRefreshToken();
@@ -269,20 +271,26 @@ class NeoNetworkManager {
         if (!hasErrorCode) {
           responseJSON.addAll({'errorCode': response.statusCode});
         }
-        final error = NeoError.fromJson(responseJSON);
-        return NeoResponse.error(error);
+        return _handleErrorResponse(NeoError.fromJson(responseJSON), call);
       } on MissingRequiredKeysException {
         final error = NeoError(responseCode: response.statusCode);
-        return NeoResponse.error(error);
+        return _handleErrorResponse(error, call);
       } catch (e) {
         _neoLogger.logError(
           "[NeoNetworkManager]: Service call failed! Status code: ${response.statusCode}.Endpoint: ${call.endpoint}",
         );
-        final error = NeoError(responseCode: response.statusCode);
-        onRequestFailed?.call(error, call.requestId ?? call.endpoint);
-        return NeoResponse.error(error);
+        return _handleErrorResponse(NeoError(responseCode: response.statusCode), call);
       }
     }
+  }
+
+  NeoResponse _handleErrorResponse(NeoError error, NeoHttpCall call) {
+    if (error.isInvalidTokenError) {
+      onInvalidTokenError?.call();
+    } else {
+      onRequestFailed?.call(error, call.requestId ?? call.endpoint);
+    }
+    return NeoResponse.error(error);
   }
 
   Future<NeoResponse> _retryLastCall(NeoHttpCall neoHttpCall) async {
