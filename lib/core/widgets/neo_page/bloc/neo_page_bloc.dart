@@ -1,3 +1,5 @@
+import 'dart:convert';
+
 import 'package:collection/collection.dart';
 import 'package:equatable/equatable.dart';
 import 'package:flutter/material.dart';
@@ -114,8 +116,8 @@ class NeoPageBloc extends Bloc<NeoPageEvent, NeoPageState> {
       }
     }
 
-    _formData.addAll(setNestedMapValue(_formData, path, event.value));
-    debugPrint("${event.dataPath}\n$_formData");
+    _formData.addAll(setNestedMapValue(_formData, path, jsonDecode(jsonEncode(event.value))));
+    debugPrint("${event.dataPath}\n${jsonEncode(_formData)}");
   }
 }
 
