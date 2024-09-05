@@ -14,6 +14,7 @@ abstract class NeoNetworkHeaderKey {
   static const acceptLanguage = "Accept-Language";
   static const accessToken = "access_token";
   static const application = "X-Application";
+  static const applicationVersion = "X-Application-Version";
   static const authorization = "Authorization";
   static const behalfOfUser = "Behalf-Of-User";
   static const contentLanguage = "Content-Language";

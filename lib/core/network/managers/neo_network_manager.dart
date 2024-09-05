@@ -79,18 +79,21 @@ class NeoNetworkManager {
       secureStorage.read(NeoCoreParameterKey.secureStorageTokenId),
       secureStorage.read(NeoCoreParameterKey.secureStorageDeviceInfo),
       _authHeader,
+      PackageUtil().getAppVersionWithBuildNumber(),
     ]);
 
     final deviceId = results[0] as String? ?? "";
     final tokenId = results[1] as String? ?? "";
     final deviceInfo = results[2] != null ? NeoDeviceInfo.decode(results[2] as String? ?? "") : null;
     final authHeader = results[3] as Map<String, String>? ?? {};
+    final appVersion = results[4] as String? ?? "";
 
     return {
       NeoNetworkHeaderKey.contentType: _Constants.headerValueContentType,
       NeoNetworkHeaderKey.acceptLanguage: _languageCode,
       NeoNetworkHeaderKey.contentLanguage: _languageCode,
       NeoNetworkHeaderKey.application: _Constants.headerValueApplication,
+      NeoNetworkHeaderKey.applicationVersion: appVersion,
       NeoNetworkHeaderKey.deviceId: deviceId,
       NeoNetworkHeaderKey.tokenId: tokenId,
       NeoNetworkHeaderKey.requestId: const Uuid().v1(),
