@@ -361,7 +361,6 @@ class NeoNetworkManager {
       ]);
       return true;
     } else {
-      _neoLogger.logError("[NeoNetworkManager]: Temporary token (for not logged in user) service error!");
       return false;
     }
   }
