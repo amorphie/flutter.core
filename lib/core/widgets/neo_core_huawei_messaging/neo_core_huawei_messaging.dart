@@ -61,8 +61,8 @@ class _NeoCoreHuaweiMessagingState extends State<NeoCoreHuaweiMessaging> {
     if (kIsWeb) {
       return;
     }
-    _initNotifications();
     _initPushNotifications();
+    _initNotifications();
     if (Platform.isAndroid) {
       _initLocalNotifications();
     }
@@ -125,8 +125,6 @@ class _NeoCoreHuaweiMessagingState extends State<NeoCoreHuaweiMessaging> {
 
   Future<void> _getHuaweiToken() async {
     try {
-      await Push.turnOnPush();
-
       // Request token (token will be sent via Push.getTokenStream)
       Push.getToken(""); // Request the token with an empty string
 
