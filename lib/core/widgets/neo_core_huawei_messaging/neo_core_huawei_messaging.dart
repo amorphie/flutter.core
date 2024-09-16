@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'dart:convert';
+import 'dart:developer';
 
 import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
@@ -131,12 +132,15 @@ class _NeoCoreHuaweiMessagingState extends State<NeoCoreHuaweiMessaging> {
       // Listen to the token stream
       Push.getTokenStream.listen((token) {
         if (token != null) {
-          debugPrint("Huawei Push token: $token");
+          log("Huawei Push token: $token");
+          print("Huawei Push token: $token");
           _onTokenChange(token);
         }
       });
     } catch (e) {
       debugPrint("Error getting Huawei push token: $e");
+      print("Error getting Huawei push token: $e");
+      log("Error getting Huawei push token: $e");
     }
   }
 
@@ -171,5 +175,7 @@ class _NeoCoreHuaweiMessagingState extends State<NeoCoreHuaweiMessaging> {
 
   void _onMessageReceiveError(Object error) {
     debugPrint("Error receiving message: $error");
+    print("Error receiving message: $error");
+    log("Error receiving message: $error");
   }
 }
