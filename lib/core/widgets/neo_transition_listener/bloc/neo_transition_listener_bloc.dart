@@ -17,18 +17,17 @@ import 'package:neo_core/core/navigation/models/ekyc_event_data.dart';
 import 'package:neo_core/core/navigation/models/neo_navigation_type.dart';
 import 'package:neo_core/core/navigation/models/signalr_transition_data.dart';
 import 'package:neo_core/core/network/neo_network.dart';
-import 'package:neo_core/core/storage/neo_core_parameter_key.dart';
 import 'package:neo_core/core/storage/neo_core_secure_storage.dart';
 import 'package:neo_core/core/widgets/neo_transition_listener/mixins/neo_transition_bus_mixin.dart';
 import 'package:neo_core/core/widgets/neo_transition_listener/usecases/get_workflow_query_parameters_usecase.dart';
 import 'package:neo_core/core/workflow_form/neo_sub_workflow_manager.dart';
 import 'package:neo_core/core/workflow_form/neo_workflow_manager.dart';
+import 'package:url_launcher_web/url_launcher_web.dart';
 
 part 'neo_transition_listener_event.dart';
 part 'neo_transition_listener_state.dart';
 
-class NeoTransitionListenerBloc extends Bloc<NeoTransitionListenerEvent, NeoTransitionListenerState>
-    with NeoTransitionBus {
+class NeoTransitionListenerBloc extends Bloc<NeoTransitionListenerEvent, NeoTransitionListenerState> with NeoTransitionBus {
   late final NeoCoreSecureStorage neoCoreSecureStorage = NeoCoreSecureStorage();
   late final Function(SignalrTransitionData navigationData) onTransitionSuccess;
   late final Function(EkycEventData ekycData) onEkycEvent;
@@ -91,6 +90,7 @@ class NeoTransitionListenerBloc extends Bloc<NeoTransitionListenerEvent, NeoTran
         instanceId: event.instanceId,
       );
       await _retrieveTokenIfExist(transitionResponse);
+      await _retrieveRedirectUriIfExist(transitionResponse);
       if (event.displayLoading) {
         onLoadingStatusChanged(displayLoading: false);
       }
@@ -107,12 +107,25 @@ class NeoTransitionListenerBloc extends Bloc<NeoTransitionListenerEvent, NeoTran
     final String? token = ongoingTransition.additionalData?["access_token"];
     final String? refreshToken = ongoingTransition.additionalData?["refresh_token"];
     if (token != null && token.isNotEmpty) {
-      await Future.wait([
-        neoCoreSecureStorage.setAuthToken(token),
-        neoCoreSecureStorage.write(key: NeoCoreParameterKey.secureStorageRefreshToken, value: refreshToken ?? ""),
-      ]);
+      ongoingTransition.additionalData?["redirect_url"] = "www.google.com";
+      await _retrieveRedirectUriIfExist(ongoingTransition);
+      // await Future.wait([
+      //   neoCoreSecureStorage.setAuthToken(token),
+      //   neoCoreSecureStorage.write(key: NeoCoreParameterKey.secureStorageRefreshToken, value: refreshToken ?? ""),
+      // ]);
 
-      onLoggedInSuccessfully?.call();
+      // onLoggedInSuccessfully?.call();
+    }
+  }
+
+  Future<void> _retrieveRedirectUriIfExist(NeoSignalRTransition ongoingTransition) async {
+    final String? url = ongoingTransition.additionalData?["redirect_url"];
+    if (url != null && url.isNotEmpty) {
+      if (await UrlLauncherPlugin().canLaunch(url)) {
+        await UrlLauncherPlugin().launch(url);
+      }
+
+      // ------- 8< -------
     }
   }
 
