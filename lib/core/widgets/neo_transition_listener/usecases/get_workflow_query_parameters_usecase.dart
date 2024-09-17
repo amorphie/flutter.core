@@ -19,7 +19,7 @@ class GetWorkflowQueryParametersUseCase {
   Future<String> call(NeoCoreSecureStorage secureStorage) async {
     final results = await Future.wait([
       secureStorage.read(NeoCoreParameterKey.secureStorageDeviceId),
-      secureStorage.read(NeoCoreParameterKey.secureStorageTokenId),
+      secureStorage.read(NeoCoreParameterKey.secureStorageInstallationId),
       secureStorage.read(NeoCoreParameterKey.secureStorageAuthToken),
     ]);
 
@@ -28,6 +28,7 @@ class GetWorkflowQueryParametersUseCase {
     final authToken = results[2] ?? "";
 
     return "?${NeoNetworkHeaderKey.deviceId}=$deviceId&"
+        "${NeoNetworkHeaderKey.tokenId}=$installationId&" // TODO: Delete tokenId after the backend changes are done
         "${NeoNetworkHeaderKey.installationId}=$installationId&"
         "${NeoNetworkHeaderKey.requestId}=${UuidUtil.generateUUIDWithoutHypen()}&"
         "${NeoNetworkHeaderKey.accessToken}=$authToken";

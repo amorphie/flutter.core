@@ -76,7 +76,7 @@ class NeoNetworkManager {
   Future<Map<String, String>> get _defaultHeaders async {
     final results = await Future.wait([
       secureStorage.read(NeoCoreParameterKey.secureStorageDeviceId),
-      secureStorage.read(NeoCoreParameterKey.secureStorageTokenId),
+      secureStorage.read(NeoCoreParameterKey.secureStorageInstallationId),
       secureStorage.read(NeoCoreParameterKey.secureStorageDeviceInfo),
       _authHeader,
       PackageUtil().getAppVersionWithBuildNumber(),

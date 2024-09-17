@@ -24,6 +24,7 @@ abstract class NeoCoreParameterKey {
   static const secureStorageDeviceId = "secureStorage:infrastructure:deviceId";
   static const secureStorageDeviceInfo = "secureStorage:infrastructure:deviceInformation";
   static const secureStorageDeviceRegistrationToken = "secureStorage:infrastructure:deviceRegistrationToken";
+  static const secureStorageInstallationId = "secureStorage:infrastructure:installationId";
   static const secureStorageLanguage = "secureStorage:common:language";
   static const secureStoragePhoneNumber = "secureStorage:common:phoneNumber";
   static const secureStorageRefreshToken = "secureStorage:infrastructure:refreshToken";

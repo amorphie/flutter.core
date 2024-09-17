@@ -19,7 +19,7 @@ class NeoElastic {
     final packageInfo = await PackageInfo.fromPlatform();
     final results = await Future.wait([
       secureStorage.read(NeoCoreParameterKey.secureStorageDeviceId),
-      secureStorage.read(NeoCoreParameterKey.secureStorageTokenId),
+      secureStorage.read(NeoCoreParameterKey.secureStorageInstallationId),
     ]);
     final deviceId = results[0];
     final tokenId = results[1];
