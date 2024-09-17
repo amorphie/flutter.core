@@ -26,7 +26,9 @@ abstract class NeoNetworkHeaderKey {
   static const deviceModel = "X-Device-Model";
   static const devicePlatform = "X-Device-Platform";
   static const deviceVersion = "X-Device-Version";
+  static const installationId = "X-Installation-Id";
+  static const instanceId = "X-Instance-Id";
   static const requestId = "X-Request-Id";
-  static const tokenId = "X-Token-Id";
   static const user = "User";
+  static const workflowName = "X-Workflow-Name";
 }

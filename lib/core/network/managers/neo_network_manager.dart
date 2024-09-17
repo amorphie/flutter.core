@@ -26,6 +26,7 @@ import 'package:neo_core/core/network/models/neo_network_header_key.dart';
 import 'package:neo_core/core/storage/neo_core_parameter_key.dart';
 import 'package:neo_core/core/storage/neo_shared_prefs.dart';
 import 'package:neo_core/core/util/device_util/models/neo_device_info.dart';
+import 'package:neo_core/core/util/uuid_util.dart';
 import 'package:neo_core/neo_core.dart';
 import 'package:universal_io/io.dart';
 import 'package:uuid/uuid.dart';
@@ -83,7 +84,7 @@ class NeoNetworkManager {
     ]);
 
     final deviceId = results[0] as String? ?? "";
-    final tokenId = results[1] as String? ?? "";
+    final installationId = results[1] as String? ?? "";
     final deviceInfo = results[2] != null ? NeoDeviceInfo.decode(results[2] as String? ?? "") : null;
     final authHeader = results[3] as Map<String, String>? ?? {};
     final appVersion = results[4] as String? ?? "";
@@ -95,8 +96,8 @@ class NeoNetworkManager {
       NeoNetworkHeaderKey.application: _Constants.headerValueApplication,
       NeoNetworkHeaderKey.applicationVersion: appVersion,
       NeoNetworkHeaderKey.deviceId: deviceId,
-      NeoNetworkHeaderKey.tokenId: tokenId,
-      NeoNetworkHeaderKey.requestId: const Uuid().v1(),
+      NeoNetworkHeaderKey.installationId: installationId,
+      NeoNetworkHeaderKey.requestId: UuidUtil.generateUUIDWithoutHypen(),
       NeoNetworkHeaderKey.deviceInfo: deviceInfo?.model ?? "",
       NeoNetworkHeaderKey.deviceModel: deviceInfo?.model ?? "",
       NeoNetworkHeaderKey.deviceVersion: deviceInfo?.version ?? "",
@@ -124,8 +125,8 @@ class NeoNetworkManager {
   Future<Map<String, String>> get _defaultPostHeaders async => <String, String>{}
     ..addAll(await _defaultHeaders)
     ..addAll({
-      NeoNetworkHeaderKey.user: const Uuid().v1(), // STOPSHIP: Delete it
-      NeoNetworkHeaderKey.behalfOfUser: const Uuid().v1(), // STOPSHIP: Delete it
+      NeoNetworkHeaderKey.user: UuidUtil.generateUUID(), // STOPSHIP: Delete it
+      NeoNetworkHeaderKey.behalfOfUser: UuidUtil.generateUUID(), // STOPSHIP: Delete it
     });
 
   Future<SecurityContext?> get _getSecurityContext async {
