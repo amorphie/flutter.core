@@ -29,7 +29,6 @@ import 'package:neo_core/core/util/device_util/models/neo_device_info.dart';
 import 'package:neo_core/core/util/uuid_util.dart';
 import 'package:neo_core/neo_core.dart';
 import 'package:universal_io/io.dart';
-import 'package:uuid/uuid.dart';
 
 abstract class _Constants {
   static const int responseCodeUnauthorized = 401;

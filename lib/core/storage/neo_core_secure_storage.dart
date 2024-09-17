@@ -19,11 +19,9 @@ import 'package:neo_core/core/storage/neo_core_parameter_key.dart';
 import 'package:neo_core/core/storage/neo_shared_prefs.dart';
 import 'package:neo_core/core/util/uuid_util.dart';
 import 'package:neo_core/neo_core.dart';
-import 'package:uuid/uuid.dart';
 
 abstract class _Constants {
   static const StorageCipherAlgorithm storageCipherAlgorithm = StorageCipherAlgorithm.AES_GCM_NoPadding;
-  static const roleViewer = "Viewer";
 }
 
 class NeoCoreSecureStorage {
