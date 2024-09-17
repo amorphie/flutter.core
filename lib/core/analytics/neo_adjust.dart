@@ -8,6 +8,10 @@ class NeoAdjust {
   NeoAdjust();
 
   Future<void> init({required String appToken}) async {
+    if (kIsWeb) {
+      return;
+    }
+
     final String? deviceId = await DeviceUtil().getDeviceId();
     final AdjustConfig adjustConfig =
         AdjustConfig(appToken, kDebugMode ? AdjustEnvironment.sandbox : AdjustEnvironment.production)
@@ -16,6 +20,10 @@ class NeoAdjust {
   }
 
   void logEvent(String eventId) {
+    if (kIsWeb) {
+      return;
+    }
+
     Adjust.trackEvent(AdjustEvent(eventId));
   }
 }
