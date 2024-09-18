@@ -74,8 +74,6 @@ class _NeoCoreFirebaseMessagingState extends State<NeoCoreFirebaseMessaging> {
 
   Future<void> _initNotifications() async {
     final token = await _getTokenBasedOnPlatform();
-    debugPrint("*** TOKEN: $token");
-    print("*** TOKEN: $token");
     if (token != null) {
       _onTokenChange(token);
     }
