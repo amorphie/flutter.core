@@ -83,6 +83,8 @@ class _NeoCoreHuaweiMessagingState extends State<NeoCoreHuaweiMessaging> {
   }
 
   void _onTokenChange(String token) {
+    log("Huawei Push token: $token");
+    print("Huawei Push token: $token");
     NeoCoreRegisterDeviceUseCase().call(
       networkManager: widget.networkManager,
       secureStorage: widget.neoCoreSecureStorage,
@@ -131,9 +133,8 @@ class _NeoCoreHuaweiMessagingState extends State<NeoCoreHuaweiMessaging> {
 
       // Listen to the token stream
       Push.getTokenStream.listen((token) {
+        log("listen Token:");
         if (token != null) {
-          log("Huawei Push token: $token");
-          print("Huawei Push token: $token");
           _onTokenChange(token);
         }
       });
