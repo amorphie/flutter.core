@@ -108,7 +108,7 @@ class NeoTransitionListenerBloc extends Bloc<NeoTransitionListenerEvent, NeoTran
     final String? token = ongoingTransition.additionalData?["access_token"];
     final String? refreshToken = ongoingTransition.additionalData?["refresh_token"];
     if (token != null && token.isNotEmpty) {
-      ongoingTransition.additionalData?["redirect_url"] = "www.google.com";
+      ongoingTransition.additionalData?["redirect_url"] = "https://www.google.com";
       await _retrieveRedirectUriIfExist(ongoingTransition);
       // await Future.wait([
       //   neoCoreSecureStorage.setAuthToken(token),
