@@ -45,9 +45,7 @@ dependencies:
   # Posthog
   posthog_flutter: ^3.3.0
   logger: ^2.2.0
-  oauth2: ^2.0.3
   url_launcher: ^6.3.0
-  url_launcher_web: ^2.3.3
 
 dependency_overrides:
   uuid: ^4.1.0 # Delete this overrides when signalr_netcore package is updated

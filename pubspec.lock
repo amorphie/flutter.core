@@ -608,14 +608,6 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "1.0.0"
-  oauth2:
-    dependency: "direct main"
-    description:
-      name: oauth2
-      sha256: c84470642cbb2bec450ccab2f8520c079cd1ca546a76ffd5c40589e07f4e8bf4
-      url: "https://pub.dev"
-    source: hosted
-    version: "2.0.3"
   package_config:
     dependency: transitive
     description:
@@ -1022,7 +1014,7 @@ packages:
     source: hosted
     version: "2.3.2"
   url_launcher_web:
-    dependency: "direct main"
+    dependency: transitive
     description:
       name: url_launcher_web
       sha256: "772638d3b34c779ede05ba3d38af34657a05ac55b06279ea6edd409e323dca8e"
