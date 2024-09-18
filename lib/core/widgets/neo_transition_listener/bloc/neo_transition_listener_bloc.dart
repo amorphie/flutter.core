@@ -82,42 +82,44 @@ class NeoTransitionListenerBloc extends Bloc<NeoTransitionListenerEvent, NeoTran
   }
 
   Future<void> _onInitWorkflow(NeoTransitionListenerEventInitWorkflow event) async {
-    try {
-      if (event.displayLoading) {
-        onLoadingStatusChanged(displayLoading: true);
-      }
-      final response = await initWorkflow(
-        workflowName: event.workflowName,
-        queryParameters: event.queryParameters,
-        isSubFlow: event.isSubFlow,
-      );
+    if (event.displayLoading) {
+      onLoadingStatusChanged(displayLoading: true);
+    }
+    final response = await initWorkflow(
+      workflowName: event.workflowName,
+      queryParameters: event.queryParameters,
+      headerParameters: event.headerParameters,
+      isSubFlow: event.isSubFlow,
+    );
+    if (response.isSuccess) {
+      final responseData = response.asSuccess.data;
       onLoadingStatusChanged(displayLoading: false);
 
-      final additionalData = response["additionalData"] ?? {};
+      final additionalData = responseData["additionalData"] ?? {};
       if (additionalData is Map) {
         additionalData.addAll(event.initialData ?? {});
       }
 
-      final instanceId = response["instanceId"];
+      final instanceId = responseData["instanceId"];
       if (instanceId != null && instanceId is String) {
         currentWorkflowManager(isSubFlow: event.isSubFlow).setInstanceId(instanceId);
       }
       onTransitionSuccess(
         SignalrTransitionData(
-          navigationPath: response["init-page-name"],
+          navigationPath: responseData["init-page-name"],
           navigationType:
-              event.navigationType ?? NeoNavigationType.fromJson(response["navigation"]) ?? NeoNavigationType.push,
-          pageId: response["state"],
-          viewSource: response["view-source"],
+              event.navigationType ?? NeoNavigationType.fromJson(responseData["navigation"]) ?? NeoNavigationType.push,
+          pageId: responseData["state"],
+          viewSource: responseData["view-source"],
           initialData: additionalData is Map ? additionalData.cast() : {"data": additionalData},
-          transitionId: (response["transition"] as List?)?.firstOrNull["transition"] ?? "",
+          transitionId: (responseData["transition"] as List?)?.firstOrNull["transition"] ?? "",
           queryParameters: event.queryParameters,
           useSubNavigator: event.useSubNavigator,
         ),
       );
-    } catch (e) {
+    } else {
       onLoadingStatusChanged(displayLoading: false);
-      onTransitionError?.call(const NeoError());
+      onTransitionError?.call(response.asError.error);
     }
   }
 
@@ -131,6 +133,7 @@ class NeoTransitionListenerBloc extends Bloc<NeoTransitionListenerEvent, NeoTran
           postTransition(
             event.transitionName,
             event.body,
+            headerParameters: event.headerParameters,
             isSubFlow: event.isSubFlow,
             ignoreResponse: event.ignoreResponse,
           ),
@@ -138,13 +141,18 @@ class NeoTransitionListenerBloc extends Bloc<NeoTransitionListenerEvent, NeoTran
         onLoadingStatusChanged(displayLoading: false);
         return;
       }
-      final transitionResponse = await postTransition(event.transitionName, event.body, isSubFlow: event.isSubFlow);
+      final transitionResponse = await postTransition(
+        event.transitionName,
+        event.body,
+        headerParameters: event.headerParameters,
+        isSubFlow: event.isSubFlow,
+      );
       await _retrieveTokenIfExist(transitionResponse!);
       onLoadingStatusChanged(displayLoading: false);
       await _handleTransitionResult(ongoingTransition: transitionResponse, isSubFlow: event.isSubFlow);
     } catch (e) {
       onLoadingStatusChanged(displayLoading: false);
-      onTransitionError?.call(const NeoError());
+      onTransitionError?.call(e is NeoError ? e : const NeoError());
     }
   }
 

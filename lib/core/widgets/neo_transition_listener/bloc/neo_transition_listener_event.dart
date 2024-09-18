@@ -59,6 +59,7 @@ class NeoTransitionListenerEventInit extends NeoTransitionListenerEvent {
 class NeoTransitionListenerEventInitWorkflow extends NeoTransitionListenerEvent {
   final String workflowName;
   final Map<String, dynamic>? queryParameters;
+  final Map<String, String>? headerParameters;
   final bool displayLoading;
   final bool isSubFlow;
   final Map<String, dynamic>? initialData;
@@ -68,6 +69,7 @@ class NeoTransitionListenerEventInitWorkflow extends NeoTransitionListenerEvent 
   NeoTransitionListenerEventInitWorkflow({
     required this.workflowName,
     this.queryParameters,
+    this.headerParameters,
     this.isSubFlow = false,
     this.displayLoading = true,
     this.initialData,
@@ -76,12 +78,22 @@ class NeoTransitionListenerEventInitWorkflow extends NeoTransitionListenerEvent 
   });
 
   @override
-  List<Object?> get props => [workflowName, queryParameters, isSubFlow, displayLoading, initialData, navigationType];
+  List<Object?> get props => [
+        workflowName,
+        queryParameters,
+        headerParameters,
+        isSubFlow,
+        displayLoading,
+        initialData,
+        navigationType,
+        useSubNavigator,
+      ];
 }
 
 class NeoTransitionListenerEventPostTransition extends NeoTransitionListenerEvent {
   final String transitionName;
   final Map<String, dynamic> body;
+  final Map<String, String>? headerParameters;
   final bool isSubFlow;
   final bool displayLoading;
   final bool ignoreResponse;
@@ -89,11 +101,12 @@ class NeoTransitionListenerEventPostTransition extends NeoTransitionListenerEven
   NeoTransitionListenerEventPostTransition({
     required this.transitionName,
     required this.body,
+    this.headerParameters,
     this.isSubFlow = false,
     this.displayLoading = true,
     this.ignoreResponse = false,
   });
 
   @override
-  List<Object?> get props => [transitionName, body, isSubFlow, displayLoading, ignoreResponse];
+  List<Object?> get props => [transitionName, body, headerParameters, isSubFlow, displayLoading, ignoreResponse];
 }

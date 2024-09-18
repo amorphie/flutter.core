@@ -31,7 +31,11 @@ class NeoWorkflowManager {
 
   String get instanceId => _instanceId;
 
-  Future<Map<String, dynamic>> initWorkflow({required String workflowName, Map<String, dynamic>? queryParameters}) async {
+  Future<NeoResponse> initWorkflow({
+    required String workflowName,
+    Map<String, dynamic>? queryParameters,
+    Map<String, String>? headerParameters,
+  }) async {
     NeoWorkflowManager.workflowName = workflowName;
     resetInstanceId();
 
@@ -46,6 +50,7 @@ class NeoWorkflowManager {
         pathParameters: {
           _Constants.pathParameterWorkflowName: workflowName,
         },
+        headerParameters: headerParameters ?? const {},
         queryProviders: queryProviders,
       ),
     );
@@ -53,7 +58,7 @@ class NeoWorkflowManager {
     return response;
   }
 
-  Future<Map<String, dynamic>> getAvailableTransitions({String? instanceId}) async {
+  Future<NeoResponse> getAvailableTransitions({String? instanceId}) async {
     setInstanceId(instanceId);
     final response = await neoNetworkManager.call(
       NeoHttpCall(
@@ -70,6 +75,7 @@ class NeoWorkflowManager {
   Future postTransition({
     required String transitionName,
     required Map<String, dynamic> body,
+    Map<String, String>? headerParameters,
   }) async {
     await neoNetworkManager.call(
       NeoHttpCall(
@@ -78,12 +84,13 @@ class NeoWorkflowManager {
           _Constants.pathParameterInstanceId: _instanceId,
           _Constants.pathParameterTransitionName: transitionName,
         },
+        headerParameters: headerParameters ?? const {},
         body: body,
       ),
     );
   }
 
-  Future<Map<String, dynamic>> getLastTransitionByLongPolling() async {
+  Future<NeoResponse> getLastTransitionByLongPolling() async {
     return neoNetworkManager.call(
       NeoHttpCall(
         endpoint: _Constants.endpointGetLastEventByLongPolling,

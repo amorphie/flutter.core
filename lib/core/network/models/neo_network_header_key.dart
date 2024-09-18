@@ -14,11 +14,13 @@ abstract class NeoNetworkHeaderKey {
   static const acceptLanguage = "Accept-Language";
   static const accessToken = "access_token";
   static const application = "X-Application";
+  static const applicationVersion = "X-Application-Version";
   static const authorization = "Authorization";
   static const behalfOfUser = "Behalf-Of-User";
   static const contentLanguage = "Content-Language";
   static const contentType = "Content-Type";
   static const deployment = "X-Deployment";
+  static const deviceToken = "X-Device-Token";
   static const deviceId = "X-Device-Id";
   static const deviceInfo = "X-Device-Info";
   static const deviceModel = "X-Device-Model";
