@@ -5,10 +5,9 @@ import 'package:neo_core/core/network/managers/neo_network_manager.dart';
 import 'package:neo_core/core/storage/neo_core_secure_storage.dart';
 import 'package:neo_core/core/widgets/neo_core_firebase_messaging/neo_core_firebase_messaging.dart';
 import 'package:neo_core/core/widgets/neo_core_huawei_messaging/neo_core_huawei_messaging.dart';
-import 'package:universal_io/io.dart';
 
 class NeoCoreMessaging extends StatelessWidget {
-  final bool isGooglePlayServicesAvailable;
+  final bool isHuaweiCompatible;
   final Widget child;
   final NeoNetworkManager networkManager;
   final NeoCoreSecureStorage neoCoreSecureStorage;
@@ -16,7 +15,7 @@ class NeoCoreMessaging extends StatelessWidget {
   final Function(String)? onDeeplinkNavigation;
 
   const NeoCoreMessaging({
-    required this.isGooglePlayServicesAvailable,
+    required this.isHuaweiCompatible,
     required this.child,
     required this.networkManager,
     required this.neoCoreSecureStorage,
@@ -29,8 +28,8 @@ class NeoCoreMessaging extends StatelessWidget {
   Widget build(BuildContext context) {
     if (kIsWeb) {
       return child;
-    } else if (Platform.isIOS || isGooglePlayServicesAvailable) {
-      return NeoCoreFirebaseMessaging(
+    } else if (isHuaweiCompatible) {
+      return NeoCoreHuaweiMessaging(
         networkManager: networkManager,
         neoCoreSecureStorage: neoCoreSecureStorage,
         androidDefaultIcon: androidDefaultIcon,
@@ -38,7 +37,7 @@ class NeoCoreMessaging extends StatelessWidget {
         child: child,
       );
     } else {
-      return NeoCoreHuaweiMessaging(
+      return NeoCoreFirebaseMessaging(
         networkManager: networkManager,
         neoCoreSecureStorage: neoCoreSecureStorage,
         androidDefaultIcon: androidDefaultIcon,
