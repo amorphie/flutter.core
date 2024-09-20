@@ -237,10 +237,10 @@ packages:
     dependency: "direct main"
     description:
       name: dengage_flutter
-      sha256: "527875629ae380a6f9686aaea105816dda8ca958116690ced0dc154c59edc197"
+      sha256: "277dd5238a83291972198626dd9d61612bc2045ae4630f9f52c55a4012c95fd4"
       url: "https://pub.dev"
     source: hosted
-    version: "0.9.6"
+    version: "0.9.8"
   device_info_plus:
     dependency: "direct main"
     description:
