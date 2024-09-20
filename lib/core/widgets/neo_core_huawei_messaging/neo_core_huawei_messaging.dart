@@ -69,7 +69,10 @@ class _NeoCoreHuaweiMessagingState extends State<NeoCoreHuaweiMessaging> {
   }
 
   Future<void> _initNotifications() async {
-    await _getHuaweiToken();
+    final token = await _getHuaweiToken();
+    if (token != null) {
+      _onTokenChange(token);
+    }
 
     // Listen to the token stream
     Push.getTokenStream.listen(_onTokenChange);
@@ -123,19 +126,18 @@ class _NeoCoreHuaweiMessagingState extends State<NeoCoreHuaweiMessaging> {
     }
   }
 
-  Future<void> _getHuaweiToken() async {
+  Future<String?> _getHuaweiToken() async {
     try {
       // Request token (token will be sent via Push.getTokenStream)
-      Push.getToken(""); // Request the token with an empty string
+      Push.getToken("");
 
-      // Listen to the token stream
-      Push.getTokenStream.listen((token) {
-        if (token != null) {
-          _onTokenChange(token);
-        }
-      });
+      // Listen to the first token from stream
+      final String token = await Push.getTokenStream.first;
+
+      return token;
     } catch (e) {
-      debugPrint("Error getting Huawei push token: $e");
+      debugPrint("Huawei push token alınırken hata oluştu: $e");
+      return null;
     }
   }
 
