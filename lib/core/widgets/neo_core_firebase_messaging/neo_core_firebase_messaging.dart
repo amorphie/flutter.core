@@ -107,6 +107,9 @@ class _NeoCoreFirebaseMessagingState extends State<NeoCoreFirebaseMessaging> {
       if (notification == null || !Platform.isAndroid) {
         return;
       }
+
+      final String? customSound = message.data['sound'];
+
       _localNotifications.show(
         notification.hashCode,
         notification.title,
@@ -117,6 +120,7 @@ class _NeoCoreFirebaseMessagingState extends State<NeoCoreFirebaseMessaging> {
             _androidChannel.name,
             channelDescription: _androidChannel.description,
             icon: widget.androidDefaultIcon,
+            sound: customSound != null ? RawResourceAndroidNotificationSound(customSound) : null,
           ),
         ),
         payload: jsonEncode(message.toMap()),
