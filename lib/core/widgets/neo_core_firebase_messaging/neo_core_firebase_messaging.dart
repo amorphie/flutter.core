@@ -81,6 +81,7 @@ class _NeoCoreFirebaseMessagingState extends State<NeoCoreFirebaseMessaging> {
   }
 
   void _onTokenChange(String token) {
+    debugPrint("Firebase Push token: $token");
     NeoCoreRegisterDeviceUseCase().call(
       networkManager: widget.networkManager,
       secureStorage: widget.neoCoreSecureStorage,
