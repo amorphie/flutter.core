@@ -44,10 +44,8 @@ class NeoSignalRTransition extends Equatable {
   @JsonKey(name: "buttonType")
   final String? buttonType;
 
-  @JsonKey(name: "time", defaultValue: "")
-  final String time;
-
-  String get id => state + time;
+  @JsonKey(name: "time")
+  final DateTime time;
 
   const NeoSignalRTransition({
     required this.transitionId,

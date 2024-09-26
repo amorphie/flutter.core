@@ -19,6 +19,7 @@ import 'package:flutter/material.dart';
 import 'package:get_it/get_it.dart';
 import 'package:neo_core/core/analytics/neo_logger.dart';
 import 'package:neo_core/core/analytics/neo_logger_type.dart';
+import 'package:neo_core/core/network/models/neo_signalr_event.dart';
 import 'package:neo_core/core/network/models/neo_signalr_transition.dart';
 import 'package:signalr_netcore/signalr_client.dart';
 
@@ -31,6 +32,7 @@ abstract class _Constants {
   static const transitionSubjectKey = "subject";
   static const transitionSubjectValue = ["worker-completed", "transition-completed"];
   static const transitionResponseDataKey = "data";
+  static const transitionResponseIdKey = "id";
 }
 
 class SignalrConnectionManager {
@@ -85,7 +87,7 @@ class SignalrConnectionManager {
     }
   }
 
-  void listenForTransitionEvents({required Function(NeoSignalRTransition transition) onTransition}) {
+  void listenForTransitionEvents({required Function(NeoSignalREvent event) onEvent}) {
     _hubConnection?.on(methodName, (List<Object?>? transitions) {
       if (kDebugMode) {
         log('\n[SignalrConnectionManager] Transition: $transitions');
@@ -93,23 +95,24 @@ class SignalrConnectionManager {
       if (transitions == null) {
         return;
       }
-      final NeoSignalRTransition? ongoingTransition = _parseOngoingTransition(transitions);
-      if (ongoingTransition == null) {
+      final NeoSignalREvent? ongoingEvent = _parseOngoingEvent(transitions);
+      if (ongoingEvent == null) {
         return;
       }
-      onTransition(ongoingTransition);
+      onEvent(ongoingEvent);
     });
   }
 
-  NeoSignalRTransition? _parseOngoingTransition(List<Object?> transitions) {
+  NeoSignalREvent? _parseOngoingEvent(List<Object?> transitions) {
     return transitions
         .map((transition) {
           try {
             final transitionJsonDecoded = jsonDecode(transition is String ? transition : "{}");
-            if (!_Constants.transitionSubjectValue.contains(transitionJsonDecoded[_Constants.transitionSubjectKey])) {
+            final event = NeoSignalREvent.fromJson(transitionJsonDecoded);
+            if (!_Constants.transitionSubjectValue.contains(event.status)) {
               return null;
             }
-            return NeoSignalRTransition.fromJson(transitionJsonDecoded[_Constants.transitionResponseDataKey]);
+            return event;
           } catch (_) {
             return null;
           }

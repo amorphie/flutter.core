@@ -17,13 +17,12 @@ class NeoTransitionListenerWidget extends StatelessWidget {
   final NeoCoreSecureStorage neoCoreSecureStorage;
   final String signalRServerUrl;
   final String signalRMethodName;
-  final Function(SignalrTransitionData navigationData) onPageNavigation;
+  final Function(SignalrTransitionData navigationData) onNavigationEvent;
   final Function(EkycEventData eventData) onEkycEvent;
   final Function({required bool isTwoFactorAuthenticated})? onLoggedInSuccessfully;
   final Function(NeoError error)? onError;
   final Function({required bool displayLoading}) onLoadingStatusChanged;
   final bool bypassSignalr;
-  final bool allowParallelTransitions;
 
   const NeoTransitionListenerWidget({
     required this.child,
@@ -33,13 +32,12 @@ class NeoTransitionListenerWidget extends StatelessWidget {
     required this.neoCoreSecureStorage,
     required this.signalRServerUrl,
     required this.signalRMethodName,
-    required this.onPageNavigation,
+    required this.onNavigationEvent,
     required this.onEkycEvent,
     required this.onLoadingStatusChanged,
     this.onLoggedInSuccessfully,
     this.onError,
     this.bypassSignalr = false,
-    this.allowParallelTransitions = false,
     Key? key,
   }) : super(key: key);
 
@@ -48,7 +46,6 @@ class NeoTransitionListenerWidget extends StatelessWidget {
     return BlocProvider(
       create: (context) => NeoTransitionListenerBloc(
         neoCoreSecureStorage: neoCoreSecureStorage,
-        allowParallelTransitions: allowParallelTransitions,
       )..add(
           NeoTransitionListenerEventInit(
             neoWorkflowManager: neoWorkflowManager,
@@ -56,7 +53,7 @@ class NeoTransitionListenerWidget extends StatelessWidget {
             neoPosthog: neoPosthog,
             signalRServerUrl: signalRServerUrl,
             signalRMethodName: signalRMethodName,
-            onTransitionSuccess: onPageNavigation,
+            onNavigationEvent: onNavigationEvent,
             onEkycEvent: onEkycEvent,
             onLoggedInSuccessfully: onLoggedInSuccessfully,
             onTransitionError: onError,

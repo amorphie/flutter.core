@@ -20,7 +20,7 @@ class NeoTransitionListenerEventInit extends NeoTransitionListenerEvent {
   final NeoPosthog neoPosthog;
   final String signalRServerUrl;
   final String signalRMethodName;
-  final Function(SignalrTransitionData navigationData) onTransitionSuccess;
+  final Function(SignalrTransitionData navigationData) onNavigationEvent;
   final Function(EkycEventData eventData) onEkycEvent;
   final Function({required bool isTwoFactorAuthenticated})? onLoggedInSuccessfully;
   final Function(NeoError error)? onTransitionError;
@@ -33,7 +33,7 @@ class NeoTransitionListenerEventInit extends NeoTransitionListenerEvent {
     required this.neoPosthog,
     required this.signalRServerUrl,
     required this.signalRMethodName,
-    required this.onTransitionSuccess,
+    required this.onNavigationEvent,
     required this.onEkycEvent,
     required this.onLoggedInSuccessfully,
     required this.onTransitionError,
@@ -47,7 +47,7 @@ class NeoTransitionListenerEventInit extends NeoTransitionListenerEvent {
         neoSubWorkflowManager,
         signalRServerUrl,
         signalRMethodName,
-        onTransitionSuccess,
+        onNavigationEvent,
         onEkycEvent,
         onLoggedInSuccessfully,
         onTransitionError,
@@ -94,19 +94,15 @@ class NeoTransitionListenerEventPostTransition extends NeoTransitionListenerEven
   final String transitionName;
   final Map<String, dynamic> body;
   final Map<String, String>? headerParameters;
-  final bool isSubFlow;
   final bool displayLoading;
-  final bool ignoreResponse;
 
   NeoTransitionListenerEventPostTransition({
     required this.transitionName,
     required this.body,
     this.headerParameters,
-    this.isSubFlow = false,
     this.displayLoading = true,
-    this.ignoreResponse = false,
   });
 
   @override
-  List<Object?> get props => [transitionName, body, headerParameters, isSubFlow, displayLoading, ignoreResponse];
+  List<Object?> get props => [transitionName, body, headerParameters, displayLoading];
 }
