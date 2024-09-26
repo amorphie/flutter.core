@@ -19,7 +19,8 @@ class NeoPageBloc extends Bloc<NeoPageEvent, NeoPageState> {
   final Map<String, dynamic> _formInitialData;
   final Map<String, dynamic> _formData;
   FocusNode? _failureFocusNode;
-  bool _isCustomFieldValid = true;
+  bool _shouldClearFailureFocusNode = true;
+  Map<String, bool> _isCustomFieldsValidMap = {};
 
   final List<StreamSubscription> _subscriptionList = [];
 
@@ -116,27 +117,36 @@ class NeoPageBloc extends Bloc<NeoPageEvent, NeoPageState> {
   }
 
   bool validateForm() {
-    //clearFailureFocusNode();
+    if (_shouldClearFailureFocusNode) {
+      clearFailureFocusNode();
+    }
     final isValid = formKey.currentState?.validate();
-    if ((isValid != true || !_isCustomFieldValid) && _failureFocusNode != null) {
+    final bool isCustomFieldValid =
+        _isCustomFieldsValidMap == {} || _isCustomFieldsValidMap.values.every((element) => element);
+    if ((isValid != true || !isCustomFieldValid) && _failureFocusNode != null) {
       _failureFocusNode!.requestFocus();
       final failureContext = _failureFocusNode!.context;
       if (failureContext != null) {
         Scrollable.ensureVisible(failureContext, alignment: 0.2);
       }
     }
-    return isValid != null && isValid && _isCustomFieldValid;
+    return isValid != null && isValid && isCustomFieldValid;
   }
 
   FocusNode? get failureFocusNode => _failureFocusNode;
-  bool get isCustomFieldValid => _isCustomFieldValid;
+  bool get shouldClearFailureFocusNode => _shouldClearFailureFocusNode;
+  Map<String, bool> get isCustomFieldsValidMap => _isCustomFieldsValidMap;
 
   set failureFocusNode(FocusNode? focusNode) {
     _failureFocusNode ??= focusNode;
   }
 
-  set isCustomFieldValid(bool? isValid) {
-    _isCustomFieldValid = isValid ?? true;
+  set shouldClearFailureFocusNode(bool? shouldClearFailureFocusNode) {
+    _shouldClearFailureFocusNode = shouldClearFailureFocusNode ?? true;
+  }
+
+  set isCustomFieldsValidMap(Map<String, bool>? isValidMap) {
+    _isCustomFieldsValidMap = isValidMap ?? {};
   }
 
   void clearFailureFocusNode() {
