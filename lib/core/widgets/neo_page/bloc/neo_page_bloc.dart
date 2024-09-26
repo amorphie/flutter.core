@@ -19,6 +19,7 @@ class NeoPageBloc extends Bloc<NeoPageEvent, NeoPageState> {
   final Map<String, dynamic> _formInitialData;
   final Map<String, dynamic> _formData;
   FocusNode? _failureFocusNode;
+  bool? _isCustomFieldValid;
 
   final List<StreamSubscription> _subscriptionList = [];
 
@@ -128,9 +129,14 @@ class NeoPageBloc extends Bloc<NeoPageEvent, NeoPageState> {
   }
 
   FocusNode? get failureFocusNode => _failureFocusNode;
+  bool? get isCustomFieldValid => _isCustomFieldValid;
 
   set failureFocusNode(FocusNode? focusNode) {
     _failureFocusNode ??= focusNode;
+  }
+
+  set isCustomFieldValid(bool? isValid) {
+    _isCustomFieldValid ??= isValid;
   }
 
   void clearFailureFocusNode() {
