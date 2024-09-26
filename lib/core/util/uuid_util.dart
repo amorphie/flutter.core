@@ -7,7 +7,7 @@ class UuidUtil {
     return const Uuid().v1();
   }
 
-  static String generateUUIDWithoutHypen() {
+  static String generateUUIDWithoutHyphen() {
     return const Uuid().v1().replaceAll('-', '');
   }
 }

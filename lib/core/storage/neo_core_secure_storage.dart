@@ -113,7 +113,7 @@ class NeoCoreSecureStorage {
       await write(key: NeoCoreParameterKey.secureStorageDeviceInfo, value: deviceInfo.encode());
     }
     if (!await _storage!.containsKey(key: NeoCoreParameterKey.secureStorageInstallationId)) {
-      await write(key: NeoCoreParameterKey.secureStorageInstallationId, value: UuidUtil.generateUUIDWithoutHypen());
+      await write(key: NeoCoreParameterKey.secureStorageInstallationId, value: UuidUtil.generateUUIDWithoutHyphen());
     }
   }
 

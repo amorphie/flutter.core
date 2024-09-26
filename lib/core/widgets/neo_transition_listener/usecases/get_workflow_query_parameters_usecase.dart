@@ -30,7 +30,7 @@ class GetWorkflowQueryParametersUseCase {
     return "?${NeoNetworkHeaderKey.deviceId}=$deviceId&"
         "${NeoNetworkHeaderKey.tokenId}=$installationId&" // TODO: Delete tokenId after the backend changes are done
         "${NeoNetworkHeaderKey.installationId}=$installationId&"
-        "${NeoNetworkHeaderKey.requestId}=${UuidUtil.generateUUIDWithoutHypen()}&"
+        "${NeoNetworkHeaderKey.requestId}=${UuidUtil.generateUUIDWithoutHyphen()}&"
         "${NeoNetworkHeaderKey.accessToken}=$authToken";
   }
 }
