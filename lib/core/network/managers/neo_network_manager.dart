@@ -96,6 +96,7 @@ class NeoNetworkManager {
       NeoNetworkHeaderKey.applicationVersion: appVersion,
       NeoNetworkHeaderKey.deviceId: deviceId,
       NeoNetworkHeaderKey.installationId: installationId,
+      NeoNetworkHeaderKey.tokenId: installationId, // TODO: Delete tokenId after the backend changes are done
       NeoNetworkHeaderKey.requestId: UuidUtil.generateUUIDWithoutHypen(),
       NeoNetworkHeaderKey.deviceInfo: deviceInfo?.model ?? "",
       NeoNetworkHeaderKey.deviceModel: deviceInfo?.model ?? "",
