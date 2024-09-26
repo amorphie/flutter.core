@@ -45,10 +45,10 @@ dependencies:
   firebase_messaging: 15.0.0
 
   #Huawei
-  huawei_push: ^6.12.0+302
+  huawei_push: 6.12.0+302
 
   #Dengage
-  dengage_flutter: ^0.9.6
+  dengage_flutter: 0.9.6
 
   # Analytics
   posthog_flutter: ^3.3.0
