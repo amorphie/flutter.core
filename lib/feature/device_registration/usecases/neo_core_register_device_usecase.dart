@@ -38,11 +38,11 @@ class NeoCoreRegisterDeviceUseCase {
 
       final resultArray = await Future.wait([
         secureStorage.read(NeoCoreParameterKey.secureStorageDeviceId),
-        secureStorage.read(NeoCoreParameterKey.secureStorageTokenId),
+        secureStorage.read(NeoCoreParameterKey.secureStorageInstallationId),
         deviceUtil.getDeviceInfo(),
       ]);
       final deviceId = resultArray[0] as String? ?? "";
-      final tokenId = resultArray[1] as String? ?? "";
+      final installationId = resultArray[1] as String? ?? "";
       final deviceInfo = resultArray[2] as NeoDeviceInfo?;
 
       await Future.wait([
@@ -51,7 +51,7 @@ class NeoCoreRegisterDeviceUseCase {
             endpoint: _Constants.registerDeviceEndpoint,
             body: NeoCoreRegisterDeviceRequest(
               deviceId: deviceId,
-              installationId: tokenId,
+              installationId: installationId,
               deviceToken: deviceToken,
               deviceModel: deviceInfo?.model ?? "",
               devicePlatform: deviceInfo?.platform ?? "",
