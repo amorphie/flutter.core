@@ -29,7 +29,6 @@ import 'package:universal_io/io.dart';
 abstract class _Constants {
   static const criticalBuildingDurationInMilliseconds = 1000;
   static const eventNameAdjustInitSucceed = "[NeoAdjust]: init is succeed!";
-  static const eventNameAdjustInitFailed = "[NeoAdjust]: init is failed!";
 }
 
 class NeoLogger implements INeoLogger {

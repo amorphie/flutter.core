@@ -1,7 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:neo_core/core/network/models/neo_http_call.dart';
+import 'package:neo_core/core/network/models/neo_network_header_key.dart';
+import 'package:neo_core/core/util/uuid_util.dart';
 import 'package:neo_core/neo_core.dart';
-import 'package:uuid/uuid.dart';
 
 abstract class _Constants {
   static const endpointInitWorkflow = "init-workflow";
@@ -16,13 +17,13 @@ abstract class _Constants {
 
 class NeoWorkflowManager {
   final NeoNetworkManager neoNetworkManager;
-  String _instanceId = const Uuid().v1();
-  static String workflowName = "";
+  String _instanceId = UuidUtil.generateUUID();
+  String workflowName = "";
 
   NeoWorkflowManager(this.neoNetworkManager);
 
   void resetInstanceId() {
-    _instanceId = const Uuid().v1();
+    _instanceId = UuidUtil.generateUUID();
   }
 
   void setInstanceId(String? newInstanceId) {
@@ -36,7 +37,7 @@ class NeoWorkflowManager {
     Map<String, dynamic>? queryParameters,
     Map<String, String>? headerParameters,
   }) async {
-    NeoWorkflowManager.workflowName = workflowName;
+    this.workflowName = workflowName;
     resetInstanceId();
 
     final List<HttpQueryProvider> queryProviders = [];
@@ -50,7 +51,7 @@ class NeoWorkflowManager {
         pathParameters: {
           _Constants.pathParameterWorkflowName: workflowName,
         },
-        headerParameters: headerParameters ?? const {},
+        headerParameters: _getDefaultHeaderParameters(headerParameters),
         queryProviders: queryProviders,
       ),
     );
@@ -84,7 +85,7 @@ class NeoWorkflowManager {
           _Constants.pathParameterInstanceId: _instanceId,
           _Constants.pathParameterTransitionName: transitionName,
         },
-        headerParameters: headerParameters ?? const {},
+        headerParameters: _getDefaultHeaderParameters(headerParameters),
         body: body,
       ),
     );
@@ -100,5 +101,12 @@ class NeoWorkflowManager {
         ],
       ),
     );
+  }
+
+  Map<String, String> _getDefaultHeaderParameters(Map<String, String>? headerParameters) {
+    return {
+      NeoNetworkHeaderKey.instanceId: _instanceId,
+      NeoNetworkHeaderKey.workflowName: workflowName,
+    }..addAll(headerParameters ?? const {});
   }
 }
