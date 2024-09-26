@@ -19,7 +19,7 @@ class NeoPageBloc extends Bloc<NeoPageEvent, NeoPageState> {
   final Map<String, dynamic> _formInitialData;
   final Map<String, dynamic> _formData;
   FocusNode? _failureFocusNode;
-  bool _isCustomFieldValid = true;
+  bool? _isCustomFieldValid;
 
   final List<StreamSubscription> _subscriptionList = [];
 
@@ -118,14 +118,14 @@ class NeoPageBloc extends Bloc<NeoPageEvent, NeoPageState> {
   bool validateForm() {
     clearFailureFocusNode();
     final isValid = formKey.currentState?.validate();
-    if (isValid != true && _failureFocusNode != null && !_isCustomFieldValid) {
+    if ((isValid != true || _isCustomFieldValid != true) && _failureFocusNode != null) {
       _failureFocusNode!.requestFocus();
       final failureContext = _failureFocusNode!.context;
       if (failureContext != null) {
         Scrollable.ensureVisible(failureContext, alignment: 0.2);
       }
     }
-    return isValid ?? false;
+    return isValid != null && isValid && _isCustomFieldValid != null && _isCustomFieldValid!;
   }
 
   FocusNode? get failureFocusNode => _failureFocusNode;
@@ -136,7 +136,7 @@ class NeoPageBloc extends Bloc<NeoPageEvent, NeoPageState> {
   }
 
   set isCustomFieldValid(bool? isValid) {
-    _isCustomFieldValid = isValid ?? true;
+    _isCustomFieldValid ??= isValid;
   }
 
   void clearFailureFocusNode() {
