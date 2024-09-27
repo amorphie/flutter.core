@@ -13,14 +13,14 @@
 import 'package:device_info_plus/device_info_plus.dart';
 import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:neo_core/core/util/device_util/models/neo_device_info.dart';
+import 'package:neo_core/core/util/uuid_util.dart';
 import 'package:universal_io/io.dart';
-import 'package:uuid/uuid.dart';
 
 class DeviceUtil {
   Future<String?> getDeviceId() async {
     final deviceInfo = DeviceInfoPlugin();
     if (kIsWeb) {
-      return const Uuid().v1();
+      return UuidUtil.generateUUID();
     } else if (Platform.isIOS) {
       final iosInfo = await deviceInfo.iosInfo;
       return iosInfo.identifierForVendor;

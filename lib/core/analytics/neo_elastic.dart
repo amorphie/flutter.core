@@ -1,5 +1,4 @@
 import "package:flutter/foundation.dart";
-import "package:get_it/get_it.dart";
 import "package:neo_core/core/network/managers/neo_network_manager.dart";
 import "package:neo_core/core/network/models/neo_http_call.dart";
 import 'package:neo_core/core/storage/neo_core_parameter_key.dart';
@@ -20,7 +19,7 @@ class NeoElastic {
     final packageInfo = await PackageInfo.fromPlatform();
     final results = await Future.wait([
       secureStorage.read(NeoCoreParameterKey.secureStorageDeviceId),
-      secureStorage.read(NeoCoreParameterKey.secureStorageTokenId),
+      secureStorage.read(NeoCoreParameterKey.secureStorageInstallationId),
     ]);
     final deviceId = results[0];
     final tokenId = results[1];

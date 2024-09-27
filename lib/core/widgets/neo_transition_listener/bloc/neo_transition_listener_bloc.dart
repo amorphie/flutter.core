@@ -133,6 +133,9 @@ class NeoTransitionListenerBloc extends Bloc<NeoTransitionListenerEvent, NeoTran
   }
 
   Future<void> _onPostTransition(NeoTransitionListenerEventPostTransition event) async {
+    if (longPollingTimer == null) {
+      _getLastTransitionsWithLongPolling(isSubFlow: false); // TODO: Handle it
+    }
     try {
       if (event.displayLoading) {
         onLoadingStatusChanged(displayLoading: true);
@@ -283,7 +286,7 @@ class NeoTransitionListenerBloc extends Bloc<NeoTransitionListenerEvent, NeoTran
         if (response.isSuccess) {
           final responseData = response.asSuccess.data;
           final event = NeoSignalREvent.fromJson(responseData);
-          final events = event.previousEvents
+          final events = List.from(event.previousEvents)
             ..add(event)
             ..sort((a, b) => a.transition.time.compareTo(b.transition.time));
 

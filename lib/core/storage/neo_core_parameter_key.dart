@@ -24,12 +24,13 @@ abstract class NeoCoreParameterKey {
   static const secureStorageDeviceId = "secureStorage:infrastructure:deviceId";
   static const secureStorageDeviceInfo = "secureStorage:infrastructure:deviceInformation";
   static const secureStorageDeviceRegistrationToken = "secureStorage:infrastructure:deviceRegistrationToken";
+  static const secureStorageInstallationId = "secureStorage:infrastructure:installationId";
   static const secureStorageLanguage = "secureStorage:common:language";
   static const secureStoragePhoneNumber = "secureStorage:common:phoneNumber";
   static const secureStorageRefreshToken = "secureStorage:infrastructure:refreshToken";
-  static const secureStorageTokenId = "secureStorage:infrastructure:tokenId";
   static const secureStorageUserRole = "secureStorage:infrastructure:userRole";
 
   static const sharedPrefsFirstRun = "sharedPrefs:infrastructure:firstRun";
+  static const sharedPrefsIsHuaweiCompatible = "sharedPrefs:common:sharedPrefsIsHuaweiCompatible";
   static const sharedPrefsLanguageCode = "sharedPrefs:common:languageCode";
 }
