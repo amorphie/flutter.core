@@ -18,7 +18,7 @@ class NeoPageBloc extends Bloc<NeoPageEvent, NeoPageState> {
   final GlobalKey<FormState> formKey = GlobalKey<FormState>();
   final Map<String, dynamic> _formInitialData;
   final Map<String, dynamic> _formData;
-  final List<FocusNode> _failureFocusNodeList = [];
+  final Map<String, FocusNode> _failureFocusNodeMap = {};
   bool _shouldClearFailureFocusNode = true;
   final Map<String, bool> _isCustomFieldsValidMap = {};
 
@@ -124,22 +124,22 @@ class NeoPageBloc extends Bloc<NeoPageEvent, NeoPageState> {
     final bool isCustomFieldValid =
         _isCustomFieldsValidMap.isEmpty || _isCustomFieldsValidMap.values.every((element) => element);
     FocusNode? failureFocus;
-    if ((isValid != true || !isCustomFieldValid) && _failureFocusNodeList.isNotEmpty) {
+    if ((isValid != true || !isCustomFieldValid) && _failureFocusNodeMap.isNotEmpty) {
       final String? failureKey =
           !isCustomFieldValid ? _isCustomFieldsValidMap.entries.firstWhere((entry) => !entry.value).key : null;
 
       if (failureKey != null) {
-        failureFocus = _failureFocusNodeList.firstWhere((element) => element.debugLabel == failureKey);
+        failureFocus = _failureFocusNodeMap[failureKey];
       } else {
-        // Remove all FocusNodes whose debugLabel matches any key in _isCustomFieldsValidMap
-        _failureFocusNodeList.removeWhere((focusNode) => _isCustomFieldsValidMap.containsKey(focusNode.debugLabel));
-        // Assign the first FocusNode from the remaining list to failureFocus
-        failureFocus = _failureFocusNodeList.first;
+        // Remove all FocusNodes whose key matches any key in _isCustomFieldsValidMap
+        _failureFocusNodeMap.removeWhere((key, focusNode) => _isCustomFieldsValidMap.containsKey(key));
+        // Assign the first FocusNode from the remaining map to failureFocus
+        failureFocus = _failureFocusNodeMap.values.first;
       }
 
-      failureFocus.requestFocus();
+      failureFocus?.requestFocus();
 
-      final failureContext = failureFocus.context;
+      final failureContext = failureFocus?.context;
       if (failureContext != null) {
         Scrollable.ensureVisible(failureContext, alignment: 0.2);
       }
@@ -147,13 +147,13 @@ class NeoPageBloc extends Bloc<NeoPageEvent, NeoPageState> {
     return isValid != null && isValid && isCustomFieldValid;
   }
 
-  List<FocusNode> get failureFocusNode => _failureFocusNodeList;
+  List<FocusNode> get failureFocusNode => _failureFocusNodeMap.values.toList();
   bool get shouldClearFailureFocusNode => _shouldClearFailureFocusNode;
   Map<String, bool> get isCustomFieldsValidMap => _isCustomFieldsValidMap;
 
   void addFailureFocusNode(FocusNode focusNode) {
-    if (!_failureFocusNodeList.contains(focusNode)) {
-      _failureFocusNodeList.add(focusNode);
+    if (!_failureFocusNodeMap.containsValue(focusNode)) {
+      _failureFocusNodeMap[focusNode.debugLabel ?? ''] = focusNode;
     }
   }
 
@@ -167,9 +167,9 @@ class NeoPageBloc extends Bloc<NeoPageEvent, NeoPageState> {
 
   void clearFailureFocusNode({String? key}) {
     if (key != null) {
-      _failureFocusNodeList.removeWhere((element) => element.debugLabel == key);
+      _failureFocusNodeMap.remove(key);
     } else {
-      _failureFocusNodeList.clear();
+      _failureFocusNodeMap.clear();
     }
   }
 
