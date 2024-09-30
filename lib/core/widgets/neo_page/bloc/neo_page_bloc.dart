@@ -18,7 +18,7 @@ class NeoPageBloc extends Bloc<NeoPageEvent, NeoPageState> {
   final GlobalKey<FormState> formKey = GlobalKey<FormState>();
   final Map<String, dynamic> _formInitialData;
   final Map<String, dynamic> _formData;
-  FocusNode? _failureFocusNode;
+  List<FocusNode>? _failureFocusNodeList;
   bool _shouldClearFailureFocusNode = true;
   Map<String, bool> _isCustomFieldsValidMap = {};
 
@@ -123,9 +123,11 @@ class NeoPageBloc extends Bloc<NeoPageEvent, NeoPageState> {
     final isValid = formKey.currentState?.validate();
     final bool isCustomFieldValid =
         _isCustomFieldsValidMap == {} || _isCustomFieldsValidMap.values.every((element) => element);
-    if ((isValid != true || !isCustomFieldValid) && _failureFocusNode != null) {
-      _failureFocusNode!.requestFocus();
-      final failureContext = _failureFocusNode!.context;
+    if ((isValid != true || !isCustomFieldValid) &&
+        _failureFocusNodeList != null &&
+        _failureFocusNodeList!.isNotEmpty) {
+      _failureFocusNodeList!.first.requestFocus();
+      final failureContext = _failureFocusNodeList!.first.context;
       if (failureContext != null) {
         Scrollable.ensureVisible(failureContext, alignment: 0.2);
       }
@@ -133,12 +135,12 @@ class NeoPageBloc extends Bloc<NeoPageEvent, NeoPageState> {
     return isValid != null && isValid && isCustomFieldValid;
   }
 
-  FocusNode? get failureFocusNode => _failureFocusNode;
+  List<FocusNode>? get failureFocusNode => _failureFocusNodeList;
   bool get shouldClearFailureFocusNode => _shouldClearFailureFocusNode;
   Map<String, bool> get isCustomFieldsValidMap => _isCustomFieldsValidMap;
 
-  set failureFocusNode(FocusNode? focusNode) {
-    _failureFocusNode ??= focusNode;
+  set failureFocusNode(List<FocusNode>? focusNodeList) {
+    _failureFocusNodeList ??= focusNodeList;
   }
 
   set shouldClearFailureFocusNode(bool? shouldClearFailureFocusNode) {
@@ -150,7 +152,7 @@ class NeoPageBloc extends Bloc<NeoPageEvent, NeoPageState> {
   }
 
   void clearFailureFocusNode() {
-    _failureFocusNode = null;
+    _failureFocusNodeList = null;
   }
 
   @override
