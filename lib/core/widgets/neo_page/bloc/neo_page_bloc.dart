@@ -20,7 +20,7 @@ class NeoPageBloc extends Bloc<NeoPageEvent, NeoPageState> {
   final Map<String, dynamic> _formData;
   List<FocusNode> _failureFocusNodeList = [];
   bool _shouldClearFailureFocusNode = true;
-  Map<String, bool> _isCustomFieldsValidMap = {};
+  final Map<String, bool> _isCustomFieldsValidMap = {};
 
   final List<StreamSubscription> _subscriptionList = [];
 
@@ -145,8 +145,8 @@ class NeoPageBloc extends Bloc<NeoPageEvent, NeoPageState> {
     _shouldClearFailureFocusNode = shouldClearFailureFocusNode ?? true;
   }
 
-  set isCustomFieldsValidMap(Map<String, bool>? isValidMap) {
-    _isCustomFieldsValidMap = isValidMap ?? {};
+  void addToIsCustomFieldsValidMap(Map<String, bool> isValidMap) {
+    _isCustomFieldsValidMap.addAll(isValidMap);
   }
 
   void clearFailureFocusNode() {
