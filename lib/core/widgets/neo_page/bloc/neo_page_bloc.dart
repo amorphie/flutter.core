@@ -124,8 +124,9 @@ class NeoPageBloc extends Bloc<NeoPageEvent, NeoPageState> {
     final bool isCustomFieldValid =
         _isCustomFieldsValidMap.isEmpty || _isCustomFieldsValidMap.values.every((element) => element);
     if ((isValid != true || !isCustomFieldValid) && _failureFocusNodeList.isNotEmpty) {
-      final FocusNode failureFocus = _failureFocusNodeList
-          .firstWhere((element) => element.debugLabel == _isCustomFieldsValidMap.keys.first)
+      final String failureKey = _isCustomFieldsValidMap.entries.firstWhere((entry) => !entry.value).key;
+
+      final FocusNode failureFocus = _failureFocusNodeList.firstWhere((element) => element.debugLabel == failureKey)
         ..requestFocus();
 
       final failureContext = failureFocus.context;
