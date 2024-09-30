@@ -18,7 +18,7 @@ class NeoPageBloc extends Bloc<NeoPageEvent, NeoPageState> {
   final GlobalKey<FormState> formKey = GlobalKey<FormState>();
   final Map<String, dynamic> _formInitialData;
   final Map<String, dynamic> _formData;
-  List<FocusNode>? _failureFocusNodeList;
+  List<FocusNode> _failureFocusNodeList = [];
   bool _shouldClearFailureFocusNode = true;
   Map<String, bool> _isCustomFieldsValidMap = {};
 
@@ -122,12 +122,10 @@ class NeoPageBloc extends Bloc<NeoPageEvent, NeoPageState> {
     }
     final isValid = formKey.currentState?.validate();
     final bool isCustomFieldValid =
-        _isCustomFieldsValidMap == {} || _isCustomFieldsValidMap.values.every((element) => element);
-    if ((isValid != true || !isCustomFieldValid) &&
-        _failureFocusNodeList != null &&
-        _failureFocusNodeList!.isNotEmpty) {
-      _failureFocusNodeList!.first.requestFocus();
-      final failureContext = _failureFocusNodeList!.first.context;
+        _isCustomFieldsValidMap.isEmpty || _isCustomFieldsValidMap.values.every((element) => element);
+    if ((isValid != true || !isCustomFieldValid) && _failureFocusNodeList.isNotEmpty) {
+      _failureFocusNodeList.first.requestFocus();
+      final failureContext = _failureFocusNodeList.first.context;
       if (failureContext != null) {
         Scrollable.ensureVisible(failureContext, alignment: 0.2);
       }
@@ -135,12 +133,12 @@ class NeoPageBloc extends Bloc<NeoPageEvent, NeoPageState> {
     return isValid != null && isValid && isCustomFieldValid;
   }
 
-  List<FocusNode>? get failureFocusNode => _failureFocusNodeList;
+  List<FocusNode> get failureFocusNode => _failureFocusNodeList;
   bool get shouldClearFailureFocusNode => _shouldClearFailureFocusNode;
   Map<String, bool> get isCustomFieldsValidMap => _isCustomFieldsValidMap;
 
-  set failureFocusNode(List<FocusNode>? focusNodeList) {
-    _failureFocusNodeList ??= focusNodeList;
+  void addFailureFocusNode(FocusNode focusNode) {
+    _failureFocusNodeList.add(focusNode);
   }
 
   set shouldClearFailureFocusNode(bool? shouldClearFailureFocusNode) {
@@ -152,7 +150,7 @@ class NeoPageBloc extends Bloc<NeoPageEvent, NeoPageState> {
   }
 
   void clearFailureFocusNode() {
-    _failureFocusNodeList = null;
+    _failureFocusNodeList = [];
   }
 
   @override
