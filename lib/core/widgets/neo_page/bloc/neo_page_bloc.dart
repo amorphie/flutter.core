@@ -123,11 +123,21 @@ class NeoPageBloc extends Bloc<NeoPageEvent, NeoPageState> {
     final isValid = formKey.currentState?.validate();
     final bool isCustomFieldValid =
         _isCustomFieldsValidMap.isEmpty || _isCustomFieldsValidMap.values.every((element) => element);
+    FocusNode? failureFocus;
     if ((isValid != true || !isCustomFieldValid) && _failureFocusNodeList.isNotEmpty) {
-      final String failureKey = _isCustomFieldsValidMap.entries.firstWhere((entry) => !entry.value).key;
+      final String? failureKey =
+          !isCustomFieldValid ? _isCustomFieldsValidMap.entries.firstWhere((entry) => !entry.value).key : null;
 
-      final FocusNode failureFocus = _failureFocusNodeList.firstWhere((element) => element.debugLabel == failureKey)
-        ..requestFocus();
+      if (failureKey != null) {
+        failureFocus = _failureFocusNodeList.firstWhere((element) => element.debugLabel == failureKey);
+      } else {
+        // Remove all FocusNodes whose debugLabel matches any key in _isCustomFieldsValidMap
+        _failureFocusNodeList.removeWhere((focusNode) => _isCustomFieldsValidMap.containsKey(focusNode.debugLabel));
+        // Assign the first FocusNode from the remaining list to failureFocus
+        failureFocus = _failureFocusNodeList.first;
+      }
+
+      failureFocus.requestFocus();
 
       final failureContext = failureFocus.context;
       if (failureContext != null) {
