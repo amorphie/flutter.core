@@ -151,10 +151,8 @@ class NeoPageBloc extends Bloc<NeoPageEvent, NeoPageState> {
   bool get shouldClearFailureFocusNode => _shouldClearFailureFocusNode;
   Map<String, bool> get isCustomFieldsValidMap => _isCustomFieldsValidMap;
 
-  void addFailureFocusNode(FocusNode focusNode) {
-    if (!_failureFocusNodeMap.containsValue(focusNode)) {
-      _failureFocusNodeMap[focusNode.debugLabel ?? ''] = focusNode;
-    }
+  void addFailureFocusNode(Map<String, FocusNode> focusMap) {
+    _failureFocusNodeMap.addAll(focusMap);
   }
 
   set shouldClearFailureFocusNode(bool? shouldClearFailureFocusNode) {
