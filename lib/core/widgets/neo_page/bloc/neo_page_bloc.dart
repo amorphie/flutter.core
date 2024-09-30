@@ -18,7 +18,7 @@ class NeoPageBloc extends Bloc<NeoPageEvent, NeoPageState> {
   final GlobalKey<FormState> formKey = GlobalKey<FormState>();
   final Map<String, dynamic> _formInitialData;
   final Map<String, dynamic> _formData;
-  List<FocusNode> _failureFocusNodeList = [];
+  final List<FocusNode> _failureFocusNodeList = [];
   bool _shouldClearFailureFocusNode = true;
   final Map<String, bool> _isCustomFieldsValidMap = {};
 
@@ -149,8 +149,12 @@ class NeoPageBloc extends Bloc<NeoPageEvent, NeoPageState> {
     _isCustomFieldsValidMap.addAll(isValidMap);
   }
 
-  void clearFailureFocusNode() {
-    _failureFocusNodeList = [];
+  void clearFailureFocusNode({String? key}) {
+    if (key != null) {
+      _failureFocusNodeList.removeWhere((element) => element.debugLabel == key);
+    } else {
+      _failureFocusNodeList.clear();
+    }
   }
 
   @override
