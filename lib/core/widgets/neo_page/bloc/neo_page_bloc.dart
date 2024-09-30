@@ -152,7 +152,9 @@ class NeoPageBloc extends Bloc<NeoPageEvent, NeoPageState> {
   Map<String, bool> get isCustomFieldsValidMap => _isCustomFieldsValidMap;
 
   void addFailureFocusNode(FocusNode focusNode) {
-    _failureFocusNodeList.add(focusNode);
+    if (!_failureFocusNodeList.contains(focusNode)) {
+      _failureFocusNodeList.add(focusNode);
+    }
   }
 
   set shouldClearFailureFocusNode(bool? shouldClearFailureFocusNode) {
@@ -160,7 +162,11 @@ class NeoPageBloc extends Bloc<NeoPageEvent, NeoPageState> {
   }
 
   void addToIsCustomFieldsValidMap(Map<String, bool> isValidMap) {
-    _isCustomFieldsValidMap.addAll(isValidMap);
+    isValidMap.forEach((key, value) {
+      if (!_isCustomFieldsValidMap.containsKey(key)) {
+        _isCustomFieldsValidMap[key] = value;
+      }
+    });
   }
 
   void clearFailureFocusNode({String? key}) {
