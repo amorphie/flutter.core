@@ -134,7 +134,9 @@ class NeoPageBloc extends Bloc<NeoPageEvent, NeoPageState> {
         // Remove all FocusNodes whose key matches any key in _isCustomFieldsValidMap
         _failureFocusNodeMap.removeWhere((key, focusNode) => _isCustomFieldsValidMap.containsKey(key));
         // Assign the first FocusNode from the remaining map to failureFocus
-        failureFocus = _failureFocusNodeMap.values.first;
+        if (_failureFocusNodeMap.isNotEmpty) {
+          failureFocus = _failureFocusNodeMap.values.first;
+        }
       }
 
       failureFocus?.requestFocus();
