@@ -1,3 +1,17 @@
+/*
+ * 
+ * flutter.core
+ * 
+ * Created on 01/10/2024.
+ * Copyright (c) 2024 Commencis. All rights reserved.
+ * 
+ * Save to the extent permitted by law, you may not use, copy, modify,
+ * distribute or create derivative works of this material or any part
+ * of it without the prior written consent of Commencis.
+ * Any reproduction of this material must contain this notice.
+ * 
+ */
+
 import 'dart:async';
 
 import 'package:collection/collection.dart';
@@ -19,7 +33,6 @@ class NeoPageBloc extends Bloc<NeoPageEvent, NeoPageState> {
   final Map<String, dynamic> _formInitialData;
   final Map<String, dynamic> _formData;
   final Map<String, FocusNode> _failureFocusNodeMap = {};
-  bool _shouldClearFailureFocusNode = true;
   final Map<String, bool> _isCustomFieldsValidMap = {};
 
   final List<StreamSubscription> _subscriptionList = [];
@@ -117,9 +130,18 @@ class NeoPageBloc extends Bloc<NeoPageEvent, NeoPageState> {
   }
 
   bool validateForm() {
-    if (_shouldClearFailureFocusNode) {
+    bool shouldClear = true;
+    for (final entry in _isCustomFieldsValidMap.entries) {
+      if (!entry.value && _failureFocusNodeMap.containsKey(entry.key)) {
+        shouldClear = false;
+        break;
+      }
+    }
+
+    if (shouldClear) {
       clearFailureFocusNode();
     }
+
     final isValid = formKey.currentState?.validate();
     final bool isCustomFieldValid =
         _isCustomFieldsValidMap.isEmpty || _isCustomFieldsValidMap.values.every((element) => element);
@@ -150,15 +172,10 @@ class NeoPageBloc extends Bloc<NeoPageEvent, NeoPageState> {
   }
 
   List<FocusNode> get failureFocusNode => _failureFocusNodeMap.values.toList();
-  bool get shouldClearFailureFocusNode => _shouldClearFailureFocusNode;
   Map<String, bool> get isCustomFieldsValidMap => _isCustomFieldsValidMap;
 
   void addFailureFocusNode(Map<String, FocusNode> focusMap) {
     _failureFocusNodeMap.addAll(focusMap);
-  }
-
-  set shouldClearFailureFocusNode(bool? shouldClearFailureFocusNode) {
-    _shouldClearFailureFocusNode = shouldClearFailureFocusNode ?? true;
   }
 
   void addToIsCustomFieldsValidMap(Map<String, bool> isValidMap) {
