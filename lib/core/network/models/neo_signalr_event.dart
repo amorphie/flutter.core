@@ -1,5 +1,6 @@
 import 'package:equatable/equatable.dart';
 import 'package:json_annotation/json_annotation.dart';
+import 'package:neo_core/core/network/models/NeoSignalREventBaseState.dart';
 import 'package:neo_core/core/network/models/neo_signalr_transition.dart';
 
 part 'neo_signalr_event.g.dart';
@@ -18,6 +19,9 @@ class NeoSignalREvent extends Equatable {
   @JsonKey(name: "data")
   final NeoSignalRTransition transition;
 
+  @JsonKey(name: "base-state")
+  final NeoSignalREventBaseState baseState;
+
   @JsonKey(name: "oldHubValues")
   final List<NeoSignalREvent> previousEvents;
 
@@ -26,6 +30,7 @@ class NeoSignalREvent extends Equatable {
     required this.type,
     required this.status,
     required this.transition,
+    required this.baseState,
     this.previousEvents = const [],
   });
 
@@ -36,6 +41,7 @@ class NeoSignalREvent extends Equatable {
         type,
         status,
         transition,
+        baseState,
         previousEvents,
       ];
 

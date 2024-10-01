@@ -19,6 +19,7 @@ import 'package:flutter/material.dart';
 import 'package:get_it/get_it.dart';
 import 'package:neo_core/core/analytics/neo_logger.dart';
 import 'package:neo_core/core/analytics/neo_logger_type.dart';
+import 'package:neo_core/core/network/models/NeoSignalREventBaseState.dart';
 import 'package:neo_core/core/network/models/neo_signalr_event.dart';
 import 'package:neo_core/core/network/models/neo_signalr_transition.dart';
 import 'package:signalr_netcore/signalr_client.dart';
@@ -29,10 +30,7 @@ abstract class _Constants {
   static const eventNameSignalrOnReconnected = "[SignalrConnectionManager]: onReconnected is called!";
   static const eventNameSignalrInitSucceed = "[SignalrConnectionManager]: init is succeed!";
   static const eventNameSignalrInitFailed = "[SignalrConnectionManager]: init is failed!";
-  static const transitionSubjectKey = "subject";
   static const transitionSubjectValue = ["worker-completed", "transition-completed"];
-  static const transitionResponseDataKey = "data";
-  static const transitionResponseIdKey = "id";
 }
 
 class SignalrConnectionManager {
@@ -44,7 +42,6 @@ class SignalrConnectionManager {
   SignalrConnectionManager({required this.serverUrl, required this.methodName});
 
   NeoLogger get _neoLogger => GetIt.I.get();
-
 
   Future init() async {
     _hubConnection = HubConnectionBuilder()
@@ -109,7 +106,8 @@ class SignalrConnectionManager {
           try {
             final transitionJsonDecoded = jsonDecode(transition is String ? transition : "{}");
             final event = NeoSignalREvent.fromJson(transitionJsonDecoded);
-            if (!_Constants.transitionSubjectValue.contains(event.status)) {
+            if (!_Constants.transitionSubjectValue.contains(event.status) ||
+                event.baseState != NeoSignalREventBaseState.completed) {
               return null;
             }
             return event;
