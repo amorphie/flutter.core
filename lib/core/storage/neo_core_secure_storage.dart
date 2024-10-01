@@ -17,12 +17,11 @@ import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:neo_core/core/encryption/jwt_decoder.dart';
 import 'package:neo_core/core/storage/neo_core_parameter_key.dart';
 import 'package:neo_core/core/storage/neo_shared_prefs.dart';
+import 'package:neo_core/core/util/uuid_util.dart';
 import 'package:neo_core/neo_core.dart';
-import 'package:uuid/uuid.dart';
 
 abstract class _Constants {
   static const StorageCipherAlgorithm storageCipherAlgorithm = StorageCipherAlgorithm.AES_GCM_NoPadding;
-  static const roleViewer = "Viewer";
 }
 
 class NeoCoreSecureStorage {
@@ -113,8 +112,8 @@ class NeoCoreSecureStorage {
     if (!await _storage!.containsKey(key: NeoCoreParameterKey.secureStorageDeviceInfo) && deviceInfo != null) {
       await write(key: NeoCoreParameterKey.secureStorageDeviceInfo, value: deviceInfo.encode());
     }
-    if (!await _storage!.containsKey(key: NeoCoreParameterKey.secureStorageTokenId)) {
-      await write(key: NeoCoreParameterKey.secureStorageTokenId, value: const Uuid().v1());
+    if (!await _storage!.containsKey(key: NeoCoreParameterKey.secureStorageInstallationId)) {
+      await write(key: NeoCoreParameterKey.secureStorageInstallationId, value: UuidUtil.generateUUIDWithoutHyphen());
     }
   }
 
