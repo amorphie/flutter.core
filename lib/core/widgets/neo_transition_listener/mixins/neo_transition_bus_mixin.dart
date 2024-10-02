@@ -30,6 +30,7 @@ abstract class _Constants {
   static const signalrBypassDelayDuration = Duration(seconds: 2);
   static const transitionResponseDataKey = "data";
   static const transitionBaseStateKey = "base-state";
+  static const transitionBaseStateNewValue = "New";
   static const transitionBaseStateInProgressValue = "InProgress";
 }
 
@@ -98,7 +99,7 @@ mixin NeoTransitionBus on Bloc<NeoTransitionListenerEvent, NeoTransitionListener
     bool isSubFlow = false,
     bool ignoreResponse = false,
   }) async {
-    final completer = Completer<NeoSignalRTransition>();
+    final completer = Completer<NeoSignalRTransition?>();
     StreamSubscription<NeoSignalRTransition>? transitionBusSubscription;
 
     if (!_bypassSignalr) {
@@ -154,7 +155,7 @@ mixin NeoTransitionBus on Bloc<NeoTransitionListenerEvent, NeoTransitionListener
   }
 
   Future<void> _getTransitionWithLongPolling(
-    Completer<NeoSignalRTransition> completer, {
+    Completer<NeoSignalRTransition?> completer, {
     required bool isSubFlow,
     required int retryCount,
   }) async {
@@ -180,6 +181,8 @@ mixin NeoTransitionBus on Bloc<NeoTransitionListenerEvent, NeoTransitionListener
             responseData[_Constants.transitionBaseStateKey] == _Constants.transitionBaseStateInProgressValue;
         if (isTransitionInProgress) {
           return _getTransitionWithLongPolling(completer, isSubFlow: isSubFlow, retryCount: retryCount - 1);
+        } else if (responseData[_Constants.transitionBaseStateKey] == _Constants.transitionBaseStateNewValue) {
+          completer.complete(null);
         } else {
           completer.complete(NeoSignalRTransition.fromJson(responseData[_Constants.transitionResponseDataKey]));
         }
