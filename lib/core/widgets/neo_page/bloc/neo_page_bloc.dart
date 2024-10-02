@@ -18,7 +18,8 @@ class NeoPageBloc extends Bloc<NeoPageEvent, NeoPageState> {
   final GlobalKey<FormState> formKey = GlobalKey<FormState>();
   final Map<String, dynamic> _formInitialData;
   final Map<String, dynamic> _formData;
-  FocusNode? _failureFocusNode;
+  final Map<String, FocusNode> _failureFocusNodeMap = {};
+  final Map<String, bool> _isCustomFieldsValidMap = {};
 
   final List<StreamSubscription> _subscriptionList = [];
 
@@ -115,26 +116,64 @@ class NeoPageBloc extends Bloc<NeoPageEvent, NeoPageState> {
   }
 
   bool validateForm() {
-    clearFailureFocusNode();
+    bool shouldClear = true;
+    for (final entry in _isCustomFieldsValidMap.entries) {
+      if (!entry.value && _failureFocusNodeMap.containsKey(entry.key)) {
+        shouldClear = false;
+        break;
+      }
+    }
+
+    if (shouldClear) {
+      clearFailureFocusNode();
+    }
+
     final isValid = formKey.currentState?.validate();
-    if (isValid != true && _failureFocusNode != null) {
-      _failureFocusNode!.requestFocus();
-      final failureContext = _failureFocusNode!.context;
+    final bool isCustomFieldValid =
+        _isCustomFieldsValidMap.isEmpty || _isCustomFieldsValidMap.values.every((element) => element);
+    FocusNode? failureFocus;
+    if ((isValid != true || !isCustomFieldValid) && _failureFocusNodeMap.isNotEmpty) {
+      final String? failureKey =
+          !isCustomFieldValid ? _isCustomFieldsValidMap.entries.firstWhere((entry) => !entry.value).key : null;
+
+      if (failureKey != null) {
+        failureFocus = _failureFocusNodeMap[failureKey];
+      } else {
+        // Remove all FocusNodes whose key matches any key in _isCustomFieldsValidMap
+        _failureFocusNodeMap.removeWhere((key, focusNode) => _isCustomFieldsValidMap.containsKey(key));
+        // Assign the first FocusNode from the remaining map to failureFocus
+        if (_failureFocusNodeMap.isNotEmpty) {
+          failureFocus = _failureFocusNodeMap.values.first;
+        }
+      }
+
+      failureFocus?.requestFocus();
+
+      final failureContext = failureFocus?.context;
       if (failureContext != null) {
         Scrollable.ensureVisible(failureContext, alignment: 0.2);
       }
     }
-    return isValid ?? false;
+    return isValid != null && isValid && isCustomFieldValid;
   }
 
-  FocusNode? get failureFocusNode => _failureFocusNode;
+  List<FocusNode> get failureFocusNode => _failureFocusNodeMap.values.toList();
+  Map<String, bool> get isCustomFieldsValidMap => _isCustomFieldsValidMap;
 
-  set failureFocusNode(FocusNode? focusNode) {
-    _failureFocusNode ??= focusNode;
+  void addFailureFocusNode(Map<String, FocusNode> focusMap) {
+    _failureFocusNodeMap.addAll(focusMap);
   }
 
-  void clearFailureFocusNode() {
-    _failureFocusNode = null;
+  void addToIsCustomFieldsValidMap(Map<String, bool> isValidMap) {
+    _isCustomFieldsValidMap.addAll(isValidMap);
+  }
+
+  void clearFailureFocusNode({String? key}) {
+    if (key != null) {
+      _failureFocusNodeMap.remove(key);
+    } else {
+      _failureFocusNodeMap.clear();
+    }
   }
 
   @override
