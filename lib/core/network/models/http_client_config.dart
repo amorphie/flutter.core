@@ -25,14 +25,27 @@ class HttpClientConfig {
   final List<HttpHostDetails> hosts;
 
   @JsonKey(name: 'config')
-  final HttpClientConfigParameters config;
+  HttpClientConfigParameters _config;
 
   @JsonKey(name: 'services', defaultValue: [])
   final List<HttpService> services;
 
-  HttpClientConfig({required this.hosts, required this.config, required this.services});
+  HttpClientConfig({required this.hosts, required HttpClientConfigParameters config, required this.services})
+      : _config = config;
+
+  HttpClientConfigParameters get config => _config;
 
   factory HttpClientConfig.fromJson(Map<String, dynamic> json) => _$HttpClientConfigFromJson(json);
+
+  void updateConfig(HttpClientConfig newConfig) {
+    hosts
+      ..clear()
+      ..addAll(newConfig.hosts);
+    _config = newConfig.config;
+    services
+      ..clear()
+      ..addAll(newConfig.services);
+  }
 
   HttpMethod? getServiceMethodByKey(String key) {
     return _findServiceByKey(key)?.method;

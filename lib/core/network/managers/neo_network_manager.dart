@@ -288,8 +288,9 @@ class NeoNetworkManager {
     }
   }
 
-  NeoResponse _handleErrorResponse(NeoError error, NeoHttpCall call) {
+  Future<NeoResponse> _handleErrorResponse(NeoError error, NeoHttpCall call) async {
     if (error.isInvalidTokenError) {
+      await secureStorage.deleteTokens();
       onInvalidTokenError?.call();
     } else {
       onRequestFailed?.call(error, call.requestId ?? call.endpoint);
