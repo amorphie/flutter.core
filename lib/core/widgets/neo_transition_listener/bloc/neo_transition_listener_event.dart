@@ -16,7 +16,6 @@ sealed class NeoTransitionListenerEvent extends Equatable {}
 
 class NeoTransitionListenerEventInit extends NeoTransitionListenerEvent {
   final NeoWorkflowManager neoWorkflowManager;
-  final NeoSubWorkflowManager neoSubWorkflowManager;
   final NeoPosthog neoPosthog;
   final String signalRServerUrl;
   final String signalRMethodName;
@@ -29,7 +28,6 @@ class NeoTransitionListenerEventInit extends NeoTransitionListenerEvent {
 
   NeoTransitionListenerEventInit({
     required this.neoWorkflowManager,
-    required this.neoSubWorkflowManager,
     required this.neoPosthog,
     required this.signalRServerUrl,
     required this.signalRMethodName,
@@ -44,7 +42,6 @@ class NeoTransitionListenerEventInit extends NeoTransitionListenerEvent {
   @override
   List<Object?> get props => [
         neoWorkflowManager,
-        neoSubWorkflowManager,
         signalRServerUrl,
         signalRMethodName,
         onNavigationEvent,
@@ -95,14 +92,16 @@ class NeoTransitionListenerEventPostTransition extends NeoTransitionListenerEven
   final Map<String, dynamic> body;
   final Map<String, String>? headerParameters;
   final bool displayLoading;
+  final bool isSubFlow;
 
   NeoTransitionListenerEventPostTransition({
     required this.transitionName,
     required this.body,
     this.headerParameters,
     this.displayLoading = true,
+    this.isSubFlow = false,
   });
 
   @override
-  List<Object?> get props => [transitionName, body, headerParameters, displayLoading];
+  List<Object?> get props => [transitionName, body, headerParameters, displayLoading, isSubFlow];
 }

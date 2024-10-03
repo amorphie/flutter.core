@@ -4,14 +4,12 @@ import 'package:neo_core/core/analytics/neo_posthog.dart';
 import 'package:neo_core/core/navigation/models/ekyc_event_data.dart';
 import 'package:neo_core/core/navigation/models/signalr_transition_data.dart';
 import 'package:neo_core/core/widgets/neo_transition_listener/bloc/neo_transition_listener_bloc.dart';
-import 'package:neo_core/core/workflow_form/neo_sub_workflow_manager.dart';
 import 'package:neo_core/core/workflow_form/neo_workflow_manager.dart';
 import 'package:neo_core/neo_core.dart';
 
 class NeoTransitionListenerWidget extends StatelessWidget {
   final Widget child;
   final NeoWorkflowManager neoWorkflowManager;
-  final NeoSubWorkflowManager neoSubWorkflowManager;
   final NeoPosthog neoPosthog;
   final NeoCoreSecureStorage neoCoreSecureStorage;
   final String signalRServerUrl;
@@ -26,7 +24,6 @@ class NeoTransitionListenerWidget extends StatelessWidget {
   const NeoTransitionListenerWidget({
     required this.child,
     required this.neoWorkflowManager,
-    required this.neoSubWorkflowManager,
     required this.neoPosthog,
     required this.neoCoreSecureStorage,
     required this.signalRServerUrl,
@@ -48,7 +45,6 @@ class NeoTransitionListenerWidget extends StatelessWidget {
       )..add(
           NeoTransitionListenerEventInit(
             neoWorkflowManager: neoWorkflowManager,
-            neoSubWorkflowManager: neoSubWorkflowManager,
             neoPosthog: neoPosthog,
             signalRServerUrl: signalRServerUrl,
             signalRMethodName: signalRMethodName,

@@ -28,7 +28,6 @@ import 'package:neo_core/core/network/neo_network.dart';
 import 'package:neo_core/core/storage/neo_core_parameter_key.dart';
 import 'package:neo_core/core/storage/neo_core_secure_storage.dart';
 import 'package:neo_core/core/widgets/neo_transition_listener/usecases/get_workflow_query_parameters_usecase.dart';
-import 'package:neo_core/core/workflow_form/neo_sub_workflow_manager.dart';
 import 'package:neo_core/core/workflow_form/neo_workflow_manager.dart';
 import 'package:rxdart/rxdart.dart';
 import 'package:universal_io/io.dart';
@@ -39,7 +38,6 @@ part 'neo_transition_listener_state.dart';
 
 abstract class _Constants {
   static const signalrLongPollingPeriod = Duration(seconds: 5);
-  static const transitionResponseDataKey = "data";
 }
 
 class NeoTransitionListenerBloc extends Bloc<NeoTransitionListenerEvent, NeoTransitionListenerState> {
@@ -111,7 +109,7 @@ class NeoTransitionListenerBloc extends Bloc<NeoTransitionListenerEvent, NeoTran
 
       final instanceId = responseData["instanceId"];
       if (instanceId != null && instanceId is String) {
-        neoWorkflowManager.setInstanceId(instanceId);
+        neoWorkflowManager.setInstanceId(instanceId, isSubFlow: event.isSubFlow);
       }
       onNavigationEvent(
         SignalrTransitionData(
@@ -133,9 +131,8 @@ class NeoTransitionListenerBloc extends Bloc<NeoTransitionListenerEvent, NeoTran
   }
 
   Future<void> _onPostTransition(NeoTransitionListenerEventPostTransition event) async {
-    if (longPollingTimer == null) {
-      _getLastTransitionsWithLongPolling(isSubFlow: false); // TODO: Handle it
-    }
+    _getLastTransitionsWithLongPolling(isSubFlow: event.isSubFlow);
+
     try {
       if (event.displayLoading) {
         onLoadingStatusChanged(displayLoading: true);
@@ -144,6 +141,7 @@ class NeoTransitionListenerBloc extends Bloc<NeoTransitionListenerEvent, NeoTran
         transitionName: event.transitionName,
         body: event.body,
         headerParameters: event.headerParameters,
+        isSubFlow: event.isSubFlow,
       );
     } catch (e) {
       onLoadingStatusChanged(displayLoading: false);
@@ -203,7 +201,7 @@ class NeoTransitionListenerBloc extends Bloc<NeoTransitionListenerEvent, NeoTran
   void _handleRedirectionSettings(NeoSignalRTransition ongoingTransition) {
     final redirectedWorkflowId = ongoingTransition.additionalData?["amorphieWorkFlowId"];
     if (ongoingTransition.statusCode == HttpStatus.permanentRedirect.toString() && redirectedWorkflowId != null) {
-      neoWorkflowManager.setInstanceId(redirectedWorkflowId);
+      neoWorkflowManager.setInstanceId(redirectedWorkflowId, isSubFlow: false);
     }
   }
 
@@ -241,6 +239,7 @@ class NeoTransitionListenerBloc extends Bloc<NeoTransitionListenerEvent, NeoTran
         workflowName: workflowName,
         queryParameters: queryParameters,
         headerParameters: headerParameters,
+        isSubFlow: isSubFlow,
       );
     } else {
       return neoWorkflowManager.getAvailableTransitions(instanceId: instanceId);
@@ -282,7 +281,7 @@ class NeoTransitionListenerBloc extends Bloc<NeoTransitionListenerEvent, NeoTran
     longPollingTimer = Timer.periodic(
       _Constants.signalrLongPollingPeriod,
       (timer) async {
-        final response = await neoWorkflowManager.getLastTransitionByLongPolling();
+        final response = await neoWorkflowManager.getLastTransitionByLongPolling(isSubFlow: isSubFlow);
         if (response.isSuccess) {
           final responseData = response.asSuccess.data;
           final event = NeoSignalREvent.fromJson(responseData);
