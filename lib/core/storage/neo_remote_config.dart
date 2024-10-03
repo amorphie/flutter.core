@@ -24,7 +24,7 @@ class NeoRemoteConfig {
     );
 
     final bool isSuccess = await _firebaseRemoteConfig.fetchAndActivate();
-    if (isSuccess) {
+    if (!isSuccess) {
       _neoLogger.logError(_Constants.initializationFailMessage);
     }
   }
