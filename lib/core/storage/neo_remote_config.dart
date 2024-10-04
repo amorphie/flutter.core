@@ -3,8 +3,8 @@ import 'package:get_it/get_it.dart';
 import 'package:neo_core/core/analytics/neo_logger.dart';
 
 abstract class _Constants {
-  static const Duration fetchTimeout = Duration(minutes: 1);
-  static const Duration minimumFetchInterval = Duration(minutes: 1);
+  static const Duration fetchTimeout = Duration(seconds: 60000);
+  static const Duration minimumFetchInterval = Duration.zero;
   static const String initializationFailMessage = "[NeoRemoteConfig]: FirebaseRemoteConfig fetchAndActivate failed!";
 }
 
