@@ -116,10 +116,6 @@ class NeoPageBloc extends Bloc<NeoPageEvent, NeoPageState> {
   }
 
   bool validateForm() {
-    if (!formKey.currentState!.mounted) {
-      return false;
-    }
-
     bool shouldClear = true;
     for (final entry in _isCustomFieldsValidMap.entries) {
       if (!entry.value && _failureFocusNodeMap.containsKey(entry.key)) {
@@ -160,6 +156,7 @@ class NeoPageBloc extends Bloc<NeoPageEvent, NeoPageState> {
     }
     return isValid != null && isValid && isCustomFieldValid;
   }
+
   List<FocusNode> get failureFocusNode => _failureFocusNodeMap.values.toList();
   Map<String, bool> get isCustomFieldsValidMap => _isCustomFieldsValidMap;
 
