@@ -118,7 +118,7 @@ class NeoPageBloc extends Bloc<NeoPageEvent, NeoPageState> {
   bool validateForm() {
     bool shouldClear = true;
     for (final entry in _isCustomFieldsValidMap.entries) {
-      if (!entry.value && _failureFocusNodeMap.containsKey(entry.key)) {
+      if (!entry.value && _failureFocusNodeMap.keys.any((element) => element.contains(entry.key))) {
         shouldClear = false;
         break;
       }
@@ -137,7 +137,13 @@ class NeoPageBloc extends Bloc<NeoPageEvent, NeoPageState> {
           !isCustomFieldValid ? _isCustomFieldsValidMap.entries.firstWhere((entry) => !entry.value).key : null;
 
       if (failureKey != null) {
-        failureFocus = _failureFocusNodeMap[failureKey];
+        final String focusKey = _failureFocusNodeMap.keys.lastWhere(
+          (element) => element.contains(failureKey),
+          orElse: () => '',
+        );
+        if (focusKey.isNotEmpty) {
+          failureFocus = _failureFocusNodeMap[focusKey];
+        }
       } else {
         // Remove all FocusNodes whose key matches any key in _isCustomFieldsValidMap
         _failureFocusNodeMap.removeWhere((key, focusNode) => _isCustomFieldsValidMap.containsKey(key));
@@ -162,6 +168,10 @@ class NeoPageBloc extends Bloc<NeoPageEvent, NeoPageState> {
 
   void addFailureFocusNode(Map<String, FocusNode> focusMap) {
     _failureFocusNodeMap.addAll(focusMap);
+  }
+
+  void removeFailureFocusNode(String focusKey) {
+    _failureFocusNodeMap.remove(focusKey);
   }
 
   void addToIsCustomFieldsValidMap(Map<String, bool> isValidMap) {
