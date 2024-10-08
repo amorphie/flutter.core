@@ -1,6 +1,7 @@
 import 'package:equatable/equatable.dart';
 import 'package:json_annotation/json_annotation.dart';
-import 'package:neo_core/core/network/models/NeoSignalREventBaseState.dart';
+import 'package:neo_core/core/network/models/neo_signalr_event_base_state.dart';
+import 'package:neo_core/core/network/models/neo_signalr_event_type.dart';
 import 'package:neo_core/core/network/models/neo_signalr_transition.dart';
 
 part 'neo_signalr_event.g.dart';
@@ -11,7 +12,7 @@ class NeoSignalREvent extends Equatable {
   final String eventId;
 
   @JsonKey(name: "type")
-  final String type;
+  final NeoSignalREventType type;
 
   @JsonKey(name: "subject")
   final String status;
@@ -33,6 +34,8 @@ class NeoSignalREvent extends Equatable {
     required this.baseState,
     this.previousEvents = const [],
   });
+
+  bool get isSilentEvent => type == NeoSignalREventType.silent;
 
   @override
   List<Object?> get props =>

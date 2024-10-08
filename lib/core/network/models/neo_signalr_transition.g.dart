@@ -19,4 +19,5 @@ NeoSignalRTransition _$NeoSignalRTransitionFromJson(
       statusMessage: json['message'] as String?,
       statusCode: json['errorCode'] as String?,
       additionalData: json['additionalData'] as Map<String, dynamic>?,
+      dataPageId: json['dataPageId'] as String?,
     );

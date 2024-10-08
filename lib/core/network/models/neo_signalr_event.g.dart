@@ -9,7 +9,7 @@ part of 'neo_signalr_event.dart';
 NeoSignalREvent _$NeoSignalREventFromJson(Map<String, dynamic> json) =>
     NeoSignalREvent(
       eventId: json['id'] as String,
-      type: json['type'] as String,
+      type: $enumDecode(_$NeoSignalREventTypeEnumMap, json['type']),
       status: json['subject'] as String,
       transition:
           NeoSignalRTransition.fromJson(json['data'] as Map<String, dynamic>),
@@ -20,6 +20,11 @@ NeoSignalREvent _$NeoSignalREventFromJson(Map<String, dynamic> json) =>
               .toList() ??
           const [],
     );
+
+const _$NeoSignalREventTypeEnumMap = {
+  NeoSignalREventType.silent: 'silent',
+  NeoSignalREventType.workflow: 'workflow',
+};
 
 const _$NeoSignalREventBaseStateEnumMap = {
   NeoSignalREventBaseState.newState: 'New',

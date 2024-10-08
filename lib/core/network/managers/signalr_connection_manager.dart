@@ -19,9 +19,8 @@ import 'package:flutter/material.dart';
 import 'package:get_it/get_it.dart';
 import 'package:neo_core/core/analytics/neo_logger.dart';
 import 'package:neo_core/core/analytics/neo_logger_type.dart';
-import 'package:neo_core/core/network/models/NeoSignalREventBaseState.dart';
 import 'package:neo_core/core/network/models/neo_signalr_event.dart';
-import 'package:neo_core/core/network/models/neo_signalr_transition.dart';
+import 'package:neo_core/core/network/models/neo_signalr_event_base_state.dart';
 import 'package:signalr_netcore/signalr_client.dart';
 
 abstract class _Constants {
@@ -43,7 +42,7 @@ class SignalrConnectionManager {
 
   NeoLogger get _neoLogger => GetIt.I.get();
 
-  Future init() async {
+  Future init(Function({required bool hasConnection}) onConnectionStatusChanged) async {
     _hubConnection = HubConnectionBuilder()
         .withUrl(
       serverUrl,
@@ -51,18 +50,21 @@ class SignalrConnectionManager {
     )
         .withAutomaticReconnect(retryDelays: [2000, 5000, 10000, 20000]).build();
     _hubConnection?.onclose(({error}) {
+      onConnectionStatusChanged(hasConnection: false);
       _neoLogger.logCustom(
         _Constants.eventNameSignalrOnClose,
         logTypes: [NeoLoggerType.posthog, NeoLoggerType.logger],
       );
     });
     _hubConnection?.onreconnecting(({error}) {
+      onConnectionStatusChanged(hasConnection: false);
       _neoLogger.logCustom(
         _Constants.eventNameSignalrOnReconnecting,
         logTypes: [NeoLoggerType.posthog, NeoLoggerType.logger],
       );
     });
     _hubConnection?.onreconnected(({connectionId}) {
+      onConnectionStatusChanged(hasConnection: true);
       _neoLogger.logCustom(
         _Constants.eventNameSignalrOnReconnected,
         logTypes: [NeoLoggerType.posthog, NeoLoggerType.logger],
@@ -72,6 +74,7 @@ class SignalrConnectionManager {
     if (_hubConnection?.state != HubConnectionState.Connected) {
       try {
         await _hubConnection?.start();
+        onConnectionStatusChanged(hasConnection: true);
         _neoLogger.logCustom(
           _Constants.eventNameSignalrInitSucceed,
           logTypes: [NeoLoggerType.posthog, NeoLoggerType.logger],

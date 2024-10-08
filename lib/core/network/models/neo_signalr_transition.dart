@@ -35,6 +35,9 @@ class NeoSignalRTransition extends Equatable {
   @JsonKey(name: "additionalData", defaultValue: null)
   final Map<String, dynamic>? additionalData;
 
+  @JsonKey(name: "dataPageId")
+  final String? dataPageId;
+
   @JsonKey(name: "message")
   final String? statusMessage;
 
@@ -58,6 +61,7 @@ class NeoSignalRTransition extends Equatable {
     this.statusMessage,
     this.statusCode,
     this.additionalData,
+    this.dataPageId,
   });
 
   @override
@@ -68,6 +72,7 @@ class NeoSignalRTransition extends Equatable {
         pageDetails,
         initialData,
         additionalData,
+        dataPageId,
         statusMessage,
         statusCode,
         buttonType,

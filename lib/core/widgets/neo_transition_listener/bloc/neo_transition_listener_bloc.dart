@@ -20,6 +20,7 @@ import 'package:get_it/get_it.dart';
 import 'package:neo_core/core/analytics/neo_logger.dart';
 import 'package:neo_core/core/analytics/neo_logger_type.dart';
 import 'package:neo_core/core/analytics/neo_posthog.dart';
+import 'package:neo_core/core/bus/neo_bus.dart';
 import 'package:neo_core/core/navigation/models/ekyc_event_data.dart';
 import 'package:neo_core/core/navigation/models/neo_navigation_type.dart';
 import 'package:neo_core/core/navigation/models/signalr_transition_data.dart';
@@ -27,6 +28,7 @@ import 'package:neo_core/core/network/models/neo_signalr_event.dart';
 import 'package:neo_core/core/network/neo_network.dart';
 import 'package:neo_core/core/storage/neo_core_parameter_key.dart';
 import 'package:neo_core/core/storage/neo_core_secure_storage.dart';
+import 'package:neo_core/core/widgets/neo_page/bloc/neo_page_bloc.dart';
 import 'package:neo_core/core/widgets/neo_transition_listener/usecases/get_workflow_query_parameters_usecase.dart';
 import 'package:neo_core/core/workflow_form/neo_workflow_manager.dart';
 import 'package:rxdart/rxdart.dart';
@@ -49,12 +51,13 @@ class NeoTransitionListenerBloc extends Bloc<NeoTransitionListenerEvent, NeoTran
   late final Function({required bool displayLoading}) onLoadingStatusChanged;
 
   late final SignalrConnectionManager signalrConnectionManager;
-  late final ReplaySubject<NeoSignalRTransition> _transitionBus = ReplaySubject(maxSize: 3);
+  late final ReplaySubject<NeoSignalREvent> _eventBus = ReplaySubject(maxSize: 5);
   late final NeoWorkflowManager neoWorkflowManager;
   late final NeoLogger _neoLogger = GetIt.I.get();
 
   NeoSignalRTransition? _lastProcessedTransition;
   Timer? longPollingTimer;
+  bool hasSignalRConnection = false;
 
   NeoTransitionListenerBloc({
     required this.neoCoreSecureStorage,
@@ -82,9 +85,17 @@ class NeoTransitionListenerBloc extends Bloc<NeoTransitionListenerEvent, NeoTran
       signalrServerUrl: event.signalRServerUrl + await GetWorkflowQueryParametersUseCase().call(neoCoreSecureStorage),
       signalrMethodName: event.signalRMethodName,
     );
-    _transitionBus.listen((transition) {
-      _lastProcessedTransition = transition;
-      _processIncomingTransition(transition: transition);
+    _eventBus.listen((event) {
+      if (_lastProcessedTransition == null || !event.transition.time.isBefore(_lastProcessedTransition!.time)) {
+        if (event.isSilentEvent) {
+          GetIt.I.get<NeoWidgetEventBus>().addEvent(
+                NeoWidgetEvent(eventId: NeoPageBloc.dataEventKey, data: event.transition),
+              );
+        } else {
+          _processIncomingTransition(transition: event.transition);
+        }
+        _lastProcessedTransition = event.transition;
+      }
     });
   }
 
@@ -168,22 +179,21 @@ class NeoTransitionListenerBloc extends Bloc<NeoTransitionListenerEvent, NeoTran
         ),
       );
     } else {
-      onNavigationEvent(
-        SignalrTransitionData(
-          navigationPath: navigationPath,
-          navigationType: NeoNavigationType.fromJson(navigationType ?? ""),
-          pageId: transition.state,
-          viewSource: transition.viewSource,
-          initialData: _mergeDataWithAdditionalData(
-            transition.initialData,
-            transition.additionalData ?? {},
-          ),
-          isBackNavigation: isBackNavigation,
-          transitionId: await _getAvailableTransitionId(transition) ?? transitionId,
-          statusCode: transition.statusCode,
-          statusMessage: transition.statusMessage,
+      final transitionData = SignalrTransitionData(
+        navigationPath: navigationPath,
+        navigationType: NeoNavigationType.fromJson(navigationType ?? ""),
+        pageId: transition.state,
+        viewSource: transition.viewSource,
+        initialData: _mergeDataWithAdditionalData(
+          transition.initialData,
+          transition.additionalData ?? {},
         ),
+        isBackNavigation: isBackNavigation,
+        transitionId: await _getAvailableTransitionId(transition) ?? transitionId,
+        statusCode: transition.statusCode,
+        statusMessage: transition.statusMessage,
       );
+      onNavigationEvent(transitionData);
     }
   }
 
@@ -264,20 +274,29 @@ class NeoTransitionListenerBloc extends Bloc<NeoTransitionListenerEvent, NeoTran
       serverUrl: signalrServerUrl,
       methodName: signalrMethodName,
     );
-    await signalrConnectionManager.init();
-    signalrConnectionManager.listenForTransitionEvents(
-      onEvent: (NeoSignalREvent event) async {
-        if (_lastProcessedTransition == null || event.transition.time.isAfter(_lastProcessedTransition!.time)) {
-          _transitionBus.add(event.transition);
-        }
-      },
-    );
+    await signalrConnectionManager.init(_onSignalRConnectionStatusChanged);
+    signalrConnectionManager.listenForTransitionEvents(onEvent: (event) {
+      if (!_eventBus.values.contains(event)) {
+        _eventBus.add(event);
+      }
+    });
+  }
+
+  void _onSignalRConnectionStatusChanged({required bool hasConnection}) {
+    hasSignalRConnection = hasConnection;
+    if (hasConnection) {
+      longPollingTimer?.cancel();
+    }
   }
 
   void _getLastTransitionsWithLongPolling({
     required bool isSubFlow,
   }) {
     longPollingTimer?.cancel();
+    if (hasSignalRConnection) {
+      return;
+    }
+
     longPollingTimer = Timer.periodic(
       _Constants.signalrLongPollingPeriod,
       (timer) async {
@@ -290,8 +309,8 @@ class NeoTransitionListenerBloc extends Bloc<NeoTransitionListenerEvent, NeoTran
             ..sort((a, b) => a.transition.time.compareTo(b.transition.time));
 
           for (final event in events) {
-            if (_lastProcessedTransition == null || event.transition.time.isAfter(_lastProcessedTransition!.time)) {
-              _transitionBus.add(event.transition);
+            if (!_eventBus.values.contains(event)) {
+              _eventBus.add(event);
             }
           }
         } else {
@@ -307,7 +326,7 @@ class NeoTransitionListenerBloc extends Bloc<NeoTransitionListenerEvent, NeoTran
   @override
   Future<void> close() {
     signalrConnectionManager.stop();
-    _transitionBus.close();
+    _eventBus.close();
     return super.close();
   }
 }

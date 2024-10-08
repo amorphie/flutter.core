@@ -42,6 +42,7 @@ class NeoTransitionListenerEventInit extends NeoTransitionListenerEvent {
   @override
   List<Object?> get props => [
         neoWorkflowManager,
+        neoPosthog,
         signalRServerUrl,
         signalRMethodName,
         onNavigationEvent,
