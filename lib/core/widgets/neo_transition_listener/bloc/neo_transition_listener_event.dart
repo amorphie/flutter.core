@@ -106,3 +106,12 @@ class NeoTransitionListenerEventPostTransition extends NeoTransitionListenerEven
   @override
   List<Object?> get props => [transitionName, body, headerParameters, displayLoading, isSubFlow];
 }
+
+class NeoTransitionListenerEventDisableTemporarily extends NeoTransitionListenerEvent {
+  final bool temporarilyDisabled;
+
+  NeoTransitionListenerEventDisableTemporarily({required this.temporarilyDisabled});
+
+  @override
+  List<Object?> get props => [temporarilyDisabled];
+}

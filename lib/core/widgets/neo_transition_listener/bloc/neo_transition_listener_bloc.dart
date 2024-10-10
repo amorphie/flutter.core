@@ -61,8 +61,8 @@ class NeoTransitionListenerBloc extends Bloc<NeoTransitionListenerEvent, NeoTran
 
   NeoTransitionListenerBloc({
     required this.neoCoreSecureStorage,
-  }) : super(NeoTransitionListenerState()) {
-    on<NeoTransitionListenerEventInit>((event, emit) => _onInit(event));
+  }) : super(const NeoTransitionListenerState(temporarilyDisabled: false)) {
+    on<NeoTransitionListenerEventInit>(_onInit);
     on<NeoTransitionListenerEventInitWorkflow>(
       (event, emit) => _onInitWorkflow(event),
       transformer: droppable(),
@@ -71,9 +71,12 @@ class NeoTransitionListenerBloc extends Bloc<NeoTransitionListenerEvent, NeoTran
       (event, emit) => _onPostTransition(event),
       transformer: droppable(),
     );
+    on<NeoTransitionListenerEventDisableTemporarily>(
+      (event, emit) => emit(state.copyWith(temporarilyDisabled: event.temporarilyDisabled)),
+    );
   }
 
-  Future<void> _onInit(NeoTransitionListenerEventInit event) async {
+  Future<void> _onInit(NeoTransitionListenerEventInit event, emit) async {
     onNavigationEvent = event.onNavigationEvent;
     onEkycEvent = event.onEkycEvent;
     onLoggedInSuccessfully = event.onLoggedInSuccessfully;
@@ -86,6 +89,11 @@ class NeoTransitionListenerBloc extends Bloc<NeoTransitionListenerEvent, NeoTran
       signalrMethodName: event.signalRMethodName,
     );
     _eventBus.listen((event) {
+      if (state.temporarilyDisabled) {
+        emit(state.copyWith(temporarilyDisabled: false));
+        return;
+      }
+
       if (_lastProcessedTransition == null || !event.transition.time.isBefore(_lastProcessedTransition!.time)) {
         if (event.isSilentEvent) {
           GetIt.I.get<NeoWidgetEventBus>().addEvent(
@@ -211,7 +219,7 @@ class NeoTransitionListenerBloc extends Bloc<NeoTransitionListenerEvent, NeoTran
   void _handleRedirectionSettings(NeoSignalRTransition ongoingTransition) {
     final redirectedWorkflowId = ongoingTransition.additionalData?["amorphieWorkFlowId"];
     if (ongoingTransition.statusCode == HttpStatus.permanentRedirect.toString() && redirectedWorkflowId != null) {
-      neoWorkflowManager.setInstanceId(redirectedWorkflowId, isSubFlow: false);
+      neoWorkflowManager.setInstanceId(redirectedWorkflowId);
     }
   }
 
@@ -275,11 +283,13 @@ class NeoTransitionListenerBloc extends Bloc<NeoTransitionListenerEvent, NeoTran
       methodName: signalrMethodName,
     );
     await signalrConnectionManager.init(_onSignalRConnectionStatusChanged);
-    signalrConnectionManager.listenForTransitionEvents(onEvent: (event) {
-      if (!_eventBus.values.contains(event)) {
-        _eventBus.add(event);
-      }
-    });
+    signalrConnectionManager.listenForTransitionEvents(
+      onEvent: (event) {
+        if (!_eventBus.values.contains(event)) {
+          _eventBus.add(event);
+        }
+      },
+    );
   }
 
   void _onSignalRConnectionStatusChanged({required bool hasConnection}) {
