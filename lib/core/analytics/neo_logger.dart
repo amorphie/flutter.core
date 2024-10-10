@@ -14,6 +14,7 @@
 
 import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
+import 'package:get_it/get_it.dart';
 import 'package:logger/logger.dart';
 import 'package:neo_core/core/analytics/i_neo_logger.dart';
 import 'package:neo_core/core/analytics/neo_adjust.dart';
@@ -46,7 +47,7 @@ class NeoLogger implements INeoLogger {
 
   final Logger _logger = Logger(printer: PrettyPrinter(printTime: true));
 
-  NeoCrashlytics? _neoCrashlytics;
+  late final NeoCrashlytics _neoCrashlytics = GetIt.I.get();
 
   @override
   List<NavigatorObserver> observers = [];
@@ -64,9 +65,8 @@ class NeoLogger implements INeoLogger {
       return;
     }
     if (!kIsWeb) {
-      _neoCrashlytics = NeoCrashlytics();
-      await _neoCrashlytics?.initializeCrashlytics();
-      await _neoCrashlytics?.setEnabled(enabled: true);
+      await _neoCrashlytics.initializeCrashlytics();
+      await _neoCrashlytics.setEnabled(enabled: true);
     }
 
     logCustom(
@@ -163,7 +163,7 @@ class NeoLogger implements INeoLogger {
     if (kIsWeb) {
       return;
     }
-    _neoCrashlytics?.logError(message);
+    _neoCrashlytics.logError(message);
     logCustom(message, logLevel: Level.error, logTypes: [NeoLoggerType.elastic]);
   }
 
@@ -172,7 +172,7 @@ class NeoLogger implements INeoLogger {
     if (kIsWeb) {
       return;
     }
-    _neoCrashlytics?.logException(exception, stackTrace);
+    _neoCrashlytics.logException(exception, stackTrace);
     logCustom(exception, logLevel: Level.fatal, properties: parameters, logTypes: [NeoLoggerType.elastic]);
   }
 
@@ -181,6 +181,6 @@ class NeoLogger implements INeoLogger {
     if (kIsWeb) {
       return;
     }
-    await _neoCrashlytics?.sendUnsentReports();
+    await _neoCrashlytics.sendUnsentReports();
   }
 }
