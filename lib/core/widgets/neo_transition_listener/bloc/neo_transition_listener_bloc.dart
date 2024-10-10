@@ -40,6 +40,7 @@ part 'neo_transition_listener_state.dart';
 
 abstract class _Constants {
   static const signalrLongPollingPeriod = Duration(seconds: 5);
+  static const transitionTimeoutDuration = Duration(seconds: 60);
 }
 
 class NeoTransitionListenerBloc extends Bloc<NeoTransitionListenerEvent, NeoTransitionListenerState> {
@@ -55,6 +56,7 @@ class NeoTransitionListenerBloc extends Bloc<NeoTransitionListenerEvent, NeoTran
   late final NeoWorkflowManager neoWorkflowManager;
   late final NeoLogger _neoLogger = GetIt.I.get();
 
+  Completer? _postTransitionTimeoutCompleter;
   NeoSignalRTransition? _lastProcessedTransition;
   Timer? longPollingTimer;
   bool hasSignalRConnection = false;
@@ -88,6 +90,10 @@ class NeoTransitionListenerBloc extends Bloc<NeoTransitionListenerEvent, NeoTran
       signalrServerUrl: event.signalRServerUrl + await GetWorkflowQueryParametersUseCase().call(neoCoreSecureStorage),
       signalrMethodName: event.signalRMethodName,
     );
+    _listenEventBus(emit);
+  }
+
+  void _listenEventBus(emit) {
     _eventBus.listen((event) {
       if (state.temporarilyDisabled) {
         emit(state.copyWith(temporarilyDisabled: false));
@@ -95,6 +101,7 @@ class NeoTransitionListenerBloc extends Bloc<NeoTransitionListenerEvent, NeoTran
       }
 
       if (_lastProcessedTransition == null || !event.transition.time.isBefore(_lastProcessedTransition!.time)) {
+        _postTransitionTimeoutCompleter?.complete();
         if (event.isSilentEvent) {
           GetIt.I.get<NeoWidgetEventBus>().addEvent(
                 NeoWidgetEvent(eventId: NeoPageBloc.dataEventKey, data: event.transition),
@@ -144,12 +151,12 @@ class NeoTransitionListenerBloc extends Bloc<NeoTransitionListenerEvent, NeoTran
         ),
       );
     } else {
-      onLoadingStatusChanged(displayLoading: false);
-      onTransitionError?.call(response.asError.error);
+      _completeWithError(response.asError.error);
     }
   }
 
   Future<void> _onPostTransition(NeoTransitionListenerEventPostTransition event) async {
+    _initPostTransitionTimeoutCompleter();
     _getLastTransitionsWithLongPolling(isSubFlow: event.isSubFlow);
 
     try {
@@ -163,9 +170,23 @@ class NeoTransitionListenerBloc extends Bloc<NeoTransitionListenerEvent, NeoTran
         isSubFlow: event.isSubFlow,
       );
     } catch (e) {
-      onLoadingStatusChanged(displayLoading: false);
-      onTransitionError?.call(e is NeoError ? e : const NeoError());
+      _completeWithError(e is NeoError ? e : const NeoError());
     }
+  }
+
+  void _initPostTransitionTimeoutCompleter() {
+    _postTransitionTimeoutCompleter = Completer();
+    Future.delayed(_Constants.transitionTimeoutDuration, () {
+      if (_postTransitionTimeoutCompleter != null && !_postTransitionTimeoutCompleter!.isCompleted) {
+        _completeWithError(const NeoError());
+        _postTransitionTimeoutCompleter!.complete();
+      }
+    });
+  }
+
+  void _completeWithError(NeoError error) {
+    onLoadingStatusChanged(displayLoading: false);
+    onTransitionError?.call(error);
   }
 
   Future<void> _processIncomingTransition({required NeoSignalRTransition transition}) async {
@@ -283,13 +304,13 @@ class NeoTransitionListenerBloc extends Bloc<NeoTransitionListenerEvent, NeoTran
       methodName: signalrMethodName,
     );
     await signalrConnectionManager.init(_onSignalRConnectionStatusChanged);
-    signalrConnectionManager.listenForTransitionEvents(
-      onEvent: (event) {
-        if (!_eventBus.values.contains(event)) {
-          _eventBus.add(event);
-        }
-      },
-    );
+    signalrConnectionManager.listenForTransitionEvents(onEvent: _addEventToBus);
+  }
+
+  void _addEventToBus(NeoSignalREvent event) {
+    if (!_eventBus.values.contains(event)) {
+      _eventBus.add(event);
+    }
   }
 
   void _onSignalRConnectionStatusChanged({required bool hasConnection}) {
@@ -319,9 +340,7 @@ class NeoTransitionListenerBloc extends Bloc<NeoTransitionListenerEvent, NeoTran
             ..sort((a, b) => a.transition.time.compareTo(b.transition.time));
 
           for (final event in events) {
-            if (!_eventBus.values.contains(event)) {
-              _eventBus.add(event);
-            }
+            _addEventToBus(event);
           }
         } else {
           _neoLogger.logCustom(
