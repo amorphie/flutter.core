@@ -16,6 +16,8 @@ import 'package:firebase_crashlytics/firebase_crashlytics.dart';
 import 'package:flutter/foundation.dart' show FlutterError, PlatformDispatcher;
 
 class NeoCrashlytics {
+  NeoCrashlytics();
+
   final FirebaseCrashlytics _crashlytics = FirebaseCrashlytics.instance;
 
   Future<void> initializeCrashlytics() async {
