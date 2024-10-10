@@ -24,6 +24,7 @@ NeoSignalREvent _$NeoSignalREventFromJson(Map<String, dynamic> json) =>
 const _$NeoSignalREventTypeEnumMap = {
   NeoSignalREventType.silent: 'silent',
   NeoSignalREventType.workflow: 'workflow',
+  NeoSignalREventType.force: 'force',
 };
 
 const _$NeoSignalREventBaseStateEnumMap = {

@@ -19,7 +19,7 @@ class NeoTransitionListenerEventInit extends NeoTransitionListenerEvent {
   final NeoPosthog neoPosthog;
   final String signalRServerUrl;
   final String signalRMethodName;
-  final Function(SignalrTransitionData navigationData) onNavigationEvent;
+  final Function(SignalrTransitionData navigationData) onTransitionEvent;
   final Function(EkycEventData eventData) onEkycEvent;
   final Function({required bool isTwoFactorAuthenticated})? onLoggedInSuccessfully;
   final Function(NeoError error)? onTransitionError;
@@ -31,7 +31,7 @@ class NeoTransitionListenerEventInit extends NeoTransitionListenerEvent {
     required this.neoPosthog,
     required this.signalRServerUrl,
     required this.signalRMethodName,
-    required this.onNavigationEvent,
+    required this.onTransitionEvent,
     required this.onEkycEvent,
     required this.onLoggedInSuccessfully,
     required this.onTransitionError,
@@ -45,7 +45,7 @@ class NeoTransitionListenerEventInit extends NeoTransitionListenerEvent {
         neoPosthog,
         signalRServerUrl,
         signalRMethodName,
-        onNavigationEvent,
+        onTransitionEvent,
         onEkycEvent,
         onLoggedInSuccessfully,
         onTransitionError,

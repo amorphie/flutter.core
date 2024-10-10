@@ -14,7 +14,7 @@ class NeoTransitionListenerWidget extends StatelessWidget {
   final NeoCoreSecureStorage neoCoreSecureStorage;
   final String signalRServerUrl;
   final String signalRMethodName;
-  final Function(SignalrTransitionData navigationData) onNavigationEvent;
+  final Function(SignalrTransitionData navigationData) onTransitionEvent;
   final Function(EkycEventData eventData) onEkycEvent;
   final Function({required bool isTwoFactorAuthenticated})? onLoggedInSuccessfully;
   final Function(NeoError error)? onError;
@@ -28,7 +28,7 @@ class NeoTransitionListenerWidget extends StatelessWidget {
     required this.neoCoreSecureStorage,
     required this.signalRServerUrl,
     required this.signalRMethodName,
-    required this.onNavigationEvent,
+    required this.onTransitionEvent,
     required this.onEkycEvent,
     required this.onLoadingStatusChanged,
     this.onLoggedInSuccessfully,
@@ -48,7 +48,7 @@ class NeoTransitionListenerWidget extends StatelessWidget {
             neoPosthog: neoPosthog,
             signalRServerUrl: signalRServerUrl,
             signalRMethodName: signalRMethodName,
-            onNavigationEvent: onNavigationEvent,
+            onTransitionEvent: onTransitionEvent,
             onEkycEvent: onEkycEvent,
             onLoggedInSuccessfully: onLoggedInSuccessfully,
             onTransitionError: onError,

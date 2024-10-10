@@ -6,4 +6,6 @@ enum NeoSignalREventType {
   silent,
   @JsonValue('workflow')
   workflow,
+  @JsonValue('force')
+  force,
 }

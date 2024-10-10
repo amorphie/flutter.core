@@ -45,7 +45,7 @@ abstract class _Constants {
 
 class NeoTransitionListenerBloc extends Bloc<NeoTransitionListenerEvent, NeoTransitionListenerState> {
   final NeoCoreSecureStorage neoCoreSecureStorage;
-  late final Function(SignalrTransitionData navigationData) onNavigationEvent;
+  late final Function(SignalrTransitionData navigationData) onTransitionEvent;
   late final Function(EkycEventData ekycData) onEkycEvent;
   late final Function(NeoError error)? onTransitionError;
   late final Function({required bool isTwoFactorAuthenticated})? onLoggedInSuccessfully;
@@ -79,7 +79,7 @@ class NeoTransitionListenerBloc extends Bloc<NeoTransitionListenerEvent, NeoTran
   }
 
   Future<void> _onInit(NeoTransitionListenerEventInit event, emit) async {
-    onNavigationEvent = event.onNavigationEvent;
+    onTransitionEvent = event.onTransitionEvent;
     onEkycEvent = event.onEkycEvent;
     onLoggedInSuccessfully = event.onLoggedInSuccessfully;
     onTransitionError = event.onTransitionError;
@@ -137,7 +137,7 @@ class NeoTransitionListenerBloc extends Bloc<NeoTransitionListenerEvent, NeoTran
       if (instanceId != null && instanceId is String) {
         neoWorkflowManager.setInstanceId(instanceId, isSubFlow: event.isSubFlow);
       }
-      onNavigationEvent(
+      onTransitionEvent(
         SignalrTransitionData(
           navigationPath: responseData["init-page-name"],
           navigationType:
@@ -222,7 +222,7 @@ class NeoTransitionListenerBloc extends Bloc<NeoTransitionListenerEvent, NeoTran
         statusCode: transition.statusCode,
         statusMessage: transition.statusMessage,
       );
-      onNavigationEvent(transitionData);
+      onTransitionEvent(transitionData);
     }
   }
 
