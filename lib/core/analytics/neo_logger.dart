@@ -46,7 +46,7 @@ class NeoLogger implements INeoLogger {
 
   final Logger _logger = Logger(printer: PrettyPrinter(printTime: true));
 
-  NeoCrashlytics get _neoCrashlytics => NeoCrashlytics();
+  late final NeoCrashlytics _neoCrashlytics = NeoCrashlytics();
 
   @override
   List<NavigatorObserver> observers = [];

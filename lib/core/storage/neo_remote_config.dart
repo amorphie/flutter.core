@@ -12,7 +12,7 @@ abstract class _Constants {
 class NeoRemoteConfig {
   NeoRemoteConfig();
 
-  FirebaseRemoteConfig get _firebaseRemoteConfig => FirebaseRemoteConfig.instance;
+  late final FirebaseRemoteConfig _firebaseRemoteConfig = FirebaseRemoteConfig.instance;
 
   late final NeoLogger _neoLogger = GetIt.I.get();
 
