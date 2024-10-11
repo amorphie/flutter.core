@@ -95,13 +95,18 @@ class NeoTransitionListenerBloc extends Bloc<NeoTransitionListenerEvent, NeoTran
 
   void _listenEventBus(emit) {
     _eventBus.listen((event) {
+      if (isClosed) {
+        return;
+      }
       if (state.temporarilyDisabled) {
         emit(state.copyWith(temporarilyDisabled: false));
         return;
       }
 
       if (_lastProcessedTransition == null || !event.transition.time.isBefore(_lastProcessedTransition!.time)) {
-        _postTransitionTimeoutCompleter?.complete();
+        if (_postTransitionTimeoutCompleter != null && !_postTransitionTimeoutCompleter!.isCompleted) {
+          _postTransitionTimeoutCompleter?.complete();
+        }
         if (event.isSilentEvent) {
           GetIt.I.get<NeoWidgetEventBus>().addEvent(
                 NeoWidgetEvent(eventId: NeoPageBloc.dataEventKey, data: event.transition),
@@ -304,12 +309,14 @@ class NeoTransitionListenerBloc extends Bloc<NeoTransitionListenerEvent, NeoTran
       methodName: signalrMethodName,
     );
     await signalrConnectionManager.init(_onSignalRConnectionStatusChanged);
-    signalrConnectionManager.listenForTransitionEvents(onEvent: _addEventToBus);
+    signalrConnectionManager.listenForSignalREvents(onEvent: _addEventToBus);
   }
 
   void _addEventToBus(NeoSignalREvent event) {
     if (!_eventBus.values.contains(event)) {
-      _eventBus.add(event);
+      if (!isClosed && !_eventBus.isClosed) {
+        _eventBus.add(event);
+      }
     }
   }
 
@@ -317,6 +324,8 @@ class NeoTransitionListenerBloc extends Bloc<NeoTransitionListenerEvent, NeoTran
     hasSignalRConnection = hasConnection;
     if (hasConnection) {
       longPollingTimer?.cancel();
+    } else {
+      _getLastTransitionsWithLongPolling(isSubFlow: false);
     }
   }
 
@@ -324,7 +333,7 @@ class NeoTransitionListenerBloc extends Bloc<NeoTransitionListenerEvent, NeoTran
     required bool isSubFlow,
   }) {
     longPollingTimer?.cancel();
-    if (hasSignalRConnection) {
+    if (hasSignalRConnection || isClosed) {
       return;
     }
 
@@ -355,6 +364,7 @@ class NeoTransitionListenerBloc extends Bloc<NeoTransitionListenerEvent, NeoTran
   @override
   Future<void> close() {
     signalrConnectionManager.stop();
+    longPollingTimer?.cancel();
     _eventBus.close();
     return super.close();
   }
