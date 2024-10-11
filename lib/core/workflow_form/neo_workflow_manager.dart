@@ -109,7 +109,7 @@ class NeoWorkflowManager {
     );
   }
 
-  Future<NeoResponse> getLastTransitionByLongPolling({required bool isSubFlow}) async {
+  Future<NeoResponse> getLastTransitionByLongPolling({bool isSubFlow = false}) async {
     return neoNetworkManager.call(
       NeoHttpCall(
         endpoint: _Constants.endpointGetLastEventByLongPolling,
@@ -121,18 +121,18 @@ class NeoWorkflowManager {
     );
   }
 
-  Map<String, String> _getDefaultHeaderParameters(Map<String, String>? headerParameters, {required bool isSubFlow}) {
+  Map<String, String> _getDefaultHeaderParameters(Map<String, String>? headerParameters, {bool isSubFlow = false}) {
     return {
       NeoNetworkHeaderKey.instanceId: _getActiveInstanceId(isSubFlow: isSubFlow),
       NeoNetworkHeaderKey.workflowName: _getActiveWorkflowName(isSubFlow: isSubFlow),
     }..addAll(headerParameters ?? const {});
   }
 
-  String _getActiveWorkflowName({required bool isSubFlow}) {
+  String _getActiveWorkflowName({bool isSubFlow = false}) {
     return isSubFlow ? _subWorkflowName : _workflowName;
   }
 
-  String _getActiveInstanceId({required bool isSubFlow}) {
+  String _getActiveInstanceId({bool isSubFlow = false}) {
     return isSubFlow ? _subFlowInstanceId : _instanceId;
   }
 }

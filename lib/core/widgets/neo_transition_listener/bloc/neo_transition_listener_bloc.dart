@@ -66,15 +66,15 @@ class NeoTransitionListenerBloc extends Bloc<NeoTransitionListenerEvent, NeoTran
   }) : super(const NeoTransitionListenerState(temporarilyDisabled: false)) {
     on<NeoTransitionListenerEventInit>(_onInit);
     on<NeoTransitionListenerEventInitWorkflow>(
-      (event, emit) => _onInitWorkflow(event),
+          (event, emit) => _onInitWorkflow(event),
       transformer: droppable(),
     );
     on<NeoTransitionListenerEventPostTransition>(
-      (event, emit) => _onPostTransition(event),
+          (event, emit) => _onPostTransition(event),
       transformer: droppable(),
     );
     on<NeoTransitionListenerEventDisableTemporarily>(
-      (event, emit) => emit(state.copyWith(temporarilyDisabled: event.temporarilyDisabled)),
+          (event, emit) => emit(state.copyWith(temporarilyDisabled: event.temporarilyDisabled)),
     );
   }
 
@@ -101,11 +101,13 @@ class NeoTransitionListenerBloc extends Bloc<NeoTransitionListenerEvent, NeoTran
       }
 
       if (_lastProcessedTransition == null || !event.transition.time.isBefore(_lastProcessedTransition!.time)) {
-        _postTransitionTimeoutCompleter?.complete();
+        if (_postTransitionTimeoutCompleter != null && !_postTransitionTimeoutCompleter!.isCompleted) {
+          _postTransitionTimeoutCompleter?.complete();
+        }
         if (event.isSilentEvent) {
           GetIt.I.get<NeoWidgetEventBus>().addEvent(
-                NeoWidgetEvent(eventId: NeoPageBloc.dataEventKey, data: event.transition),
-              );
+            NeoWidgetEvent(eventId: NeoPageBloc.dataEventKey, data: event.transition),
+          );
         } else {
           _processIncomingTransition(transition: event.transition);
         }
@@ -141,7 +143,7 @@ class NeoTransitionListenerBloc extends Bloc<NeoTransitionListenerEvent, NeoTran
         SignalrTransitionData(
           navigationPath: responseData["init-page-name"],
           navigationType:
-              event.navigationType ?? NeoNavigationType.fromJson(responseData["navigation"]) ?? NeoNavigationType.push,
+          event.navigationType ?? NeoNavigationType.fromJson(responseData["navigation"]) ?? NeoNavigationType.push,
           pageId: responseData["state"],
           viewSource: responseData["view-source"],
           initialData: additionalData is Map ? additionalData.cast() : {"data": additionalData},
@@ -304,12 +306,14 @@ class NeoTransitionListenerBloc extends Bloc<NeoTransitionListenerEvent, NeoTran
       methodName: signalrMethodName,
     );
     await signalrConnectionManager.init(_onSignalRConnectionStatusChanged);
-    signalrConnectionManager.listenForTransitionEvents(onEvent: _addEventToBus);
+    signalrConnectionManager.listenForSignalREvents(onEvent: _addEventToBus);
   }
 
   void _addEventToBus(NeoSignalREvent event) {
     if (!_eventBus.values.contains(event)) {
-      _eventBus.add(event);
+      if (!isClosed && !_eventBus.isClosed) {
+        _eventBus.add(event);
+      }
     }
   }
 
@@ -317,6 +321,8 @@ class NeoTransitionListenerBloc extends Bloc<NeoTransitionListenerEvent, NeoTran
     hasSignalRConnection = hasConnection;
     if (hasConnection) {
       longPollingTimer?.cancel();
+    } else {
+      _getLastTransitionsWithLongPolling(isSubFlow: false);
     }
   }
 
@@ -324,13 +330,13 @@ class NeoTransitionListenerBloc extends Bloc<NeoTransitionListenerEvent, NeoTran
     required bool isSubFlow,
   }) {
     longPollingTimer?.cancel();
-    if (hasSignalRConnection) {
+    if (hasSignalRConnection || isClosed) {
       return;
     }
 
     longPollingTimer = Timer.periodic(
       _Constants.signalrLongPollingPeriod,
-      (timer) async {
+          (timer) async {
         final response = await neoWorkflowManager.getLastTransitionByLongPolling(isSubFlow: isSubFlow);
         if (response.isSuccess) {
           final responseData = response.asSuccess.data;
@@ -355,6 +361,7 @@ class NeoTransitionListenerBloc extends Bloc<NeoTransitionListenerEvent, NeoTran
   @override
   Future<void> close() {
     signalrConnectionManager.stop();
+    longPollingTimer?.cancel();
     _eventBus.close();
     return super.close();
   }
