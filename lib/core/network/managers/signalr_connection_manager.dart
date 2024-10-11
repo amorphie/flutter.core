@@ -29,7 +29,7 @@ abstract class _Constants {
   static const eventNameSignalrOnReconnected = "[SignalrConnectionManager]: onReconnected is called!";
   static const eventNameSignalrInitSucceed = "[SignalrConnectionManager]: init is succeed!";
   static const eventNameSignalrInitFailed = "[SignalrConnectionManager]: init is failed!";
-  static const transitionSubjectValue = ["worker-completed", "transition-completed"];
+  static const eventCompletionStatusValues = ["worker-completed", "transition-completed"];
 }
 
 class SignalrConnectionManager {
@@ -50,7 +50,6 @@ class SignalrConnectionManager {
     )
         .withAutomaticReconnect(retryDelays: [2000, 5000, 10000, 20000]).build();
     _hubConnection?.onclose(({error}) {
-      onConnectionStatusChanged(hasConnection: false);
       _neoLogger.logCustom(
         _Constants.eventNameSignalrOnClose,
         logTypes: [NeoLoggerType.posthog, NeoLoggerType.logger],
@@ -87,7 +86,7 @@ class SignalrConnectionManager {
     }
   }
 
-  void listenForTransitionEvents({required Function(NeoSignalREvent event) onEvent}) {
+  void listenForSignalREvents({required Function(NeoSignalREvent event) onEvent}) {
     _hubConnection?.on(methodName, (List<Object?>? transitions) {
       if (kDebugMode) {
         log('\n[SignalrConnectionManager] Transition: $transitions');
@@ -109,7 +108,7 @@ class SignalrConnectionManager {
           try {
             final transitionJsonDecoded = jsonDecode(transition is String ? transition : "{}");
             final event = NeoSignalREvent.fromJson(transitionJsonDecoded);
-            if (!_Constants.transitionSubjectValue.contains(event.status) ||
+            if (!_Constants.eventCompletionStatusValues.contains(event.status) ||
                 event.baseState != NeoSignalREventBaseState.completed) {
               return null;
             }

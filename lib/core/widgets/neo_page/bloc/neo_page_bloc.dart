@@ -22,6 +22,7 @@ class NeoPageBloc extends Bloc<NeoPageEvent, NeoPageState> {
 
   final JsonWidgetRegistry jsonWidgetRegistry;
   final String pageId;
+  final NeoWidgetEventBus widgetEventBus;
 
   final GlobalKey<FormState> formKey = GlobalKey<FormState>();
   final Map<String, dynamic> _formInitialData;
@@ -39,8 +40,12 @@ class NeoPageBloc extends Bloc<NeoPageEvent, NeoPageState> {
 
   Map<String, dynamic> get formData => _formData;
 
-  NeoPageBloc({required this.pageId, required this.jsonWidgetRegistry, Map<String, dynamic>? initialPageData})
-      : _formInitialData = Map.from(initialPageData ?? {}),
+  NeoPageBloc({
+    required this.pageId,
+    required this.jsonWidgetRegistry,
+    required this.widgetEventBus,
+    Map<String, dynamic>? initialPageData,
+  })  : _formInitialData = Map.from(initialPageData ?? {}),
         _formData = Map.from(initialPageData ?? {}),
         super(const NeoPageState()) {
     _listenWidgetEvents();
@@ -174,6 +179,7 @@ class NeoPageBloc extends Bloc<NeoPageEvent, NeoPageState> {
   }
 
   List<FocusNode> get failureFocusNode => _failureFocusNodeMap.values.toList();
+
   Map<String, bool> get isCustomFieldsValidMap => _isCustomFieldsValidMap;
 
   void addFailureFocusNode(Map<String, FocusNode> focusMap) {
@@ -198,15 +204,15 @@ class NeoPageBloc extends Bloc<NeoPageEvent, NeoPageState> {
 
   void _listenWidgetEvents() {
     addToDisposeList(
-      GetIt.I.get<NeoWidgetEventBus>().listen(
-            eventId: dataEventKey,
-            onEventReceived: (NeoWidgetEvent event) {
-              final transition = event.data! as NeoSignalRTransition;
-              if (transition.dataPageId == pageId) {
-                addAllParameters(NeoPageEventAddAllParameters(transition.additionalData ?? {}));
-              }
-            },
-          ),
+      widgetEventBus.listen(
+        eventId: dataEventKey,
+        onEventReceived: (NeoWidgetEvent event) {
+          final transition = event.data! as NeoSignalRTransition;
+          if (transition.dataPageId == pageId) {
+            addAllParameters(NeoPageEventAddAllParameters(transition.additionalData ?? {}));
+          }
+        },
+      ),
     );
   }
 
