@@ -19,7 +19,9 @@ abstract class NeoCoreParameterKey {
   static const secureStorageAuthToken = "secureStorage:infrastructure:authToken";
   static const secureStorageBusinessLine = "secureStorage:common:businessLine";
   static const secureStorageCustomerId = "secureStorage:common:customerId";
+  static const secureStorageCustomerName = "secureStorage:common:customerName";
   static const secureStorageCustomerNameAndSurname = "secureStorage:common:customerNameAndSurname";
+  static const secureStorageCustomerSurname = "secureStorage:common:customerSurname";
   static const secureStorageCustomerNameAndSurnameUppercase = "secureStorage:common:customerNameAndSurnameUppercase";
   static const secureStorageDeviceId = "secureStorage:infrastructure:deviceId";
   static const secureStorageDeviceInfo = "secureStorage:infrastructure:deviceInformation";
