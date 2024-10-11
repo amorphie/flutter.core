@@ -14,7 +14,6 @@
 
 import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
-import 'package:get_it/get_it.dart';
 import 'package:logger/logger.dart';
 import 'package:neo_core/core/analytics/i_neo_logger.dart';
 import 'package:neo_core/core/analytics/neo_adjust.dart';
@@ -47,7 +46,7 @@ class NeoLogger implements INeoLogger {
 
   final Logger _logger = Logger(printer: PrettyPrinter(printTime: true));
 
-  late final NeoCrashlytics _neoCrashlytics = GetIt.I.get();
+  late final NeoCrashlytics _neoCrashlytics = NeoCrashlytics();
 
   @override
   List<NavigatorObserver> observers = [];
