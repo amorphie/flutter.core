@@ -135,6 +135,11 @@ class NeoCoreSecureStorage {
       await write(key: NeoCoreParameterKey.secureStorageCustomerId, value: customerId);
     }
 
+    final customerNo = decodedToken["customer_no"];
+    if (customerNo is String && customerNo.isNotEmpty) {
+      await write(key: NeoCoreParameterKey.secureStorageCustomerNo, value: customerNo);
+    }
+
     final customerName = decodedToken["given_name"];
     if (customerName is String && customerName.isNotEmpty) {
       await write(
@@ -195,10 +200,14 @@ class NeoCoreSecureStorage {
     return Future.wait([
       deleteTokens(),
       delete(NeoCoreParameterKey.secureStorageCustomerId),
+      delete(NeoCoreParameterKey.secureStorageCustomerNo),
+      delete(NeoCoreParameterKey.secureStorageCustomerName),
+      delete(NeoCoreParameterKey.secureStorageCustomerSurname),
       delete(NeoCoreParameterKey.secureStorageCustomerNameAndSurname),
       delete(NeoCoreParameterKey.secureStorageCustomerNameAndSurnameUppercase),
       delete(NeoCoreParameterKey.secureStorageBusinessLine),
       delete(NeoCoreParameterKey.secureStoragePhoneNumber),
+      delete(NeoCoreParameterKey.secureStorageUserRole),
     ]);
   }
 // endregion
