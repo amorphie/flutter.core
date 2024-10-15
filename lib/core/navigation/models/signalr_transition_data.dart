@@ -36,14 +36,14 @@ class SignalrTransitionData {
   final String? viewSource;
   final Map<String, dynamic> initialData;
   final bool isBackNavigation;
-  final String transitionId;
+  final String? transitionId;
   final String? statusMessage;
   final String? statusCode;
   final Map<String, dynamic>? queryParameters;
   final bool useSubNavigator;
 
   SignalrTransitionData({
-    required this.transitionId,
+    this.transitionId,
     this.navigationPath,
     this.navigationType,
     this.pageId,

@@ -3,9 +3,14 @@ import 'dart:async';
 import 'package:collection/collection.dart';
 import 'package:equatable/equatable.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:get_it/get_it.dart';
 import 'package:json_dynamic_widget/json_dynamic_widget.dart';
+import 'package:neo_core/core/bus/widget_event_bus/neo_widget_event.dart';
+import 'package:neo_core/core/bus/widget_event_bus/neo_widget_event_bus.dart';
+import 'package:neo_core/core/network/models/neo_signalr_transition.dart';
 
 part 'neo_page_event.dart';
+
 part 'neo_page_state.dart';
 
 abstract class _Constants {
@@ -13,7 +18,11 @@ abstract class _Constants {
 }
 
 class NeoPageBloc extends Bloc<NeoPageEvent, NeoPageState> {
+  static const dataEventKey = "NeoPageBlocDataEventKey";
+
   final JsonWidgetRegistry jsonWidgetRegistry;
+  final String pageId;
+  final NeoWidgetEventBus widgetEventBus;
 
   final GlobalKey<FormState> formKey = GlobalKey<FormState>();
   final Map<String, dynamic> _formInitialData;
@@ -31,10 +40,16 @@ class NeoPageBloc extends Bloc<NeoPageEvent, NeoPageState> {
 
   Map<String, dynamic> get formData => _formData;
 
-  NeoPageBloc({required this.jsonWidgetRegistry, Map<String, dynamic>? initialPageData})
-      : _formInitialData = Map.from(initialPageData ?? {}),
+  NeoPageBloc({
+    required this.pageId,
+    required this.jsonWidgetRegistry,
+    required this.widgetEventBus,
+    Map<String, dynamic>? initialPageData,
+  })  : _formInitialData = Map.from(initialPageData ?? {}),
         _formData = Map.from(initialPageData ?? {}),
         super(const NeoPageState()) {
+    _listenWidgetEvents();
+
     on<NeoPageEventResetForm>((event, emit) {
       formKey.currentState?.reset();
       clearFailureFocusNode();
@@ -164,6 +179,7 @@ class NeoPageBloc extends Bloc<NeoPageEvent, NeoPageState> {
   }
 
   List<FocusNode> get failureFocusNode => _failureFocusNodeMap.values.toList();
+
   Map<String, bool> get isCustomFieldsValidMap => _isCustomFieldsValidMap;
 
   void addFailureFocusNode(Map<String, FocusNode> focusMap) {
@@ -184,6 +200,20 @@ class NeoPageBloc extends Bloc<NeoPageEvent, NeoPageState> {
     } else {
       _failureFocusNodeMap.clear();
     }
+  }
+
+  void _listenWidgetEvents() {
+    addToDisposeList(
+      widgetEventBus.listen(
+        eventId: dataEventKey,
+        onEventReceived: (NeoWidgetEvent event) {
+          final transition = event.data! as NeoSignalRTransition;
+          if (transition.dataPageId == pageId) {
+            addAllParameters(NeoPageEventAddAllParameters(transition.additionalData ?? {}));
+          }
+        },
+      ),
+    );
   }
 
   @override
