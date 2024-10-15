@@ -12,9 +12,9 @@ abstract class _Constants {
 class NeoRemoteConfig {
   NeoRemoteConfig();
 
-  final FirebaseRemoteConfig _firebaseRemoteConfig = FirebaseRemoteConfig.instance;
+  late final FirebaseRemoteConfig _firebaseRemoteConfig = FirebaseRemoteConfig.instance;
 
-  NeoLogger get _neoLogger => GetIt.I.get();
+  late final NeoLogger _neoLogger = GetIt.I.get();
 
   Future<void> init() async {
     try {

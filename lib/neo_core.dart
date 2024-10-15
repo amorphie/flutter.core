@@ -12,7 +12,6 @@
 
 import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/foundation.dart' show kIsWeb;
-import 'package:neo_core/core/storage/neo_remote_config.dart';
 import 'package:universal_io/io.dart';
 
 export 'core/bus/neo_bus.dart';
@@ -29,6 +28,5 @@ class NeoCore {
     if (!kIsWeb && !Platform.isMacOS) {
       await Firebase.initializeApp();
     }
-    await NeoRemoteConfig().init();
   }
 }
