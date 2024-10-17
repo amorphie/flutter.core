@@ -19,6 +19,8 @@ abstract class _Constant {
 
 @pragma('vm:entry-point')
 Future<void> onBackgroundMessage(RemoteMessage message) async {
+  debugPrint("***Message: ${message}");
+  debugPrint("***Message Data: ${message.data}");
   return Future.value();
 }
 
@@ -27,6 +29,7 @@ class NeoCoreFirebaseMessaging extends StatefulWidget {
     required this.child,
     required this.networkManager,
     required this.neoCoreSecureStorage,
+    required this.token,
     this.androidDefaultIcon,
     this.onDeeplinkNavigation,
     super.key,
@@ -35,6 +38,7 @@ class NeoCoreFirebaseMessaging extends StatefulWidget {
   final Widget child;
   final NeoNetworkManager networkManager;
   final NeoCoreSecureStorage neoCoreSecureStorage;
+  final Function(String) token;
   final String? androidDefaultIcon;
   final Function(String)? onDeeplinkNavigation;
 
@@ -82,6 +86,7 @@ class _NeoCoreFirebaseMessagingState extends State<NeoCoreFirebaseMessaging> {
 
   void _onTokenChange(String token) {
     debugPrint("Firebase Push token: $token");
+    widget.token.call(token);
     NeoCoreRegisterDeviceUseCase().call(
       networkManager: widget.networkManager,
       secureStorage: widget.neoCoreSecureStorage,

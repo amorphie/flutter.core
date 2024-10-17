@@ -27,6 +27,7 @@ class NeoCoreHuaweiMessaging extends StatefulWidget {
     required this.child,
     required this.networkManager,
     required this.neoCoreSecureStorage,
+    required this.token,
     this.androidDefaultIcon,
     this.onDeeplinkNavigation,
     super.key,
@@ -35,6 +36,7 @@ class NeoCoreHuaweiMessaging extends StatefulWidget {
   final Widget child;
   final NeoNetworkManager networkManager;
   final NeoCoreSecureStorage neoCoreSecureStorage;
+  final Function(String) token;
   final String? androidDefaultIcon;
   final Function(String)? onDeeplinkNavigation;
 
@@ -86,6 +88,7 @@ class _NeoCoreHuaweiMessagingState extends State<NeoCoreHuaweiMessaging> {
 
   void _onTokenChange(String token) {
     debugPrint("Huawei Push token: $token");
+    widget.token.call(token);
     NeoCoreRegisterDeviceUseCase().call(
       networkManager: widget.networkManager,
       secureStorage: widget.neoCoreSecureStorage,
