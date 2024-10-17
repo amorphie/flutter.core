@@ -14,6 +14,7 @@ class NeoCoreMessaging extends StatelessWidget {
   final NeoSharedPrefs neoSharedPrefs;
   final NeoNetworkManager networkManager;
   final NeoCoreSecureStorage neoCoreSecureStorage;
+  final Function(String) firebaseToken;
   final String? androidDefaultIcon;
   final Function(String)? onDeeplinkNavigation;
 
@@ -22,6 +23,7 @@ class NeoCoreMessaging extends StatelessWidget {
     required this.neoSharedPrefs,
     required this.networkManager,
     required this.neoCoreSecureStorage,
+    required this.firebaseToken,
     this.androidDefaultIcon,
     this.onDeeplinkNavigation,
     super.key,
@@ -38,6 +40,7 @@ class NeoCoreMessaging extends StatelessWidget {
         return NeoCoreHuaweiMessaging(
           networkManager: networkManager,
           neoCoreSecureStorage: neoCoreSecureStorage,
+          token: firebaseToken,
           androidDefaultIcon: androidDefaultIcon,
           onDeeplinkNavigation: onDeeplinkNavigation,
           child: child,
@@ -46,6 +49,7 @@ class NeoCoreMessaging extends StatelessWidget {
         return NeoCoreFirebaseMessaging(
           networkManager: networkManager,
           neoCoreSecureStorage: neoCoreSecureStorage,
+          token: firebaseToken,
           androidDefaultIcon: androidDefaultIcon,
           onDeeplinkNavigation: onDeeplinkNavigation,
           child: child,
