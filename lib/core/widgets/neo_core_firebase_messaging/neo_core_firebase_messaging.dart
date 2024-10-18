@@ -19,8 +19,8 @@ abstract class _Constant {
 
 @pragma('vm:entry-point')
 Future<void> onBackgroundMessage(RemoteMessage message) async {
-  debugPrint("***Message: ${message}");
-  debugPrint("***Message Data: ${message.data}");
+  debugPrint("***BackgroundMessage: ${message}");
+  debugPrint("***BackgroundMessage Data: ${message.data}");
   return Future.value();
 }
 
@@ -109,6 +109,8 @@ class _NeoCoreFirebaseMessagingState extends State<NeoCoreFirebaseMessaging> {
 
     // This is called when an incoming FCM payload is received while the Flutter instance is in the foreground.
     FirebaseMessaging.onMessage.listen((message) {
+      debugPrint("***ForegroundMessage: ${message}");
+      debugPrint("****ForegroundMessage Data: ${message.data}");
       final notification = message.notification;
       if (notification == null || !Platform.isAndroid) {
         return;
