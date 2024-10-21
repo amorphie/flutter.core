@@ -4,7 +4,10 @@ import 'dart:convert';
 import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
+import 'package:get_it/get_it.dart';
 import 'package:huawei_push/huawei_push.dart'; // Huawei Push Kit
+import 'package:logger/logger.dart';
+import 'package:neo_core/core/analytics/neo_logger.dart';
 import 'package:neo_core/core/network/managers/neo_network_manager.dart';
 import 'package:neo_core/core/storage/neo_core_secure_storage.dart';
 import 'package:neo_core/feature/device_registration/usecases/neo_core_register_device_usecase.dart';
@@ -50,6 +53,8 @@ class _NeoCoreHuaweiMessagingState extends State<NeoCoreHuaweiMessaging> {
   );
   final _localNotifications = FlutterLocalNotificationsPlugin();
 
+  NeoLogger get _neoLogger => GetIt.I.get();
+
   @override
   Widget build(BuildContext context) {
     return widget.child;
@@ -85,7 +90,7 @@ class _NeoCoreHuaweiMessagingState extends State<NeoCoreHuaweiMessaging> {
   }
 
   void _onTokenChange(String token) {
-    debugPrint("Huawei Push token: $token");
+    _neoLogger.logConsole("Huawei Push token: $token");
     NeoCoreRegisterDeviceUseCase().call(
       networkManager: widget.networkManager,
       secureStorage: widget.neoCoreSecureStorage,
@@ -136,7 +141,7 @@ class _NeoCoreHuaweiMessagingState extends State<NeoCoreHuaweiMessaging> {
       final String token = await Push.getTokenStream.first;
       return token;
     } catch (e) {
-      debugPrint("There is an error receiving the Huawei-Push token: $e");
+      _neoLogger.logConsole("There is an error receiving the Huawei-Push token: $e", logLevel: Level.error);
       return null;
     }
   }
@@ -171,6 +176,6 @@ class _NeoCoreHuaweiMessagingState extends State<NeoCoreHuaweiMessaging> {
   }
 
   void _onMessageReceiveError(Object error) {
-    debugPrint("Error receiving message: $error");
+    _neoLogger.logConsole("Error receiving message: $error", logLevel: Level.error);
   }
 }

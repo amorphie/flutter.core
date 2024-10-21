@@ -11,11 +11,9 @@
  */
 
 import 'dart:convert';
-import 'dart:developer';
 
 import 'package:collection/collection.dart';
 import 'package:flutter/foundation.dart' show kDebugMode;
-import 'package:flutter/material.dart';
 import 'package:get_it/get_it.dart';
 import 'package:neo_core/core/analytics/neo_logger.dart';
 import 'package:neo_core/core/analytics/neo_logger_type.dart';
@@ -42,7 +40,6 @@ class SignalrConnectionManager {
   SignalrConnectionManager({required this.serverUrl, required this.methodName});
 
   NeoLogger get _neoLogger => GetIt.I.get();
-
 
   Future init() async {
     _hubConnection = HubConnectionBuilder()
@@ -77,10 +74,10 @@ class SignalrConnectionManager {
           _Constants.eventNameSignalrInitSucceed,
           logTypes: [NeoLoggerType.posthog, NeoLoggerType.logger],
         );
-        debugPrint(_Constants.eventNameSignalrInitSucceed);
       } on Exception catch (e, stacktrace) {
-        _neoLogger.logException("${_Constants.eventNameSignalrInitFailed} $e", stacktrace);
-        debugPrint(_Constants.eventNameSignalrInitFailed);
+        _neoLogger
+          ..logException("${_Constants.eventNameSignalrInitFailed} $e", stacktrace)
+          ..logConsole(_Constants.eventNameSignalrInitFailed);
       }
     }
   }
@@ -88,7 +85,7 @@ class SignalrConnectionManager {
   void listenForTransitionEvents({required Function(NeoSignalRTransition transition) onTransition}) {
     _hubConnection?.on(methodName, (List<Object?>? transitions) {
       if (kDebugMode) {
-        log('\n[SignalrConnectionManager] Transition: $transitions');
+        _neoLogger.logConsole('[SignalrConnectionManager] Transition: $transitions');
       }
       if (transitions == null) {
         return;

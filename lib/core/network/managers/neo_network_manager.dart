@@ -12,12 +12,12 @@
 
 import 'dart:convert';
 
-import 'package:flutter/foundation.dart' show debugPrint;
 import 'package:flutter/services.dart';
 import 'package:get_it/get_it.dart';
 import 'package:http/http.dart' as http;
 import 'package:http/io_client.dart';
 import 'package:json_annotation/json_annotation.dart';
+import 'package:logger/logger.dart';
 import 'package:neo_core/core/analytics/neo_logger.dart';
 import 'package:neo_core/core/network/models/http_auth_response.dart';
 import 'package:neo_core/core/network/models/http_method.dart';
@@ -241,9 +241,12 @@ class NeoNetworkManager {
     } catch (_) {
       responseJSON = {};
     }
-    debugPrint("[NeoNetworkManager] Response code: ${response.statusCode}. Body: ${response.body}");
 
     if (response.statusCode >= 200 && response.statusCode < 300) {
+      _neoLogger.logConsole(
+        "[NeoNetworkManager] Response code: ${response.statusCode}. URL: ${response.request?.url}",
+        logLevel: Level.trace,
+      );
       onRequestSucceed?.call(call.endpoint, call.requestId);
       return NeoResponse.success(responseJSON);
     } else if (response.statusCode == _Constants.responseCodeUnauthorized) {
@@ -269,6 +272,10 @@ class NeoNetworkManager {
         }
       }
     } else {
+      _neoLogger.logConsole(
+        "[NeoNetworkManager] Response code: ${response.statusCode}. URL: ${response.request?.url}",
+        logLevel: Level.warning,
+      );
       try {
         responseJSON.addAll({'body': response.body});
         final hasErrorCode = responseJSON.containsKey("errorCode");

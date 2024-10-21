@@ -132,7 +132,7 @@ class NeoLogger implements INeoLogger {
     final startTime = _timeMap.remove(pageId);
     final duration = startTime != null ? endTime.difference(startTime).inMilliseconds : null;
     final message =
-        '[Building Time]:$pageId - ${pageType.type}is built successfully.${duration != null ? ' Duration: ${duration}ms' : ''}';
+        '[Building Time]:$pageId - ${pageType.type} is built successfully.${duration != null ? ' Duration: ${duration}ms' : ''}';
     final platform = _deviceUtil.getPlatformName();
     final device = await _deviceUtil.getDeviceInfo();
     final parameters = {
@@ -194,5 +194,9 @@ class NeoLogger implements INeoLogger {
       return;
     }
     await _neoCrashlytics.sendUnsentReports();
+  }
+
+  void logConsole(dynamic message, {Level logLevel = Level.info}) {
+    logCustom(message, logLevel: logLevel, logTypes: [NeoLoggerType.logger]);
   }
 }
