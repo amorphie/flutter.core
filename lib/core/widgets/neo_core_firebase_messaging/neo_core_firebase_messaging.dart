@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'dart:convert';
+import 'dart:developer';
 
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/foundation.dart' show kIsWeb;
@@ -21,6 +22,7 @@ abstract class _Constant {
 Future<void> onBackgroundMessage(RemoteMessage message) async {
   debugPrint("***BackgroundMessage: ${message}");
   debugPrint("***BackgroundMessage Data: ${message.data}");
+  log("***BackgroundMessage Data: ${message.data}");
   return Future.value();
 }
 
@@ -111,6 +113,7 @@ class _NeoCoreFirebaseMessagingState extends State<NeoCoreFirebaseMessaging> {
     FirebaseMessaging.onMessage.listen((message) {
       debugPrint("***ForegroundMessage: ${message}");
       debugPrint("****ForegroundMessage Data: ${message.data}");
+      log("***BackgroundMessage Data: ${message.data}");
       final notification = message.notification;
       if (notification == null || !Platform.isAndroid) {
         return;
