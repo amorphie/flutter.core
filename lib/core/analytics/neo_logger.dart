@@ -12,6 +12,8 @@
  *
  */
 
+import 'dart:developer';
+
 import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
 import 'package:logger/logger.dart';
@@ -31,6 +33,17 @@ abstract class _Constants {
   static const eventNameAdjustInitSucceed = "[NeoAdjust]: init is succeed!";
 }
 
+class _NeoLoggerPrinter extends PrettyPrinter {
+  _NeoLoggerPrinter() : super(printTime: true, methodCount: 0);
+}
+
+class _NeoLoggerOutput extends LogOutput {
+  @override
+  void output(OutputEvent event) {
+    log(event.lines.join("\n"));
+  }
+}
+
 class NeoLogger implements INeoLogger {
   final NeoPosthog neoPosthog;
   final NeoAdjust neoAdjust;
@@ -44,7 +57,7 @@ class NeoLogger implements INeoLogger {
 
   final DeviceUtil _deviceUtil = DeviceUtil();
 
-  final Logger _logger = Logger(printer: PrettyPrinter(printTime: true));
+  final Logger _logger = Logger(printer: _NeoLoggerPrinter(), output: _NeoLoggerOutput());
 
   late final NeoCrashlytics _neoCrashlytics = NeoCrashlytics();
 
