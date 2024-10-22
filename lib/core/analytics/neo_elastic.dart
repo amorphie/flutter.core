@@ -1,6 +1,4 @@
-import "package:get_it/get_it.dart";
-import "package:logger/logger.dart";
-import "package:neo_core/core/analytics/neo_logger.dart";
+import "package:flutter/foundation.dart";
 import "package:neo_core/core/network/managers/neo_network_manager.dart";
 import "package:neo_core/core/network/models/neo_http_call.dart";
 import 'package:neo_core/core/storage/neo_core_parameter_key.dart';
@@ -16,8 +14,6 @@ class NeoElastic {
 
   final NeoNetworkManager neoNetworkManager;
   final NeoCoreSecureStorage secureStorage;
-
-  NeoLogger get _neoLogger => GetIt.I.get();
 
   Future<void> logCustom(dynamic message, String level, {Map<String, dynamic>? parameters}) async {
     final packageInfo = await PackageInfo.fromPlatform();
@@ -45,7 +41,7 @@ class NeoElastic {
     try {
       await neoNetworkManager.call(NeoHttpCall(endpoint: _Constants.endpoint, body: body));
     } catch (e) {
-      _neoLogger.logConsole("Failed to log message: $e", logLevel: Level.error);
+      debugPrint("Failed to log message: $e");
     }
   }
 }
