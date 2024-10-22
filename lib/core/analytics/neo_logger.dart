@@ -34,7 +34,7 @@ abstract class _Constants {
 }
 
 class _NeoLoggerPrinter extends PrettyPrinter {
-  _NeoLoggerPrinter() : super(printTime: true, methodCount: 0);
+  _NeoLoggerPrinter() : super(printTime: true, methodCount: 0, noBoxingByDefault: true, printEmojis: false);
 }
 
 class _NeoLoggerOutput extends LogOutput {
@@ -132,7 +132,7 @@ class NeoLogger implements INeoLogger {
     final startTime = _timeMap.remove(pageId);
     final duration = startTime != null ? endTime.difference(startTime).inMilliseconds : null;
     final message =
-        '[Building Time]:$pageId - ${pageType.type} is built successfully.${duration != null ? ' Duration: ${duration}ms' : ''}';
+        '[Building Time]: $pageId - ${pageType.type} is built successfully.${duration != null ? ' Duration: ${duration}ms' : ''}';
     final platform = _deviceUtil.getPlatformName();
     final device = await _deviceUtil.getDeviceInfo();
     final parameters = {
