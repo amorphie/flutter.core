@@ -90,7 +90,7 @@ class _NeoCoreHuaweiMessagingState extends State<NeoCoreHuaweiMessaging> {
   }
 
   void _onTokenChange(String token) {
-    _neoLogger.logConsole("Huawei Push token: $token");
+    debugPrint("Huawei Push token: $token");
     NeoCoreRegisterDeviceUseCase().call(
       networkManager: widget.networkManager,
       secureStorage: widget.neoCoreSecureStorage,
@@ -141,7 +141,7 @@ class _NeoCoreHuaweiMessagingState extends State<NeoCoreHuaweiMessaging> {
       final String token = await Push.getTokenStream.first;
       return token;
     } catch (e) {
-      _neoLogger.logConsole("There is an error receiving the Huawei-Push token: $e", logLevel: Level.error);
+      debugPrint("There is an error receiving the Huawei-Push token: $e");
       return null;
     }
   }

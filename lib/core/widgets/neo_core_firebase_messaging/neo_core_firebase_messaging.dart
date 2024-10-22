@@ -5,9 +5,6 @@ import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
-import 'package:get_it/get_it.dart';
-import 'package:logger/logger.dart';
-import 'package:neo_core/core/analytics/neo_logger.dart';
 import 'package:neo_core/core/network/managers/neo_network_manager.dart';
 import 'package:neo_core/core/storage/neo_core_secure_storage.dart';
 import 'package:neo_core/feature/device_registration/usecases/neo_core_register_device_usecase.dart';
@@ -57,8 +54,6 @@ class _NeoCoreFirebaseMessagingState extends State<NeoCoreFirebaseMessaging> {
   );
   final _localNotifications = FlutterLocalNotificationsPlugin();
 
-  NeoLogger get _neoLogger => GetIt.I.get();
-
   @override
   Widget build(BuildContext context) {
     return widget.child;
@@ -86,7 +81,7 @@ class _NeoCoreFirebaseMessagingState extends State<NeoCoreFirebaseMessaging> {
   }
 
   void _onTokenChange(String token) {
-    _neoLogger.logConsole("Firebase Push token: $token", logLevel: Level.trace);
+    debugPrint("Firebase Push token: $token");
     NeoCoreRegisterDeviceUseCase().call(
       networkManager: widget.networkManager,
       secureStorage: widget.neoCoreSecureStorage,
