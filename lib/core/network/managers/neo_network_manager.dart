@@ -47,6 +47,8 @@ abstract class _Constants {
   static const String languageCodeEn = "en";
 }
 
+enum NeoNetworkManagerLogScale { none, simplified, all }
+
 class NeoNetworkManager {
   final HttpClientConfig httpClientConfig;
   final NeoCoreSecureStorage secureStorage;
@@ -59,6 +61,7 @@ class NeoNetworkManager {
   final Function(NeoError neoError, String requestId)? onRequestFailed;
   final Function()? onInvalidTokenError;
   late final NeoLogger _neoLogger = GetIt.I.get();
+  final NeoNetworkManagerLogScale logScale;
 
   NeoNetworkManager({
     required this.httpClientConfig,
@@ -71,6 +74,7 @@ class NeoNetworkManager {
     this.onRequestSucceed,
     this.onRequestFailed,
     this.onInvalidTokenError,
+    this.logScale = NeoNetworkManagerLogScale.simplified,
   });
 
   Future<Map<String, String>> get _defaultHeaders async {
@@ -242,11 +246,9 @@ class NeoNetworkManager {
       responseJSON = {};
     }
 
+    _logResponse(response);
+
     if (response.statusCode >= 200 && response.statusCode < 300) {
-      _neoLogger.logConsole(
-        "[NeoNetworkManager] Response code: ${response.statusCode}. URL: ${response.request?.url}",
-        logLevel: Level.trace,
-      );
       onRequestSucceed?.call(call.endpoint, call.requestId);
       return NeoResponse.success(responseJSON);
     } else if (response.statusCode == _Constants.responseCodeUnauthorized) {
@@ -272,10 +274,6 @@ class NeoNetworkManager {
         }
       }
     } else {
-      _neoLogger.logConsole(
-        "[NeoNetworkManager] Response code: ${response.statusCode}. URL: ${response.request?.url}",
-        logLevel: Level.warning,
-      );
       try {
         responseJSON.addAll({'body': response.body});
         final hasErrorCode = responseJSON.containsKey("errorCode");
@@ -381,5 +379,23 @@ class NeoNetworkManager {
     final HttpClient client = HttpClient(context: await _getSecurityContext)
       ..badCertificateCallback = (X509Certificate cert, String host, int port) => false;
     return IOClient(client);
+  }
+
+  void _logResponse(http.Response response) {
+    final isSuccess = response.statusCode >= 200 && response.statusCode < 300;
+    final logLevel = isSuccess ? Level.trace : Level.warning;
+    switch (logScale) {
+      case NeoNetworkManagerLogScale.all:
+        _neoLogger.logConsole(
+          "[NeoNetworkManager] Response code: ${response.statusCode}.\nURL: ${response.request?.url}\nBody: ${response.body}",
+          logLevel: logLevel,
+        );
+      case NeoNetworkManagerLogScale.simplified:
+        _neoLogger.logConsole(
+          "[NeoNetworkManager] Response code: ${response.statusCode}.\nURL: ${response.request?.url}",
+          logLevel: logLevel,
+        );
+      case NeoNetworkManagerLogScale.none:
+    }
   }
 }
