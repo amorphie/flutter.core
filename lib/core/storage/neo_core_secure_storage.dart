@@ -12,8 +12,10 @@
 
 import 'dart:async';
 
-import 'package:flutter/foundation.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
+import 'package:get_it/get_it.dart';
+import 'package:logger/logger.dart';
+import 'package:neo_core/core/analytics/neo_logger.dart';
 import 'package:neo_core/core/encryption/jwt_decoder.dart';
 import 'package:neo_core/core/storage/neo_core_parameter_key.dart';
 import 'package:neo_core/core/storage/neo_shared_prefs.dart';
@@ -34,6 +36,8 @@ class NeoCoreSecureStorage {
 
   final Map<String, String?> _cachedValues = {};
 
+  NeoLogger get _neoLogger => GetIt.I.get();
+
   Future<void> write({required String key, required String? value}) {
     if (enableCaching) {
       _cachedValues[key] = value;
@@ -51,7 +55,7 @@ class NeoCoreSecureStorage {
         value = await _storage!.read(key: key);
       } catch (e) {
         final errorMessage = '[NeoCoreSecureStorage]: Error occurred while reading value of $key';
-        debugPrint(errorMessage);
+        _neoLogger.logConsole(errorMessage, logLevel: Level.error);
       }
       _cachedValues[key] = value;
       return value;
