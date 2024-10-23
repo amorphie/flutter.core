@@ -19,6 +19,7 @@ abstract class NeoNetworkHeaderKey {
   static const behalfOfUser = "Behalf-Of-User";
   static const contentLanguage = "Content-Language";
   static const contentType = "Content-Type";
+  static const customer = "X-Customer";
   static const deployment = "X-Deployment";
   static const deviceToken = "X-Device-Token";
   static const deviceId = "X-Device-Id";
