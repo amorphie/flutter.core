@@ -4,7 +4,10 @@ import 'dart:convert';
 import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
+import 'package:get_it/get_it.dart';
 import 'package:huawei_push/huawei_push.dart'; // Huawei Push Kit
+import 'package:logger/logger.dart';
+import 'package:neo_core/core/analytics/neo_logger.dart';
 import 'package:neo_core/core/network/managers/neo_network_manager.dart';
 import 'package:neo_core/core/storage/neo_core_secure_storage.dart';
 import 'package:neo_core/feature/device_registration/usecases/neo_core_register_device_usecase.dart';
@@ -51,6 +54,8 @@ class _NeoCoreHuaweiMessagingState extends State<NeoCoreHuaweiMessaging> {
     description: _Constant.androidNotificationChannelDescription,
   );
   final _localNotifications = FlutterLocalNotificationsPlugin();
+
+  NeoLogger get _neoLogger => GetIt.I.get();
 
   @override
   Widget build(BuildContext context) {
@@ -174,6 +179,6 @@ class _NeoCoreHuaweiMessagingState extends State<NeoCoreHuaweiMessaging> {
   }
 
   void _onMessageReceiveError(Object error) {
-    debugPrint("Error receiving message: $error");
+    _neoLogger.logConsole("Error receiving message: $error", logLevel: Level.error);
   }
 }
