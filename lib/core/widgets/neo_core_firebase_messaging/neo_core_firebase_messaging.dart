@@ -1,6 +1,5 @@
 import 'dart:async';
 import 'dart:convert';
-import 'dart:developer';
 
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/foundation.dart' show kIsWeb;
@@ -20,9 +19,18 @@ abstract class _Constant {
 
 @pragma('vm:entry-point')
 Future<void> onBackgroundMessage(RemoteMessage message) async {
-  debugPrint("***BackgroundMessage: ${message}");
-  debugPrint("***BackgroundMessage Data: ${message.data}");
-  log("***BackgroundMessage Data: ${message.data}");
+  debugPrint("***BackgroundMessage: ${message.notification}");
+  final buffer = StringBuffer()
+    ..write("title: ${message.notification?.title}")
+    ..write(message.notification?.titleLocKey ?? '-')
+    ..write(message.notification?.titleLocArgs ?? '-')
+    ..write("body: ${message.notification?.body}")
+    ..write(message.notification?.bodyLocKey ?? '-')
+    ..write(message.notification?.bodyLocArgs ?? '-')
+    ..write(message.notification?.android?.link ?? '-')
+    ..write(message.notification?.android?.imageUrl ?? '-')
+    ..write("android: ${message.notification?.android}");
+  debugPrint("***BackgroundMessage notification: $buffer");
   return Future.value();
 }
 
@@ -111,9 +119,18 @@ class _NeoCoreFirebaseMessagingState extends State<NeoCoreFirebaseMessaging> {
 
     // This is called when an incoming FCM payload is received while the Flutter instance is in the foreground.
     FirebaseMessaging.onMessage.listen((message) {
-      debugPrint("***ForegroundMessage: ${message}");
-      debugPrint("****ForegroundMessage Data: ${message.data}");
-      log("***BackgroundMessage Data: ${message.data}");
+      debugPrint("***ForegroundMessage: ${message.notification}");
+      final buffer = StringBuffer()
+        ..write("title: ${message.notification?.title}")
+        ..write(message.notification?.titleLocKey ?? '-')
+        ..write(message.notification?.titleLocArgs ?? '-')
+        ..write("body: ${message.notification?.body}")
+        ..write(message.notification?.bodyLocKey ?? '-')
+        ..write(message.notification?.bodyLocArgs ?? '-')
+        ..write(message.notification?.android?.link ?? '-')
+        ..write(message.notification?.android?.imageUrl ?? '-')
+        ..write("android: ${message.notification?.android}");
+      debugPrint("****ForegroundMessage notification: $buffer");
       final notification = message.notification;
       if (notification == null || !Platform.isAndroid) {
         return;
