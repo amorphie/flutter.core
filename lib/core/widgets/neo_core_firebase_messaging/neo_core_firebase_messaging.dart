@@ -120,6 +120,10 @@ class _NeoCoreFirebaseMessagingState extends State<NeoCoreFirebaseMessaging> {
     // This is called when an incoming FCM payload is received while the Flutter instance is in the foreground.
     FirebaseMessaging.onMessage.listen((message) {
       debugPrint("***ForegroundMessage: ${message.notification}");
+      final notification = message.notification;
+      if (notification == null || !Platform.isAndroid) {
+        return;
+      }
       final buffer = StringBuffer()
         ..write("title: ${message.notification?.title}")
         ..write(message.notification?.titleLocKey ?? '-')
@@ -131,10 +135,6 @@ class _NeoCoreFirebaseMessagingState extends State<NeoCoreFirebaseMessaging> {
         ..write(message.notification?.android?.imageUrl ?? '-')
         ..write("android: ${message.notification?.android}");
       debugPrint("****ForegroundMessage notification: $buffer");
-      final notification = message.notification;
-      if (notification == null || !Platform.isAndroid) {
-        return;
-      }
       _localNotifications.show(
         notification.hashCode,
         notification.title,
