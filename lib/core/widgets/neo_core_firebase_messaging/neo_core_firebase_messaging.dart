@@ -137,7 +137,7 @@ class _NeoCoreFirebaseMessagingState extends State<NeoCoreFirebaseMessaging> {
       debugPrint("****ForegroundMessage notification: $buffer");
       _localNotifications.show(
         notification.hashCode,
-        notification.title,
+        "Dengage title deneme 1 2 3",
         notification.body,
         NotificationDetails(
           android: AndroidNotificationDetails(
