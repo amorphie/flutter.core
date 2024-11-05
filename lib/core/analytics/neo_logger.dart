@@ -12,6 +12,8 @@
  *
  */
 
+import 'dart:developer';
+
 import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
 import 'package:logger/logger.dart';
@@ -31,6 +33,17 @@ abstract class _Constants {
   static const eventNameAdjustInitSucceed = "[NeoAdjust]: init is succeed!";
 }
 
+class _NeoLoggerPrinter extends PrettyPrinter {
+  _NeoLoggerPrinter() : super(printTime: true, methodCount: 0, noBoxingByDefault: true, printEmojis: false);
+}
+
+class _NeoLoggerOutput extends LogOutput {
+  @override
+  void output(OutputEvent event) {
+    log(event.lines.join("\n"));
+  }
+}
+
 class NeoLogger implements INeoLogger {
   final NeoPosthog neoPosthog;
   final NeoAdjust neoAdjust;
@@ -44,7 +57,7 @@ class NeoLogger implements INeoLogger {
 
   final DeviceUtil _deviceUtil = DeviceUtil();
 
-  final Logger _logger = Logger(printer: PrettyPrinter(printTime: true));
+  final Logger _logger = Logger(printer: _NeoLoggerPrinter(), output: _NeoLoggerOutput());
 
   late final NeoCrashlytics _neoCrashlytics = NeoCrashlytics();
 
@@ -119,7 +132,7 @@ class NeoLogger implements INeoLogger {
     final startTime = _timeMap.remove(pageId);
     final duration = startTime != null ? endTime.difference(startTime).inMilliseconds : null;
     final message =
-        '[Building Time]:$pageId - ${pageType.type}is built successfully.${duration != null ? ' Duration: ${duration}ms' : ''}';
+        '[Building Time]: $pageId - ${pageType.type} is built successfully.${duration != null ? ' Duration: ${duration}ms' : ''}';
     final platform = _deviceUtil.getPlatformName();
     final device = await _deviceUtil.getDeviceInfo();
     final parameters = {
@@ -181,5 +194,9 @@ class NeoLogger implements INeoLogger {
       return;
     }
     await _neoCrashlytics.sendUnsentReports();
+  }
+
+  void logConsole(dynamic message, {Level logLevel = Level.info}) {
+    logCustom(message, logLevel: logLevel, logTypes: [NeoLoggerType.logger]);
   }
 }

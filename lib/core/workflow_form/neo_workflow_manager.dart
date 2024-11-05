@@ -1,4 +1,5 @@
-import 'package:flutter/material.dart';
+import 'package:get_it/get_it.dart';
+import 'package:neo_core/core/analytics/neo_logger.dart';
 import 'package:neo_core/core/network/models/neo_http_call.dart';
 import 'package:neo_core/core/network/models/neo_network_header_key.dart';
 import 'package:neo_core/core/util/uuid_util.dart';
@@ -44,6 +45,8 @@ class NeoWorkflowManager {
 
   String get subFlowInstanceId => _subFlowInstanceId;
 
+  NeoLogger get _neoLogger => GetIt.I.get();
+
   Future<NeoResponse> initWorkflow({
     required String workflowName,
     Map<String, dynamic>? queryParameters,
@@ -72,7 +75,7 @@ class NeoWorkflowManager {
         queryProviders: queryProviders,
       ),
     );
-    debugPrint('\n[NeoWorkflowManager] Init Workflow: $response');
+    _neoLogger.logConsole('[NeoWorkflowManager] Init Workflow: $response');
     return response;
   }
 
@@ -86,7 +89,7 @@ class NeoWorkflowManager {
         },
       ),
     );
-    debugPrint('\n[NeoWorkflowManager] Get Transitions: $response');
+    _neoLogger.logConsole('[NeoWorkflowManager] Get Transitions: $response');
     return response;
   }
 

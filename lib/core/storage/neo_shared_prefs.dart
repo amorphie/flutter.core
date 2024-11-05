@@ -10,7 +10,10 @@
  * Any reproduction of this material must contain this notice.
  */
 
-import 'package:flutter/cupertino.dart';
+import 'package:get_it/get_it.dart';
+import 'package:logger/logger.dart';
+import 'package:neo_core/core/analytics/neo_logger.dart';
+import 'package:neo_core/core/analytics/neo_logger_type.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 class NeoSharedPrefs {
@@ -19,6 +22,8 @@ class NeoSharedPrefs {
   NeoSharedPrefs({
     required this.enableCaching,
   });
+
+  NeoLogger get _neoLogger => GetIt.I.get();
 
   SharedPreferences? _preferences;
 
@@ -61,7 +66,7 @@ class NeoSharedPrefs {
       return Future.value(false);
     } catch (e) {
       const errorMessage = "[NeoSharedPrefs: Write error]";
-      debugPrint(errorMessage);
+      _neoLogger.logConsole(errorMessage, logLevel: Level.error);
       return Future.value(false);
     }
   }
