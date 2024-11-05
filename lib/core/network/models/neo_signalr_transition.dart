@@ -12,6 +12,7 @@
 
 import 'package:equatable/equatable.dart';
 import 'package:json_annotation/json_annotation.dart';
+import 'package:neo_core/core/network/models/neo_signalr_transition_state_type.dart';
 
 part 'neo_signalr_transition.g.dart';
 
@@ -38,6 +39,9 @@ class NeoSignalRTransition extends Equatable {
   @JsonKey(name: "dataPageId")
   final String? dataPageId;
 
+  @JsonKey(name: "workflowStateType")
+  final NeoSignalRTransitionStateType? workflowStateType;
+
   @JsonKey(name: "message")
   final String? statusMessage;
 
@@ -62,6 +66,7 @@ class NeoSignalRTransition extends Equatable {
     this.statusCode,
     this.additionalData,
     this.dataPageId,
+    this.workflowStateType,
   });
 
   @override
@@ -73,6 +78,7 @@ class NeoSignalRTransition extends Equatable {
         initialData,
         additionalData,
         dataPageId,
+        workflowStateType,
         statusMessage,
         statusCode,
         buttonType,

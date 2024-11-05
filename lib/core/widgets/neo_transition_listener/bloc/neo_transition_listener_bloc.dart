@@ -25,6 +25,7 @@ import 'package:neo_core/core/navigation/models/ekyc_event_data.dart';
 import 'package:neo_core/core/navigation/models/neo_navigation_type.dart';
 import 'package:neo_core/core/navigation/models/signalr_transition_data.dart';
 import 'package:neo_core/core/network/models/neo_signalr_event.dart';
+import 'package:neo_core/core/network/models/neo_signalr_transition_state_type.dart';
 import 'package:neo_core/core/network/neo_network.dart';
 import 'package:neo_core/core/storage/neo_core_parameter_key.dart';
 import 'package:neo_core/core/storage/neo_core_secure_storage.dart';
@@ -106,6 +107,9 @@ class NeoTransitionListenerBloc extends Bloc<NeoTransitionListenerEvent, NeoTran
       if (_lastProcessedTransition == null || !event.transition.time.isBefore(_lastProcessedTransition!.time)) {
         if (_postTransitionTimeoutCompleter != null && !_postTransitionTimeoutCompleter!.isCompleted) {
           _postTransitionTimeoutCompleter?.complete();
+        }
+        if (event.transition.workflowStateType.isTerminated) {
+          _cancelLongPolling();
         }
         if (event.isSilentEvent) {
           GetIt.I.get<NeoWidgetEventBus>().addEvent(
@@ -323,7 +327,7 @@ class NeoTransitionListenerBloc extends Bloc<NeoTransitionListenerEvent, NeoTran
   void _onSignalRConnectionStatusChanged({required bool hasConnection}) {
     hasSignalRConnection = hasConnection;
     if (hasConnection) {
-      longPollingTimer?.cancel();
+      _cancelLongPolling();
     } else {
       _getLastTransitionsWithLongPolling(isSubFlow: false);
     }
@@ -332,7 +336,7 @@ class NeoTransitionListenerBloc extends Bloc<NeoTransitionListenerEvent, NeoTran
   void _getLastTransitionsWithLongPolling({
     required bool isSubFlow,
   }) {
-    longPollingTimer?.cancel();
+    _cancelLongPolling();
     if (hasSignalRConnection || isClosed) {
       return;
     }
@@ -361,10 +365,14 @@ class NeoTransitionListenerBloc extends Bloc<NeoTransitionListenerEvent, NeoTran
     );
   }
 
+  void _cancelLongPolling() {
+    longPollingTimer?.cancel();
+  }
+
   @override
   Future<void> close() {
     signalrConnectionManager.stop();
-    longPollingTimer?.cancel();
+    _cancelLongPolling();
     _eventBus.close();
     return super.close();
   }
