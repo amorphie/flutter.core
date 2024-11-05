@@ -17,7 +17,8 @@ import 'package:flutter/foundation.dart' show kDebugMode;
 import 'package:get_it/get_it.dart';
 import 'package:neo_core/core/analytics/neo_logger.dart';
 import 'package:neo_core/core/analytics/neo_logger_type.dart';
-import 'package:neo_core/core/network/models/neo_signalr_transition.dart';
+import 'package:neo_core/core/network/models/neo_signalr_event.dart';
+import 'package:neo_core/core/network/models/neo_signalr_event_base_state.dart';
 import 'package:signalr_netcore/signalr_client.dart';
 
 abstract class _Constants {
@@ -26,9 +27,7 @@ abstract class _Constants {
   static const eventNameSignalrOnReconnected = "[SignalrConnectionManager]: onReconnected is called!";
   static const eventNameSignalrInitSucceed = "[SignalrConnectionManager]: init is succeed!";
   static const eventNameSignalrInitFailed = "[SignalrConnectionManager]: init is failed!";
-  static const transitionSubjectKey = "subject";
-  static const transitionSubjectValue = ["worker-completed", "transition-completed"];
-  static const transitionResponseDataKey = "data";
+  static const eventCompletionStatusValues = ["worker-completed", "transition-completed"];
 }
 
 class SignalrConnectionManager {
@@ -41,7 +40,7 @@ class SignalrConnectionManager {
 
   NeoLogger get _neoLogger => GetIt.I.get();
 
-  Future init() async {
+  Future init(Function({required bool hasConnection}) onConnectionStatusChanged) async {
     _hubConnection = HubConnectionBuilder()
         .withUrl(
       serverUrl,
@@ -55,12 +54,14 @@ class SignalrConnectionManager {
       );
     });
     _hubConnection?.onreconnecting(({error}) {
+      onConnectionStatusChanged(hasConnection: false);
       _neoLogger.logCustom(
         _Constants.eventNameSignalrOnReconnecting,
         logTypes: [NeoLoggerType.posthog, NeoLoggerType.logger],
       );
     });
     _hubConnection?.onreconnected(({connectionId}) {
+      onConnectionStatusChanged(hasConnection: true);
       _neoLogger.logCustom(
         _Constants.eventNameSignalrOnReconnected,
         logTypes: [NeoLoggerType.posthog, NeoLoggerType.logger],
@@ -70,6 +71,7 @@ class SignalrConnectionManager {
     if (_hubConnection?.state != HubConnectionState.Connected) {
       try {
         await _hubConnection?.start();
+        onConnectionStatusChanged(hasConnection: true);
         _neoLogger.logCustom(
           _Constants.eventNameSignalrInitSucceed,
           logTypes: [NeoLoggerType.posthog, NeoLoggerType.logger],
@@ -82,7 +84,7 @@ class SignalrConnectionManager {
     }
   }
 
-  void listenForTransitionEvents({required Function(NeoSignalRTransition transition) onTransition}) {
+  void listenForSignalREvents({required Function(NeoSignalREvent event) onEvent}) {
     _hubConnection?.on(methodName, (List<Object?>? transitions) {
       if (kDebugMode) {
         _neoLogger.logConsole('[SignalrConnectionManager] Transition: $transitions');
@@ -90,23 +92,25 @@ class SignalrConnectionManager {
       if (transitions == null) {
         return;
       }
-      final NeoSignalRTransition? ongoingTransition = _parseOngoingTransition(transitions);
-      if (ongoingTransition == null) {
+      final NeoSignalREvent? ongoingEvent = _parseOngoingEvent(transitions);
+      if (ongoingEvent == null) {
         return;
       }
-      onTransition(ongoingTransition);
+      onEvent(ongoingEvent);
     });
   }
 
-  NeoSignalRTransition? _parseOngoingTransition(List<Object?> transitions) {
+  NeoSignalREvent? _parseOngoingEvent(List<Object?> transitions) {
     return transitions
         .map((transition) {
           try {
             final transitionJsonDecoded = jsonDecode(transition is String ? transition : "{}");
-            if (!_Constants.transitionSubjectValue.contains(transitionJsonDecoded[_Constants.transitionSubjectKey])) {
+            final event = NeoSignalREvent.fromJson(transitionJsonDecoded);
+            if (!_Constants.eventCompletionStatusValues.contains(event.status) ||
+                event.baseState != NeoSignalREventBaseState.completed) {
               return null;
             }
-            return NeoSignalRTransition.fromJson(transitionJsonDecoded[_Constants.transitionResponseDataKey]);
+            return event;
           } catch (_) {
             return null;
           }

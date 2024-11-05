@@ -15,8 +15,20 @@ NeoSignalRTransition _$NeoSignalRTransitionFromJson(
       pageDetails: json['page'] as Map<String, dynamic>? ?? {},
       initialData: json['data'] as Map<String, dynamic>? ?? {},
       buttonType: json['buttonType'] as String?,
-      time: json['time'] as String? ?? '',
+      time: DateTime.parse(json['time'] as String),
       statusMessage: json['message'] as String?,
       statusCode: json['errorCode'] as String?,
       additionalData: json['additionalData'] as Map<String, dynamic>?,
+      dataPageId: json['dataPageId'] as String?,
+      workflowStateType: $enumDecodeNullable(
+          _$NeoSignalRTransitionStateTypeEnumMap, json['workflowStateType']),
     );
+
+const _$NeoSignalRTransitionStateTypeEnumMap = {
+  NeoSignalRTransitionStateType.fail: 'Fail',
+  NeoSignalRTransitionStateType.finish: 'Finish',
+  NeoSignalRTransitionStateType.partialStart: 'PartialStart',
+  NeoSignalRTransitionStateType.standard: 'Standart',
+  NeoSignalRTransitionStateType.start: 'Start',
+  NeoSignalRTransitionStateType.subWorkflow: 'SubWorkflow',
+};
