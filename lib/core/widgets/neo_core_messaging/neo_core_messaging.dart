@@ -42,8 +42,9 @@ class _NeoCoreMessagingState extends State<NeoCoreMessaging> {
   static const EventChannel eventChannel = EventChannel("com.dengage.flutter/onNotificationClicked");
 
   void _onEvent(dynamic event) {
-    debugPrint("Dengage in on Event object is: $event");
-    final dengageMessage = DengageMessage.fromJson(jsonDecode(event));
+    final Map<String, dynamic> eventData = json.decode(event);
+    debugPrint("Dengage in on Event object is: $eventData");
+    final dengageMessage = DengageMessage.fromJson(eventData);
     debugPrint("Dengage in on Message $dengageMessage");
     DengageMessage.fromJson(event);
     if (_Constants.messageSource.toLowerCase() == dengageMessage.messageSource.toLowerCase() &&
