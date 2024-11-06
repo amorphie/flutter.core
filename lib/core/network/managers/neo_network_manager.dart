@@ -35,7 +35,6 @@ abstract class _Constants {
   static const String wrapperResponseKey = "data";
   static const String endpointGetToken = "get-token";
   static const String headerValueContentType = "application/json";
-  static const String headerValueApplication = "burgan-mobile-app";
   static const String requestKeyClientId = "client_id";
   static const String requestKeyClientSecret = "client_secret";
   static const String requestKeyGrantType = "grant_type";
@@ -62,6 +61,7 @@ class NeoNetworkManager {
   final Function()? onInvalidTokenError;
   late final NeoLogger _neoLogger = GetIt.I.get();
   final NeoNetworkManagerLogScale logScale;
+  final Map<String, String> defaultHeaders;
 
   NeoNetworkManager({
     required this.httpClientConfig,
@@ -75,6 +75,7 @@ class NeoNetworkManager {
     this.onRequestFailed,
     this.onInvalidTokenError,
     this.logScale = NeoNetworkManagerLogScale.simplified,
+    this.defaultHeaders = const {},
   });
 
   Future<Map<String, String>> get _defaultHeaders async {
@@ -96,7 +97,6 @@ class NeoNetworkManager {
       NeoNetworkHeaderKey.contentType: _Constants.headerValueContentType,
       NeoNetworkHeaderKey.acceptLanguage: _languageCode,
       NeoNetworkHeaderKey.contentLanguage: _languageCode,
-      NeoNetworkHeaderKey.application: _Constants.headerValueApplication,
       NeoNetworkHeaderKey.applicationVersion: appVersion,
       NeoNetworkHeaderKey.deviceId: deviceId,
       NeoNetworkHeaderKey.installationId: installationId,
@@ -107,7 +107,9 @@ class NeoNetworkManager {
       NeoNetworkHeaderKey.deviceVersion: deviceInfo?.version ?? "",
       NeoNetworkHeaderKey.devicePlatform: deviceInfo?.platform ?? "",
       NeoNetworkHeaderKey.deployment: deviceInfo?.platform ?? "",
-    }..addAll(authHeader);
+    }
+      ..addAll(authHeader)
+      ..addAll(defaultHeaders);
   }
 
   String get _languageCode {
