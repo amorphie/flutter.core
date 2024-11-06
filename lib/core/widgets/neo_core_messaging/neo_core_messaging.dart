@@ -7,6 +7,7 @@ import 'package:neo_core/core/storage/neo_shared_prefs.dart';
 import 'package:neo_core/core/widgets/models/dengage_message.dart';
 import 'package:neo_core/core/widgets/neo_core_firebase_messaging/neo_core_firebase_messaging.dart';
 import 'package:neo_core/core/widgets/neo_core_huawei_messaging/neo_core_huawei_messaging.dart';
+import 'dart:convert'
 
 abstract class _Constants {
   static const messageSource = "DENGAGE";
@@ -40,8 +41,8 @@ class _NeoCoreMessagingState extends State<NeoCoreMessaging> {
   static const EventChannel eventChannel = EventChannel("com.dengage.flutter/onNotificationClicked");
 
   void _onEvent(dynamic event) {
-    final dengageMessage = DengageMessage.fromJson(event);
     debugPrint("Dengage in on Event object is: $event");
+    final dengageMessage = DengageMessage.fromJson(jsonDecode(event));
     debugPrint("Dengage in on Message $dengageMessage");
     DengageMessage.fromJson(event);
     if (_Constants.messageSource.toLowerCase() == dengageMessage.messageSource.toLowerCase() &&
