@@ -16,11 +16,10 @@ sealed class NeoTransitionListenerEvent extends Equatable {}
 
 class NeoTransitionListenerEventInit extends NeoTransitionListenerEvent {
   final NeoWorkflowManager neoWorkflowManager;
-  final NeoSubWorkflowManager neoSubWorkflowManager;
   final NeoPosthog neoPosthog;
   final String signalRServerUrl;
   final String signalRMethodName;
-  final Function(SignalrTransitionData navigationData) onTransitionSuccess;
+  final Function(SignalrTransitionData navigationData) onTransitionEvent;
   final Function(EkycEventData eventData) onEkycEvent;
   final Function({required bool isTwoFactorAuthenticated})? onLoggedInSuccessfully;
   final Function(NeoError error)? onTransitionError;
@@ -29,11 +28,10 @@ class NeoTransitionListenerEventInit extends NeoTransitionListenerEvent {
 
   NeoTransitionListenerEventInit({
     required this.neoWorkflowManager,
-    required this.neoSubWorkflowManager,
     required this.neoPosthog,
     required this.signalRServerUrl,
     required this.signalRMethodName,
-    required this.onTransitionSuccess,
+    required this.onTransitionEvent,
     required this.onEkycEvent,
     required this.onLoggedInSuccessfully,
     required this.onTransitionError,
@@ -44,10 +42,10 @@ class NeoTransitionListenerEventInit extends NeoTransitionListenerEvent {
   @override
   List<Object?> get props => [
         neoWorkflowManager,
-        neoSubWorkflowManager,
+        neoPosthog,
         signalRServerUrl,
         signalRMethodName,
-        onTransitionSuccess,
+        onTransitionEvent,
         onEkycEvent,
         onLoggedInSuccessfully,
         onTransitionError,
@@ -94,19 +92,26 @@ class NeoTransitionListenerEventPostTransition extends NeoTransitionListenerEven
   final String transitionName;
   final Map<String, dynamic> body;
   final Map<String, String>? headerParameters;
-  final bool isSubFlow;
   final bool displayLoading;
-  final bool ignoreResponse;
+  final bool isSubFlow;
 
   NeoTransitionListenerEventPostTransition({
     required this.transitionName,
     required this.body,
     this.headerParameters,
-    this.isSubFlow = false,
     this.displayLoading = true,
-    this.ignoreResponse = false,
+    this.isSubFlow = false,
   });
 
   @override
-  List<Object?> get props => [transitionName, body, headerParameters, isSubFlow, displayLoading, ignoreResponse];
+  List<Object?> get props => [transitionName, body, headerParameters, displayLoading, isSubFlow];
+}
+
+class NeoTransitionListenerEventDisableTemporarily extends NeoTransitionListenerEvent {
+  final bool temporarilyDisabled;
+
+  NeoTransitionListenerEventDisableTemporarily({required this.temporarilyDisabled});
+
+  @override
+  List<Object?> get props => [temporarilyDisabled];
 }

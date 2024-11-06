@@ -14,6 +14,18 @@ part of 'neo_transition_listener_bloc.dart';
 
 @immutable
 class NeoTransitionListenerState extends Equatable {
+  final bool temporarilyDisabled;
+
+  const NeoTransitionListenerState({required this.temporarilyDisabled});
+
   @override
-  List<Object?> get props => [];
+  List<Object?> get props => [temporarilyDisabled];
+
+  NeoTransitionListenerState copyWith({
+    bool? temporarilyDisabled,
+  }) {
+    return NeoTransitionListenerState(
+      temporarilyDisabled: temporarilyDisabled ?? this.temporarilyDisabled,
+    );
+  }
 }
