@@ -46,7 +46,6 @@ class _NeoCoreMessagingState extends State<NeoCoreMessaging> {
     debugPrint("Dengage in on Event object is: $eventData");
     final dengageMessage = DengageMessage.fromJson(eventData);
     debugPrint("Dengage in on Message $dengageMessage");
-    DengageMessage.fromJson(event);
     if (_Constants.messageSource.toLowerCase() == dengageMessage.messageSource.toLowerCase() &&
         dengageMessage.media.isNotEmpty &&
         dengageMessage.media[0].target.isNotEmpty) {
