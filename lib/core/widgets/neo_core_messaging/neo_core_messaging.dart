@@ -1,3 +1,5 @@
+import 'dart:convert';
+
 import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:json_dynamic_widget/json_dynamic_widget.dart';
 import 'package:neo_core/core/network/managers/neo_network_manager.dart';
@@ -7,7 +9,6 @@ import 'package:neo_core/core/storage/neo_shared_prefs.dart';
 import 'package:neo_core/core/widgets/models/dengage_message.dart';
 import 'package:neo_core/core/widgets/neo_core_firebase_messaging/neo_core_firebase_messaging.dart';
 import 'package:neo_core/core/widgets/neo_core_huawei_messaging/neo_core_huawei_messaging.dart';
-import 'dart:convert'
 
 abstract class _Constants {
   static const messageSource = "DENGAGE";
