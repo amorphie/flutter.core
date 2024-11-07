@@ -42,19 +42,21 @@ class _NeoCoreMessagingState extends State<NeoCoreMessaging> {
   static const EventChannel eventChannel = EventChannel("com.dengage.flutter/onNotificationClicked");
 
   void _onEvent(dynamic event) {
-    final Map<String, dynamic> eventData = json.decode(event);
-    debugPrint("Dengage in on Event object is: $eventData");
-    final dengageMessage = DengageMessage.fromJson(eventData);
-    debugPrint("Dengage in on Message $dengageMessage");
-    if (_Constants.messageSource.toLowerCase() == dengageMessage.messageSource.toLowerCase() &&
-        dengageMessage.media.isNotEmpty &&
-        dengageMessage.media[0].target.isNotEmpty) {
-      widget.onDeeplinkNavigation?.call(dengageMessage.media[0].target);
+    try {
+      final Map<String, dynamic> eventData = json.decode(event);
+      final dengageMessage = DengageMessage.fromJson(eventData);
+      if (_Constants.messageSource.toLowerCase() == dengageMessage.messageSource.toLowerCase() &&
+          dengageMessage.media.isNotEmpty &&
+          dengageMessage.media[0].target.isNotEmpty) {
+        widget.onDeeplinkNavigation?.call(dengageMessage.media[0].target);
+      }
+    } catch (e) {
+      debugPrint("Dengage Message Error is: $error");
     }
   }
 
   void _onError(dynamic error) {
-    debugPrint("Dengage in on Error Object is: $error");
+    debugPrint("Dengage Error Object is: $error");
   }
 
   @override
