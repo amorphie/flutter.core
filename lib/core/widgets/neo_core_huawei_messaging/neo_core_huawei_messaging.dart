@@ -6,7 +6,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:get_it/get_it.dart';
 import 'package:huawei_push/huawei_push.dart'; // Huawei Push Kit
-import 'package:logger/logger.dart';
 import 'package:neo_core/core/analytics/neo_logger.dart';
 import 'package:neo_core/core/network/managers/neo_network_manager.dart';
 import 'package:neo_core/core/storage/neo_core_secure_storage.dart';
@@ -22,6 +21,7 @@ abstract class _Constant {
 
 @pragma('vm:entry-point')
 Future<void> onBackgroundMessage(RemoteMessage message) async {
+  debugPrint("[NeoCoreHuaweiMessaging]: Background notification was triggered by ${message.notification}");
   return Future.value();
 }
 
@@ -30,7 +30,7 @@ class NeoCoreHuaweiMessaging extends StatefulWidget {
     required this.child,
     required this.networkManager,
     required this.neoCoreSecureStorage,
-    required this.token,
+    required this.onTokenChanged,
     this.androidDefaultIcon,
     this.onDeeplinkNavigation,
     super.key,
@@ -39,7 +39,7 @@ class NeoCoreHuaweiMessaging extends StatefulWidget {
   final Widget child;
   final NeoNetworkManager networkManager;
   final NeoCoreSecureStorage neoCoreSecureStorage;
-  final Function(String) token;
+  final Function(String) onTokenChanged;
   final String? androidDefaultIcon;
   final Function(String)? onDeeplinkNavigation;
 
@@ -58,11 +58,6 @@ class _NeoCoreHuaweiMessagingState extends State<NeoCoreHuaweiMessaging> {
   NeoLogger get _neoLogger => GetIt.I.get();
 
   @override
-  Widget build(BuildContext context) {
-    return widget.child;
-  }
-
-  @override
   void initState() {
     super.initState();
     if (kIsWeb) {
@@ -73,6 +68,11 @@ class _NeoCoreHuaweiMessagingState extends State<NeoCoreHuaweiMessaging> {
     if (Platform.isAndroid) {
       _initLocalNotifications();
     }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return widget.child;
   }
 
   Future<void> _initNotifications() async {
@@ -92,8 +92,8 @@ class _NeoCoreHuaweiMessagingState extends State<NeoCoreHuaweiMessaging> {
   }
 
   void _onTokenChange(String token) {
-    debugPrint("Huawei Push token: $token");
-    widget.token.call(token);
+    _neoLogger.logConsole("[NeoCoreHuaweiMessaging]: Firebase Push token is: $token");
+    widget.onTokenChanged.call(token);
     NeoCoreRegisterDeviceUseCase().call(
       networkManager: widget.networkManager,
       secureStorage: widget.neoCoreSecureStorage,
@@ -144,7 +144,7 @@ class _NeoCoreHuaweiMessagingState extends State<NeoCoreHuaweiMessaging> {
       final String token = await Push.getTokenStream.first;
       return token;
     } catch (e) {
-      debugPrint("There is an error receiving the Huawei-Push token: $e");
+      _neoLogger.logError("[NeoCoreHuaweiMessaging]: There is an error receiving the Huawei-Push token: $e");
       return null;
     }
   }
@@ -179,6 +179,6 @@ class _NeoCoreHuaweiMessagingState extends State<NeoCoreHuaweiMessaging> {
   }
 
   void _onMessageReceiveError(Object error) {
-    _neoLogger.logConsole("Error receiving message: $error", logLevel: Level.error);
+    _neoLogger.logError("Error receiving message: $error");
   }
 }

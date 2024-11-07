@@ -21,7 +21,7 @@ class DengageMessage {
   @JsonKey(name: "expireDate", defaultValue: "")
   final String expireDate;
   @JsonKey(name: "media", defaultValue: [])
-  final List<Media> media;
+  final List<DengageMedia> dengageMedia;
   @JsonKey(name: "mediaUrl", defaultValue: "")
   final String mediaUrl;
   @JsonKey(name: "message", defaultValue: "")
@@ -58,7 +58,7 @@ class DengageMessage {
     required this.current,
     required this.customParams,
     required this.expireDate,
-    required this.media,
+    required this.dengageMedia,
     required this.mediaUrl,
     required this.message,
     required this.messageDetails,
@@ -78,16 +78,16 @@ class DengageMessage {
 }
 
 @JsonSerializable(createToJson: false)
-class Media {
+class DengageMedia {
   @JsonKey(name: "target", defaultValue: "")
   final String target;
   @JsonKey(name: "url", defaultValue: "")
   final String url;
 
-  Media({
+  DengageMedia({
     required this.target,
     required this.url,
   });
 
-  factory Media.fromJson(Map<String, dynamic> json) => _$MediaFromJson(json);
+  factory DengageMedia.fromJson(Map<String, dynamic> json) => _$MediaFromJson(json);
 }

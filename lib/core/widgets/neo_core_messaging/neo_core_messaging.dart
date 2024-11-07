@@ -1,7 +1,10 @@
+import 'dart:async';
 import 'dart:convert';
 
 import 'package:flutter/foundation.dart' show kIsWeb;
+import 'package:get_it/get_it.dart';
 import 'package:json_dynamic_widget/json_dynamic_widget.dart';
+import 'package:neo_core/core/analytics/neo_logger.dart';
 import 'package:neo_core/core/network/managers/neo_network_manager.dart';
 import 'package:neo_core/core/storage/neo_core_parameter_key.dart';
 import 'package:neo_core/core/storage/neo_core_secure_storage.dart';
@@ -19,7 +22,7 @@ class NeoCoreMessaging extends StatefulWidget {
   final NeoSharedPrefs neoSharedPrefs;
   final NeoNetworkManager networkManager;
   final NeoCoreSecureStorage neoCoreSecureStorage;
-  final Function(String) firebaseToken;
+  final Function(String) onTokenChanged;
   final String? androidDefaultIcon;
   final Function(String)? onDeeplinkNavigation;
 
@@ -28,7 +31,7 @@ class NeoCoreMessaging extends StatefulWidget {
     required this.neoSharedPrefs,
     required this.networkManager,
     required this.neoCoreSecureStorage,
-    required this.firebaseToken,
+    required this.onTokenChanged,
     this.androidDefaultIcon,
     this.onDeeplinkNavigation,
     super.key,
@@ -41,22 +44,13 @@ class NeoCoreMessaging extends StatefulWidget {
 class _NeoCoreMessagingState extends State<NeoCoreMessaging> {
   static const EventChannel eventChannel = EventChannel("com.dengage.flutter/onNotificationClicked");
 
-  void _onEvent(dynamic event) {
-    try {
-      final Map<String, dynamic> eventData = json.decode(event);
-      final dengageMessage = DengageMessage.fromJson(eventData);
-      if (_Constants.messageSource.toLowerCase() == dengageMessage.messageSource.toLowerCase() &&
-          dengageMessage.media.isNotEmpty &&
-          dengageMessage.media[0].target.isNotEmpty) {
-        widget.onDeeplinkNavigation?.call(dengageMessage.media[0].target);
-      }
-    } catch (e) {
-      debugPrint("Dengage Message Error is: $e");
-    }
-  }
+  NeoLogger get _neoLogger => GetIt.I.get();
+  StreamSubscription<dynamic>? _subscription;
 
-  void _onError(dynamic error) {
-    debugPrint("Dengage Error Object is: $error");
+  @override
+  void initState() {
+    super.initState();
+    _subscription = eventChannel.receiveBroadcastStream().listen(_onEvent, onError: _onError);
   }
 
   @override
@@ -70,7 +64,7 @@ class _NeoCoreMessagingState extends State<NeoCoreMessaging> {
         return NeoCoreHuaweiMessaging(
           networkManager: widget.networkManager,
           neoCoreSecureStorage: widget.neoCoreSecureStorage,
-          token: widget.firebaseToken,
+          onTokenChanged: widget.onTokenChanged,
           androidDefaultIcon: widget.androidDefaultIcon,
           onDeeplinkNavigation: widget.onDeeplinkNavigation,
           child: widget.child,
@@ -79,7 +73,7 @@ class _NeoCoreMessagingState extends State<NeoCoreMessaging> {
         return NeoCoreFirebaseMessaging(
           networkManager: widget.networkManager,
           neoCoreSecureStorage: widget.neoCoreSecureStorage,
-          token: widget.firebaseToken,
+          onTokenChanged: widget.onTokenChanged,
           androidDefaultIcon: widget.androidDefaultIcon,
           onDeeplinkNavigation: widget.onDeeplinkNavigation,
           child: widget.child,
@@ -88,9 +82,27 @@ class _NeoCoreMessagingState extends State<NeoCoreMessaging> {
     }
   }
 
+  void _onEvent(dynamic event) {
+    try {
+      final Map<String, dynamic> eventData = json.decode(event);
+      final dengageMessage = DengageMessage.fromJson(eventData);
+      if (_Constants.messageSource.toLowerCase() == dengageMessage.messageSource.toLowerCase() &&
+          dengageMessage.dengageMedia.isNotEmpty &&
+          dengageMessage.dengageMedia[0].target.isNotEmpty) {
+        widget.onDeeplinkNavigation?.call(dengageMessage.dengageMedia[0].target);
+      }
+    } catch (e) {
+      _neoLogger.logError("[NeoCoreMessaging]: Dengage Message Error is: $e!");
+    }
+  }
+
+  void _onError(dynamic error) {
+    _neoLogger.logError("[NeoCoreMessaging]: Dengage Error Object is: $error!");
+  }
+
   @override
-  void initState() {
-    eventChannel.receiveBroadcastStream().listen(_onEvent, onError: _onError);
-    super.initState();
+  void dispose() {
+    _subscription?.cancel();
+    super.dispose();
   }
 }
