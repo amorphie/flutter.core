@@ -23,6 +23,7 @@ class NeoPageBloc extends Bloc<NeoPageEvent, NeoPageState> {
   final JsonWidgetRegistry jsonWidgetRegistry;
   final String pageId;
   final NeoWidgetEventBus widgetEventBus;
+  final bool isInitialWorkflowPage;
 
   final GlobalKey<FormState> formKey = GlobalKey<FormState>();
   final Map<String, dynamic> _formInitialData;
@@ -44,6 +45,7 @@ class NeoPageBloc extends Bloc<NeoPageEvent, NeoPageState> {
     required this.pageId,
     required this.jsonWidgetRegistry,
     required this.widgetEventBus,
+    this.isInitialWorkflowPage = false,
     Map<String, dynamic>? initialPageData,
   })  : _formInitialData = Map.from(initialPageData ?? {}),
         _formData = Map.from(initialPageData ?? {}),

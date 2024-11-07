@@ -9,6 +9,7 @@ part of 'neo_signalr_transition.dart';
 NeoSignalRTransition _$NeoSignalRTransitionFromJson(
         Map<String, dynamic> json) =>
     NeoSignalRTransition(
+      instanceId: json['instanceId'] as String? ?? '',
       transitionId: json['transition'] as String,
       state: json['state'] as String? ?? '',
       viewSource: json['viewSource'] as String? ?? '',
