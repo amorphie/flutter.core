@@ -51,7 +51,7 @@ class _NeoCoreMessagingState extends State<NeoCoreMessaging> {
         widget.onDeeplinkNavigation?.call(dengageMessage.media[0].target);
       }
     } catch (e) {
-      debugPrint("Dengage Message Error is: $error");
+      debugPrint("Dengage Message Error is: $e");
     }
   }
 

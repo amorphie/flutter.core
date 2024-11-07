@@ -19,18 +19,7 @@ abstract class _Constant {
 
 @pragma('vm:entry-point')
 Future<void> onBackgroundMessage(RemoteMessage message) async {
-  debugPrint("***BackgroundMessage: ${message.notification}");
-  final buffer = StringBuffer()
-    ..write("title: ${message.notification?.title}")
-    ..write(message.notification?.titleLocKey ?? '-')
-    ..write(message.notification?.titleLocArgs ?? '-')
-    ..write("body: ${message.notification?.body}")
-    ..write(message.notification?.bodyLocKey ?? '-')
-    ..write(message.notification?.bodyLocArgs ?? '-')
-    ..write(message.notification?.android?.link ?? '-')
-    ..write(message.notification?.android?.imageUrl ?? '-')
-    ..write("android: ${message.notification?.android}");
-  debugPrint("***BackgroundMessage notification: $buffer");
+  debugPrint("Background notification was triggered ${message.notification}");
   return Future.value();
 }
 
@@ -119,25 +108,14 @@ class _NeoCoreFirebaseMessagingState extends State<NeoCoreFirebaseMessaging> {
 
     // This is called when an incoming FCM payload is received while the Flutter instance is in the foreground.
     FirebaseMessaging.onMessage.listen((message) {
-      debugPrint("***ForegroundMessage: ${message.notification}");
+      debugPrint("Foreground notification was triggered ${message.notification}");
       final notification = message.notification;
       if (notification == null || !Platform.isAndroid) {
         return;
       }
-      final buffer = StringBuffer()
-        ..write("title: ${message.notification?.title}")
-        ..write(message.notification?.titleLocKey ?? '-')
-        ..write(message.notification?.titleLocArgs ?? '-')
-        ..write("body: ${message.notification?.body}")
-        ..write(message.notification?.bodyLocKey ?? '-')
-        ..write(message.notification?.bodyLocArgs ?? '-')
-        ..write(message.notification?.android?.link ?? '-')
-        ..write(message.notification?.android?.imageUrl ?? '-')
-        ..write("android: ${message.notification?.android}");
-      debugPrint("****ForegroundMessage notification: $buffer");
       _localNotifications.show(
         notification.hashCode,
-        "Dengage title deneme 1 2 3",
+        notification.title,
         notification.body,
         NotificationDetails(
           android: AndroidNotificationDetails(
