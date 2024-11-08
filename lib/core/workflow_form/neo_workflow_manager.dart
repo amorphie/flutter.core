@@ -138,4 +138,11 @@ class NeoWorkflowManager {
   String _getActiveInstanceId({bool isSubFlow = false}) {
     return isSubFlow ? _subFlowInstanceId : _instanceId;
   }
+
+  void terminateWorkflow() {
+    resetInstanceId();
+    resetInstanceId(isSubFlow: true);
+    _workflowName = "";
+    _subWorkflowName = "";
+  }
 }

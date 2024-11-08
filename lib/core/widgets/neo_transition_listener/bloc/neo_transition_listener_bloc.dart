@@ -58,7 +58,8 @@ class NeoTransitionListenerBloc extends Bloc<NeoTransitionListenerEvent, NeoTran
   late final NeoLogger _neoLogger = GetIt.I.get();
 
   Completer? _postTransitionTimeoutCompleter;
-  NeoSignalRTransition? _lastProcessedTransition;
+  Timer? _postTransitionTimeoutTimer;
+  NeoSignalREvent? _lastProcessedEvent;
   Timer? longPollingTimer;
   bool hasSignalRConnection = false;
 
@@ -77,6 +78,7 @@ class NeoTransitionListenerBloc extends Bloc<NeoTransitionListenerEvent, NeoTran
     on<NeoTransitionListenerEventDisableTemporarily>(
       (event, emit) => emit(state.copyWith(temporarilyDisabled: event.temporarilyDisabled)),
     );
+    on<NeoTransitionListenerEventStopListening>((event, emit) => _onStopListening());
   }
 
   Future<void> _onInit(NeoTransitionListenerEventInit event, emit) async {
@@ -96,7 +98,10 @@ class NeoTransitionListenerBloc extends Bloc<NeoTransitionListenerEvent, NeoTran
 
   void _listenEventBus(emit) {
     _eventBus.listen((event) {
-      if (isClosed || _eventBus.isClosed) {
+      if (isClosed ||
+          _eventBus.isClosed ||
+          event.transition.instanceId.isEmpty ||
+          event.transition.instanceId != neoWorkflowManager.instanceId) {
         return;
       }
       if (state.temporarilyDisabled) {
@@ -104,12 +109,14 @@ class NeoTransitionListenerBloc extends Bloc<NeoTransitionListenerEvent, NeoTran
         return;
       }
 
-      if (_lastProcessedTransition == null || !event.transition.time.isBefore(_lastProcessedTransition!.time)) {
+      if (_lastProcessedEvent?.transition == null ||
+          !event.transition.time.isBefore(_lastProcessedEvent!.transition.time)) {
         if (_postTransitionTimeoutCompleter != null && !_postTransitionTimeoutCompleter!.isCompleted) {
+          _postTransitionTimeoutTimer?.cancel();
           _postTransitionTimeoutCompleter?.complete();
         }
         if (event.transition.workflowStateType.isTerminated) {
-          _cancelLongPolling();
+          _onStopListening();
         }
         if (event.isSilentEvent) {
           GetIt.I.get<NeoWidgetEventBus>().addEvent(
@@ -118,7 +125,7 @@ class NeoTransitionListenerBloc extends Bloc<NeoTransitionListenerEvent, NeoTran
         } else {
           _processIncomingTransition(transition: event.transition);
         }
-        _lastProcessedTransition = event.transition;
+        _lastProcessedEvent = event;
       }
     });
   }
@@ -157,6 +164,7 @@ class NeoTransitionListenerBloc extends Bloc<NeoTransitionListenerEvent, NeoTran
           transitionId: (responseData["transition"] as List?)?.firstOrNull["transition"] ?? "",
           queryParameters: event.queryParameters,
           useSubNavigator: event.useSubNavigator,
+          isInitialPage: true,
         ),
       );
     } else {
@@ -183,9 +191,16 @@ class NeoTransitionListenerBloc extends Bloc<NeoTransitionListenerEvent, NeoTran
     }
   }
 
+  void _onStopListening() {
+    _cancelLongPolling();
+    neoWorkflowManager.terminateWorkflow();
+  }
+
   void _initPostTransitionTimeoutCompleter() {
     _postTransitionTimeoutCompleter = Completer();
-    Future.delayed(_Constants.transitionTimeoutDuration, () {
+    _postTransitionTimeoutTimer?.cancel();
+
+    _postTransitionTimeoutTimer = Timer(_Constants.transitionTimeoutDuration, () {
       if (_postTransitionTimeoutCompleter != null && !_postTransitionTimeoutCompleter!.isCompleted) {
         _completeWithError(const NeoError());
         _postTransitionTimeoutCompleter!.complete();
@@ -230,6 +245,7 @@ class NeoTransitionListenerBloc extends Bloc<NeoTransitionListenerEvent, NeoTran
         transitionId: await _getAvailableTransitionId(transition) ?? transitionId,
         statusCode: transition.statusCode,
         statusMessage: transition.statusMessage,
+        isInitialPage: transition.workflowStateType == NeoSignalRTransitionStateType.start,
       );
       onTransitionEvent(transitionData);
     }
@@ -318,7 +334,7 @@ class NeoTransitionListenerBloc extends Bloc<NeoTransitionListenerEvent, NeoTran
 
   void _addEventToBus(NeoSignalREvent event) {
     if (!_eventBus.values.contains(event)) {
-      if (!isClosed && !_eventBus.isClosed) {
+      if (!isClosed && !_eventBus.isClosed && _lastProcessedEvent?.eventId != event.eventId) {
         _eventBus.add(event);
       }
     }
@@ -366,11 +382,13 @@ class NeoTransitionListenerBloc extends Bloc<NeoTransitionListenerEvent, NeoTran
   }
 
   void _cancelLongPolling() {
+    _postTransitionTimeoutTimer?.cancel();
     longPollingTimer?.cancel();
   }
 
   @override
   Future<void> close() {
+    _postTransitionTimeoutTimer?.cancel();
     signalrConnectionManager.stop();
     _cancelLongPolling();
     _eventBus.close();
