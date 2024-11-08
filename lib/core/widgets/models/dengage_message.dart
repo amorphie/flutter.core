@@ -89,5 +89,5 @@ class DengageMedia {
     required this.url,
   });
 
-  factory DengageMedia.fromJson(Map<String, dynamic> json) => _$MediaFromJson(json);
+  factory DengageMedia.fromJson(Map<String, dynamic> json) => _$DengageMediaFromJson(json);
 }
