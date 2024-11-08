@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'dart:convert';
+import 'dart:developer';
 
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/foundation.dart' show kIsWeb;
@@ -162,8 +163,11 @@ class _NeoCoreFirebaseMessagingState extends State<NeoCoreFirebaseMessaging> {
     if (message == null) {
       return;
     }
-    final String? deeplinkPath = message.data[_Constant.pushNotificationDeeplinkKey];
+
+    final String? deeplinkPath = message.data[_Constant.pushNotificationDeeplinkKey]?.replaceAll('ontest', 'onmobil');
+
     if (deeplinkPath != null && deeplinkPath.isNotEmpty) {
+      log("Navigating to $deeplinkPath with Deeplink", name: "FirebaseMessaging");
       widget.onDeeplinkNavigation?.call(deeplinkPath);
     }
   }
