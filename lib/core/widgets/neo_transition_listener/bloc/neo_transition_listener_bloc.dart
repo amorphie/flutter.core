@@ -245,6 +245,7 @@ class NeoTransitionListenerBloc extends Bloc<NeoTransitionListenerEvent, NeoTran
         transitionId: await _getAvailableTransitionId(transition) ?? transitionId,
         statusCode: transition.statusCode,
         statusMessage: transition.statusMessage,
+        isInitialPage: transition.workflowStateType == NeoSignalRTransitionStateType.start,
       );
       onTransitionEvent(transitionData);
     }
