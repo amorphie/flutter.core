@@ -41,6 +41,14 @@ class NeoWorkflowManager {
     }
   }
 
+  void setWorkflowName(String workflowName, {bool isSubFlow = false}) {
+    if (isSubFlow) {
+      _subWorkflowName = workflowName;
+    } else {
+      _workflowName = workflowName;
+    }
+  }
+
   String get instanceId => _instanceId;
 
   String get subFlowInstanceId => _subFlowInstanceId;
