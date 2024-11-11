@@ -960,6 +960,15 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "0.2.0"
+  rsa_encryption_package:
+    dependency: "direct main"
+    description:
+      path: "."
+      ref: HEAD
+      resolved-ref: "91fa7224fe0238ebc6dfbdf4e8c4a2c137ac5ffa"
+      url: "https://github.com/amorphie/rsa_encryption"
+    source: git
+    version: "0.0.1"
   rxdart:
     dependency: "direct main"
     description:
