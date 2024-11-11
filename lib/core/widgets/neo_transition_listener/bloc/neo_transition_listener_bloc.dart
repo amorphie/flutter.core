@@ -101,7 +101,8 @@ class NeoTransitionListenerBloc extends Bloc<NeoTransitionListenerEvent, NeoTran
       if (isClosed ||
           _eventBus.isClosed ||
           event.transition.instanceId.isEmpty ||
-          event.transition.instanceId != neoWorkflowManager.instanceId) {
+          !(event.transition.instanceId == neoWorkflowManager.instanceId ||
+              event.transition.instanceId == neoWorkflowManager.subFlowInstanceId)) {
         return;
       }
       if (state.temporarilyDisabled) {
