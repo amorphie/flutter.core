@@ -193,16 +193,17 @@ class NeoCoreSecureStorage {
     return true;
   }
 
-  Future<void> deleteTokens() {
+  Future<void> deleteTokensWithRelatedData() {
     return Future.wait([
       delete(NeoCoreParameterKey.secureStorageAuthToken),
       delete(NeoCoreParameterKey.secureStorageRefreshToken),
+      delete(NeoCoreParameterKey.secureStorageUserRole),
     ]);
   }
 
   Future<void> deleteCustomer() {
     return Future.wait([
-      deleteTokens(),
+      deleteTokensWithRelatedData(),
       delete(NeoCoreParameterKey.secureStorageCustomerId),
       delete(NeoCoreParameterKey.secureStorageCustomerNo),
       delete(NeoCoreParameterKey.secureStorageCustomerName),
@@ -211,7 +212,6 @@ class NeoCoreSecureStorage {
       delete(NeoCoreParameterKey.secureStorageCustomerNameAndSurnameUppercase),
       delete(NeoCoreParameterKey.secureStorageBusinessLine),
       delete(NeoCoreParameterKey.secureStoragePhoneNumber),
-      delete(NeoCoreParameterKey.secureStorageUserRole),
     ]);
   }
 // endregion

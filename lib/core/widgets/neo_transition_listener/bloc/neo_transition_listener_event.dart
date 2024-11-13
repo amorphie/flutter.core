@@ -115,3 +115,9 @@ class NeoTransitionListenerEventDisableTemporarily extends NeoTransitionListener
   @override
   List<Object?> get props => [temporarilyDisabled];
 }
+
+class NeoTransitionListenerEventStopListening extends NeoTransitionListenerEvent {
+  @override
+  List<Object?> get props => [];
+
+}
