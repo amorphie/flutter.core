@@ -31,5 +31,7 @@ const _$NeoSignalRTransitionStateTypeEnumMap = {
   NeoSignalRTransitionStateType.partialStart: 'PartialStart',
   NeoSignalRTransitionStateType.standard: 'Standart',
   NeoSignalRTransitionStateType.start: 'Start',
+  NeoSignalRTransitionStateType.subFail: 'SubFail',
+  NeoSignalRTransitionStateType.subFinish: 'SubFinish',
   NeoSignalRTransitionStateType.subWorkflow: 'SubWorkflow',
 };
