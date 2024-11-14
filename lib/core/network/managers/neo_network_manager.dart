@@ -78,6 +78,10 @@ class NeoNetworkManager {
     this.defaultHeaders = const {},
   });
 
+  Future<void> init() {
+    return _getTemporaryTokenForNotLoggedInUser(NeoHttpCall(endpoint: ""));
+  }
+
   Future<Map<String, String>> get _defaultHeaders async {
     final results = await Future.wait([
       secureStorage.read(NeoCoreParameterKey.secureStorageDeviceId),
