@@ -164,7 +164,7 @@ class NeoTransitionListenerBloc extends Bloc<NeoTransitionListenerEvent, NeoTran
           pageId: responseData["state"],
           viewSource: responseData["view-source"],
           initialData: additionalData is Map ? additionalData.cast() : {"data": additionalData},
-          transitionId: (responseData["transition"] as List?)?.firstOrNull["transition"] ?? "",
+          transitionId: (responseData["transition"] as List?)?.firstOrNull?["transition"] ?? "",
           queryParameters: event.queryParameters,
           useSubNavigator: event.useSubNavigator,
           isInitialPage: true,
@@ -319,7 +319,7 @@ class NeoTransitionListenerBloc extends Bloc<NeoTransitionListenerEvent, NeoTran
     if (ongoingTransition.viewSource == "transition") {
       final response = await neoWorkflowManager.getAvailableTransitions();
       if (response.isSuccess) {
-        return response.asSuccess.data["transition"]?.first["transition"];
+        return response.asSuccess.data["transition"]?.firstOrNull?["transition"];
       }
     }
     return null;
