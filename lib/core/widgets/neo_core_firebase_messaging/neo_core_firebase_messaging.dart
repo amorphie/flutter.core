@@ -157,15 +157,10 @@ class _NeoCoreFirebaseMessagingState extends State<NeoCoreFirebaseMessaging> {
   }
 
   Future<String?> _getTokenBasedOnPlatform() async {
-    String? token;
     if (kIsWeb) {
       return null;
-    } else if (Platform.isIOS) {
-      token = await NeoCoreFirebaseMessaging.firebaseMessaging.getAPNSToken();
-    } else if (Platform.isAndroid) {
-      token = await NeoCoreFirebaseMessaging.firebaseMessaging.getToken();
     }
-    return token;
+    return NeoCoreFirebaseMessaging.firebaseMessaging.getToken();
   }
 
   void _handleMessage(RemoteMessage? message) {

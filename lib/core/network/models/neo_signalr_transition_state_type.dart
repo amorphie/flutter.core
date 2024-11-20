@@ -12,6 +12,10 @@ enum NeoSignalRTransitionStateType {
   standard,
   @JsonValue('Start')
   start,
+  @JsonValue('SubFail')
+  subFail,
+  @JsonValue('SubFinish')
+  subFinish,
   @JsonValue('SubWorkflow')
   subWorkflow,
 }

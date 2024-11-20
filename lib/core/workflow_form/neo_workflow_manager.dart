@@ -150,7 +150,7 @@ class NeoWorkflowManager {
   void terminateWorkflow() {
     resetInstanceId();
     resetInstanceId(isSubFlow: true);
-    _workflowName = "";
-    _subWorkflowName = "";
+    _workflowName = "-";
+    _subWorkflowName = "-";
   }
 }

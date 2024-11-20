@@ -143,7 +143,9 @@ class NeoTransitionListenerBloc extends Bloc<NeoTransitionListenerEvent, NeoTran
     );
     if (response.isSuccess) {
       final responseData = response.asSuccess.data;
-      onLoadingStatusChanged(displayLoading: false);
+      if (event.displayLoading) {
+        onLoadingStatusChanged(displayLoading: false);
+      }
 
       final additionalData = responseData["additionalData"] ?? {};
       if (additionalData is Map) {
@@ -162,19 +164,19 @@ class NeoTransitionListenerBloc extends Bloc<NeoTransitionListenerEvent, NeoTran
           pageId: responseData["state"],
           viewSource: responseData["view-source"],
           initialData: additionalData is Map ? additionalData.cast() : {"data": additionalData},
-          transitionId: (responseData["transition"] as List?)?.firstOrNull["transition"] ?? "",
+          transitionId: (responseData["transition"] as List?)?.firstOrNull?["transition"] ?? "",
           queryParameters: event.queryParameters,
           useSubNavigator: event.useSubNavigator,
           isInitialPage: true,
         ),
       );
     } else {
-      _completeWithError(response.asError.error);
+      _completeWithError(response.asError.error, shouldHideLoading: event.displayLoading);
     }
   }
 
   Future<void> _onPostTransition(NeoTransitionListenerEventPostTransition event) async {
-    _initPostTransitionTimeoutCompleter();
+    _initPostTransitionTimeoutCompleter(displayLoading: event.displayLoading);
     _getLastTransitionsWithLongPolling(isSubFlow: event.isSubFlow);
 
     try {
@@ -188,7 +190,7 @@ class NeoTransitionListenerBloc extends Bloc<NeoTransitionListenerEvent, NeoTran
         isSubFlow: event.isSubFlow,
       );
     } catch (e) {
-      _completeWithError(e is NeoError ? e : const NeoError());
+      _completeWithError(e is NeoError ? e : const NeoError(), shouldHideLoading: event.displayLoading);
     }
   }
 
@@ -197,20 +199,22 @@ class NeoTransitionListenerBloc extends Bloc<NeoTransitionListenerEvent, NeoTran
     neoWorkflowManager.terminateWorkflow();
   }
 
-  void _initPostTransitionTimeoutCompleter() {
+  void _initPostTransitionTimeoutCompleter({required bool displayLoading}) {
     _postTransitionTimeoutCompleter = Completer();
     _postTransitionTimeoutTimer?.cancel();
 
     _postTransitionTimeoutTimer = Timer(_Constants.transitionTimeoutDuration, () {
       if (_postTransitionTimeoutCompleter != null && !_postTransitionTimeoutCompleter!.isCompleted) {
-        _completeWithError(const NeoError());
+        _completeWithError(const NeoError(), shouldHideLoading: displayLoading);
         _postTransitionTimeoutCompleter!.complete();
       }
     });
   }
 
-  void _completeWithError(NeoError error) {
-    onLoadingStatusChanged(displayLoading: false);
+  void _completeWithError(NeoError error, {required bool shouldHideLoading}) {
+    if (shouldHideLoading) {
+      onLoadingStatusChanged(displayLoading: false);
+    }
     onTransitionError?.call(error);
   }
 
@@ -315,7 +319,7 @@ class NeoTransitionListenerBloc extends Bloc<NeoTransitionListenerEvent, NeoTran
     if (ongoingTransition.viewSource == "transition") {
       final response = await neoWorkflowManager.getAvailableTransitions();
       if (response.isSuccess) {
-        return response.asSuccess.data["transition"]?.first["transition"];
+        return response.asSuccess.data["transition"]?.firstOrNull?["transition"];
       }
     }
     return null;
