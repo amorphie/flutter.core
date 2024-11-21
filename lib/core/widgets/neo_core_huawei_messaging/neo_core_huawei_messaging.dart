@@ -57,8 +57,10 @@ class _NeoCoreHuaweiMessagingState extends State<NeoCoreHuaweiMessaging> {
 
   NeoLogger get _neoLogger => GetIt.I.get();
 
+  late final StreamSubscription _widgetEventStreamSubscription;
+
   void _listenWidgetEventKeys() {
-    NeoCoreWidgetEventKeys.initFirebaseAndHuawei.listenEvent(
+    _widgetEventStreamSubscription = NeoCoreWidgetEventKeys.initFirebaseAndHuawei.listenEvent(
       onEventReceived: (NeoWidgetEvent widgetEvent) {
         _init();
       },
@@ -191,5 +193,11 @@ class _NeoCoreHuaweiMessagingState extends State<NeoCoreHuaweiMessaging> {
 
   void _onMessageReceiveError(Object error) {
     _neoLogger.logConsole("Error receiving message: $error", logLevel: Level.error);
+  }
+
+  @override
+  void dispose() {
+    _widgetEventStreamSubscription.cancel();
+    super.dispose();
   }
 }

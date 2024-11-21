@@ -56,8 +56,10 @@ class _NeoCoreFirebaseMessagingState extends State<NeoCoreFirebaseMessaging> {
   );
   final _localNotifications = FlutterLocalNotificationsPlugin();
 
+  late final StreamSubscription _widgetEventStreamSubscription;
+
   void _listenWidgetEventKeys() {
-    NeoCoreWidgetEventKeys.initFirebaseAndHuawei.listenEvent(
+    _widgetEventStreamSubscription = NeoCoreWidgetEventKeys.initFirebaseAndHuawei.listenEvent(
       onEventReceived: (NeoWidgetEvent widgetEvent) {
         _init();
       },
@@ -175,5 +177,11 @@ class _NeoCoreFirebaseMessagingState extends State<NeoCoreFirebaseMessaging> {
     if (deeplinkPath != null && deeplinkPath.isNotEmpty) {
       widget.onDeeplinkNavigation?.call(deeplinkPath);
     }
+  }
+
+  @override
+  void dispose() {
+    _widgetEventStreamSubscription.cancel();
+    super.dispose();
   }
 }
