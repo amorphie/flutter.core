@@ -8,6 +8,8 @@ import 'package:get_it/get_it.dart';
 import 'package:huawei_push/huawei_push.dart'; // Huawei Push Kit
 import 'package:logger/logger.dart';
 import 'package:neo_core/core/analytics/neo_logger.dart';
+import 'package:neo_core/core/bus/widget_event_bus/neo_core_widget_event_keys.dart';
+import 'package:neo_core/core/bus/widget_event_bus/neo_widget_event.dart';
 import 'package:neo_core/core/network/managers/neo_network_manager.dart';
 import 'package:neo_core/core/storage/neo_core_secure_storage.dart';
 import 'package:neo_core/feature/device_registration/usecases/neo_core_register_device_usecase.dart';
@@ -55,14 +57,17 @@ class _NeoCoreHuaweiMessagingState extends State<NeoCoreHuaweiMessaging> {
 
   NeoLogger get _neoLogger => GetIt.I.get();
 
-  @override
-  Widget build(BuildContext context) {
-    return widget.child;
+  StreamSubscription? _widgetEventStreamSubscription;
+
+  void _listenWidgetEventKeys() {
+    _widgetEventStreamSubscription = NeoCoreWidgetEventKeys.initFirebaseAndHuawei.listenEvent(
+      onEventReceived: (NeoWidgetEvent widgetEvent) {
+        _init();
+      },
+    );
   }
 
-  @override
-  void initState() {
-    super.initState();
+  void _init() {
     if (kIsWeb) {
       return;
     }
@@ -71,6 +76,17 @@ class _NeoCoreHuaweiMessagingState extends State<NeoCoreHuaweiMessaging> {
     if (Platform.isAndroid) {
       _initLocalNotifications();
     }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return widget.child;
+  }
+
+  @override
+  void initState() {
+    super.initState();
+    _listenWidgetEventKeys();
   }
 
   Future<void> _initNotifications() async {
@@ -177,5 +193,11 @@ class _NeoCoreHuaweiMessagingState extends State<NeoCoreHuaweiMessaging> {
 
   void _onMessageReceiveError(Object error) {
     _neoLogger.logConsole("Error receiving message: $error", logLevel: Level.error);
+  }
+
+  @override
+  void dispose() {
+    _widgetEventStreamSubscription?.cancel();
+    super.dispose();
   }
 }
