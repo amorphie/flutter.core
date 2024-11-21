@@ -5,6 +5,8 @@ import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
+import 'package:neo_core/core/bus/widget_event_bus/neo_core_widget_event_keys.dart';
+import 'package:neo_core/core/bus/widget_event_bus/neo_widget_event.dart';
 import 'package:neo_core/core/network/managers/neo_network_manager.dart';
 import 'package:neo_core/core/storage/neo_core_secure_storage.dart';
 import 'package:neo_core/feature/device_registration/usecases/neo_core_register_device_usecase.dart';
@@ -54,14 +56,15 @@ class _NeoCoreFirebaseMessagingState extends State<NeoCoreFirebaseMessaging> {
   );
   final _localNotifications = FlutterLocalNotificationsPlugin();
 
-  @override
-  Widget build(BuildContext context) {
-    return widget.child;
+  void _listenWidgetEventKeys() {
+    NeoCoreWidgetEventKeys.initFirebaseAndHuawei.listenEvent(
+      onEventReceived: (NeoWidgetEvent widgetEvent) {
+        _init();
+      },
+    );
   }
 
-  @override
-  void initState() {
-    super.initState();
+  void _init() {
     if (kIsWeb) {
       return;
     }
@@ -70,6 +73,17 @@ class _NeoCoreFirebaseMessagingState extends State<NeoCoreFirebaseMessaging> {
     if (Platform.isAndroid) {
       _initLocalNotifications();
     }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return widget.child;
+  }
+
+  @override
+  void initState() {
+    super.initState();
+    _listenWidgetEventKeys();
   }
 
   Future<void> _initNotifications() async {
