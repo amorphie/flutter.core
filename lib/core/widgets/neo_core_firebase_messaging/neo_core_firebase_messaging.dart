@@ -56,7 +56,7 @@ class _NeoCoreFirebaseMessagingState extends State<NeoCoreFirebaseMessaging> {
   );
   final _localNotifications = FlutterLocalNotificationsPlugin();
 
-  late final StreamSubscription _widgetEventStreamSubscription;
+  StreamSubscription? _widgetEventStreamSubscription;
 
   void _listenWidgetEventKeys() {
     _widgetEventStreamSubscription = NeoCoreWidgetEventKeys.initFirebaseAndHuawei.listenEvent(
@@ -181,7 +181,7 @@ class _NeoCoreFirebaseMessagingState extends State<NeoCoreFirebaseMessaging> {
 
   @override
   void dispose() {
-    _widgetEventStreamSubscription.cancel();
+    _widgetEventStreamSubscription?.cancel();
     super.dispose();
   }
 }

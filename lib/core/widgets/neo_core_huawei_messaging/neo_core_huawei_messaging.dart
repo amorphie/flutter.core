@@ -57,7 +57,7 @@ class _NeoCoreHuaweiMessagingState extends State<NeoCoreHuaweiMessaging> {
 
   NeoLogger get _neoLogger => GetIt.I.get();
 
-  late final StreamSubscription _widgetEventStreamSubscription;
+  StreamSubscription? _widgetEventStreamSubscription;
 
   void _listenWidgetEventKeys() {
     _widgetEventStreamSubscription = NeoCoreWidgetEventKeys.initFirebaseAndHuawei.listenEvent(
@@ -197,7 +197,7 @@ class _NeoCoreHuaweiMessagingState extends State<NeoCoreHuaweiMessaging> {
 
   @override
   void dispose() {
-    _widgetEventStreamSubscription.cancel();
+    _widgetEventStreamSubscription?.cancel();
     super.dispose();
   }
 }
