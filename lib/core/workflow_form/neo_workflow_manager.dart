@@ -49,6 +49,10 @@ class NeoWorkflowManager {
     }
   }
 
+  String getWorkflowName({bool isSubFlow = false}) {
+    return isSubFlow ? _subWorkflowName : _workflowName;
+  }
+
   String get instanceId => _instanceId;
 
   String get subFlowInstanceId => _subFlowInstanceId;
@@ -79,7 +83,7 @@ class NeoWorkflowManager {
         pathParameters: {
           _Constants.pathParameterWorkflowName: _getActiveWorkflowName(isSubFlow: isSubFlow),
         },
-        headerParameters: _getDefaultHeaderParameters(headerParameters, isSubFlow: isSubFlow),
+        headerParameters: headerParameters ?? {},
         queryProviders: queryProviders,
       ),
     );
@@ -114,7 +118,7 @@ class NeoWorkflowManager {
           _Constants.pathParameterInstanceId: _getActiveInstanceId(isSubFlow: isSubFlow),
           _Constants.pathParameterTransitionName: transitionName,
         },
-        headerParameters: _getDefaultHeaderParameters(headerParameters, isSubFlow: isSubFlow),
+        headerParameters: headerParameters ?? {},
         body: body,
       ),
     );
@@ -130,13 +134,6 @@ class NeoWorkflowManager {
         ],
       ),
     );
-  }
-
-  Map<String, String> _getDefaultHeaderParameters(Map<String, String>? headerParameters, {bool isSubFlow = false}) {
-    return {
-      NeoNetworkHeaderKey.instanceId: _getActiveInstanceId(isSubFlow: isSubFlow),
-      NeoNetworkHeaderKey.workflowName: _getActiveWorkflowName(isSubFlow: isSubFlow),
-    }..addAll(headerParameters ?? const {});
   }
 
   String _getActiveWorkflowName({bool isSubFlow = false}) {
