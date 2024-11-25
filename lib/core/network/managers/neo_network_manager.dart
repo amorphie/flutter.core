@@ -27,6 +27,7 @@ import 'package:neo_core/core/storage/neo_core_parameter_key.dart';
 import 'package:neo_core/core/storage/neo_shared_prefs.dart';
 import 'package:neo_core/core/util/device_util/models/neo_device_info.dart';
 import 'package:neo_core/core/util/uuid_util.dart';
+import 'package:neo_core/core/workflow_form/neo_workflow_manager.dart';
 import 'package:neo_core/neo_core.dart';
 import 'package:universal_io/io.dart';
 
@@ -78,6 +79,15 @@ class NeoNetworkManager {
     this.defaultHeaders = const {},
   });
 
+  /// Read NeoWorkflowManager with try catch, because it depends on NeoNetworkManager
+  NeoWorkflowManager? get _neoWorkflowManager {
+    try {
+      return GetIt.I.get<NeoWorkflowManager>();
+    } catch (e) {
+      return null;
+    }
+  }
+
   Future<void> init() {
     return _getTemporaryTokenForNotLoggedInUser(NeoHttpCall(endpoint: ""));
   }
@@ -111,6 +121,8 @@ class NeoNetworkManager {
       NeoNetworkHeaderKey.deviceVersion: deviceInfo?.version ?? "",
       NeoNetworkHeaderKey.devicePlatform: deviceInfo?.platform ?? "",
       NeoNetworkHeaderKey.deployment: deviceInfo?.platform ?? "",
+      NeoNetworkHeaderKey.instanceId: _neoWorkflowManager?.instanceId ?? "",
+      NeoNetworkHeaderKey.workflowName: _neoWorkflowManager?.getWorkflowName() ?? "",
     }
       ..addAll(authHeader)
       ..addAll(defaultHeaders);
