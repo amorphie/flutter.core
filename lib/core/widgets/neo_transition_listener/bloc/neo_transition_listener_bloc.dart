@@ -259,11 +259,19 @@ class NeoTransitionListenerBloc extends Bloc<NeoTransitionListenerEvent, NeoTran
   Future<void> _retrieveTokenIfExist(NeoSignalRTransition ongoingTransition) async {
     final String? token = ongoingTransition.additionalData?["access_token"];
     final String? refreshToken = ongoingTransition.additionalData?["refresh_token"];
+    final bool? isMobUnapproved = ongoingTransition.additionalData?["user_info"]?['is_mob_unapproved_caused_by_ekyc'];
 
     if (token != null && token.isNotEmpty) {
       final bool isTwoFactorAuthenticated = await neoCoreSecureStorage.setAuthToken(token);
       await neoCoreSecureStorage.write(key: NeoCoreParameterKey.secureStorageRefreshToken, value: refreshToken ?? "");
       onLoggedInSuccessfully?.call(isTwoFactorAuthenticated: isTwoFactorAuthenticated);
+    }
+
+    if (isMobUnapproved != null) {
+      await neoCoreSecureStorage.write(
+        key: NeoCoreParameterKey.secureStorageUserInfoIsMobUnapproved,
+        value: isMobUnapproved.toString(),
+      );
     }
   }
 
