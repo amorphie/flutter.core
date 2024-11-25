@@ -204,6 +204,7 @@ class NeoCoreSecureStorage {
       delete(NeoCoreParameterKey.secureStorageRefreshToken),
       delete(NeoCoreParameterKey.secureStorageUserRole),
       delete(NeoCoreParameterKey.secureStorageSessionId),
+      delete(NeoCoreParameterKey.secureStorageUserInfoIsMobUnapproved),
     ]);
   }
 
