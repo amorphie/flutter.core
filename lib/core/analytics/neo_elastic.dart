@@ -16,6 +16,11 @@ class NeoElastic {
   final NeoCoreSecureStorage secureStorage;
 
   Future<void> logCustom(dynamic message, String level, {Map<String, dynamic>? parameters}) async {
+    final token = await secureStorage.read(NeoCoreParameterKey.secureStorageAuthToken);
+    if (token == null || token.isEmpty) {
+      return;
+    }
+
     final packageInfo = await PackageInfo.fromPlatform();
     final results = await Future.wait([
       secureStorage.read(NeoCoreParameterKey.secureStorageDeviceId),

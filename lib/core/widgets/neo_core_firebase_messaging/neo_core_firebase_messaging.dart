@@ -7,6 +7,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:get_it/get_it.dart';
 import 'package:neo_core/core/analytics/neo_logger.dart';
+import 'package:neo_core/core/bus/widget_event_bus/neo_core_widget_event_keys.dart';
+import 'package:neo_core/core/bus/widget_event_bus/neo_widget_event.dart';
 import 'package:neo_core/core/network/managers/neo_network_manager.dart';
 import 'package:neo_core/core/storage/neo_core_secure_storage.dart';
 import 'package:neo_core/feature/device_registration/usecases/neo_core_register_device_usecase.dart';
@@ -61,9 +63,17 @@ class _NeoCoreFirebaseMessagingState extends State<NeoCoreFirebaseMessaging> {
 
   NeoLogger get _neoLogger => GetIt.I.get();
 
-  @override
-  void initState() {
-    super.initState();
+  StreamSubscription? _widgetEventStreamSubscription;
+
+  void _listenWidgetEventKeys() {
+    _widgetEventStreamSubscription = NeoCoreWidgetEventKeys.initFirebaseAndHuawei.listenEvent(
+      onEventReceived: (NeoWidgetEvent widgetEvent) {
+        _init();
+      },
+    );
+  }
+
+  void _init() {
     if (kIsWeb) {
       return;
     }
@@ -77,6 +87,12 @@ class _NeoCoreFirebaseMessagingState extends State<NeoCoreFirebaseMessaging> {
   @override
   Widget build(BuildContext context) {
     return widget.child;
+  }
+
+  @override
+  void initState() {
+    super.initState();
+    _listenWidgetEventKeys();
   }
 
   Future<void> _initNotifications() async {
@@ -171,5 +187,11 @@ class _NeoCoreFirebaseMessagingState extends State<NeoCoreFirebaseMessaging> {
     if (deeplinkPath != null && deeplinkPath.isNotEmpty) {
       widget.onDeeplinkNavigation?.call(deeplinkPath);
     }
+  }
+
+  @override
+  void dispose() {
+    _widgetEventStreamSubscription?.cancel();
+    super.dispose();
   }
 }

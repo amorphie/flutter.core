@@ -188,8 +188,13 @@ class NeoCoreSecureStorage {
     if (phoneNumber is String && phoneNumber.isNotEmpty) {
       await write(key: NeoCoreParameterKey.secureStoragePhoneNumber, value: phoneNumber);
     }
+
     final userRole = decodedToken["role"];
     await write(key: NeoCoreParameterKey.secureStorageUserRole, value: userRole);
+
+    final sessionId = decodedToken["jti"];
+    await write(key: NeoCoreParameterKey.secureStorageSessionId, value: sessionId);
+
     return true;
   }
 
@@ -198,6 +203,8 @@ class NeoCoreSecureStorage {
       delete(NeoCoreParameterKey.secureStorageAuthToken),
       delete(NeoCoreParameterKey.secureStorageRefreshToken),
       delete(NeoCoreParameterKey.secureStorageUserRole),
+      delete(NeoCoreParameterKey.secureStorageSessionId),
+      delete(NeoCoreParameterKey.secureStorageUserInfoIsMobUnapproved),
     ]);
   }
 
