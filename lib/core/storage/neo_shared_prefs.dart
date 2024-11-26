@@ -13,7 +13,6 @@
 import 'package:get_it/get_it.dart';
 import 'package:logger/logger.dart';
 import 'package:neo_core/core/analytics/neo_logger.dart';
-import 'package:neo_core/core/analytics/neo_logger_type.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 class NeoSharedPrefs {

@@ -48,7 +48,7 @@ class NeoTransitionListenerBloc extends Bloc<NeoTransitionListenerEvent, NeoTran
   final NeoCoreSecureStorage neoCoreSecureStorage;
   late final Function(SignalrTransitionData navigationData) onTransitionEvent;
   late final Function(EkycEventData ekycData) onEkycEvent;
-  late final Function(NeoError error)? onTransitionError;
+  late final Function(NeoError error, {required bool displayAsPopup})? onTransitionError;
   late final Function({required bool isTwoFactorAuthenticated})? onLoggedInSuccessfully;
   late final Function({required bool displayLoading}) onLoadingStatusChanged;
 
@@ -171,7 +171,7 @@ class NeoTransitionListenerBloc extends Bloc<NeoTransitionListenerEvent, NeoTran
         ),
       );
     } else {
-      _completeWithError(response.asError.error, shouldHideLoading: event.displayLoading);
+      _completeWithError(response.asError.error, shouldHideLoading: event.displayLoading, displayAsPopup: true);
     }
   }
 
@@ -183,12 +183,15 @@ class NeoTransitionListenerBloc extends Bloc<NeoTransitionListenerEvent, NeoTran
       if (event.displayLoading) {
         onLoadingStatusChanged(displayLoading: true);
       }
-      await neoWorkflowManager.postTransition(
+      final response = await neoWorkflowManager.postTransition(
         transitionName: event.transitionName,
         body: event.body,
         headerParameters: event.headerParameters,
         isSubFlow: event.isSubFlow,
       );
+      if (response.isError) {
+        _completeWithError(response.asError.error, shouldHideLoading: event.displayLoading);
+      }
     } catch (e) {
       _completeWithError(e is NeoError ? e : const NeoError(), shouldHideLoading: event.displayLoading);
     }
@@ -211,11 +214,11 @@ class NeoTransitionListenerBloc extends Bloc<NeoTransitionListenerEvent, NeoTran
     });
   }
 
-  void _completeWithError(NeoError error, {required bool shouldHideLoading}) {
+  void _completeWithError(NeoError error, {required bool shouldHideLoading, bool displayAsPopup = false}) {
     if (shouldHideLoading) {
       onLoadingStatusChanged(displayLoading: false);
     }
-    onTransitionError?.call(error);
+    onTransitionError?.call(error, displayAsPopup: displayAsPopup);
   }
 
   Future<void> _processIncomingTransition({required NeoSignalRTransition transition}) async {
