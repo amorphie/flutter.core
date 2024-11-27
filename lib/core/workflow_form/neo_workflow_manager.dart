@@ -1,7 +1,6 @@
 import 'package:get_it/get_it.dart';
 import 'package:neo_core/core/analytics/neo_logger.dart';
 import 'package:neo_core/core/network/models/neo_http_call.dart';
-import 'package:neo_core/core/network/models/neo_network_header_key.dart';
 import 'package:neo_core/core/util/uuid_util.dart';
 import 'package:neo_core/neo_core.dart';
 
@@ -105,13 +104,13 @@ class NeoWorkflowManager {
     return response;
   }
 
-  Future postTransition({
+  Future<NeoResponse> postTransition({
     required String transitionName,
     required Map<String, dynamic> body,
     Map<String, String>? headerParameters,
     bool isSubFlow = false,
   }) async {
-    await neoNetworkManager.call(
+    return neoNetworkManager.call(
       NeoHttpCall(
         endpoint: _Constants.endpointPostTransition,
         pathParameters: {
