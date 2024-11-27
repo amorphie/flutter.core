@@ -10,6 +10,7 @@
  * Any reproduction of this material must contain this notice.
  */
 
+import 'dart:async';
 import 'dart:convert';
 
 import 'package:flutter/services.dart';
@@ -45,6 +46,7 @@ abstract class _Constants {
   static const String requestKeyScopes = "scopes";
   static const List<String> requestValueScopes = ["retail-customer"];
   static const String languageCodeEn = "en";
+  static const Duration requestTimeoutDuration = Duration(minutes: 1);
 }
 
 enum NeoNetworkManagerLogScale { none, simplified, all }
@@ -63,6 +65,8 @@ class NeoNetworkManager {
   late final NeoLogger _neoLogger = GetIt.I.get();
   final NeoNetworkManagerLogScale logScale;
   final Map<String, String> defaultHeaders;
+
+  late final http.Client httpClient;
 
   NeoNetworkManager({
     required this.httpClientConfig,
@@ -88,8 +92,9 @@ class NeoNetworkManager {
     }
   }
 
-  Future<void> init() {
-    return _getTemporaryTokenForNotLoggedInUser(NeoHttpCall(endpoint: ""));
+  Future<void> init() async {
+    httpClient = await _getSSLPinningClient();
+    await _getTemporaryTokenForNotLoggedInUser(NeoHttpCall(endpoint: ""));
   }
 
   Future<Map<String, String>> get _defaultHeaders async {
@@ -171,68 +176,89 @@ class NeoNetworkManager {
       return NeoResponse.error(const NeoError());
     }
     await _getTemporaryTokenForNotLoggedInUser(neoCall);
-    final http = await _getSSLPinningClient();
 
-    switch (method) {
-      case HttpMethod.get:
-        return _requestGet(http, fullPath, neoCall);
-      case HttpMethod.post:
-        return _requestPost(http, fullPath, neoCall);
-      case HttpMethod.delete:
-        return _requestDelete(http, fullPath, neoCall);
-      case HttpMethod.put:
-        return _requestPut(http, fullPath, neoCall);
-      case HttpMethod.patch:
-        return _requestPatch(http, fullPath, neoCall);
+    NeoResponse response;
+    try {
+      switch (method) {
+        case HttpMethod.get:
+          response = await _requestGet(fullPath, neoCall);
+        case HttpMethod.post:
+          response = await _requestPost(fullPath, neoCall);
+        case HttpMethod.delete:
+          response = await _requestDelete(fullPath, neoCall);
+        case HttpMethod.put:
+          response = await _requestPut(fullPath, neoCall);
+        case HttpMethod.patch:
+          response = await _requestPatch(fullPath, neoCall);
+      }
+      return response;
+    } catch (e) {
+      if (e is TimeoutException) {
+        _neoLogger.logError("[NeoNetworkManager]: Service call timeout! Endpoint: ${neoCall.endpoint}");
+        return NeoResponse.error(const NeoError(responseCode: HttpStatus.requestTimeout));
+      } else {
+        _neoLogger.logError("[NeoNetworkManager]: Service call failed! Endpoint: ${neoCall.endpoint}");
+        return NeoResponse.error(const NeoError());
+      }
     }
   }
 
-  Future<NeoResponse> _requestGet(http.Client http, String fullPath, NeoHttpCall neoCall) async {
+  Future<NeoResponse> _requestGet(String fullPath, NeoHttpCall neoCall) async {
     final fullPathWithQueries = _getFullPathWithQueries(fullPath, neoCall.queryProviders);
-    final response = await http.get(
-      Uri.parse(fullPathWithQueries),
-      headers: (await _defaultHeaders)..addAll(neoCall.headerParameters),
-    );
+    final response = await httpClient
+        .get(
+          Uri.parse(fullPathWithQueries),
+          headers: (await _defaultHeaders)..addAll(neoCall.headerParameters),
+        )
+        .timeout(_Constants.requestTimeoutDuration);
     return _createResponse(response, neoCall);
   }
 
-  Future<NeoResponse> _requestPost(http.Client http, String fullPath, NeoHttpCall neoCall) async {
+  Future<NeoResponse> _requestPost(String fullPath, NeoHttpCall neoCall) async {
     final fullPathWithQueries = _getFullPathWithQueries(fullPath, neoCall.queryProviders);
-    final response = await http.post(
-      Uri.parse(fullPathWithQueries),
-      headers: (await _defaultPostHeaders)..addAll(neoCall.headerParameters),
-      body: json.encode(neoCall.body),
-    );
+    final response = await httpClient
+        .post(
+          Uri.parse(fullPathWithQueries),
+          headers: (await _defaultPostHeaders)..addAll(neoCall.headerParameters),
+          body: json.encode(neoCall.body),
+        )
+        .timeout(_Constants.requestTimeoutDuration);
     return _createResponse(response, neoCall);
   }
 
-  Future<NeoResponse> _requestDelete(http.Client http, String fullPath, NeoHttpCall neoCall) async {
+  Future<NeoResponse> _requestDelete(String fullPath, NeoHttpCall neoCall) async {
     final fullPathWithQueries = _getFullPathWithQueries(fullPath, neoCall.queryProviders);
-    final response = await http.delete(
-      Uri.parse(fullPathWithQueries),
-      headers: (await _defaultHeaders)..addAll(neoCall.headerParameters),
-      body: json.encode(neoCall.body),
-    );
+    final response = await httpClient
+        .delete(
+          Uri.parse(fullPathWithQueries),
+          headers: (await _defaultHeaders)..addAll(neoCall.headerParameters),
+          body: json.encode(neoCall.body),
+        )
+        .timeout(_Constants.requestTimeoutDuration);
     return _createResponse(response, neoCall);
   }
 
-  Future<NeoResponse> _requestPut(http.Client http, String fullPath, NeoHttpCall neoCall) async {
+  Future<NeoResponse> _requestPut(String fullPath, NeoHttpCall neoCall) async {
     final fullPathWithQueries = _getFullPathWithQueries(fullPath, neoCall.queryProviders);
-    final response = await http.put(
-      Uri.parse(fullPathWithQueries),
-      headers: await _defaultPostHeaders,
-      body: json.encode(neoCall.body),
-    );
+    final response = await httpClient
+        .put(
+          Uri.parse(fullPathWithQueries),
+          headers: await _defaultPostHeaders,
+          body: json.encode(neoCall.body),
+        )
+        .timeout(_Constants.requestTimeoutDuration);
     return _createResponse(response, neoCall);
   }
 
-  Future<NeoResponse> _requestPatch(http.Client http, String fullPath, NeoHttpCall neoCall) async {
+  Future<NeoResponse> _requestPatch(String fullPath, NeoHttpCall neoCall) async {
     final fullPathWithQueries = _getFullPathWithQueries(fullPath, neoCall.queryProviders);
-    final response = await http.patch(
-      Uri.parse(fullPathWithQueries),
-      headers: await _defaultPostHeaders,
-      body: json.encode(neoCall.body),
-    );
+    final response = await httpClient
+        .patch(
+          Uri.parse(fullPathWithQueries),
+          headers: await _defaultPostHeaders,
+          body: json.encode(neoCall.body),
+        )
+        .timeout(_Constants.requestTimeoutDuration);
     return _createResponse(response, neoCall);
   }
 
