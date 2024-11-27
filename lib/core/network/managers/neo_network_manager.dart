@@ -46,7 +46,6 @@ abstract class _Constants {
   static const String requestKeyScopes = "scopes";
   static const List<String> requestValueScopes = ["retail-customer"];
   static const String languageCodeEn = "en";
-  static const Duration requestTimeoutDuration = Duration(minutes: 1);
 }
 
 enum NeoNetworkManagerLogScale { none, simplified, all }
@@ -65,6 +64,7 @@ class NeoNetworkManager {
   late final NeoLogger _neoLogger = GetIt.I.get();
   final NeoNetworkManagerLogScale logScale;
   final Map<String, String> defaultHeaders;
+  final Duration timeoutDuration;
 
   late final http.Client httpClient;
 
@@ -81,6 +81,7 @@ class NeoNetworkManager {
     this.onInvalidTokenError,
     this.logScale = NeoNetworkManagerLogScale.simplified,
     this.defaultHeaders = const {},
+    this.timeoutDuration = const Duration(minutes: 1),
   });
 
   /// Read NeoWorkflowManager with try catch, because it depends on NeoNetworkManager
@@ -93,7 +94,7 @@ class NeoNetworkManager {
   }
 
   Future<void> init() async {
-    httpClient = await _getSSLPinningClient();
+    await _initHttpClient();
     await _getTemporaryTokenForNotLoggedInUser(NeoHttpCall(endpoint: ""));
   }
 
@@ -210,7 +211,7 @@ class NeoNetworkManager {
           Uri.parse(fullPathWithQueries),
           headers: (await _defaultHeaders)..addAll(neoCall.headerParameters),
         )
-        .timeout(_Constants.requestTimeoutDuration);
+        .timeout(timeoutDuration);
     return _createResponse(response, neoCall);
   }
 
@@ -222,7 +223,7 @@ class NeoNetworkManager {
           headers: (await _defaultPostHeaders)..addAll(neoCall.headerParameters),
           body: json.encode(neoCall.body),
         )
-        .timeout(_Constants.requestTimeoutDuration);
+        .timeout(timeoutDuration);
     return _createResponse(response, neoCall);
   }
 
@@ -234,7 +235,7 @@ class NeoNetworkManager {
           headers: (await _defaultHeaders)..addAll(neoCall.headerParameters),
           body: json.encode(neoCall.body),
         )
-        .timeout(_Constants.requestTimeoutDuration);
+        .timeout(timeoutDuration);
     return _createResponse(response, neoCall);
   }
 
@@ -243,10 +244,10 @@ class NeoNetworkManager {
     final response = await httpClient
         .put(
           Uri.parse(fullPathWithQueries),
-          headers: await _defaultPostHeaders,
+          headers: (await _defaultPostHeaders)..addAll(neoCall.headerParameters),
           body: json.encode(neoCall.body),
         )
-        .timeout(_Constants.requestTimeoutDuration);
+        .timeout(timeoutDuration);
     return _createResponse(response, neoCall);
   }
 
@@ -255,10 +256,10 @@ class NeoNetworkManager {
     final response = await httpClient
         .patch(
           Uri.parse(fullPathWithQueries),
-          headers: await _defaultPostHeaders,
+          headers: (await _defaultPostHeaders)..addAll(neoCall.headerParameters),
           body: json.encode(neoCall.body),
         )
-        .timeout(_Constants.requestTimeoutDuration);
+        .timeout(timeoutDuration);
     return _createResponse(response, neoCall);
   }
 
@@ -416,13 +417,14 @@ class NeoNetworkManager {
     }
   }
 
-  Future<http.Client> _getSSLPinningClient() async {
+  Future<void> _initHttpClient() async {
     if (!enableSslPinning) {
-      return http.Client();
+      httpClient = http.Client();
+      return;
     }
     final HttpClient client = HttpClient(context: await _getSecurityContext)
       ..badCertificateCallback = (X509Certificate cert, String host, int port) => false;
-    return IOClient(client);
+    httpClient = IOClient(client);
   }
 
   void _logResponse(http.Response response) {
