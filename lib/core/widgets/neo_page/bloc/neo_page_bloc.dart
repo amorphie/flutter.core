@@ -3,7 +3,6 @@ import 'dart:async';
 import 'package:collection/collection.dart';
 import 'package:equatable/equatable.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:get_it/get_it.dart';
 import 'package:json_dynamic_widget/json_dynamic_widget.dart';
 import 'package:neo_core/core/bus/widget_event_bus/neo_widget_event.dart';
 import 'package:neo_core/core/bus/widget_event_bus/neo_widget_event_bus.dart';
