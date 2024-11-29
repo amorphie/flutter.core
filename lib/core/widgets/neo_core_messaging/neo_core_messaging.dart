@@ -91,6 +91,8 @@ class _NeoCoreMessagingState extends State<NeoCoreMessaging> {
           dengageMessage.dengageMedia[0].target.isNotEmpty) {
         widget.onDeeplinkNavigation?.call(dengageMessage.dengageMedia[0].target);
       }
+    } on FormatException catch (e) {
+      _neoLogger.logError("[NeoCoreMessaging]: JSON Decode Error: $e");
     } catch (e) {
       _neoLogger.logError("[NeoCoreMessaging]: Dengage Message Error is: $e!");
     }
