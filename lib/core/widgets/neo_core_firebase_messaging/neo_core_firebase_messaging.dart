@@ -5,6 +5,8 @@ import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
+import 'package:get_it/get_it.dart';
+import 'package:neo_core/core/analytics/neo_logger.dart';
 import 'package:neo_core/core/bus/widget_event_bus/neo_core_widget_event_keys.dart';
 import 'package:neo_core/core/bus/widget_event_bus/neo_widget_event.dart';
 import 'package:neo_core/core/network/managers/neo_network_manager.dart';
@@ -21,6 +23,7 @@ abstract class _Constant {
 
 @pragma('vm:entry-point')
 Future<void> onBackgroundMessage(RemoteMessage message) async {
+  debugPrint("[NeoCoreFirebaseMessaging]: Background notification was triggered by ${message.notification}");
   return Future.value();
 }
 
@@ -29,6 +32,7 @@ class NeoCoreFirebaseMessaging extends StatefulWidget {
     required this.child,
     required this.networkManager,
     required this.neoCoreSecureStorage,
+    required this.onTokenChanged,
     this.androidDefaultIcon,
     this.onDeeplinkNavigation,
     super.key,
@@ -37,6 +41,7 @@ class NeoCoreFirebaseMessaging extends StatefulWidget {
   final Widget child;
   final NeoNetworkManager networkManager;
   final NeoCoreSecureStorage neoCoreSecureStorage;
+  final Function(String) onTokenChanged;
   final String? androidDefaultIcon;
   final Function(String)? onDeeplinkNavigation;
 
@@ -55,6 +60,8 @@ class _NeoCoreFirebaseMessagingState extends State<NeoCoreFirebaseMessaging> {
     description: _Constant.androidNotificationChannelDescription,
   );
   final _localNotifications = FlutterLocalNotificationsPlugin();
+
+  NeoLogger get _neoLogger => GetIt.I.get();
 
   StreamSubscription? _widgetEventStreamSubscription;
 
@@ -97,7 +104,8 @@ class _NeoCoreFirebaseMessagingState extends State<NeoCoreFirebaseMessaging> {
   }
 
   void _onTokenChange(String token) {
-    debugPrint("Firebase Push token: $token");
+    _neoLogger.logConsole("[NeoCoreFirebaseMessaging]: Firebase Push token is: $token");
+    widget.onTokenChanged.call(token);
     NeoCoreRegisterDeviceUseCase().call(
       networkManager: widget.networkManager,
       secureStorage: widget.neoCoreSecureStorage,
@@ -120,6 +128,8 @@ class _NeoCoreFirebaseMessagingState extends State<NeoCoreFirebaseMessaging> {
 
     // This is called when an incoming FCM payload is received while the Flutter instance is in the foreground.
     FirebaseMessaging.onMessage.listen((message) {
+      _neoLogger
+          .logConsole("[NeoCoreFirebaseMessaging]: Foreground notification was triggered by ${message.notification}");
       final notification = message.notification;
       if (notification == null || !Platform.isAndroid) {
         return;
