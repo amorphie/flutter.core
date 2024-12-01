@@ -126,8 +126,13 @@ class NeoCoreSecureStorage {
   // region: Custom Operations
   /// Set auth token(JWT), customerId and customerNameAndSurname from encoded JWT
   /// and returns isTwoFactorAuthenticated status
-  Future<bool> setAuthToken(String token) async {
-    await write(key: NeoCoreParameterKey.secureStorageAuthToken, value: token);
+  Future<bool> setAuthToken(String token, {bool? isMobUnapproved}) async {
+    await Future.wait(
+      [
+        write(key: NeoCoreParameterKey.secureStorageAuthToken, value: token),
+        _writeIsMobUnapprovedStatus(isMobUnapproved),
+      ],
+    );
 
     final Map<String, dynamic> decodedToken = JwtDecoder.decode(token);
     final isTwoFactorAuthenticated = decodedToken["clientAuthorized"] != "1";
@@ -220,6 +225,16 @@ class NeoCoreSecureStorage {
       delete(NeoCoreParameterKey.secureStorageBusinessLine),
       delete(NeoCoreParameterKey.secureStoragePhoneNumber),
     ]);
+  }
+
+  Future<void> _writeIsMobUnapprovedStatus(bool? isMobUnapproved) async {
+    if (isMobUnapproved == null) {
+      return;
+    }
+    return write(
+      key: NeoCoreParameterKey.secureStorageUserInfoIsMobUnapproved,
+      value: isMobUnapproved.toString(),
+    );
   }
 // endregion
 }
