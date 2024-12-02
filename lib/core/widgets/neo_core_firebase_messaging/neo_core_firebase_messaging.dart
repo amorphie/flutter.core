@@ -203,9 +203,6 @@ class _NeoCoreFirebaseMessagingState extends State<NeoCoreFirebaseMessaging> {
   }
 
   Future<String?> _getAPNSTokenBasedOnPlatform() async {
-    if (kIsWeb) {
-      return null;
-    }
     return NeoCoreFirebaseMessaging.firebaseMessaging.getAPNSToken();
   }
 
