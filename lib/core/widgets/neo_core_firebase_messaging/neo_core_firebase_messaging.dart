@@ -35,7 +35,6 @@ class NeoCoreFirebaseMessaging extends StatefulWidget {
     required this.networkManager,
     required this.neoCoreSecureStorage,
     required this.onTokenChanged,
-    required this.onAPNSTokenChanged,
     this.androidDefaultIcon,
     this.onDeeplinkNavigation,
     super.key,
@@ -45,7 +44,6 @@ class NeoCoreFirebaseMessaging extends StatefulWidget {
   final NeoNetworkManager networkManager;
   final NeoCoreSecureStorage neoCoreSecureStorage;
   final Function(String) onTokenChanged;
-  final Function(String) onAPNSTokenChanged;
   final String? androidDefaultIcon;
   final Function(String)? onDeeplinkNavigation;
 
@@ -126,7 +124,7 @@ class _NeoCoreFirebaseMessagingState extends State<NeoCoreFirebaseMessaging> {
   void _onAPNSTokenChange(String tokenApns) {
     _neoLogger.logConsole("[NeoCoreFirebaseMessaging]: Firebase APNS token is: $tokenApns");
     if (Platform.isIOS) {
-      widget.onAPNSTokenChanged.call(tokenApns);
+      widget.onTokenChanged.call(tokenApns);
     }
   }
 
@@ -205,7 +203,7 @@ class _NeoCoreFirebaseMessagingState extends State<NeoCoreFirebaseMessaging> {
   }
 
   Future<String?> _getAPNSTokenBasedOnPlatform() async {
-    if (kIsWeb || !Platform.isIOS) {
+    if (kIsWeb) {
       return null;
     }
     return NeoCoreFirebaseMessaging.firebaseMessaging.getAPNSToken();

@@ -23,7 +23,6 @@ class NeoCoreMessaging extends StatefulWidget {
   final NeoNetworkManager networkManager;
   final NeoCoreSecureStorage neoCoreSecureStorage;
   final Function(String) onTokenChanged;
-  final Function(String) onAPNSTokenChanged;
   final String? androidDefaultIcon;
   final Function(String)? onDeeplinkNavigation;
 
@@ -33,7 +32,6 @@ class NeoCoreMessaging extends StatefulWidget {
     required this.networkManager,
     required this.neoCoreSecureStorage,
     required this.onTokenChanged,
-    required this.onAPNSTokenChanged,
     this.androidDefaultIcon,
     this.onDeeplinkNavigation,
     super.key,
@@ -76,7 +74,6 @@ class _NeoCoreMessagingState extends State<NeoCoreMessaging> {
           networkManager: widget.networkManager,
           neoCoreSecureStorage: widget.neoCoreSecureStorage,
           onTokenChanged: widget.onTokenChanged,
-          onAPNSTokenChanged: widget.onAPNSTokenChanged,
           androidDefaultIcon: widget.androidDefaultIcon,
           onDeeplinkNavigation: widget.onDeeplinkNavigation,
           child: widget.child,
