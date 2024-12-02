@@ -278,9 +278,10 @@ class NeoNetworkManager {
 
   Future<NeoResponse> _createResponse(http.Response response, NeoHttpCall call) async {
     Map<String, dynamic>? responseJSON;
+    String? responseString;
     try {
       const utf8Decoder = Utf8Decoder();
-      final responseString = utf8Decoder.convert(response.bodyBytes);
+      responseString = utf8Decoder.convert(response.bodyBytes);
       final decodedResponse = json.decode(responseString);
       if (decodedResponse is Map<String, dynamic>) {
         responseJSON = decodedResponse;
@@ -320,7 +321,7 @@ class NeoNetworkManager {
       }
     } else {
       try {
-        responseJSON.addAll({'body': response.body});
+        responseJSON.addAll({'body': responseString ?? response.body});
         final hasErrorCode = responseJSON.containsKey("errorCode");
         if (!hasErrorCode) {
           responseJSON.addAll({'errorCode': response.statusCode});
