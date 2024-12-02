@@ -2,8 +2,10 @@ import 'dart:async';
 import 'dart:convert';
 
 import 'package:firebase_messaging/firebase_messaging.dart';
+import 'package:flutter/cupertino.dart';
 import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
+import 'package:flutter/widgets.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:get_it/get_it.dart';
 import 'package:neo_core/core/analytics/neo_logger.dart';
@@ -33,6 +35,7 @@ class NeoCoreFirebaseMessaging extends StatefulWidget {
     required this.networkManager,
     required this.neoCoreSecureStorage,
     required this.onTokenChanged,
+    required this.onAPNSTokenChanged,
     this.androidDefaultIcon,
     this.onDeeplinkNavigation,
     super.key,
@@ -42,6 +45,7 @@ class NeoCoreFirebaseMessaging extends StatefulWidget {
   final NeoNetworkManager networkManager;
   final NeoCoreSecureStorage neoCoreSecureStorage;
   final Function(String) onTokenChanged;
+  final Function(String) onAPNSTokenChanged;
   final String? androidDefaultIcon;
   final Function(String)? onDeeplinkNavigation;
 
@@ -96,20 +100,41 @@ class _NeoCoreFirebaseMessagingState extends State<NeoCoreFirebaseMessaging> {
   }
 
   Future<void> _initNotifications() async {
-    final token = await _getTokenBasedOnPlatform();
-    if (token != null) {
-      _onTokenChange(token);
+    final tokenFirebase = await _getTokenBasedOnPlatform();
+    final tokenAPNS = await _getAPNSTokenBasedOnPlatform();
+    if (tokenFirebase != null) {
+      _onTokenChange(tokenFirebase);
+      registerDevice(tokenFirebase);
     }
-    NeoCoreFirebaseMessaging.firebaseMessaging.onTokenRefresh.listen(_onTokenChange);
+    if (tokenAPNS != null) {
+      _onAPNSTokenChange(tokenAPNS);
+    }
+    if (Platform.isIOS) {
+      NeoCoreFirebaseMessaging.firebaseMessaging.onTokenRefresh.listen(_onAPNSTokenChange);
+    } else if (Platform.isAndroid) {
+      NeoCoreFirebaseMessaging.firebaseMessaging.onTokenRefresh.listen(_onTokenChange);
+    }
   }
 
   void _onTokenChange(String token) {
     _neoLogger.logConsole("[NeoCoreFirebaseMessaging]: Firebase Push token is: $token");
-    widget.onTokenChanged.call(token);
+    if (Platform.isAndroid) {
+      widget.onTokenChanged.call(token);
+    }
+  }
+
+  void _onAPNSTokenChange(String tokenApns) {
+    _neoLogger.logConsole("[NeoCoreFirebaseMessaging]: Firebase APNS token is: $tokenApns");
+    if (Platform.isIOS) {
+      widget.onAPNSTokenChanged.call(tokenApns);
+    }
+  }
+
+  void registerDevice(String tokenFirebase) {
     NeoCoreRegisterDeviceUseCase().call(
       networkManager: widget.networkManager,
       secureStorage: widget.neoCoreSecureStorage,
-      deviceToken: token,
+      deviceToken: tokenFirebase,
     );
   }
 
@@ -177,6 +202,13 @@ class _NeoCoreFirebaseMessagingState extends State<NeoCoreFirebaseMessaging> {
       return null;
     }
     return NeoCoreFirebaseMessaging.firebaseMessaging.getToken();
+  }
+
+  Future<String?> _getAPNSTokenBasedOnPlatform() async {
+    if (kIsWeb || !Platform.isIOS) {
+      return null;
+    }
+    return NeoCoreFirebaseMessaging.firebaseMessaging.getAPNSToken();
   }
 
   void _handleMessage(RemoteMessage? message) {
