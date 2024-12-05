@@ -13,6 +13,7 @@
 import 'dart:async';
 
 import 'package:bloc_concurrency/bloc_concurrency.dart';
+import 'package:collection/collection.dart';
 import 'package:equatable/equatable.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -32,7 +33,6 @@ import 'package:neo_core/core/storage/neo_core_secure_storage.dart';
 import 'package:neo_core/core/widgets/neo_page/bloc/neo_page_bloc.dart';
 import 'package:neo_core/core/widgets/neo_transition_listener/usecases/get_workflow_query_parameters_usecase.dart';
 import 'package:neo_core/core/workflow_form/neo_workflow_manager.dart';
-import 'package:rxdart/rxdart.dart';
 import 'package:universal_io/io.dart';
 
 part 'neo_transition_listener_event.dart';
@@ -53,7 +53,7 @@ class NeoTransitionListenerBloc extends Bloc<NeoTransitionListenerEvent, NeoTran
   late final Function({required bool displayLoading}) onLoadingStatusChanged;
 
   late final SignalrConnectionManager signalrConnectionManager;
-  late final ReplaySubject<NeoSignalREvent> _eventBus = ReplaySubject(maxSize: 5);
+  late final List<NeoSignalREvent> _eventList = [];
   late final NeoWorkflowManager neoWorkflowManager;
   late final NeoLogger _neoLogger = GetIt.I.get();
 
@@ -62,6 +62,7 @@ class NeoTransitionListenerBloc extends Bloc<NeoTransitionListenerEvent, NeoTran
   NeoSignalREvent? _lastProcessedEvent;
   Timer? longPollingTimer;
   bool hasSignalRConnection = false;
+  bool _isProcessing = false;
 
   NeoTransitionListenerBloc({
     required this.neoCoreSecureStorage,
@@ -93,42 +94,58 @@ class NeoTransitionListenerBloc extends Bloc<NeoTransitionListenerEvent, NeoTran
       signalrServerUrl: event.signalRServerUrl + await GetWorkflowQueryParametersUseCase().call(neoCoreSecureStorage),
       signalrMethodName: event.signalRMethodName,
     );
-    _listenEventBus(emit);
   }
 
-  void _listenEventBus(emit) {
-    _eventBus.listen((event) {
-      if (isClosed ||
-          _eventBus.isClosed ||
-          event.transition.instanceId.isEmpty ||
-          !(event.transition.instanceId == neoWorkflowManager.instanceId ||
-              event.transition.instanceId == neoWorkflowManager.subFlowInstanceId)) {
-        return;
-      }
-      if (state.temporarilyDisabled) {
-        add(NeoTransitionListenerEventDisableTemporarily(temporarilyDisabled: false));
-        return;
+  Future<void> _processEvents() async {
+    if (_isProcessing) {
+      return;
+    }
+    if (_eventList.isNotEmpty) {
+      _isProcessing = true;
+      _eventList.sortBy((element) => element.transition.time);
+      final List<NeoSignalREvent> processedEvents = [];
+
+      for (final event in List<NeoSignalREvent>.from(_eventList)) {
+        if (isClosed ||
+            event.transition.instanceId.isEmpty ||
+            !(event.transition.instanceId == neoWorkflowManager.instanceId ||
+                event.transition.instanceId == neoWorkflowManager.subFlowInstanceId)) {
+          processedEvents.add(event);
+          continue;
+        }
+        if (state.temporarilyDisabled) {
+          add(NeoTransitionListenerEventDisableTemporarily(temporarilyDisabled: false));
+          continue;
+        }
+
+        if (_lastProcessedEvent?.transition == null ||
+            !event.transition.time.isBefore(_lastProcessedEvent!.transition.time)) {
+          if (_postTransitionTimeoutCompleter != null && !_postTransitionTimeoutCompleter!.isCompleted) {
+            _postTransitionTimeoutTimer?.cancel();
+            _postTransitionTimeoutCompleter?.complete();
+          }
+          if (event.transition.workflowStateType.isTerminated) {
+            _onStopListening();
+          }
+          if (event.isSilentEvent) {
+            GetIt.I.get<NeoWidgetEventBus>().addEvent(
+                  NeoWidgetEvent(eventId: NeoPageBloc.dataEventKey, data: event.transition),
+                );
+          } else {
+            await _processIncomingTransition(transition: event.transition);
+          }
+          _lastProcessedEvent = event;
+        }
+        processedEvents.add(event);
       }
 
-      if (_lastProcessedEvent?.transition == null ||
-          !event.transition.time.isBefore(_lastProcessedEvent!.transition.time)) {
-        if (_postTransitionTimeoutCompleter != null && !_postTransitionTimeoutCompleter!.isCompleted) {
-          _postTransitionTimeoutTimer?.cancel();
-          _postTransitionTimeoutCompleter?.complete();
-        }
-        if (event.transition.workflowStateType.isTerminated) {
-          _onStopListening();
-        }
-        if (event.isSilentEvent) {
-          GetIt.I.get<NeoWidgetEventBus>().addEvent(
-                NeoWidgetEvent(eventId: NeoPageBloc.dataEventKey, data: event.transition),
-              );
-        } else {
-          _processIncomingTransition(transition: event.transition);
-        }
-        _lastProcessedEvent = event;
+      for (final event in processedEvents) {
+        _eventList.remove(event);
       }
-    });
+
+      _isProcessing = false;
+      await _processEvents();
+    }
   }
 
   Future<void> _onInitWorkflow(NeoTransitionListenerEventInitWorkflow event) async {
@@ -345,10 +362,12 @@ class NeoTransitionListenerBloc extends Bloc<NeoTransitionListenerEvent, NeoTran
   }
 
   void _addEventToBus(NeoSignalREvent event) {
-    if (!_eventBus.values.contains(event)) {
-      if (!isClosed && !_eventBus.isClosed && _lastProcessedEvent?.eventId != event.eventId) {
-        _eventBus.add(event);
+    if (!_eventList
+        .any((element) => element.eventId == event.eventId || element.transition.time.isAfter(event.transition.time))) {
+      if (!isClosed && _lastProcessedEvent?.eventId != event.eventId) {
+        _eventList.add(event);
       }
+      _processEvents();
     }
   }
 
@@ -403,7 +422,6 @@ class NeoTransitionListenerBloc extends Bloc<NeoTransitionListenerEvent, NeoTran
     _postTransitionTimeoutTimer?.cancel();
     signalrConnectionManager.stop();
     _cancelLongPolling();
-    _eventBus.close();
     return super.close();
   }
 }
