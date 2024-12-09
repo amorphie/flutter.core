@@ -50,21 +50,21 @@ class SignalrConnectionManager {
     _hubConnection?.onclose(({error}) {
       _neoLogger.logCustom(
         _Constants.eventNameSignalrOnClose,
-        logTypes: [NeoLoggerType.posthog, NeoLoggerType.logger],
+        logTypes: [NeoLoggerType.posthog, NeoLoggerType.elastic, NeoLoggerType.logger],
       );
     });
     _hubConnection?.onreconnecting(({error}) {
       onConnectionStatusChanged(hasConnection: false);
       _neoLogger.logCustom(
         _Constants.eventNameSignalrOnReconnecting,
-        logTypes: [NeoLoggerType.posthog, NeoLoggerType.logger],
+        logTypes: [NeoLoggerType.posthog, NeoLoggerType.elastic, NeoLoggerType.logger],
       );
     });
     _hubConnection?.onreconnected(({connectionId}) {
       onConnectionStatusChanged(hasConnection: true);
       _neoLogger.logCustom(
         _Constants.eventNameSignalrOnReconnected,
-        logTypes: [NeoLoggerType.posthog, NeoLoggerType.logger],
+        logTypes: [NeoLoggerType.posthog, NeoLoggerType.elastic, NeoLoggerType.logger],
       );
     });
 
@@ -74,7 +74,7 @@ class SignalrConnectionManager {
         onConnectionStatusChanged(hasConnection: true);
         _neoLogger.logCustom(
           _Constants.eventNameSignalrInitSucceed,
-          logTypes: [NeoLoggerType.posthog, NeoLoggerType.logger],
+          logTypes: [NeoLoggerType.posthog, NeoLoggerType.elastic, NeoLoggerType.logger],
         );
       } on Exception catch (e, stacktrace) {
         _neoLogger
