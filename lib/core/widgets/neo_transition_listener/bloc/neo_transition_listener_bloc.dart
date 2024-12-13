@@ -65,9 +65,7 @@ class NeoTransitionListenerBloc extends Bloc<NeoTransitionListenerEvent, NeoTran
   bool hasSignalRConnection = false;
   final Mutex _eventProcessorMutex = Mutex();
 
-  NeoTransitionListenerBloc({
-    required this.neoCoreSecureStorage,
-  }) : super(const NeoTransitionListenerState(temporarilyDisabled: false)) {
+  NeoTransitionListenerBloc({required this.neoCoreSecureStorage}) : super(const NeoTransitionListenerState()) {
     on<NeoTransitionListenerEventInit>(_onInit);
     on<NeoTransitionListenerEventInitWorkflow>(
       (event, emit) => _onInitWorkflow(event),
@@ -76,9 +74,6 @@ class NeoTransitionListenerBloc extends Bloc<NeoTransitionListenerEvent, NeoTran
     on<NeoTransitionListenerEventPostTransition>(
       (event, emit) => _onPostTransition(event),
       transformer: droppable(),
-    );
-    on<NeoTransitionListenerEventDisableTemporarily>(
-      (event, emit) => emit(state.copyWith(temporarilyDisabled: event.temporarilyDisabled)),
     );
     on<NeoTransitionListenerEventStopListening>((event, emit) => _onStopListening());
   }
@@ -109,10 +104,6 @@ class NeoTransitionListenerBloc extends Bloc<NeoTransitionListenerEvent, NeoTran
               !(event.transition.instanceId == neoWorkflowManager.instanceId ||
                   event.transition.instanceId == neoWorkflowManager.subFlowInstanceId)) {
             processedEvents.add(event);
-            continue;
-          }
-          if (state.temporarilyDisabled) {
-            add(NeoTransitionListenerEventDisableTemporarily(temporarilyDisabled: false));
             continue;
           }
 
