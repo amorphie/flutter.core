@@ -15,10 +15,8 @@ class PackageUtil {
 
   Future<String> getAppVersionWithBuildNumber() async {
     _packageInfo ??= await PackageInfo.fromPlatform();
-    debugPrint("DELETE: ${_packageInfo?.version} - ${_packageInfo?.buildNumber}");
-    debugPrint("DELETE: ${_packageInfo?.version}+${_packageInfo?.buildNumber}");
     if (Platform.isAndroid) {
-      return _getBuildNoFromFormattedVersionCode(_packageInfo?.buildNumber);
+      return '${_packageInfo?.version}+${_getBuildNoFromFormattedVersionCode(_packageInfo?.buildNumber)}';
     } else {
       return _appVersionWithBuildNumber ??= '${_packageInfo?.version}+${_packageInfo?.buildNumber}';
     }
@@ -30,9 +28,10 @@ class PackageUtil {
       throw ArgumentError(_errMessage);
     }
     final vCode = int.parse(versionCode);
-    final major = vCode / 1000000 as int;
-    final minor = (vCode % 1000000) / 10000 as int;
-    final patch = (vCode % 10000) / 100 as int;
-    return (vCode - (major + minor + patch)).toString();
+    final int major = vCode ~/ 1000000;
+    final int minor = (vCode % 1000000) ~/ 10000;
+    final int patch = (vCode % 10000) ~/ 100;
+    final int calculatedVersionCode = major * 1000000 + minor * 10000 + patch * 100;
+    return (vCode - calculatedVersionCode).toString();
   }
 }

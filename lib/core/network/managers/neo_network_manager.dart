@@ -13,7 +13,6 @@
 import 'dart:async';
 import 'dart:convert';
 
-import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
 import 'package:get_it/get_it.dart';
 import 'package:http/http.dart' as http;
@@ -97,7 +96,6 @@ class NeoNetworkManager {
   Future<void> init() async {
     await _initHttpClient();
     await _getTemporaryTokenForNotLoggedInUser(NeoHttpCall(endpoint: ""));
-    debugPrint("DELETE*: ${await PackageUtil().getAppVersionWithBuildNumber()}");
   }
 
   Future<Map<String, String>> get _defaultHeaders async {
