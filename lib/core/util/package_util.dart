@@ -29,7 +29,7 @@ class PackageUtil {
       _neoLogger.logError(_errMessage);
       throw ArgumentError(_errMessage);
     }
-    final vCode = versionCode as int;
+    final vCode = int.parse(versionCode);
     final major = vCode / 1000000 as int;
     final minor = (vCode % 1000000) / 10000 as int;
     final patch = (vCode % 10000) / 100 as int;

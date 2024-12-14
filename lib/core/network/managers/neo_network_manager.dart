@@ -97,7 +97,7 @@ class NeoNetworkManager {
   Future<void> init() async {
     await _initHttpClient();
     await _getTemporaryTokenForNotLoggedInUser(NeoHttpCall(endpoint: ""));
-    debugPrint("DELETE:${await PackageUtil().getAppVersionWithBuildNumber()}");
+    debugPrint("DELETE*: ${await PackageUtil().getAppVersionWithBuildNumber()}");
   }
 
   Future<Map<String, String>> get _defaultHeaders async {
