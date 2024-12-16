@@ -9,7 +9,8 @@ class PackageUtil {
 
   static String? _appVersionWithBuildNumber;
   late final NeoLogger _neoLogger = GetIt.I.get();
-  static const _errMessage = "[PackageUtil]: versionCode cannot be null";
+  static const _errMessageNull = "[PackageUtil]: Version code cannot be null";
+  static const _errMessageNegative = "[PackageUtil]: Version code cannot be negative";
 
   Future<String> getAppVersionWithBuildNumber() async {
     _packageInfo ??= await PackageInfo.fromPlatform();
@@ -22,14 +23,22 @@ class PackageUtil {
 
   String _getBuildNoFromFormattedVersionCode(String? versionCode) {
     if (versionCode == null) {
-      _neoLogger.logError(_errMessage);
-      throw ArgumentError(_errMessage);
+      _neoLogger.logError(_errMessageNull);
+      throw ArgumentError(_errMessageNull);
     }
     final vCode = int.parse(versionCode);
-    final int major = vCode ~/ 1000000;
-    final int minor = (vCode % 1000000) ~/ 10000;
-    final int patch = (vCode % 10000) ~/ 100;
-    final int calculatedVersionCode = major * 1000000 + minor * 10000 + patch * 100;
+    if (vCode < 0) {
+      _neoLogger.logError(_errMessageNegative);
+      throw ArgumentError(_errMessageNegative);
+    }
+    const majorMultiplier = 1000000;
+    const minorMultiplier = 10000;
+    const patchMultiplier = 100;
+
+    final int major = vCode ~/ majorMultiplier;
+    final int minor = (vCode % majorMultiplier) ~/ minorMultiplier;
+    final int patch = (vCode % minorMultiplier) ~/ patchMultiplier;
+    final int calculatedVersionCode = major * majorMultiplier + minor * minorMultiplier + patch * patchMultiplier;
     return (vCode - calculatedVersionCode).toString();
   }
 }
