@@ -1,10 +1,8 @@
 import 'dart:io';
 
-import 'package:flutter/foundation.dart';
 import 'package:get_it/get_it.dart';
+import 'package:neo_core/core/analytics/neo_logger.dart';
 import 'package:package_info_plus/package_info_plus.dart';
-
-import '../analytics/neo_logger.dart';
 
 class PackageUtil {
   static PackageInfo? _packageInfo;
