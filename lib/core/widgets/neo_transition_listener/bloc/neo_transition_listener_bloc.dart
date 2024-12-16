@@ -58,6 +58,8 @@ class NeoTransitionListenerBloc extends Bloc<NeoTransitionListenerEvent, NeoTran
   late final List<NeoSignalREvent> _eventList = [];
   late final NeoWorkflowManager neoWorkflowManager;
   late final NeoLogger _neoLogger = GetIt.I.get();
+  late final String signalRServerUrl;
+  late final String signalRMethodName;
 
   Completer? _postTransitionTimeoutCompleter;
   Timer? _postTransitionTimeoutTimer;
@@ -87,11 +89,11 @@ class NeoTransitionListenerBloc extends Bloc<NeoTransitionListenerEvent, NeoTran
     onTransitionError = event.onTransitionError;
     onLoadingStatusChanged = event.onLoadingStatusChanged;
     neoWorkflowManager = event.neoWorkflowManager;
+    signalRServerUrl = event.signalRServerUrl;
+    signalRMethodName = event.signalRMethodName;
+    signalrConnectionManager = SignalrConnectionManager();
 
-    await _initSignalrConnectionManager(
-      signalrServerUrl: event.signalRServerUrl + await GetWorkflowQueryParametersUseCase().call(neoCoreSecureStorage),
-      signalrMethodName: event.signalRMethodName,
-    );
+    await _initSignalrConnectionManager();
   }
 
   Future<void> _processEvents({bool fromSignalR = false}) async {
@@ -231,7 +233,7 @@ class NeoTransitionListenerBloc extends Bloc<NeoTransitionListenerEvent, NeoTran
       final isTransitionCompleted = _postTransitionTimeoutCompleter?.isCompleted ?? false;
       if (!isTransitionCompleted) {
         _getLastTransitionsWithLongPolling(isSubFlow: false, force: true);
-        signalrConnectionManager.init(_onSignalRConnectionStatusChanged);
+        _initSignalrConnectionManager();
       }
     });
   }
@@ -354,16 +356,13 @@ class NeoTransitionListenerBloc extends Bloc<NeoTransitionListenerEvent, NeoTran
     return null;
   }
 
-  Future<void> _initSignalrConnectionManager({
-    required String signalrServerUrl,
-    required String signalrMethodName,
-  }) async {
-    signalrConnectionManager = SignalrConnectionManager(
-      serverUrl: signalrServerUrl,
-      methodName: signalrMethodName,
+  Future<void> _initSignalrConnectionManager() async {
+    await signalrConnectionManager.init(
+      serverUrl: signalRServerUrl + await GetWorkflowQueryParametersUseCase().call(neoCoreSecureStorage),
+      methodName: signalRMethodName,
       onReconnected: () => _getLastTransitionsWithLongPolling(isSubFlow: false, force: true),
+      onConnectionStatusChanged: _onSignalRConnectionStatusChanged,
     );
-    await signalrConnectionManager.init(_onSignalRConnectionStatusChanged);
     signalrConnectionManager.listenForSignalREvents(onEvent: (event) => _addEventToBus(event, fromSignalR: true));
   }
 
