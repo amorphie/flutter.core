@@ -15,7 +15,8 @@ class PackageUtil {
   Future<String> getAppVersionWithBuildNumber() async {
     _packageInfo ??= await PackageInfo.fromPlatform();
     if (Platform.isAndroid) {
-      return '${_packageInfo?.version}+${_getBuildNoFromFormattedVersionCode(_packageInfo?.buildNumber)}';
+      return _appVersionWithBuildNumber ??=
+          '${_packageInfo?.version}+${_getBuildNoFromFormattedVersionCode(_packageInfo?.buildNumber)}';
     } else {
       return _appVersionWithBuildNumber ??= '${_packageInfo?.version}+${_packageInfo?.buildNumber}';
     }
