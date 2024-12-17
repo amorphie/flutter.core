@@ -79,11 +79,17 @@ class _NeoCoreMessagingState extends State<NeoCoreMessaging> {
   }
 
   void _onEvent(dynamic event) {
-    final Map<String, dynamic> eventData = json.decode(event);
-    NeoDengageAndroidPushMessagePayloadHandler().handleMessage(
-      message: eventData,
-      onDeeplinkNavigation: widget.onDeeplinkNavigation,
-    );
+    try {
+      final Map<String, dynamic> eventData = json.decode(event);
+      NeoDengageAndroidPushMessagePayloadHandler().handleMessage(
+        message: eventData,
+        onDeeplinkNavigation: widget.onDeeplinkNavigation,
+      );
+    } on FormatException catch (e) {
+      _neoLogger.logError("[NeoCoreMessaging]: JSON Decode Error: $e");
+    } catch (e) {
+      _neoLogger.logError("[NeoCoreMessaging]: Dengage Message Error is: $e!");
+    }
   }
 
   void _onError(dynamic error) {
