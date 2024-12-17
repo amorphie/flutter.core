@@ -54,7 +54,7 @@ dependencies:
   adjust_sdk: 4.38.1
 
   # Dynamic Widget Building
-  json_dynamic_widget: ^7.1.0+7
+  json_dynamic_widget: ^7.2.0
   child_builder: ^2.0.1
   template_expressions: ^3.1.5
 
