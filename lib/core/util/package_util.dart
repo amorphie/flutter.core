@@ -1,8 +1,7 @@
-import 'dart:io';
-
 import 'package:get_it/get_it.dart';
 import 'package:neo_core/core/analytics/neo_logger.dart';
 import 'package:package_info_plus/package_info_plus.dart';
+import 'package:universal_io/io.dart';
 
 class PackageUtil {
   static PackageInfo? _packageInfo;
