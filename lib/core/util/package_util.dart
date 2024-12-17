@@ -8,6 +8,7 @@ class PackageUtil {
   static PackageInfo? _packageInfo;
 
   static String? _appVersionWithBuildNumber;
+  static String? buildNo;
   late final NeoLogger _neoLogger = GetIt.I.get();
   static const _errMessageNull = "[PackageUtil]: Version code cannot be null";
   static const _errMessageNegative = "[PackageUtil]: Version code cannot be negative";
@@ -15,11 +16,11 @@ class PackageUtil {
   Future<String> getAppVersionWithBuildNumber() async {
     _packageInfo ??= await PackageInfo.fromPlatform();
     if (Platform.isAndroid) {
-      return _appVersionWithBuildNumber ??=
-          '${_packageInfo?.version}+${_getBuildNoFromFormattedVersionCode(_packageInfo?.buildNumber)}';
+      buildNo ??= _getBuildNoFromFormattedVersionCode(_packageInfo?.buildNumber);
     } else {
-      return _appVersionWithBuildNumber ??= '${_packageInfo?.version}+${_packageInfo?.buildNumber}';
+      buildNo ??= _packageInfo?.buildNumber;
     }
+    return _appVersionWithBuildNumber ??= '${_packageInfo?.version}+$buildNo';
   }
 
   String _getBuildNoFromFormattedVersionCode(String? versionCode) {
