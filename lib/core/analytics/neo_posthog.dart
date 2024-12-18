@@ -18,6 +18,11 @@ import 'package:neo_core/core/storage/neo_core_parameter_key.dart';
 import 'package:neo_core/core/storage/neo_core_secure_storage.dart';
 import 'package:posthog_flutter/posthog_flutter.dart';
 
+abstract class _Constants {
+  static const String usernameKey = "NameSurname";
+  static const String businessLineKey = "BranchCode";
+}
+
 class NeoPosthog {
   final NeoCoreSecureStorage neoCoreSecureStorage;
 
@@ -25,9 +30,23 @@ class NeoPosthog {
 
   final Posthog _posthog = Posthog();
 
-  Future<void> init() async {
+  Future<void> init({required String apiKey, required String host}) async {
+    final config = PostHogConfig(apiKey)
+      ..debug = true
+      ..captureApplicationLifecycleEvents = true
+      ..host = host;
+
+    await Posthog().setup(config);
     unawaited(
-      _posthog.identify(userId: await neoCoreSecureStorage.read(NeoCoreParameterKey.secureStorageInstallationId) ?? ""),
+      _posthog.identify(
+        userId: await neoCoreSecureStorage.read(NeoCoreParameterKey.secureStorageCustomerId) ?? "",
+        userProperties: {
+          _Constants.usernameKey:
+              await neoCoreSecureStorage.read(NeoCoreParameterKey.secureStorageCustomerNameAndSurname) ?? "",
+          _Constants.businessLineKey:
+              await neoCoreSecureStorage.read(NeoCoreParameterKey.secureStorageBusinessLine) ?? "",
+        },
+      ),
     );
   }
 
@@ -36,7 +55,7 @@ class NeoPosthog {
     Map<String, dynamic>? properties,
     Map<String, dynamic>? options,
   }) async {
-    await _posthog.screen(screenName: screenName, properties: properties, options: options);
+    await _posthog.screen(screenName: screenName, properties: properties?.cast<String, Object>());
   }
 
   Future<void> logEvent(
@@ -44,7 +63,10 @@ class NeoPosthog {
     Map<String, dynamic>? properties,
     Map<String, dynamic>? options,
   }) async {
-    await _posthog.capture(eventName: eventName, properties: properties, options: options);
+    await _posthog.capture(
+      eventName: eventName,
+      properties: properties?.cast<String, Object>(),
+    );
   }
 
   Future<bool?> isFeatureEnabled(String key) async {

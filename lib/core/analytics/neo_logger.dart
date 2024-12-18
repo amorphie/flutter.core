@@ -105,7 +105,7 @@ class NeoLogger implements INeoLogger {
       neoElastic.logCustom(message, logLevel.name, parameters: properties);
     }
     if (logTypes.contains(NeoLoggerType.posthog)) {
-      neoPosthog.logEvent(message, properties: properties, options: options);
+      neoPosthog.logEvent(message, properties: properties?.cast<String, Object>(), options: options);
     }
     if (logTypes.contains(NeoLoggerType.adjust)) {
       final String? eventId = message;
