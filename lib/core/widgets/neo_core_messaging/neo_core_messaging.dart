@@ -11,8 +11,8 @@ import 'package:neo_core/core/storage/neo_core_secure_storage.dart';
 import 'package:neo_core/core/storage/neo_shared_prefs.dart';
 import 'package:neo_core/core/widgets/neo_core_firebase_messaging/neo_core_firebase_messaging.dart';
 import 'package:neo_core/core/widgets/neo_core_huawei_messaging/neo_core_huawei_messaging.dart';
-import 'package:neo_core/feature/neo_push_message_payload_handler/neo_dengage_push_message_payload_handler/neo_apns_push_message_payload_handler.dart';
-import 'package:neo_core/feature/neo_push_message_payload_handler/neo_dengage_push_message_payload_handler/neo_dengage_android_push_message_payload_handler.dart';
+import 'package:neo_core/feature/neo_push_message_payload_handlers/neo_dengage_android_push_message_payload_handler.dart';
+import 'package:neo_core/feature/neo_push_message_payload_handlers/neo_ios_push_message_payload_handler.dart';
 import 'package:universal_io/io.dart';
 
 class NeoCoreMessaging extends StatefulWidget {
@@ -49,7 +49,7 @@ class _NeoCoreMessagingState extends State<NeoCoreMessaging> {
   void initState() {
     super.initState();
     if (Platform.isIOS) {
-      NeoApnsPushMessagePayloadHandler().init(onDeeplinkNavigationParam: widget.onDeeplinkNavigation);
+      NeoIosPushMessagePayloadHandler().init(onDeeplinkNavigationParam: widget.onDeeplinkNavigation);
     }
     _subscription = eventChannel.receiveBroadcastStream().listen(_onEvent, onError: _onError);
   }

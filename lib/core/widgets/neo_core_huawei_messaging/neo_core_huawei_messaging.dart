@@ -12,7 +12,7 @@ import 'package:neo_core/core/bus/widget_event_bus/neo_widget_event.dart';
 import 'package:neo_core/core/network/managers/neo_network_manager.dart';
 import 'package:neo_core/core/storage/neo_core_secure_storage.dart';
 import 'package:neo_core/feature/device_registration/usecases/neo_core_register_device_usecase.dart';
-import 'package:neo_core/feature/neo_push_message_payload_handler/neo_huawei_push_message_payload_handler/neo_huawei_push_message_payload_handler.dart';
+import 'package:neo_core/feature/neo_push_message_payload_handlers/neo_huawei_push_message_payload_handler.dart';
 import 'package:universal_io/io.dart';
 
 abstract class _Constant {

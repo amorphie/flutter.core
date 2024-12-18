@@ -1,4 +1,4 @@
-import 'package:neo_core/feature/neo_push_message_payload_handler/neo_push_message_payload_handler.dart';
+import 'package:neo_core/feature/neo_push_message_payload_handlers/neo_push_message_payload_handler.dart';
 
 class NeoHuaweiPushMessagePayloadHandler extends NeoPushMessagePayloadHandler {
   @override

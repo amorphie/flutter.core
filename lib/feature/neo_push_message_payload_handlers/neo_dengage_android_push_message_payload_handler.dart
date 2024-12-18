@@ -1,5 +1,5 @@
 import 'package:neo_core/core/widgets/models/dengage_message.dart';
-import 'package:neo_core/feature/neo_push_message_payload_handler/neo_push_message_payload_handler.dart';
+import 'package:neo_core/feature/neo_push_message_payload_handlers/neo_push_message_payload_handler.dart';
 
 abstract class _Constants {
   static const messageSource = "DENGAGE";
