@@ -10,6 +10,7 @@
  * Any reproduction of this material must contain this notice.
  */
 
+import 'package:android_id/android_id.dart';
 import 'package:device_info_plus/device_info_plus.dart';
 import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:neo_core/core/util/device_util/models/neo_device_info.dart';
@@ -25,8 +26,8 @@ class DeviceUtil {
       final iosInfo = await deviceInfo.iosInfo;
       return iosInfo.identifierForVendor;
     } else if (Platform.isAndroid) {
-      final androidInfo = await deviceInfo.androidInfo;
-      return androidInfo.id;
+      final androidId = await const AndroidId().getId();
+      return androidId ?? UuidUtil.generateUUID();
     } else {
       return null;
     }
