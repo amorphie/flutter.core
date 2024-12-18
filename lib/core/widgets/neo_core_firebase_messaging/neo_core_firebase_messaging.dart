@@ -14,13 +14,13 @@ import 'package:neo_core/core/bus/widget_event_bus/neo_widget_event.dart';
 import 'package:neo_core/core/network/managers/neo_network_manager.dart';
 import 'package:neo_core/core/storage/neo_core_secure_storage.dart';
 import 'package:neo_core/feature/device_registration/usecases/neo_core_register_device_usecase.dart';
+import 'package:neo_core/feature/neo_push_message_payload_handlers/neo_firebase_android_push_message_payload_handler.dart';
 import 'package:universal_io/io.dart';
 
 abstract class _Constant {
   static const androidNotificationChannelID = "high_importance_channel";
   static const androidNotificationChannelName = "High Importance Notifications";
   static const androidNotificationChannelDescription = "This channel is used for important notifications";
-  static const pushNotificationDeeplinkKey = "deeplink";
 }
 
 @pragma('vm:entry-point')
@@ -207,13 +207,10 @@ class _NeoCoreFirebaseMessagingState extends State<NeoCoreFirebaseMessaging> {
   }
 
   void _handleMessage(RemoteMessage? message) {
-    if (message == null) {
-      return;
-    }
-    final String? deeplinkPath = message.data[_Constant.pushNotificationDeeplinkKey];
-    if (deeplinkPath != null && deeplinkPath.isNotEmpty) {
-      widget.onDeeplinkNavigation?.call(deeplinkPath);
-    }
+    NeoFirebaseAndroidPushMessagePayloadHandler().handleMessage(
+      message: message,
+      onDeeplinkNavigation: widget.onDeeplinkNavigation,
+    );
   }
 
   @override

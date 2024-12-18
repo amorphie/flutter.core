@@ -9,13 +9,11 @@ import 'package:neo_core/core/network/managers/neo_network_manager.dart';
 import 'package:neo_core/core/storage/neo_core_parameter_key.dart';
 import 'package:neo_core/core/storage/neo_core_secure_storage.dart';
 import 'package:neo_core/core/storage/neo_shared_prefs.dart';
-import 'package:neo_core/core/widgets/models/dengage_message.dart';
 import 'package:neo_core/core/widgets/neo_core_firebase_messaging/neo_core_firebase_messaging.dart';
 import 'package:neo_core/core/widgets/neo_core_huawei_messaging/neo_core_huawei_messaging.dart';
-
-abstract class _Constants {
-  static const messageSource = "DENGAGE";
-}
+import 'package:neo_core/feature/neo_push_message_payload_handlers/neo_dengage_android_push_message_payload_handler.dart';
+import 'package:neo_core/feature/neo_push_message_payload_handlers/neo_ios_push_message_payload_handler.dart';
+import 'package:universal_io/io.dart';
 
 class NeoCoreMessaging extends StatefulWidget {
   final Widget child;
@@ -50,6 +48,9 @@ class _NeoCoreMessagingState extends State<NeoCoreMessaging> {
   @override
   void initState() {
     super.initState();
+    if (Platform.isIOS) {
+      NeoIosPushMessagePayloadHandler().init(onDeeplinkNavigationParam: widget.onDeeplinkNavigation);
+    }
     _subscription = eventChannel.receiveBroadcastStream().listen(_onEvent, onError: _onError);
   }
 
@@ -85,12 +86,10 @@ class _NeoCoreMessagingState extends State<NeoCoreMessaging> {
   void _onEvent(dynamic event) {
     try {
       final Map<String, dynamic> eventData = json.decode(event);
-      final dengageMessage = DengageMessage.fromJson(eventData);
-      if (_Constants.messageSource.toLowerCase() == dengageMessage.messageSource.toLowerCase() &&
-          dengageMessage.dengageMedia.isNotEmpty &&
-          dengageMessage.dengageMedia[0].target.isNotEmpty) {
-        widget.onDeeplinkNavigation?.call(dengageMessage.dengageMedia[0].target);
-      }
+      NeoDengageAndroidPushMessagePayloadHandler().handleMessage(
+        message: eventData,
+        onDeeplinkNavigation: widget.onDeeplinkNavigation,
+      );
     } on FormatException catch (e) {
       _neoLogger.logError("[NeoCoreMessaging]: JSON Decode Error: $e");
     } catch (e) {
