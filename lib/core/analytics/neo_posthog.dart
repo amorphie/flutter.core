@@ -35,16 +35,23 @@ class NeoPosthog {
       ..debug = true
       ..captureApplicationLifecycleEvents = true
       ..host = host;
+    final List values = await Future.wait([
+      neoCoreSecureStorage.read(NeoCoreParameterKey.secureStorageCustomerId),
+      neoCoreSecureStorage.read(NeoCoreParameterKey.secureStorageCustomerNameAndSurname),
+      neoCoreSecureStorage.read(NeoCoreParameterKey.secureStorageBusinessLine),
+      Posthog().setup(config),
+    ]);
 
-    await Posthog().setup(config);
+    final customerId = values[0] ?? "";
+    final nameAndSurname = values[1] ?? "";
+    final businessLine = values[2] ?? "";
+
     unawaited(
       _posthog.identify(
-        userId: await neoCoreSecureStorage.read(NeoCoreParameterKey.secureStorageCustomerId) ?? "",
+        userId: customerId,
         userProperties: {
-          _Constants.usernameKey:
-              await neoCoreSecureStorage.read(NeoCoreParameterKey.secureStorageCustomerNameAndSurname) ?? "",
-          _Constants.businessLineKey:
-              await neoCoreSecureStorage.read(NeoCoreParameterKey.secureStorageBusinessLine) ?? "",
+          _Constants.usernameKey: nameAndSurname,
+          _Constants.businessLineKey: businessLine,
         },
       ),
     );
