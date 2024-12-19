@@ -30,9 +30,9 @@ class NeoPosthog {
 
   final Posthog _posthog = Posthog();
 
-  Future<void> init({required String apiKey, required String host}) async {
+  Future<void> init({required String apiKey, required String host, required bool isDebug}) async {
     final config = PostHogConfig(apiKey)
-      ..debug = true
+      ..debug = isDebug
       ..captureApplicationLifecycleEvents = true
       ..host = host;
     final List values = await Future.wait([
