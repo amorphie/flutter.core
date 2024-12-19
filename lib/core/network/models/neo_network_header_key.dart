@@ -27,6 +27,7 @@ abstract class NeoNetworkHeaderKey {
   static const deviceModel = "X-Device-Model";
   static const devicePlatform = "X-Device-Platform";
   static const deviceVersion = "X-Device-Version";
+  static const googleServiceAvailable = "X-Google-Service-Available";
   static const installationId = "X-Installation-Id";
   static const instanceId = "X-Instance-Id";
   static const requestId = "X-Request-Id";

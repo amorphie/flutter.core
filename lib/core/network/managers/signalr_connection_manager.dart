@@ -31,23 +31,34 @@ abstract class _Constants {
 }
 
 class SignalrConnectionManager {
-  final String serverUrl;
-  final String methodName;
-
   HubConnection? _hubConnection;
+  String? methodName;
 
-  SignalrConnectionManager({required this.serverUrl, required this.methodName});
+  SignalrConnectionManager();
 
   NeoLogger get _neoLogger => GetIt.I.get();
 
-  Future init(Function({required bool hasConnection}) onConnectionStatusChanged) async {
+  Future init({
+    required String serverUrl,
+    required String methodName,
+    required Function({required bool hasConnection}) onConnectionStatusChanged,
+    Function? onReconnected,
+  }) async {
+    this.methodName = methodName;
+
+    try {
+      await _hubConnection?.stop();
+    } catch (_) {
+      // No-op
+    }
     _hubConnection = HubConnectionBuilder()
         .withUrl(
-      serverUrl,
-      options: HttpConnectionOptions(transport: HttpTransportType.WebSockets, skipNegotiation: true),
-    )
-        .withAutomaticReconnect(retryDelays: [2000, 5000, 10000, 20000]).build();
+          serverUrl,
+          options: HttpConnectionOptions(transport: HttpTransportType.WebSockets, skipNegotiation: true),
+        )
+        .build();
     _hubConnection?.onclose(({error}) {
+      onConnectionStatusChanged(hasConnection: false);
       _neoLogger.logCustom(
         _Constants.eventNameSignalrOnClose,
         logTypes: [NeoLoggerType.posthog, NeoLoggerType.elastic, NeoLoggerType.logger],
@@ -61,6 +72,7 @@ class SignalrConnectionManager {
       );
     });
     _hubConnection?.onreconnected(({connectionId}) {
+      onReconnected?.call();
       onConnectionStatusChanged(hasConnection: true);
       _neoLogger.logCustom(
         _Constants.eventNameSignalrOnReconnected,
@@ -76,7 +88,7 @@ class SignalrConnectionManager {
           _Constants.eventNameSignalrInitSucceed,
           logTypes: [NeoLoggerType.posthog, NeoLoggerType.elastic, NeoLoggerType.logger],
         );
-      } on Exception catch (e, stacktrace) {
+      } catch (e, stacktrace) {
         onConnectionStatusChanged(hasConnection: false);
         _neoLogger
           ..logException("${_Constants.eventNameSignalrInitFailed} $e", stacktrace)
@@ -86,7 +98,10 @@ class SignalrConnectionManager {
   }
 
   void listenForSignalREvents({required Function(NeoSignalREvent event) onEvent}) {
-    _hubConnection?.on(methodName, (List<Object?>? transitions) {
+    if (methodName == null) {
+      return;
+    }
+    _hubConnection?.on(methodName ?? "", (List<Object?>? transitions) {
       if (kDebugMode) {
         _neoLogger.logConsole('[SignalrConnectionManager] Transition: $transitions');
       }
