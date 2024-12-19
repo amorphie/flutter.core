@@ -133,6 +133,7 @@ class _NeoCoreFirebaseMessagingState extends State<NeoCoreFirebaseMessaging> {
       networkManager: widget.networkManager,
       secureStorage: widget.neoCoreSecureStorage,
       deviceToken: tokenFirebase,
+      isGoogleServiceAvailable: true,
     );
   }
 

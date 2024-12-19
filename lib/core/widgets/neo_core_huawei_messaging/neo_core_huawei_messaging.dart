@@ -115,6 +115,7 @@ class _NeoCoreHuaweiMessagingState extends State<NeoCoreHuaweiMessaging> {
       networkManager: widget.networkManager,
       secureStorage: widget.neoCoreSecureStorage,
       deviceToken: token,
+      isGoogleServiceAvailable: false,
     );
   }
 

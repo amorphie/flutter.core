@@ -34,6 +34,9 @@ class NeoCoreRegisterDeviceRequest {
   @JsonKey(name: "deviceVersion", defaultValue: "")
   final String deviceVersion;
 
+  @JsonKey(name: "IsGoogleServiceAvailable")
+  final bool isGoogleServiceAvailable;
+
   const NeoCoreRegisterDeviceRequest({
     required this.deviceId,
     required this.installationId,
@@ -41,6 +44,7 @@ class NeoCoreRegisterDeviceRequest {
     required this.deviceModel,
     required this.devicePlatform,
     required this.deviceVersion,
+    required this.isGoogleServiceAvailable,
   });
 
   Map<String, dynamic> toJson() => _$NeoCoreRegisterDeviceRequestToJson(this);
