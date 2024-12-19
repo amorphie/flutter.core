@@ -115,6 +115,10 @@ class NeoLogger implements INeoLogger {
     }
   }
 
+  void logLoginEvent() {
+    neoPosthog.identify();
+  }
+
   @override
   void logScreenEvent(String screenName, {Map<String, dynamic>? properties, Map<String, dynamic>? options}) {
     neoPosthog.setScreen(screenName, properties: properties, options: options);

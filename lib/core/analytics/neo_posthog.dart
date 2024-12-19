@@ -25,21 +25,23 @@ abstract class _Constants {
 
 class NeoPosthog {
   final NeoCoreSecureStorage neoCoreSecureStorage;
+  final Posthog _posthog;
 
-  NeoPosthog({required this.neoCoreSecureStorage});
-
-  final Posthog _posthog = Posthog();
+  NeoPosthog({required this.neoCoreSecureStorage}) : _posthog = Posthog();
 
   Future<void> init({required String apiKey, required String host, required bool isDebug}) async {
     final config = PostHogConfig(apiKey)
       ..debug = isDebug
       ..captureApplicationLifecycleEvents = true
       ..host = host;
+    await _posthog.setup(config);
+  }
+
+  Future<void> identify() async {
     final List values = await Future.wait([
       neoCoreSecureStorage.read(NeoCoreParameterKey.secureStorageCustomerId),
       neoCoreSecureStorage.read(NeoCoreParameterKey.secureStorageCustomerNameAndSurname),
       neoCoreSecureStorage.read(NeoCoreParameterKey.secureStorageBusinessLine),
-      Posthog().setup(config),
     ]);
 
     final customerId = values[0] ?? "";
