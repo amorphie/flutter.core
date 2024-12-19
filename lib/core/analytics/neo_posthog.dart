@@ -18,16 +18,44 @@ import 'package:neo_core/core/storage/neo_core_parameter_key.dart';
 import 'package:neo_core/core/storage/neo_core_secure_storage.dart';
 import 'package:posthog_flutter/posthog_flutter.dart';
 
+abstract class _Constants {
+  static const String usernameKey = "NameSurname";
+  static const String businessLineKey = "BranchCode";
+}
+
 class NeoPosthog {
   final NeoCoreSecureStorage neoCoreSecureStorage;
+  final Posthog _posthog;
 
-  NeoPosthog({required this.neoCoreSecureStorage});
+  NeoPosthog({required this.neoCoreSecureStorage}) : _posthog = Posthog();
 
-  final Posthog _posthog = Posthog();
+  Future<void> init({required String apiKey, required String host, required bool isDebug}) async {
+    final config = PostHogConfig(apiKey)
+      ..debug = isDebug
+      ..captureApplicationLifecycleEvents = true
+      ..host = host;
+    await _posthog.setup(config);
+  }
 
-  Future<void> init() async {
+  Future<void> identify() async {
+    final List values = await Future.wait([
+      neoCoreSecureStorage.read(NeoCoreParameterKey.secureStorageCustomerId),
+      neoCoreSecureStorage.read(NeoCoreParameterKey.secureStorageCustomerNameAndSurname),
+      neoCoreSecureStorage.read(NeoCoreParameterKey.secureStorageBusinessLine),
+    ]);
+
+    final customerId = values[0] ?? "";
+    final nameAndSurname = values[1] ?? "";
+    final businessLine = values[2] ?? "";
+
     unawaited(
-      _posthog.identify(userId: await neoCoreSecureStorage.read(NeoCoreParameterKey.secureStorageInstallationId) ?? ""),
+      _posthog.identify(
+        userId: customerId,
+        userProperties: {
+          _Constants.usernameKey: nameAndSurname,
+          _Constants.businessLineKey: businessLine,
+        },
+      ),
     );
   }
 
@@ -36,7 +64,7 @@ class NeoPosthog {
     Map<String, dynamic>? properties,
     Map<String, dynamic>? options,
   }) async {
-    await _posthog.screen(screenName: screenName, properties: properties, options: options);
+    await _posthog.screen(screenName: screenName, properties: properties?.cast<String, Object>());
   }
 
   Future<void> logEvent(
@@ -44,7 +72,10 @@ class NeoPosthog {
     Map<String, dynamic>? properties,
     Map<String, dynamic>? options,
   }) async {
-    await _posthog.capture(eventName: eventName, properties: properties, options: options);
+    await _posthog.capture(
+      eventName: eventName,
+      properties: properties?.cast<String, Object>(),
+    );
   }
 
   Future<bool?> isFeatureEnabled(String key) async {
