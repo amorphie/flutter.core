@@ -98,33 +98,32 @@ class _NeoCoreFirebaseMessagingState extends State<NeoCoreFirebaseMessaging> {
   }
 
   Future<void> _initNotifications() async {
-    final tokenFirebase = await _getTokenBasedOnPlatform();
-    final tokenAPNS = await _getAPNSTokenBasedOnPlatform();
-    if (tokenFirebase != null) {
-      _onTokenChange(tokenFirebase);
-      registerDevice(tokenFirebase);
-    }
-    if (tokenAPNS != null) {
-      _onAPNSTokenChange(tokenAPNS);
-    }
     if (Platform.isIOS) {
-      NeoCoreFirebaseMessaging.firebaseMessaging.onTokenRefresh.listen(_onAPNSTokenChange);
-    } else if (Platform.isAndroid) {
-      NeoCoreFirebaseMessaging.firebaseMessaging.onTokenRefresh.listen(_onTokenChange);
+      unawaited(
+        _getAPNSTokenBasedOnPlatform().then((apnsToken) {
+          if (apnsToken != null) {
+            _onTokenChange(apnsToken, isAPNS: true);
+          }
+        }),
+      );
     }
+    unawaited(
+      _getTokenBasedOnPlatform().then((firebaseToken) {
+        if (firebaseToken != null) {
+          _onTokenChange(firebaseToken);
+        }
+      }),
+    );
+    NeoCoreFirebaseMessaging.firebaseMessaging.onTokenRefresh.listen(_onTokenChange);
   }
 
-  void _onTokenChange(String token) {
-    _neoLogger.logConsole("[NeoCoreFirebaseMessaging]: Firebase Push token is: $token");
-    if (Platform.isAndroid) {
+  void _onTokenChange(String token, {bool isAPNS = false}) {
+    _neoLogger.logConsole("[NeoCoreMessaging]: Token is: $token. Is APNS: $isAPNS");
+    if (Platform.isAndroid || isAPNS) {
       widget.onTokenChanged.call(token);
     }
-  }
-
-  void _onAPNSTokenChange(String tokenApns) {
-    _neoLogger.logConsole("[NeoCoreFirebaseMessaging]: Firebase APNS token is: $tokenApns");
-    if (Platform.isIOS) {
-      widget.onTokenChanged.call(tokenApns);
+    if (!isAPNS) {
+      registerDevice(token);
     }
   }
 
@@ -133,7 +132,7 @@ class _NeoCoreFirebaseMessagingState extends State<NeoCoreFirebaseMessaging> {
       networkManager: widget.networkManager,
       secureStorage: widget.neoCoreSecureStorage,
       deviceToken: tokenFirebase,
-      isGoogleServiceAvailable: true,
+      isGoogleServiceAvailable: Platform.isAndroid,
     );
   }
 
