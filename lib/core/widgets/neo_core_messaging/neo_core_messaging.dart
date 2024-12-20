@@ -40,7 +40,7 @@ class NeoCoreMessaging extends StatefulWidget {
 }
 
 class _NeoCoreMessagingState extends State<NeoCoreMessaging> {
-  static const EventChannel eventChannel = EventChannel("com.dengage.flutter/onNotificationClicked");
+  late final EventChannel eventChannel = const EventChannel("com.dengage.flutter/onNotificationClicked");
 
   NeoLogger get _neoLogger => GetIt.I.get();
   StreamSubscription<dynamic>? _subscription;
@@ -48,6 +48,9 @@ class _NeoCoreMessagingState extends State<NeoCoreMessaging> {
   @override
   void initState() {
     super.initState();
+    if (kIsWeb) {
+      return;
+    }
     if (Platform.isIOS) {
       NeoIosPushMessagePayloadHandler().init(onDeeplinkNavigationParam: widget.onDeeplinkNavigation);
     }

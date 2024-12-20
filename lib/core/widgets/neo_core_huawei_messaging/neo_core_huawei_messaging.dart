@@ -19,7 +19,6 @@ abstract class _Constant {
   static const androidNotificationChannelID = "high_importance_channel";
   static const androidNotificationChannelName = "High Importance Notifications";
   static const androidNotificationChannelDescription = "This channel is used for important notifications";
-  static const pushNotificationDeeplinkKey = "deeplink";
 }
 
 @pragma('vm:entry-point')
