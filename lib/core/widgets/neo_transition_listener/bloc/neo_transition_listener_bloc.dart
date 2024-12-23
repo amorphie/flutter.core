@@ -41,9 +41,7 @@ part 'neo_transition_listener_event.dart';
 part 'neo_transition_listener_state.dart';
 
 abstract class _Constants {
-  static const signalrLongPollingPeriod = Duration(seconds: 5);
   static const transitionTimeoutDuration = Duration(seconds: 60);
-  static const signalRTimeoutDuration = Duration(seconds: 5);
 }
 
 class NeoTransitionListenerBloc extends Bloc<NeoTransitionListenerEvent, NeoTransitionListenerState> {
@@ -60,6 +58,8 @@ class NeoTransitionListenerBloc extends Bloc<NeoTransitionListenerEvent, NeoTran
   late final NeoLogger _neoLogger = GetIt.I.get();
   late final String signalRServerUrl;
   late final String signalRMethodName;
+  late final Duration signalrLongPollingPeriod;
+  late final Duration signalRTimeoutDuration;
 
   Completer? _postTransitionTimeoutCompleter;
   Timer? _postTransitionTimeoutTimer;
@@ -92,6 +92,8 @@ class NeoTransitionListenerBloc extends Bloc<NeoTransitionListenerEvent, NeoTran
     signalRServerUrl = event.signalRServerUrl;
     signalRMethodName = event.signalRMethodName;
     signalrConnectionManager = SignalrConnectionManager();
+    signalrLongPollingPeriod = event.signalrLongPollingPeriod;
+    signalRTimeoutDuration = event.signalRTimeoutDuration;
 
     await _initSignalrConnectionManager();
   }
@@ -229,7 +231,7 @@ class NeoTransitionListenerBloc extends Bloc<NeoTransitionListenerEvent, NeoTran
         _postTransitionTimeoutCompleter!.complete();
       }
     });
-    _signalrConnectionTimeoutTimer = Timer(_Constants.signalRTimeoutDuration, () {
+    _signalrConnectionTimeoutTimer = Timer(signalRTimeoutDuration, () {
       final isTransitionCompleted = _postTransitionTimeoutCompleter?.isCompleted ?? false;
       if (!isTransitionCompleted) {
         _getLastTransitionsWithLongPolling(isSubFlow: false, force: true);
@@ -415,7 +417,7 @@ class NeoTransitionListenerBloc extends Bloc<NeoTransitionListenerEvent, NeoTran
     }
 
     Timer.run(timerCallback);
-    longPollingTimer = Timer.periodic(_Constants.signalrLongPollingPeriod, timerCallback);
+    longPollingTimer = Timer.periodic(signalrLongPollingPeriod, timerCallback);
   }
 
   void _cancelLongPolling() {
