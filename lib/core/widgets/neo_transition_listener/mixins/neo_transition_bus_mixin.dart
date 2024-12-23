@@ -27,8 +27,10 @@ abstract class _Constants {
   static const transitionResponseDataKey = "data";
 }
 
-mixin NeoTransitionBus on Bloc<NeoTransitionListenerEvent, NeoTransitionListenerState> {
-  late final BehaviorSubject<NeoSignalRTransition> _transitionBus = BehaviorSubject();
+mixin NeoTransitionBus
+    on Bloc<NeoTransitionListenerEvent, NeoTransitionListenerState> {
+  late final BehaviorSubject<NeoSignalRTransition> _transitionBus =
+      BehaviorSubject();
   late final NeoWorkflowManager neoWorkflowManager;
   late final NeoSubWorkflowManager neoSubWorkflowManager;
   late final SignalrConnectionManager signalrConnectionManager;
@@ -51,7 +53,9 @@ mixin NeoTransitionBus on Bloc<NeoTransitionListenerEvent, NeoTransitionListener
     this.neoSubWorkflowManager = neoSubWorkflowManager;
     _bypassSignalr = bypassSignalr || await NeoFeatureFlagUtil.bypassSignalR();
     if (!_bypassSignalr) {
-      await _initSignalrConnectionManager(signalrServerUrl: signalrServerUrl, signalrMethodName: signalrMethodName);
+      await _initSignalrConnectionManager(
+          signalrServerUrl: signalrServerUrl,
+          signalrMethodName: signalrMethodName);
     }
   }
 
@@ -62,13 +66,16 @@ mixin NeoTransitionBus on Bloc<NeoTransitionListenerEvent, NeoTransitionListener
     bool isSubFlow = false,
   }) {
     if (instanceId == null) {
-      return currentWorkflowManager(isSubFlow: isSubFlow).initWorkflow(workflowName: workflowName, suffix: suffix);
+      return currentWorkflowManager(isSubFlow: isSubFlow)
+          .initWorkflow(workflowName: workflowName, suffix: suffix);
     } else {
-      return currentWorkflowManager(isSubFlow: isSubFlow).getAvailableTransitions(instanceId: instanceId);
+      return currentWorkflowManager(isSubFlow: isSubFlow)
+          .getAvailableTransitions(instanceId: instanceId);
     }
   }
 
-  Future<String?> getAvailableTransitionId(NeoSignalRTransition ongoingTransition) async {
+  Future<String?> getAvailableTransitionId(
+      NeoSignalRTransition ongoingTransition) async {
     if (ongoingTransition.viewSource == "transition") {
       final workflowData = await neoWorkflowManager.getAvailableTransitions();
       return workflowData["transition"]?.first["transition"];
@@ -88,7 +95,9 @@ mixin NeoTransitionBus on Bloc<NeoTransitionListenerEvent, NeoTransitionListener
     if (!_bypassSignalr) {
       // Skip last transition event(currently at bus if it is not initial post request)
       // and listen for first upcoming event
-      final stream = (_transitionBus.valueOrNull != null) ? _transitionBus.skip(1) : _transitionBus;
+      final stream = (_transitionBus.valueOrNull != null)
+          ? _transitionBus.skip(1)
+          : _transitionBus;
       transitionBusSubscription = stream.listen((transition) {
         if (!completer.isCompleted) {
           completer.complete(transition);
@@ -97,7 +106,8 @@ mixin NeoTransitionBus on Bloc<NeoTransitionListenerEvent, NeoTransitionListener
     }
 
     currentWorkflowManager(isSubFlow: isSubFlow).setInstanceId(instanceId);
-    await currentWorkflowManager(isSubFlow: isSubFlow).postTransition(transitionName: transitionId, body: body);
+    await currentWorkflowManager(isSubFlow: isSubFlow)
+        .postTransition(transitionName: transitionId, body: body);
 
     unawaited(_getTransitionWithLongPolling(completer, isSubFlow: isSubFlow));
 
@@ -117,7 +127,8 @@ mixin NeoTransitionBus on Bloc<NeoTransitionListenerEvent, NeoTransitionListener
     await signalrConnectionManager.init();
     signalrConnectionManager.listenForTransitionEvents(
       onTransition: (NeoSignalRTransition transition) async {
-        final isDifferentTransition = _transitionBus.hasValue && _transitionBus.value.id != transition.id;
+        final isDifferentTransition =
+            _transitionBus.hasValue && _transitionBus.value.id != transition.id;
         // Add different events only
         if (!_transitionBus.hasValue || isDifferentTransition) {
           _transitionBus.add(transition);
@@ -130,7 +141,9 @@ mixin NeoTransitionBus on Bloc<NeoTransitionListenerEvent, NeoTransitionListener
     Completer<NeoSignalRTransition> completer, {
     required bool isSubFlow,
   }) async {
-    await Future.delayed(_bypassSignalr ? _Constants.signalrBypassDelayDuration : _Constants.signalrTimeOutDuration);
+    await Future.delayed(_bypassSignalr
+        ? _Constants.signalrBypassDelayDuration
+        : _Constants.signalrTimeOutDuration);
 
     if (completer.isCompleted) {
       return;
@@ -140,16 +153,19 @@ mixin NeoTransitionBus on Bloc<NeoTransitionListenerEvent, NeoTransitionListener
     );
 
     try {
-      final response = await currentWorkflowManager(isSubFlow: isSubFlow).getLastTransitionByLongPolling();
+      final response = await currentWorkflowManager(isSubFlow: isSubFlow)
+          .getLastTransitionByLongPolling();
 
       if (!completer.isCompleted) {
-        completer.complete(NeoSignalRTransition.fromJson(response[_Constants.transitionResponseDataKey]));
+        completer.complete(NeoSignalRTransition.fromJson(
+            response[_Constants.transitionResponseDataKey]));
       }
     } catch (e) {
-      _neoLogger.logError("[NeoTransitionListener]: Retrieving last event by long polling is failed!");
-      if (!completer.isCompleted) {
-        completer.completeError(NeoError.defaultError());
-      }
+      _neoLogger.logError(
+          "[NeoTransitionListener]: Retrieving last event by long polling is failed!");
+      // if (!completer.isCompleted) {
+      //   completer.completeError(NeoError.defaultError());
+      // }
     }
   }
 
