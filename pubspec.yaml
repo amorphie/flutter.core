@@ -51,7 +51,7 @@ dependencies:
   huawei_push: ^6.12.0+302
 
   # Analytics
-  posthog_flutter: ^4.7.1
+  posthog_flutter: ^4.8.0
   logger: ^2.2.0
   adjust_sdk: 4.38.1
 
