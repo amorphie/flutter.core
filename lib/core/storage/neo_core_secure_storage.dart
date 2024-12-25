@@ -144,6 +144,11 @@ class NeoCoreSecureStorage {
       await write(key: NeoCoreParameterKey.secureStorageCustomerId, value: customerId);
     }
 
+    final userId = decodedToken["user.id"];
+    if (userId is String && userId.isNotEmpty) {
+      await write(key: NeoCoreParameterKey.secureStorageUserId, value: userId);
+    }
+
     final customerNo = decodedToken["customer_no"];
     if (customerNo is String && customerNo.isNotEmpty) {
       await write(key: NeoCoreParameterKey.secureStorageCustomerNo, value: customerNo);
@@ -216,6 +221,7 @@ class NeoCoreSecureStorage {
   Future<void> deleteCustomer() {
     return Future.wait([
       deleteTokensWithRelatedData(),
+      delete(NeoCoreParameterKey.secureStorageUserId),
       delete(NeoCoreParameterKey.secureStorageCustomerId),
       delete(NeoCoreParameterKey.secureStorageCustomerNo),
       delete(NeoCoreParameterKey.secureStorageCustomerName),
