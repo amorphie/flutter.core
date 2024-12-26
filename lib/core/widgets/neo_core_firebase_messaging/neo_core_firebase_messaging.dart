@@ -68,7 +68,7 @@ class _NeoCoreFirebaseMessagingState extends State<NeoCoreFirebaseMessaging> {
   StreamSubscription? _widgetEventStreamSubscription;
 
   void _listenWidgetEventKeys() {
-    _widgetEventStreamSubscription = NeoCoreWidgetEventKeys.initFirebaseAndHuawei.listenEvent(
+    _widgetEventStreamSubscription = NeoCoreWidgetEventKeys.initPushMessagingServices.listenEvent(
       onEventReceived: (NeoWidgetEvent widgetEvent) {
         _init();
       },

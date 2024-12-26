@@ -5,6 +5,8 @@ import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:get_it/get_it.dart';
 import 'package:json_dynamic_widget/json_dynamic_widget.dart';
 import 'package:neo_core/core/analytics/neo_logger.dart';
+import 'package:neo_core/core/bus/widget_event_bus/neo_core_widget_event_keys.dart';
+import 'package:neo_core/core/bus/widget_event_bus/neo_widget_event.dart';
 import 'package:neo_core/core/network/managers/neo_network_manager.dart';
 import 'package:neo_core/core/storage/neo_core_parameter_key.dart';
 import 'package:neo_core/core/storage/neo_core_secure_storage.dart';
@@ -45,9 +47,16 @@ class _NeoCoreMessagingState extends State<NeoCoreMessaging> {
   NeoLogger get _neoLogger => GetIt.I.get();
   StreamSubscription<dynamic>? _subscription;
 
-  @override
-  void initState() {
-    super.initState();
+  StreamSubscription? _widgetEventStreamSubscription;
+  void _listenWidgetEventKeys() {
+    _widgetEventStreamSubscription = NeoCoreWidgetEventKeys.initPushMessagingServices.listenEvent(
+      onEventReceived: (NeoWidgetEvent widgetEvent) {
+        _init();
+      },
+    );
+  }
+
+  void _init() {
     if (kIsWeb) {
       return;
     }
@@ -55,6 +64,12 @@ class _NeoCoreMessagingState extends State<NeoCoreMessaging> {
       NeoIosPushMessagePayloadHandler().init(onDeeplinkNavigationParam: widget.onDeeplinkNavigation);
     }
     _subscription = eventChannel.receiveBroadcastStream().listen(_onEvent, onError: _onError);
+  }
+
+  @override
+  void initState() {
+    super.initState();
+    _listenWidgetEventKeys();
   }
 
   @override
@@ -107,6 +122,7 @@ class _NeoCoreMessagingState extends State<NeoCoreMessaging> {
   @override
   void dispose() {
     _subscription?.cancel();
+    _widgetEventStreamSubscription?.cancel();
     super.dispose();
   }
 }
