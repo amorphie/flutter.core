@@ -13,6 +13,7 @@
 import 'dart:async';
 import 'dart:convert';
 
+import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
 import 'package:get_it/get_it.dart';
 import 'package:http/http.dart' as http;
@@ -113,6 +114,16 @@ class NeoNetworkManager {
     final authHeader = results[3] as Map<String, String>? ?? {};
     final appVersion = results[4] as String? ?? "";
 
+    final userAgentHeader = kIsWeb
+        ? <String, String>{}
+        : {
+            NeoNetworkHeaderKey.userAgent: "${deviceInfo?.platform ?? "-"}/"
+                "${defaultHeaders[NeoNetworkHeaderKey.application]}/"
+                "$appVersion/"
+                "${deviceInfo?.version ?? "-"}/"
+                "${deviceInfo?.model ?? "-"}",
+          };
+
     return {
       NeoNetworkHeaderKey.contentType: _Constants.headerValueContentType,
       NeoNetworkHeaderKey.acceptLanguage: _languageCode,
@@ -131,6 +142,7 @@ class NeoNetworkManager {
       NeoNetworkHeaderKey.workflowName: _neoWorkflowManager?.getWorkflowName() ?? "",
     }
       ..addAll(authHeader)
+      ..addAll(userAgentHeader)
       ..addAll(defaultHeaders);
   }
 
@@ -418,11 +430,13 @@ class NeoNetworkManager {
   }
 
   Future<void> _initHttpClient() async {
+    final userAgent = (await _defaultHeaders)[NeoNetworkHeaderKey.userAgent];
     if (!enableSslPinning) {
-      httpClient = http.Client();
+      httpClient = IOClient(HttpClient()..userAgent = userAgent);
       return;
     }
     final HttpClient client = HttpClient(context: await _getSecurityContext)
+      ..userAgent = userAgent
       ..badCertificateCallback = (X509Certificate cert, String host, int port) => false;
     httpClient = IOClient(client);
   }
