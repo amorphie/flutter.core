@@ -33,5 +33,6 @@ abstract class NeoNetworkHeaderKey {
   static const requestId = "X-Request-Id";
   static const tokenId = "X-Token-Id";
   static const user = "User";
+  static const userAgent = "User-Agent";
   static const workflowName = "X-Workflow-Name";
 }
