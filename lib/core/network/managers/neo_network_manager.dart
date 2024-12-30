@@ -430,14 +430,18 @@ class NeoNetworkManager {
   }
 
   Future<void> _initHttpClient() async {
-    final userAgent = (await _defaultHeaders)[NeoNetworkHeaderKey.userAgent];
-    if (!enableSslPinning) {
-      httpClient = IOClient(HttpClient()..userAgent = userAgent);
+    if (kIsWeb) {
+      httpClient = http.Client();
       return;
     }
-    final HttpClient client = HttpClient(context: await _getSecurityContext)
-      ..userAgent = userAgent
-      ..badCertificateCallback = (X509Certificate cert, String host, int port) => false;
+
+    final userAgent = (await _defaultHeaders)[NeoNetworkHeaderKey.userAgent];
+    final client = HttpClient(context: enableSslPinning ? await _getSecurityContext : null)..userAgent = userAgent;
+
+    if (enableSslPinning) {
+      client.badCertificateCallback = (X509Certificate cert, String host, int port) => false;
+    }
+
     httpClient = IOClient(client);
   }
 
