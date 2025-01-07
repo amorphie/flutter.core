@@ -88,10 +88,10 @@ class SignalrConnectionManager {
           _Constants.eventNameSignalrInitSucceed,
           logTypes: [NeoLoggerType.posthog, NeoLoggerType.elastic, NeoLoggerType.logger],
         );
-      } catch (e, stacktrace) {
+      } catch (e) {
         onConnectionStatusChanged(hasConnection: false);
         _neoLogger
-          ..logException("${_Constants.eventNameSignalrInitFailed} $e", stacktrace)
+          ..logError("${_Constants.eventNameSignalrInitFailed} $e")
           ..logConsole(_Constants.eventNameSignalrInitFailed);
       }
     }

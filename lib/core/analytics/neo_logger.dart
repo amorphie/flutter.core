@@ -48,11 +48,13 @@ class NeoLogger implements INeoLogger {
   final NeoPosthog neoPosthog;
   final NeoAdjust neoAdjust;
   final NeoElastic neoElastic;
+  final Level logLevel;
 
   NeoLogger({
     required this.neoPosthog,
     required this.neoAdjust,
     required this.neoElastic,
+    required this.logLevel,
   });
 
   final DeviceUtil _deviceUtil = DeviceUtil();
@@ -98,6 +100,9 @@ class NeoLogger implements INeoLogger {
     Map<String, dynamic>? properties,
     Map<String, dynamic>? options,
   }) {
+    if (this.logLevel.value > logLevel.value || logLevel == Level.off || logLevel == Level.nothing) {
+      return;
+    }
     if (logTypes.contains(NeoLoggerType.logger)) {
       _logger.log(logLevel, message);
     }
