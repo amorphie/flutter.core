@@ -334,8 +334,6 @@ class NeoTransitionListenerBloc extends Bloc<NeoTransitionListenerEvent, NeoTran
     String? instanceId,
     bool isSubFlow = false,
   }) {
-    _getLastTransitionsWithLongPolling(isSubFlow: isSubFlow);
-
     if (instanceId == null) {
       return neoWorkflowManager.initWorkflow(
         workflowName: workflowName,
