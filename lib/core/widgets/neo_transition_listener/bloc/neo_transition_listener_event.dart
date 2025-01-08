@@ -25,6 +25,8 @@ class NeoTransitionListenerEventInit extends NeoTransitionListenerEvent {
   final Function(NeoError error, {required bool displayAsPopup})? onTransitionError;
   final Function({required bool displayLoading}) onLoadingStatusChanged;
   final bool bypassSignalr;
+  final Duration signalrLongPollingPeriod;
+  final Duration signalRTimeoutDuration;
 
   NeoTransitionListenerEventInit({
     required this.neoWorkflowManager,
@@ -37,6 +39,8 @@ class NeoTransitionListenerEventInit extends NeoTransitionListenerEvent {
     required this.onTransitionError,
     required this.onLoadingStatusChanged,
     required this.bypassSignalr,
+    required this.signalrLongPollingPeriod,
+    required this.signalRTimeoutDuration,
   });
 
   @override
@@ -51,6 +55,8 @@ class NeoTransitionListenerEventInit extends NeoTransitionListenerEvent {
         onTransitionError,
         onLoadingStatusChanged,
         bypassSignalr,
+        signalrLongPollingPeriod,
+        signalRTimeoutDuration,
       ];
 }
 
@@ -107,17 +113,7 @@ class NeoTransitionListenerEventPostTransition extends NeoTransitionListenerEven
   List<Object?> get props => [transitionName, body, headerParameters, displayLoading, isSubFlow];
 }
 
-class NeoTransitionListenerEventDisableTemporarily extends NeoTransitionListenerEvent {
-  final bool temporarilyDisabled;
-
-  NeoTransitionListenerEventDisableTemporarily({required this.temporarilyDisabled});
-
-  @override
-  List<Object?> get props => [temporarilyDisabled];
-}
-
 class NeoTransitionListenerEventStopListening extends NeoTransitionListenerEvent {
   @override
   List<Object?> get props => [];
-
 }

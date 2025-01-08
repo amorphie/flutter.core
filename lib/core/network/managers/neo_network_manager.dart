@@ -13,6 +13,7 @@
 import 'dart:async';
 import 'dart:convert';
 
+import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
 import 'package:get_it/get_it.dart';
 import 'package:http/http.dart' as http;
@@ -95,7 +96,7 @@ class NeoNetworkManager {
 
   Future<void> init() async {
     await _initHttpClient();
-    await _getTemporaryTokenForNotLoggedInUser(NeoHttpCall(endpoint: ""));
+    await getTemporaryTokenForNotLoggedInUser();
   }
 
   Future<Map<String, String>> get _defaultHeaders async {
@@ -112,6 +113,16 @@ class NeoNetworkManager {
     final deviceInfo = results[2] != null ? NeoDeviceInfo.decode(results[2] as String? ?? "") : null;
     final authHeader = results[3] as Map<String, String>? ?? {};
     final appVersion = results[4] as String? ?? "";
+
+    final userAgentHeader = kIsWeb
+        ? <String, String>{}
+        : {
+            NeoNetworkHeaderKey.userAgent: "${deviceInfo?.platform ?? "-"}/"
+                "${defaultHeaders[NeoNetworkHeaderKey.application]}/"
+                "$appVersion/"
+                "${deviceInfo?.version ?? "-"}/"
+                "${deviceInfo?.model ?? "-"}",
+          };
 
     return {
       NeoNetworkHeaderKey.contentType: _Constants.headerValueContentType,
@@ -131,6 +142,7 @@ class NeoNetworkManager {
       NeoNetworkHeaderKey.workflowName: _neoWorkflowManager?.getWorkflowName() ?? "",
     }
       ..addAll(authHeader)
+      ..addAll(userAgentHeader)
       ..addAll(defaultHeaders);
   }
 
@@ -176,7 +188,7 @@ class NeoNetworkManager {
     if (fullPath == null || method == null) {
       return NeoResponse.error(const NeoError());
     }
-    await _getTemporaryTokenForNotLoggedInUser(neoCall);
+    await getTemporaryTokenForNotLoggedInUser(currentCall: neoCall);
 
     NeoResponse response;
     try {
@@ -302,8 +314,9 @@ class NeoNetworkManager {
         _neoLogger.logError("[NeoNetworkManager]: Token service error!");
         return _handleErrorResponse(error, call);
       }
-      if (await secureStorage.read(NeoCoreParameterKey.secureStorageRefreshToken) != null) {
-        final result = await _refreshAuthDetailsByUsingRefreshToken();
+      final refreshToken = await secureStorage.read(NeoCoreParameterKey.secureStorageRefreshToken);
+      if (refreshToken != null) {
+        final result = await _refreshAuthDetailsByUsingRefreshToken(refreshToken);
         if (result.isSuccess) {
           return _retryLastCall(call);
         } else {
@@ -311,7 +324,7 @@ class NeoNetworkManager {
           return result.asError;
         }
       } else {
-        final bool isTokenRetrieved = await _getTemporaryTokenForNotLoggedInUser(call);
+        final bool isTokenRetrieved = await getTemporaryTokenForNotLoggedInUser(currentCall: call);
         if (isTokenRetrieved) {
           return _retryLastCall(call);
         } else {
@@ -364,13 +377,14 @@ class NeoNetworkManager {
     return (call.retryCount ?? 0) > 0;
   }
 
-  Future<NeoResponse> _refreshAuthDetailsByUsingRefreshToken() async {
+  Future<NeoResponse> _refreshAuthDetailsByUsingRefreshToken(String refreshToken) async {
+    await secureStorage.delete(NeoCoreParameterKey.secureStorageRefreshToken);
     final response = await call(
       NeoHttpCall(
         endpoint: _Constants.endpointGetToken,
         body: {
           _Constants.requestKeyGrantType: _Constants.requestValueGrantTypeRefreshToken,
-          _Constants.requestKeyRefreshToken: await secureStorage.read(NeoCoreParameterKey.secureStorageRefreshToken),
+          _Constants.requestKeyRefreshToken: refreshToken,
         },
       ),
     );
@@ -384,9 +398,9 @@ class NeoNetworkManager {
     return response;
   }
 
-  Future<bool> _getTemporaryTokenForNotLoggedInUser(NeoHttpCall currentCall) async {
+  Future<bool> getTemporaryTokenForNotLoggedInUser({NeoHttpCall? currentCall}) async {
     // Prevent infinite call loop
-    if (currentCall.endpoint == _Constants.endpointGetToken) {
+    if (currentCall?.endpoint == _Constants.endpointGetToken) {
       return false;
     }
     final authToken = await secureStorage.read(NeoCoreParameterKey.secureStorageAuthToken);
@@ -418,12 +432,18 @@ class NeoNetworkManager {
   }
 
   Future<void> _initHttpClient() async {
-    if (!enableSslPinning) {
+    if (kIsWeb) {
       httpClient = http.Client();
       return;
     }
-    final HttpClient client = HttpClient(context: await _getSecurityContext)
-      ..badCertificateCallback = (X509Certificate cert, String host, int port) => false;
+
+    final userAgent = (await _defaultHeaders)[NeoNetworkHeaderKey.userAgent];
+    final client = HttpClient(context: enableSslPinning ? await _getSecurityContext : null)..userAgent = userAgent;
+
+    if (enableSslPinning) {
+      client.badCertificateCallback = (X509Certificate cert, String host, int port) => false;
+    }
+
     httpClient = IOClient(client);
   }
 

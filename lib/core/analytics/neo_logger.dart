@@ -48,11 +48,13 @@ class NeoLogger implements INeoLogger {
   final NeoPosthog neoPosthog;
   final NeoAdjust neoAdjust;
   final NeoElastic neoElastic;
+  final Level logLevel;
 
   NeoLogger({
     required this.neoPosthog,
     required this.neoAdjust,
     required this.neoElastic,
+    required this.logLevel,
   });
 
   final DeviceUtil _deviceUtil = DeviceUtil();
@@ -98,6 +100,9 @@ class NeoLogger implements INeoLogger {
     Map<String, dynamic>? properties,
     Map<String, dynamic>? options,
   }) {
+    if (this.logLevel.value > logLevel.value || logLevel == Level.off || logLevel == Level.nothing) {
+      return;
+    }
     if (logTypes.contains(NeoLoggerType.logger)) {
       _logger.log(logLevel, message);
     }
@@ -105,7 +110,7 @@ class NeoLogger implements INeoLogger {
       neoElastic.logCustom(message, logLevel.name, parameters: properties);
     }
     if (logTypes.contains(NeoLoggerType.posthog)) {
-      neoPosthog.logEvent(message, properties: properties, options: options);
+      neoPosthog.logEvent(message, properties: properties?.cast<String, Object>(), options: options);
     }
     if (logTypes.contains(NeoLoggerType.adjust)) {
       final String? eventId = message;
@@ -113,6 +118,10 @@ class NeoLogger implements INeoLogger {
         neoAdjust.logEvent(eventId);
       }
     }
+  }
+
+  void logLoginEvent() {
+    neoPosthog.identify();
   }
 
   @override

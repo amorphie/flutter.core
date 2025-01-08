@@ -69,12 +69,14 @@ class HttpClientConfig {
   }
 
   int getRetryCountByKey(String key) {
-    final hostKey = _findServiceByKey(key)?.host;
-    if (hostKey == null) {
+    final service = _findServiceByKey(key);
+    if (service == null) {
       return 0;
-    } else {
-      return _getRetryCountByHost(hostKey) ?? 0;
     }
+    if (service.retryCount != null) {
+      return service.retryCount!;
+    }
+    return _getRetryCountByHost(service.host) ?? 0;
   }
 
   HttpService? _findServiceByKey(String key) {

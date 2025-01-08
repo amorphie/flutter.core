@@ -15,4 +15,5 @@ Map<String, dynamic> _$NeoCoreRegisterDeviceRequestToJson(
       'deviceModel': instance.deviceModel,
       'devicePlatform': instance.devicePlatform,
       'deviceVersion': instance.deviceVersion,
+      'IsGoogleServiceAvailable': instance.isGoogleServiceAvailable,
     };

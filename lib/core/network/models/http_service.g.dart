@@ -12,6 +12,7 @@ HttpService _$HttpServiceFromJson(Map<String, dynamic> json) => HttpService(
           HttpMethod.get,
       host: json['host'] as String? ?? '',
       name: json['name'] as String? ?? '',
+      retryCount: json['retryCount'] as int?,
     );
 
 const _$HttpMethodEnumMap = {

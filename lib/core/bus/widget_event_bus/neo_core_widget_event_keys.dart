@@ -6,7 +6,7 @@ import 'package:neo_core/core/bus/widget_event_bus/neo_widget_event.dart';
 import 'package:neo_core/core/bus/widget_event_bus/neo_widget_event_bus.dart';
 
 enum NeoCoreWidgetEventKeys {
-  initFirebaseAndHuawei,
+  initPushMessagingServices,
 }
 
 extension NeoCoreWidgetEventKeysExtension on NeoCoreWidgetEventKeys {

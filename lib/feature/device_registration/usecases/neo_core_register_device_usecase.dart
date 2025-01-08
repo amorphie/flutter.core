@@ -27,6 +27,7 @@ class NeoCoreRegisterDeviceUseCase {
     required NeoNetworkManager networkManager,
     required NeoCoreSecureStorage secureStorage,
     required String deviceToken,
+    required bool isGoogleServiceAvailable,
   }) async {
     try {
       final existingToken = await secureStorage.read(NeoCoreParameterKey.secureStorageDeviceRegistrationToken);
@@ -56,6 +57,7 @@ class NeoCoreRegisterDeviceUseCase {
               deviceModel: deviceInfo?.model ?? "",
               devicePlatform: deviceInfo?.platform ?? "",
               deviceVersion: deviceInfo?.version ?? "",
+              isGoogleServiceAvailable: isGoogleServiceAvailable,
             ).toJson(),
           ),
         ),

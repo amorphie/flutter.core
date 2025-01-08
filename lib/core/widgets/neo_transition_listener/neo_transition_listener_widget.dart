@@ -20,6 +20,8 @@ class NeoTransitionListenerWidget extends StatelessWidget {
   final Function(NeoError error, {required bool displayAsPopup})? onError;
   final Function({required bool displayLoading}) onLoadingStatusChanged;
   final bool bypassSignalr;
+  final Duration signalrLongPollingPeriod;
+  final Duration signalRTimeoutDuration;
 
   const NeoTransitionListenerWidget({
     required this.child,
@@ -31,6 +33,8 @@ class NeoTransitionListenerWidget extends StatelessWidget {
     required this.onTransitionEvent,
     required this.onEkycEvent,
     required this.onLoadingStatusChanged,
+    required this.signalrLongPollingPeriod,
+    required this.signalRTimeoutDuration,
     this.onLoggedInSuccessfully,
     this.onError,
     this.bypassSignalr = false,
@@ -54,6 +58,8 @@ class NeoTransitionListenerWidget extends StatelessWidget {
             onTransitionError: onError,
             onLoadingStatusChanged: onLoadingStatusChanged,
             bypassSignalr: bypassSignalr,
+            signalrLongPollingPeriod: signalrLongPollingPeriod,
+            signalRTimeoutDuration: signalRTimeoutDuration,
           ),
         ),
       child: BlocBuilder<NeoTransitionListenerBloc, NeoTransitionListenerState>(

@@ -17,6 +17,8 @@ import 'package:neo_core/core/util/uuid_util.dart';
 import 'package:universal_io/io.dart';
 
 class DeviceUtil {
+  static String? _androidId;
+
   Future<String?> getDeviceId() async {
     final deviceInfo = DeviceInfoPlugin();
     if (kIsWeb) {
@@ -25,11 +27,14 @@ class DeviceUtil {
       final iosInfo = await deviceInfo.iosInfo;
       return iosInfo.identifierForVendor;
     } else if (Platform.isAndroid) {
-      final androidInfo = await deviceInfo.androidInfo;
-      return androidInfo.id;
+      return _androidId ?? UuidUtil.generateUUID();
     } else {
       return null;
     }
+  }
+
+  static void setAndroidId(String androidId) {
+    _androidId = androidId;
   }
 
   Future<NeoDeviceInfo?> getDeviceInfo() async {
