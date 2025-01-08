@@ -29,7 +29,10 @@ class HttpService {
   @JsonKey(name: 'name', defaultValue: "")
   final String name;
 
-  const HttpService({required this.key, required this.method, required this.host, required this.name});
+  @JsonKey(name: 'retryCount')
+  final int? retryCount;
+
+  const HttpService({required this.key, required this.method, required this.host, required this.name, this.retryCount});
 
   factory HttpService.fromJson(Map<String, dynamic> json) => _$HttpServiceFromJson(json);
 }

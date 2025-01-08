@@ -314,8 +314,9 @@ class NeoNetworkManager {
         _neoLogger.logError("[NeoNetworkManager]: Token service error!");
         return _handleErrorResponse(error, call);
       }
-      if (await secureStorage.read(NeoCoreParameterKey.secureStorageRefreshToken) != null) {
-        final result = await _refreshAuthDetailsByUsingRefreshToken();
+      final refreshToken = await secureStorage.read(NeoCoreParameterKey.secureStorageRefreshToken);
+      if (refreshToken != null) {
+        final result = await _refreshAuthDetailsByUsingRefreshToken(refreshToken);
         if (result.isSuccess) {
           return _retryLastCall(call);
         } else {
@@ -376,13 +377,14 @@ class NeoNetworkManager {
     return (call.retryCount ?? 0) > 0;
   }
 
-  Future<NeoResponse> _refreshAuthDetailsByUsingRefreshToken() async {
+  Future<NeoResponse> _refreshAuthDetailsByUsingRefreshToken(String refreshToken) async {
+    await secureStorage.delete(NeoCoreParameterKey.secureStorageRefreshToken);
     final response = await call(
       NeoHttpCall(
         endpoint: _Constants.endpointGetToken,
         body: {
           _Constants.requestKeyGrantType: _Constants.requestValueGrantTypeRefreshToken,
-          _Constants.requestKeyRefreshToken: await secureStorage.read(NeoCoreParameterKey.secureStorageRefreshToken),
+          _Constants.requestKeyRefreshToken: refreshToken,
         },
       ),
     );
