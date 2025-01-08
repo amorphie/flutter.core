@@ -96,7 +96,7 @@ class NeoNetworkManager {
 
   Future<void> init() async {
     await _initHttpClient();
-    await _getTemporaryTokenForNotLoggedInUser(NeoHttpCall(endpoint: ""));
+    await getTemporaryTokenForNotLoggedInUser();
   }
 
   Future<Map<String, String>> get _defaultHeaders async {
@@ -188,7 +188,7 @@ class NeoNetworkManager {
     if (fullPath == null || method == null) {
       return NeoResponse.error(const NeoError());
     }
-    await _getTemporaryTokenForNotLoggedInUser(neoCall);
+    await getTemporaryTokenForNotLoggedInUser(currentCall: neoCall);
 
     NeoResponse response;
     try {
@@ -324,7 +324,7 @@ class NeoNetworkManager {
           return result.asError;
         }
       } else {
-        final bool isTokenRetrieved = await _getTemporaryTokenForNotLoggedInUser(call);
+        final bool isTokenRetrieved = await getTemporaryTokenForNotLoggedInUser(currentCall: call);
         if (isTokenRetrieved) {
           return _retryLastCall(call);
         } else {
@@ -398,9 +398,9 @@ class NeoNetworkManager {
     return response;
   }
 
-  Future<bool> _getTemporaryTokenForNotLoggedInUser(NeoHttpCall currentCall) async {
+  Future<bool> getTemporaryTokenForNotLoggedInUser({NeoHttpCall? currentCall}) async {
     // Prevent infinite call loop
-    if (currentCall.endpoint == _Constants.endpointGetToken) {
+    if (currentCall?.endpoint == _Constants.endpointGetToken) {
       return false;
     }
     final authToken = await secureStorage.read(NeoCoreParameterKey.secureStorageAuthToken);
