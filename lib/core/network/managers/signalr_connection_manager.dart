@@ -46,11 +46,7 @@ class SignalrConnectionManager {
   }) async {
     this.methodName = methodName;
 
-    try {
-      await _hubConnection?.stop();
-    } catch (_) {
-      // No-op
-    }
+    await stop();
     _hubConnection = HubConnectionBuilder()
         .withUrl(
           serverUrl,
@@ -136,7 +132,11 @@ class SignalrConnectionManager {
         .firstOrNull;
   }
 
-  void stop() {
-    _hubConnection?.stop();
+  Future<void> stop() async {
+    try {
+      await _hubConnection?.stop();
+    } catch (_) {
+      // No-op
+    }
   }
 }
