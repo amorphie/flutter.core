@@ -23,7 +23,6 @@ class NeoTransitionListenerEventInit extends NeoTransitionListenerEvent {
   final Function({required bool isTwoFactorAuthenticated})? onLoggedInSuccessfully;
   final Function(NeoError error, {required bool displayAsPopup})? onTransitionError;
   final Function({required bool displayLoading}) onLoadingStatusChanged;
-  final bool bypassSignalr;
   final Duration signalrLongPollingPeriod;
   final Duration signalRTimeoutDuration;
 
@@ -36,7 +35,6 @@ class NeoTransitionListenerEventInit extends NeoTransitionListenerEvent {
     required this.onLoggedInSuccessfully,
     required this.onTransitionError,
     required this.onLoadingStatusChanged,
-    required this.bypassSignalr,
     required this.signalrLongPollingPeriod,
     required this.signalRTimeoutDuration,
   });
@@ -51,7 +49,6 @@ class NeoTransitionListenerEventInit extends NeoTransitionListenerEvent {
         onLoggedInSuccessfully,
         onTransitionError,
         onLoadingStatusChanged,
-        bypassSignalr,
         signalrLongPollingPeriod,
         signalRTimeoutDuration,
       ];

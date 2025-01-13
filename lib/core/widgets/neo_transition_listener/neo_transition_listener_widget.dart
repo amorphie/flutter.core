@@ -17,7 +17,6 @@ class NeoTransitionListenerWidget extends StatelessWidget {
   final Function({required bool isTwoFactorAuthenticated})? onLoggedInSuccessfully;
   final Function(NeoError error, {required bool displayAsPopup})? onError;
   final Function({required bool displayLoading}) onLoadingStatusChanged;
-  final bool bypassSignalr;
   final Duration signalrLongPollingPeriod;
   final Duration signalRTimeoutDuration;
 
@@ -34,7 +33,6 @@ class NeoTransitionListenerWidget extends StatelessWidget {
     required this.signalRTimeoutDuration,
     this.onLoggedInSuccessfully,
     this.onError,
-    this.bypassSignalr = false,
     Key? key,
   }) : super(key: key);
 
@@ -53,7 +51,6 @@ class NeoTransitionListenerWidget extends StatelessWidget {
             onLoggedInSuccessfully: onLoggedInSuccessfully,
             onTransitionError: onError,
             onLoadingStatusChanged: onLoadingStatusChanged,
-            bypassSignalr: bypassSignalr,
             signalrLongPollingPeriod: signalrLongPollingPeriod,
             signalRTimeoutDuration: signalRTimeoutDuration,
           ),
