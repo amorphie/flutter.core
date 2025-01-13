@@ -22,11 +22,9 @@ import 'package:neo_core/core/analytics/neo_adjust.dart';
 import 'package:neo_core/core/analytics/neo_crashlytics.dart';
 import 'package:neo_core/core/analytics/neo_elastic.dart';
 import 'package:neo_core/core/analytics/neo_logger_type.dart';
-import 'package:neo_core/core/analytics/neo_posthog.dart';
 import 'package:neo_core/core/network/models/http_client_config.dart';
 import 'package:neo_core/core/network/models/neo_page_type.dart';
 import 'package:neo_core/core/util/device_util/device_util.dart';
-import 'package:posthog_flutter/posthog_flutter.dart';
 import 'package:universal_io/io.dart';
 
 abstract class _Constants {
@@ -46,13 +44,11 @@ class _NeoLoggerOutput extends LogOutput {
 }
 
 class NeoLogger implements INeoLogger {
-  final NeoPosthog neoPosthog;
   final NeoAdjust neoAdjust;
   final NeoElastic neoElastic;
   final HttpClientConfig httpClientConfig;
 
   NeoLogger({
-    required this.neoPosthog,
     required this.neoAdjust,
     required this.neoElastic,
     required this.httpClientConfig,
@@ -73,7 +69,6 @@ class NeoLogger implements INeoLogger {
 
   static const List<NeoLoggerType> defaultAnalytics = [
     NeoLoggerType.adjust,
-    NeoLoggerType.posthog,
     NeoLoggerType.elastic,
     NeoLoggerType.logger,
   ];
@@ -89,11 +84,8 @@ class NeoLogger implements INeoLogger {
 
     logCustom(
       _Constants.eventNameAdjustInitSucceed,
-      logTypes: [NeoLoggerType.posthog, NeoLoggerType.logger],
+      logTypes: [NeoLoggerType.logger],
     );
-
-    observers = [PosthogObserver()];
-    await neoPosthog.setEnabled(enabled: true);
   }
 
   @override
@@ -113,9 +105,6 @@ class NeoLogger implements INeoLogger {
     if (logTypes.contains(NeoLoggerType.elastic)) {
       neoElastic.logCustom(message, logLevel.name, parameters: properties);
     }
-    if (logTypes.contains(NeoLoggerType.posthog)) {
-      neoPosthog.logEvent(message, properties: properties?.cast<String, Object>(), options: options);
-    }
     if (logTypes.contains(NeoLoggerType.adjust)) {
       final String? eventId = message;
       if (eventId != null) {
@@ -124,13 +113,9 @@ class NeoLogger implements INeoLogger {
     }
   }
 
-  void logLoginEvent() {
-    neoPosthog.identify();
-  }
 
   @override
   void logScreenEvent(String screenName, {Map<String, dynamic>? properties, Map<String, dynamic>? options}) {
-    neoPosthog.setScreen(screenName, properties: properties, options: options);
   }
 
   @override
@@ -173,15 +158,6 @@ class NeoLogger implements INeoLogger {
     }
   }
 
-  @override
-  Future<bool?> isFeatureEnabled(String key) async {
-    return neoPosthog.isFeatureEnabled(key);
-  }
-
-  @override
-  Future<void> reloadFeatureFlags() async {
-    await neoPosthog.reloadFeatureFlags();
-  }
 
   @override
   void logError(String message) {

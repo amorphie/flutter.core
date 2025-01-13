@@ -16,7 +16,6 @@ sealed class NeoTransitionListenerEvent extends Equatable {}
 
 class NeoTransitionListenerEventInit extends NeoTransitionListenerEvent {
   final NeoWorkflowManager neoWorkflowManager;
-  final NeoPosthog neoPosthog;
   final String signalRServerUrl;
   final String signalRMethodName;
   final Function(SignalrTransitionData navigationData) onTransitionEvent;
@@ -24,13 +23,11 @@ class NeoTransitionListenerEventInit extends NeoTransitionListenerEvent {
   final Function({required bool isTwoFactorAuthenticated})? onLoggedInSuccessfully;
   final Function(NeoError error, {required bool displayAsPopup})? onTransitionError;
   final Function({required bool displayLoading}) onLoadingStatusChanged;
-  final bool bypassSignalr;
   final Duration signalrLongPollingPeriod;
   final Duration signalRTimeoutDuration;
 
   NeoTransitionListenerEventInit({
     required this.neoWorkflowManager,
-    required this.neoPosthog,
     required this.signalRServerUrl,
     required this.signalRMethodName,
     required this.onTransitionEvent,
@@ -38,7 +35,6 @@ class NeoTransitionListenerEventInit extends NeoTransitionListenerEvent {
     required this.onLoggedInSuccessfully,
     required this.onTransitionError,
     required this.onLoadingStatusChanged,
-    required this.bypassSignalr,
     required this.signalrLongPollingPeriod,
     required this.signalRTimeoutDuration,
   });
@@ -46,7 +42,6 @@ class NeoTransitionListenerEventInit extends NeoTransitionListenerEvent {
   @override
   List<Object?> get props => [
         neoWorkflowManager,
-        neoPosthog,
         signalRServerUrl,
         signalRMethodName,
         onTransitionEvent,
@@ -54,7 +49,6 @@ class NeoTransitionListenerEventInit extends NeoTransitionListenerEvent {
         onLoggedInSuccessfully,
         onTransitionError,
         onLoadingStatusChanged,
-        bypassSignalr,
         signalrLongPollingPeriod,
         signalRTimeoutDuration,
       ];

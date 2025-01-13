@@ -21,9 +21,7 @@ import 'package:get_it/get_it.dart';
 import 'package:mutex/mutex.dart';
 import 'package:neo_core/core/analytics/neo_logger.dart';
 import 'package:neo_core/core/analytics/neo_logger_type.dart';
-import 'package:neo_core/core/analytics/neo_posthog.dart';
 import 'package:neo_core/core/bus/neo_bus.dart';
-import 'package:neo_core/core/encryption/jwt_decoder.dart';
 import 'package:neo_core/core/navigation/models/ekyc_event_data.dart';
 import 'package:neo_core/core/navigation/models/neo_navigation_type.dart';
 import 'package:neo_core/core/navigation/models/signalr_transition_data.dart';
@@ -31,7 +29,6 @@ import 'package:neo_core/core/network/models/http_auth_response.dart';
 import 'package:neo_core/core/network/models/neo_signalr_event.dart';
 import 'package:neo_core/core/network/models/neo_signalr_transition_state_type.dart';
 import 'package:neo_core/core/network/neo_network.dart';
-import 'package:neo_core/core/storage/neo_core_parameter_key.dart';
 import 'package:neo_core/core/storage/neo_core_secure_storage.dart';
 import 'package:neo_core/core/widgets/neo_page/bloc/neo_page_bloc.dart';
 import 'package:neo_core/core/widgets/neo_transition_listener/usecases/get_workflow_query_parameters_usecase.dart';
@@ -409,9 +406,10 @@ class NeoTransitionListenerBloc extends Bloc<NeoTransitionListenerEvent, NeoTran
           _addEventToBus(event, fromSignalR: false);
         }
       } else {
+  
         _neoLogger.logCustom(
           "[NeoTransitionListener]: Retrieving last event by long polling is failed!",
-          logTypes: [NeoLoggerType.posthog],
+          logTypes: [NeoLoggerType.elastic],
         );
       }
     }
