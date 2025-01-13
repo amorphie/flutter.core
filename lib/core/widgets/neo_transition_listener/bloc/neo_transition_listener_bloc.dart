@@ -406,11 +406,11 @@ class NeoTransitionListenerBloc extends Bloc<NeoTransitionListenerEvent, NeoTran
           _addEventToBus(event, fromSignalR: false);
         }
       } else {
-        //TODO:logType?
-        // _neoLogger.logCustom(
-        //   "[NeoTransitionListener]: Retrieving last event by long polling is failed!",
-        //   logTypes: [NeoLoggerType.postHog],
-        // );
+  
+        _neoLogger.logCustom(
+          "[NeoTransitionListener]: Retrieving last event by long polling is failed!",
+          logTypes: [NeoLoggerType.elastic],
+        );
       }
     }
 
