@@ -27,10 +27,13 @@ abstract class _Constants {
 }
 
 class NeoCoreSecureStorage {
-  final bool enableCaching;
   final NeoSharedPrefs neoSharedPrefs;
+  final HttpClientConfig httpClientConfig;
 
-  NeoCoreSecureStorage({required this.neoSharedPrefs, required this.enableCaching});
+  NeoCoreSecureStorage({required this.neoSharedPrefs, required this.httpClientConfig});
+
+  // Getter is required, config may change at runtime
+  bool get _enableCaching => httpClientConfig.config.cacheStorage;
 
   FlutterSecureStorage? _storage;
 
@@ -39,7 +42,7 @@ class NeoCoreSecureStorage {
   NeoLogger get _neoLogger => GetIt.I.get();
 
   Future<void> write({required String key, required String? value}) {
-    if (enableCaching) {
+    if (_enableCaching) {
       _cachedValues[key] = value;
     }
 
@@ -47,7 +50,7 @@ class NeoCoreSecureStorage {
   }
 
   Future<String?> read(String key) async {
-    if (enableCaching && _cachedValues.containsKey(key)) {
+    if (_enableCaching && _cachedValues.containsKey(key)) {
       return _cachedValues[key];
     } else if (await _storage!.containsKey(key: key)) {
       String? value;
@@ -65,7 +68,7 @@ class NeoCoreSecureStorage {
   }
 
   Future<void> delete(String key) {
-    if (enableCaching) {
+    if (_enableCaching) {
       _cachedValues.remove(key);
     }
 
@@ -73,7 +76,7 @@ class NeoCoreSecureStorage {
   }
 
   Future<void> deleteAll() {
-    if (enableCaching) {
+    if (_enableCaching) {
       _cachedValues.clear();
     }
 

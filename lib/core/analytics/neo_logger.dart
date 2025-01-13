@@ -45,14 +45,17 @@ class _NeoLoggerOutput extends LogOutput {
 class NeoLogger implements INeoLogger {
   final NeoAdjust neoAdjust;
   final NeoElastic neoElastic;
-  final Level logLevel;
+  final HttpClientConfig httpClientConfig;
 
   NeoLogger({
     required this.neoAdjust,
     required this.neoElastic,
-    required this.logLevel,
+    required this.httpClientConfig,
   });
 
+  // Getter is required, config may change at runtime
+  Level get _logLevel => httpClientConfig.config.logLevel;
+  
   final DeviceUtil _deviceUtil = DeviceUtil();
 
   final Logger _logger = Logger(printer: _NeoLoggerPrinter(), output: _NeoLoggerOutput());
@@ -92,7 +95,7 @@ class NeoLogger implements INeoLogger {
     Map<String, dynamic>? properties,
     Map<String, dynamic>? options,
   }) {
-    if (this.logLevel.value > logLevel.value || logLevel == Level.off || logLevel == Level.nothing) {
+    if (_logLevel.value > logLevel.value || logLevel == Level.off || logLevel == Level.nothing) {
       return;
     }
     if (logTypes.contains(NeoLoggerType.logger)) {
