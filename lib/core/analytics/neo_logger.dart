@@ -23,6 +23,7 @@ import 'package:neo_core/core/analytics/neo_crashlytics.dart';
 import 'package:neo_core/core/analytics/neo_elastic.dart';
 import 'package:neo_core/core/analytics/neo_logger_type.dart';
 import 'package:neo_core/core/analytics/neo_posthog.dart';
+import 'package:neo_core/core/network/models/http_client_config.dart';
 import 'package:neo_core/core/network/models/neo_page_type.dart';
 import 'package:neo_core/core/util/device_util/device_util.dart';
 import 'package:posthog_flutter/posthog_flutter.dart';
@@ -48,15 +49,18 @@ class NeoLogger implements INeoLogger {
   final NeoPosthog neoPosthog;
   final NeoAdjust neoAdjust;
   final NeoElastic neoElastic;
-  final Level logLevel;
+  final HttpClientConfig httpClientConfig;
 
   NeoLogger({
     required this.neoPosthog,
     required this.neoAdjust,
     required this.neoElastic,
-    required this.logLevel,
+    required this.httpClientConfig,
   });
 
+  // Getter is required, config may change at runtime
+  Level get _logLevel => httpClientConfig.config.logLevel;
+  
   final DeviceUtil _deviceUtil = DeviceUtil();
 
   final Logger _logger = Logger(printer: _NeoLoggerPrinter(), output: _NeoLoggerOutput());
@@ -100,7 +104,7 @@ class NeoLogger implements INeoLogger {
     Map<String, dynamic>? properties,
     Map<String, dynamic>? options,
   }) {
-    if (this.logLevel.value > logLevel.value || logLevel == Level.off || logLevel == Level.nothing) {
+    if (_logLevel.value > logLevel.value || logLevel == Level.off || logLevel == Level.nothing) {
       return;
     }
     if (logTypes.contains(NeoLoggerType.logger)) {
