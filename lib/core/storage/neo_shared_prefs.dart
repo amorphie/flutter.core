@@ -13,14 +13,18 @@
 import 'package:get_it/get_it.dart';
 import 'package:logger/logger.dart';
 import 'package:neo_core/core/analytics/neo_logger.dart';
+import 'package:neo_core/core/network/models/http_client_config.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 class NeoSharedPrefs {
-  final bool enableCaching;
+  final HttpClientConfig httpClientConfig;
 
   NeoSharedPrefs({
-    required this.enableCaching,
+    required this.httpClientConfig,
   });
+
+  // Getter is required, config may change at runtime
+  bool get _enableCaching => httpClientConfig.config.cacheStorage;
 
   NeoLogger get _neoLogger => GetIt.I.get();
 
@@ -36,7 +40,7 @@ class NeoSharedPrefs {
   }
 
   Object? read(String key) {
-    if (enableCaching && _cachedValues.containsKey(key)) {
+    if (_enableCaching && _cachedValues.containsKey(key)) {
       return _cachedValues[key];
     }
 
@@ -47,7 +51,7 @@ class NeoSharedPrefs {
   }
 
   Future<bool> write(String key, Object value) {
-    if (enableCaching) {
+    if (_enableCaching) {
       _cachedValues[key] = value;
     }
 
@@ -71,7 +75,7 @@ class NeoSharedPrefs {
   }
 
   Future<bool> delete(String key) {
-    if (enableCaching) {
+    if (_enableCaching) {
       _cachedValues.remove(key);
     }
 
@@ -79,7 +83,7 @@ class NeoSharedPrefs {
   }
 
   Future<bool> clear() {
-    if (enableCaching) {
+    if (_enableCaching) {
       _cachedValues.clear();
     }
 
