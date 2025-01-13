@@ -409,7 +409,7 @@ class NeoTransitionListenerBloc extends Bloc<NeoTransitionListenerEvent, NeoTran
         //TODO:logType?
         // _neoLogger.logCustom(
         //   "[NeoTransitionListener]: Retrieving last event by long polling is failed!",
-        //   logTypes: [NeoLoggerType.adjust],
+        //   logTypes: [NeoLoggerType.postHog],
         // );
       }
     }
