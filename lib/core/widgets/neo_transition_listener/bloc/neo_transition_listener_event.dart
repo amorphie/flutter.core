@@ -21,7 +21,7 @@ class NeoTransitionListenerEventInit extends NeoTransitionListenerEvent {
   final String signalRMethodName;
   final Function(SignalrTransitionData navigationData) onTransitionEvent;
   final Function(EkycEventData eventData) onEkycEvent;
-  final Function({required bool isTwoFactorAuthenticated})? onLoggedInSuccessfully;
+  final Future Function({required bool isTwoFactorAuthenticated})? onLoggedInSuccessfully;
   final Function(NeoError error, {required bool displayAsPopup})? onTransitionError;
   final Function({required bool displayLoading}) onLoadingStatusChanged;
   final bool bypassSignalr;
