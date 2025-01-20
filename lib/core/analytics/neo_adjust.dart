@@ -6,6 +6,7 @@ import 'package:neo_core/neo_core.dart';
 
 class NeoAdjust {
   final void Function(String?) adjustDeferredDeeplinkCallback;
+
   NeoAdjust({required this.adjustDeferredDeeplinkCallback});
 
   Future<void> init({required String appToken}) async {
