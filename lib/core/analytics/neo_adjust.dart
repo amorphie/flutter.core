@@ -5,7 +5,9 @@ import 'package:flutter/foundation.dart';
 import 'package:neo_core/neo_core.dart';
 
 class NeoAdjust {
-  NeoAdjust();
+  final void Function(String?) adjustDeferredDeeplinkCallback;
+
+  NeoAdjust({required this.adjustDeferredDeeplinkCallback});
 
   Future<void> init({required String appToken}) async {
     if (kIsWeb) {
@@ -15,7 +17,9 @@ class NeoAdjust {
     final String? deviceId = await DeviceUtil().getDeviceId();
     final AdjustConfig adjustConfig =
         AdjustConfig(appToken, kDebugMode ? AdjustEnvironment.sandbox : AdjustEnvironment.production)
-          ..externalDeviceId = deviceId;
+          ..externalDeviceId = deviceId
+          ..deferredDeeplinkCallback = adjustDeferredDeeplinkCallback;
+
     Adjust.start(adjustConfig);
   }
 
