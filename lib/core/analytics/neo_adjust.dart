@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:adjust_sdk/adjust.dart';
 import 'package:adjust_sdk/adjust_attribution.dart';
 import 'package:adjust_sdk/adjust_config.dart';
@@ -20,10 +22,11 @@ class NeoAdjust {
     final AdjustConfig adjustConfig =
         AdjustConfig(appToken, kDebugMode ? AdjustEnvironment.sandbox : AdjustEnvironment.production)
           ..externalDeviceId = deviceId
-          ..attributionCallback = adjustAttributionCallback
           ..deferredDeeplinkCallback = adjustDeferredDeeplinkCallback;
 
     Adjust.start(adjustConfig);
+
+    unawaited(setAdjustNetworkAttribution());
   }
 
   void logEvent(String eventId) {
@@ -32,5 +35,13 @@ class NeoAdjust {
     }
 
     Adjust.trackEvent(AdjustEvent(eventId));
+  }
+
+  Future<void> setAdjustNetworkAttribution() async {
+    if (kIsWeb) {
+      return;
+    }
+
+    await Adjust.getAttribution().then(adjustAttributionCallback);
   }
 }
