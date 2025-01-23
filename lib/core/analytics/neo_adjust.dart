@@ -8,10 +8,10 @@ import 'package:flutter/foundation.dart';
 import 'package:neo_core/neo_core.dart';
 
 class NeoAdjust {
-  final void Function(String?) adjustDeferredDeeplinkCallback;
-  final void Function(AdjustAttribution) adjustAttributionCallback;
+  final void Function(String?)? adjustDeferredDeeplinkCallback;
+  final void Function(AdjustAttribution)? adjustAttributionCallback;
 
-  NeoAdjust({required this.adjustDeferredDeeplinkCallback, required this.adjustAttributionCallback});
+  NeoAdjust({this.adjustDeferredDeeplinkCallback, this.adjustAttributionCallback});
 
   Future<void> init({required String appToken}) async {
     if (kIsWeb) {
@@ -26,7 +26,13 @@ class NeoAdjust {
 
     Adjust.start(adjustConfig);
 
-    unawaited(setAdjustNetworkAttribution());
+    unawaited(() {
+      try {
+        setAdjustNetworkAttribution();
+      } catch (e) {
+        debugPrint('Failed to set Adjust network attribution: $e');
+      }
+    }());
   }
 
   void logEvent(String eventId) {
@@ -38,10 +44,10 @@ class NeoAdjust {
   }
 
   Future<void> setAdjustNetworkAttribution() async {
-    if (kIsWeb) {
+    if (kIsWeb || adjustAttributionCallback == null) {
       return;
     }
 
-    await Adjust.getAttribution().then(adjustAttributionCallback);
+    await Adjust.getAttribution().then(adjustAttributionCallback!);
   }
 }
