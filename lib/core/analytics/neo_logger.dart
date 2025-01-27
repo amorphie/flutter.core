@@ -56,7 +56,7 @@ class NeoLogger implements INeoLogger {
 
   // Getter is required, config may change at runtime
   Level get _logLevel => httpClientConfig.config.logLevel;
-  
+
   final DeviceUtil _deviceUtil = DeviceUtil();
 
   final Logger _logger = Logger(printer: _NeoLoggerPrinter(), output: _NeoLoggerOutput());
@@ -80,6 +80,7 @@ class NeoLogger implements INeoLogger {
     if (!kIsWeb) {
       await _neoCrashlytics.initializeCrashlytics();
       await _neoCrashlytics.setEnabled(enabled: true);
+      await _neoCrashlytics.setUserIdentifier();
     }
 
     logCustom(
@@ -113,10 +114,8 @@ class NeoLogger implements INeoLogger {
     }
   }
 
-
   @override
-  void logScreenEvent(String screenName, {Map<String, dynamic>? properties, Map<String, dynamic>? options}) {
-  }
+  void logScreenEvent(String screenName, {Map<String, dynamic>? properties, Map<String, dynamic>? options}) {}
 
   @override
   void setPageBuildStartingTime(String pageId, NeoPageType pageType) {
@@ -157,7 +156,6 @@ class NeoLogger implements INeoLogger {
       );
     }
   }
-
 
   @override
   void logError(String message) {
