@@ -170,7 +170,7 @@ class _NeoCoreFirebaseMessagingState extends State<NeoCoreFirebaseMessaging> {
             channelDescription: _androidChannel.description,
             icon: widget.androidDefaultIcon,
             importance: Importance.max,
-            sound: widget.soundUri == null ? null : UriAndroidNotificationSound(widget.soundUri!),
+            sound: widget.soundUri == null ? null : const RawResourceAndroidNotificationSound("notification_sound"),
           ),
         ),
         payload: jsonEncode(message.toMap()),
