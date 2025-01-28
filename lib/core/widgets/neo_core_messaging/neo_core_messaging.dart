@@ -25,6 +25,7 @@ class NeoCoreMessaging extends StatefulWidget {
   final Function(String) onTokenChanged;
   final String? androidDefaultIcon;
   final Function(String)? onDeeplinkNavigation;
+  final String? soundUri;
 
   const NeoCoreMessaging({
     required this.child,
@@ -34,6 +35,7 @@ class NeoCoreMessaging extends StatefulWidget {
     required this.onTokenChanged,
     this.androidDefaultIcon,
     this.onDeeplinkNavigation,
+    this.soundUri,
     super.key,
   });
 
@@ -48,6 +50,7 @@ class _NeoCoreMessagingState extends State<NeoCoreMessaging> {
   StreamSubscription<dynamic>? _subscription;
 
   StreamSubscription? _widgetEventStreamSubscription;
+
   void _listenWidgetEventKeys() {
     _widgetEventStreamSubscription = NeoCoreWidgetEventKeys.initPushMessagingServices.listenEvent(
       onEventReceived: (NeoWidgetEvent widgetEvent) {
@@ -95,6 +98,7 @@ class _NeoCoreMessagingState extends State<NeoCoreMessaging> {
           onTokenChanged: widget.onTokenChanged,
           androidDefaultIcon: widget.androidDefaultIcon,
           onDeeplinkNavigation: widget.onDeeplinkNavigation,
+          soundUri: widget.soundUri,
           child: widget.child,
         );
       }

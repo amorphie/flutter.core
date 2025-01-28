@@ -37,6 +37,7 @@ class NeoCoreFirebaseMessaging extends StatefulWidget {
     required this.onTokenChanged,
     this.androidDefaultIcon,
     this.onDeeplinkNavigation,
+    this.soundUri,
     super.key,
   });
 
@@ -44,6 +45,7 @@ class NeoCoreFirebaseMessaging extends StatefulWidget {
   final NeoNetworkManager networkManager;
   final NeoCoreSecureStorage neoCoreSecureStorage;
   final Function(String) onTokenChanged;
+  final String? soundUri;
   final String? androidDefaultIcon;
   final Function(String)? onDeeplinkNavigation;
 
@@ -167,9 +169,8 @@ class _NeoCoreFirebaseMessagingState extends State<NeoCoreFirebaseMessaging> {
             _androidChannel.name,
             channelDescription: _androidChannel.description,
             icon: widget.androidDefaultIcon,
-            playSound: true,
             importance: Importance.max,
-            sound: const RawResourceAndroidNotificationSound("notification_sound"),
+            sound: widget.soundUri == null ? null : UriAndroidNotificationSound(widget.soundUri!),
           ),
         ),
         payload: jsonEncode(message.toMap()),
