@@ -26,10 +26,13 @@ class NeoElastic {
       secureStorage.read(NeoCoreParameterKey.secureStorageDeviceId),
       secureStorage.read(NeoCoreParameterKey.secureStorageInstallationId),
       secureStorage.read(NeoCoreParameterKey.secureStorageCustomerId),
+      secureStorage.read(NeoCoreParameterKey.secureStorageUserId),
     ]);
+
     final deviceId = results[0];
     final tokenId = results[1];
     final customerId = results[2];
+    final userId = results[3];
 
     // ignore: do_not_use_environment
     const environment = String.fromEnvironment('environment');
@@ -43,6 +46,7 @@ class NeoElastic {
       'appVersion': packageInfo.version,
       'appBuildNumber': packageInfo.buildNumber,
       'customerId': customerId,
+      'userId': userId,
       if (parameters != null) ...parameters,
     };
 

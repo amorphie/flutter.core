@@ -59,7 +59,6 @@ class NeoNetworkManager {
   final String workflowClientId;
   final String workflowClientSecret;
   final String? sslCertificateFilePath;
-  final bool enableSslPinning;
   final Function(String endpoint, String? requestId)? onRequestSucceed;
   final Function(NeoError neoError, String requestId)? onRequestFailed;
   final Function()? onInvalidTokenError;
@@ -68,6 +67,7 @@ class NeoNetworkManager {
   final Map<String, String> defaultHeaders;
   final Duration timeoutDuration;
 
+  late final bool _enableSslPinning;
   DateTime? _tokenExpirationTime;
 
   bool get _isTokenExpired => _tokenExpirationTime != null && DateTime.now().isAfter(_tokenExpirationTime!);
@@ -80,7 +80,6 @@ class NeoNetworkManager {
     required this.neoSharedPrefs,
     required this.workflowClientId,
     required this.workflowClientSecret,
-    required this.enableSslPinning,
     this.sslCertificateFilePath,
     this.onRequestSucceed,
     this.onRequestFailed,
@@ -99,7 +98,8 @@ class NeoNetworkManager {
     }
   }
 
-  Future<void> init() async {
+  Future<void> init({required bool enableSslPinning}) async {
+    _enableSslPinning = enableSslPinning;
     await _initHttpClient();
     await getTemporaryTokenForNotLoggedInUser();
   }
@@ -458,9 +458,9 @@ class NeoNetworkManager {
     }
 
     final userAgent = (await _defaultHeaders)[NeoNetworkHeaderKey.userAgent];
-    final client = HttpClient(context: enableSslPinning ? await _getSecurityContext : null)..userAgent = userAgent;
+    final client = HttpClient(context: _enableSslPinning ? await _getSecurityContext : null)..userAgent = userAgent;
 
-    if (enableSslPinning) {
+    if (_enableSslPinning) {
       client.badCertificateCallback = (X509Certificate cert, String host, int port) => false;
     }
 

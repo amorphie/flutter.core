@@ -48,7 +48,7 @@ class NeoTransitionListenerBloc extends Bloc<NeoTransitionListenerEvent, NeoTran
   late final Function(SignalrTransitionData navigationData) onTransitionEvent;
   late final Function(EkycEventData ekycData) onEkycEvent;
   late final Function(NeoError error, {required bool displayAsPopup})? onTransitionError;
-  late final Function({required bool isTwoFactorAuthenticated})? onLoggedInSuccessfully;
+  late final Future Function({required bool isTwoFactorAuthenticated})? onLoggedInSuccessfully;
   late final Function({required bool displayLoading}) onLoadingStatusChanged;
 
   late final SignalrConnectionManager signalrConnectionManager;
@@ -295,7 +295,7 @@ class NeoTransitionListenerBloc extends Bloc<NeoTransitionListenerEvent, NeoTran
         HttpAuthResponse(token: token, refreshToken: refreshToken ?? "", expiresInSeconds: expiresIn),
         isMobUnapproved: isMobUnapproved,
       );
-      onLoggedInSuccessfully?.call(isTwoFactorAuthenticated: isTwoFactorAuthenticated);
+      await onLoggedInSuccessfully?.call(isTwoFactorAuthenticated: isTwoFactorAuthenticated);
     }
   }
 
