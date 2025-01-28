@@ -69,6 +69,7 @@ class NeoNetworkManager {
 
   late final bool _enableSslPinning;
   DateTime? _tokenExpirationTime;
+  Completer? _refreshTokenCompleter;
 
   bool get _isTokenExpired => _tokenExpirationTime != null && DateTime.now().isAfter(_tokenExpirationTime!);
 
@@ -194,7 +195,9 @@ class NeoNetworkManager {
       return NeoResponse.error(const NeoError());
     }
     await getTemporaryTokenForNotLoggedInUser(currentCall: neoCall);
-    await _refreshTokenIfExpired();
+    if (neoCall.endpoint != _Constants.endpointGetToken) {
+      await _refreshTokenIfExpired();
+    }
 
     NeoResponse response;
     try {
@@ -444,9 +447,20 @@ class NeoNetworkManager {
 
   Future<void> _refreshTokenIfExpired() async {
     if (_isTokenExpired) {
-      final refreshToken = await _getRefreshToken();
-      if (refreshToken != null) {
-        await _refreshAuthDetailsByUsingRefreshToken(refreshToken);
+      if (_refreshTokenCompleter != null) {
+        await _refreshTokenCompleter!.future;
+        return;
+      }
+
+      _refreshTokenCompleter = Completer<void>();
+      try {
+        final refreshToken = await _getRefreshToken();
+        if (refreshToken != null) {
+          await _refreshAuthDetailsByUsingRefreshToken(refreshToken);
+        }
+      } finally {
+        _refreshTokenCompleter!.complete();
+        _refreshTokenCompleter = null;
       }
     }
   }
