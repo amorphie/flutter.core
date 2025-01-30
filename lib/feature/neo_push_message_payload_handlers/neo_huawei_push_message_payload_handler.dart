@@ -7,9 +7,12 @@ class NeoHuaweiPushMessagePayloadHandler extends NeoPushMessagePayloadHandler {
       return;
     }
 
-    final String? deeplinkPath = message[NeoPushMessagePayloadHandler.pushNotificationDeeplinkKey];
-    if (deeplinkPath != null && deeplinkPath.isNotEmpty) {
-      onDeeplinkNavigation?.call(deeplinkPath);
+    if (message.containsKey(NeoPushMessagePayloadHandler.pushNotificationHuaweiDeeplinkExtrasKey)) {
+      final String? deeplinkPath = message[NeoPushMessagePayloadHandler.pushNotificationHuaweiDeeplinkExtrasKey]
+          [NeoPushMessagePayloadHandler.pushNotificationDeeplinkKey];
+      if (deeplinkPath != null && deeplinkPath.isNotEmpty) {
+        onDeeplinkNavigation?.call(deeplinkPath);
+      }
     }
   }
 }
