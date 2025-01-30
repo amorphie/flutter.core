@@ -46,11 +46,7 @@ class SignalrConnectionManager {
   }) async {
     this.methodName = methodName;
 
-    try {
-      await _hubConnection?.stop();
-    } catch (_) {
-      // No-op
-    }
+    await stop();
     _hubConnection = HubConnectionBuilder()
         .withUrl(
           serverUrl,
@@ -61,14 +57,14 @@ class SignalrConnectionManager {
       onConnectionStatusChanged(hasConnection: false);
       _neoLogger.logCustom(
         _Constants.eventNameSignalrOnClose,
-        logTypes: [NeoLoggerType.posthog, NeoLoggerType.elastic, NeoLoggerType.logger],
+        logTypes: [NeoLoggerType.elastic, NeoLoggerType.logger],
       );
     });
     _hubConnection?.onreconnecting(({error}) {
       onConnectionStatusChanged(hasConnection: false);
       _neoLogger.logCustom(
         _Constants.eventNameSignalrOnReconnecting,
-        logTypes: [NeoLoggerType.posthog, NeoLoggerType.elastic, NeoLoggerType.logger],
+        logTypes: [NeoLoggerType.elastic, NeoLoggerType.logger],
       );
     });
     _hubConnection?.onreconnected(({connectionId}) {
@@ -76,7 +72,7 @@ class SignalrConnectionManager {
       onConnectionStatusChanged(hasConnection: true);
       _neoLogger.logCustom(
         _Constants.eventNameSignalrOnReconnected,
-        logTypes: [NeoLoggerType.posthog, NeoLoggerType.elastic, NeoLoggerType.logger],
+        logTypes: [NeoLoggerType.elastic, NeoLoggerType.logger],
       );
     });
 
@@ -86,7 +82,7 @@ class SignalrConnectionManager {
         onConnectionStatusChanged(hasConnection: true);
         _neoLogger.logCustom(
           _Constants.eventNameSignalrInitSucceed,
-          logTypes: [NeoLoggerType.posthog, NeoLoggerType.elastic, NeoLoggerType.logger],
+          logTypes: [NeoLoggerType.elastic, NeoLoggerType.logger],
         );
       } catch (e) {
         onConnectionStatusChanged(hasConnection: false);
@@ -136,7 +132,11 @@ class SignalrConnectionManager {
         .firstOrNull;
   }
 
-  void stop() {
-    _hubConnection?.stop();
+  Future<void> stop() async {
+    try {
+      await _hubConnection?.stop();
+    } catch (_) {
+      // No-op
+    }
   }
 }

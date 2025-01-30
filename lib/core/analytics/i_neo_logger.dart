@@ -34,8 +34,6 @@ abstract class INeoLogger {
     Map<String, dynamic>? properties,
     Map<String, dynamic>? options,
   });
-  Future<bool?> isFeatureEnabled(String key);
-  Future<void> reloadFeatureFlags();
 
   void logError(String message);
   void logException(dynamic exception, StackTrace stackTrace, {Map<String, dynamic>? parameters});

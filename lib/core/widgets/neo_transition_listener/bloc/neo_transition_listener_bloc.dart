@@ -21,15 +21,14 @@ import 'package:get_it/get_it.dart';
 import 'package:mutex/mutex.dart';
 import 'package:neo_core/core/analytics/neo_logger.dart';
 import 'package:neo_core/core/analytics/neo_logger_type.dart';
-import 'package:neo_core/core/analytics/neo_posthog.dart';
 import 'package:neo_core/core/bus/neo_bus.dart';
 import 'package:neo_core/core/navigation/models/ekyc_event_data.dart';
 import 'package:neo_core/core/navigation/models/neo_navigation_type.dart';
 import 'package:neo_core/core/navigation/models/signalr_transition_data.dart';
+import 'package:neo_core/core/network/models/http_auth_response.dart';
 import 'package:neo_core/core/network/models/neo_signalr_event.dart';
 import 'package:neo_core/core/network/models/neo_signalr_transition_state_type.dart';
 import 'package:neo_core/core/network/neo_network.dart';
-import 'package:neo_core/core/storage/neo_core_parameter_key.dart';
 import 'package:neo_core/core/storage/neo_core_secure_storage.dart';
 import 'package:neo_core/core/widgets/neo_page/bloc/neo_page_bloc.dart';
 import 'package:neo_core/core/widgets/neo_transition_listener/usecases/get_workflow_query_parameters_usecase.dart';
@@ -49,7 +48,7 @@ class NeoTransitionListenerBloc extends Bloc<NeoTransitionListenerEvent, NeoTran
   late final Function(SignalrTransitionData navigationData) onTransitionEvent;
   late final Function(EkycEventData ekycData) onEkycEvent;
   late final Function(NeoError error, {required bool displayAsPopup})? onTransitionError;
-  late final Function({required bool isTwoFactorAuthenticated})? onLoggedInSuccessfully;
+  late final Future Function({required bool isTwoFactorAuthenticated})? onLoggedInSuccessfully;
   late final Function({required bool displayLoading}) onLoadingStatusChanged;
 
   late final SignalrConnectionManager signalrConnectionManager;
@@ -288,15 +287,15 @@ class NeoTransitionListenerBloc extends Bloc<NeoTransitionListenerEvent, NeoTran
   Future<void> _retrieveTokenIfExist(NeoSignalRTransition ongoingTransition) async {
     final String? token = ongoingTransition.additionalData?["access_token"];
     final String? refreshToken = ongoingTransition.additionalData?["refresh_token"];
+    final int expiresIn = ongoingTransition.additionalData?["expires_in"] ?? 0;
     final bool? isMobUnapproved = ongoingTransition.additionalData?["user_info"]?['is_mob_unapproved_caused_by_ekyc'];
 
     if (token != null && token.isNotEmpty) {
-      final bool isTwoFactorAuthenticated = await neoCoreSecureStorage.setAuthToken(
-        token,
+      final isTwoFactorAuthenticated = await neoWorkflowManager.neoNetworkManager.setTokensByAuthResponse(
+        HttpAuthResponse(token: token, refreshToken: refreshToken ?? "", expiresInSeconds: expiresIn),
         isMobUnapproved: isMobUnapproved,
       );
-      await neoCoreSecureStorage.write(key: NeoCoreParameterKey.secureStorageRefreshToken, value: refreshToken ?? "");
-      onLoggedInSuccessfully?.call(isTwoFactorAuthenticated: isTwoFactorAuthenticated);
+      await onLoggedInSuccessfully?.call(isTwoFactorAuthenticated: isTwoFactorAuthenticated);
     }
   }
 
@@ -407,9 +406,10 @@ class NeoTransitionListenerBloc extends Bloc<NeoTransitionListenerEvent, NeoTran
           _addEventToBus(event, fromSignalR: false);
         }
       } else {
+  
         _neoLogger.logCustom(
           "[NeoTransitionListener]: Retrieving last event by long polling is failed!",
-          logTypes: [NeoLoggerType.posthog],
+          logTypes: [NeoLoggerType.elastic],
         );
       }
     }

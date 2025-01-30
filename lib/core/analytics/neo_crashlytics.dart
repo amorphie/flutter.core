@@ -14,9 +14,14 @@
 
 import 'package:firebase_crashlytics/firebase_crashlytics.dart';
 import 'package:flutter/foundation.dart' show FlutterError, PlatformDispatcher;
+import 'package:get_it/get_it.dart';
+import 'package:neo_core/core/storage/neo_core_parameter_key.dart';
+import 'package:neo_core/core/storage/neo_core_secure_storage.dart';
 
 class NeoCrashlytics {
   NeoCrashlytics();
+
+  NeoCoreSecureStorage get _neoCoreSecureStorage => GetIt.I.get();
 
   final FirebaseCrashlytics _crashlytics = FirebaseCrashlytics.instance;
 
@@ -39,6 +44,15 @@ class NeoCrashlytics {
 
   Future<void> logException(dynamic exception, StackTrace stackTrace) async {
     await _crashlytics.recordError(exception, stackTrace);
+  }
+
+  Future<void> setUserIdentifier() async {
+    final userId = await _neoCoreSecureStorage.read(NeoCoreParameterKey.secureStorageUserId);
+    if (userId == null) {
+      return;
+    }
+
+    await _crashlytics.setUserIdentifier(userId);
   }
 
   Future<void> setEnabled({required bool enabled}) async {
