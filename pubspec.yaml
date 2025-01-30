@@ -7,23 +7,23 @@ publish_to: 'none' # Remove this line if you wish to publish to pub.dev
 version: 0.0.1
 
 environment:
-  sdk: '>=3.3.4 <4.0.0'
+  sdk: '>=3.4.0 <4.0.0'
 
 dependencies:
   flutter:
     sdk: flutter
 
   # Core
-  http: 1.2.1
+  http: 1.3.0
   rxdart: ^0.27.7
   flutter_bloc: ^8.1.3
   bloc_concurrency: ^0.2.5
   equatable: ^2.0.5
   json_annotation: ^4.8.1
-  signalr_netcore: ^1.3.5 # Remove dependency_overrides when update is possible
+  signalr_netcore: ^1.4.0
   flutter_secure_storage: 9.2.2
   shared_preferences: ^2.2.2
-  device_info_plus: ^9.1.0
+  device_info_plus: ^11.2.2
   package_info_plus: ^8.0.0
   collection: ^1.17.1
   meta: ^1.9.1
@@ -64,7 +64,7 @@ dependencies:
       url: https://github.com/amorphie/flutter.shield
 
 dependency_overrides:
-  uuid: ^4.1.0 # Delete this overrides when signalr_netcore package is updated
+  web: 1.0.0 # TODO: Update other dependencies and delete this override
 
 dev_dependencies:
   flutter_test:
