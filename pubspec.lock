@@ -494,6 +494,15 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "3.1.2"
+  flutter_shield:
+    dependency: "direct main"
+    description:
+      path: "."
+      ref: HEAD
+      resolved-ref: "5d83b925b4611f3cd0f6c8ccf17b61313a807ae7"
+      url: "git@github.com:amorphie/flutter.shield.git"
+    source: git
+    version: "0.1.1"
   flutter_test:
     dependency: "direct dev"
     description: flutter

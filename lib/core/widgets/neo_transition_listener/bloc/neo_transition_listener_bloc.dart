@@ -31,6 +31,7 @@ import 'package:neo_core/core/network/models/neo_signalr_transition_state_type.d
 import 'package:neo_core/core/network/neo_network.dart';
 import 'package:neo_core/core/storage/neo_core_secure_storage.dart';
 import 'package:neo_core/core/widgets/neo_page/bloc/neo_page_bloc.dart';
+import 'package:neo_core/core/widgets/neo_transition_listener/bloc/usecases/process_login_certificate_silent_event_use_case.dart';
 import 'package:neo_core/core/widgets/neo_transition_listener/usecases/get_workflow_query_parameters_usecase.dart';
 import 'package:neo_core/core/workflow_form/neo_workflow_manager.dart';
 import 'package:universal_io/io.dart';
@@ -127,6 +128,7 @@ class NeoTransitionListenerBloc extends Bloc<NeoTransitionListenerEvent, NeoTran
               _onStopListening();
             }
             if (event.isSilentEvent) {
+              unawaited(ProcessLoginCertificateSilentEventUseCase().call(event, this));
               GetIt.I.get<NeoWidgetEventBus>().addEvent(
                     NeoWidgetEvent(eventId: NeoPageBloc.dataEventKey, data: event.transition),
                   );
