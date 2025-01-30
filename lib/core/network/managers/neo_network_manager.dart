@@ -59,7 +59,7 @@ class NeoNetworkManager {
   final NeoSharedPrefs neoSharedPrefs;
   final String workflowClientId;
   final String workflowClientSecret;
-  final String? sslCertificateFilePath;
+  final List<String> sslCertificateFilePaths;
   final Function(String endpoint, String? requestId)? onRequestSucceed;
   final Function(NeoError neoError, String requestId)? onRequestFailed;
   final Function()? onInvalidTokenError;
@@ -83,7 +83,7 @@ class NeoNetworkManager {
     required this.neoSharedPrefs,
     required this.workflowClientId,
     required this.workflowClientSecret,
-    this.sslCertificateFilePath,
+    this.sslCertificateFilePaths = const [],
     this.onRequestSucceed,
     this.onRequestFailed,
     this.onInvalidTokenError,
@@ -178,11 +178,17 @@ class NeoNetworkManager {
     });
 
   Future<SecurityContext?> get _getSecurityContext async {
-    if (sslCertificateFilePath == null) {
+    if (sslCertificateFilePaths.isEmpty) {
       return null;
     }
-    final sslCertificate = await rootBundle.load(sslCertificateFilePath!);
-    final securityContext = SecurityContext()..setTrustedCertificatesBytes(sslCertificate.buffer.asInt8List());
+
+    final securityContext = SecurityContext();
+
+    for (final String filePath in sslCertificateFilePaths) {
+      final sslCertificate = await rootBundle.load(filePath);
+      securityContext.setTrustedCertificatesBytes(sslCertificate.buffer.asInt8List());
+    }
+
     return securityContext;
   }
 
