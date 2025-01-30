@@ -21,6 +21,7 @@ import 'package:http/http.dart' as http;
 import 'package:http/io_client.dart';
 import 'package:json_annotation/json_annotation.dart';
 import 'package:logger/logger.dart';
+import 'package:mutex/mutex.dart';
 import 'package:neo_core/core/analytics/neo_logger.dart';
 import 'package:neo_core/core/network/models/http_auth_response.dart';
 import 'package:neo_core/core/network/models/http_method.dart';
@@ -69,6 +70,8 @@ class NeoNetworkManager {
 
   late final bool _enableSslPinning;
   DateTime? _tokenExpirationTime;
+  Completer? _refreshTokenCompleter;
+  final _refreshTokenMutex = Mutex();
 
   bool get _isTokenExpired => _tokenExpirationTime != null && DateTime.now().isAfter(_tokenExpirationTime!);
 
@@ -194,7 +197,9 @@ class NeoNetworkManager {
       return NeoResponse.error(const NeoError());
     }
     await getTemporaryTokenForNotLoggedInUser(currentCall: neoCall);
-    await _refreshTokenIfExpired();
+    if (neoCall.endpoint != _Constants.endpointGetToken) {
+      await _refreshTokenIfExpired();
+    }
 
     NeoResponse response;
     try {
@@ -384,7 +389,6 @@ class NeoNetworkManager {
   }
 
   Future<NeoResponse> _refreshAuthDetailsByUsingRefreshToken(String refreshToken) async {
-    await secureStorage.delete(NeoCoreParameterKey.secureStorageRefreshToken);
     final response = await call(
       NeoHttpCall(
         endpoint: _Constants.endpointGetToken,
@@ -397,13 +401,16 @@ class NeoNetworkManager {
     if (response.isSuccess) {
       final authResponse = HttpAuthResponse.fromJson(response.asSuccess.data);
       await setTokensByAuthResponse(authResponse);
+    } else {
+      await secureStorage.deleteTokensWithRelatedData();
+      onInvalidTokenError?.call();
     }
     return response;
   }
 
   /// Returns true if two factor authenticated
   Future<bool> setTokensByAuthResponse(HttpAuthResponse authResponse, {bool? isMobUnapproved}) async {
-    final tokenExpirationDurationInSeconds = max(0, (authResponse.expiresInSeconds ?? 0) - 60);
+    final tokenExpirationDurationInSeconds = max(0, (authResponse.expiresInSeconds) - 60);
     _tokenExpirationTime = DateTime.now().add(Duration(seconds: tokenExpirationDurationInSeconds));
     final isTwoFactorAuth = await secureStorage.setAuthToken(authResponse.token, isMobUnapproved: isMobUnapproved);
     await secureStorage.write(key: NeoCoreParameterKey.secureStorageRefreshToken, value: authResponse.refreshToken);
@@ -412,7 +419,7 @@ class NeoNetworkManager {
 
   Future<bool> getTemporaryTokenForNotLoggedInUser({NeoHttpCall? currentCall}) async {
     // Prevent infinite call loop
-    if (currentCall?.endpoint == _Constants.endpointGetToken) {
+    if (currentCall?.endpoint == _Constants.endpointGetToken || _isTwoFactorAuthenticated) {
       return false;
     }
     final authToken = await secureStorage.read(NeoCoreParameterKey.secureStorageAuthToken);
@@ -440,14 +447,30 @@ class NeoNetworkManager {
     }
   }
 
+  bool get _isTwoFactorAuthenticated => neoSharedPrefs.read(NeoCoreParameterKey.sharedPrefsAuthStatus) == "2FA";
+
   Future<String?> _getRefreshToken() => secureStorage.read(NeoCoreParameterKey.secureStorageRefreshToken);
 
   Future<void> _refreshTokenIfExpired() async {
     if (_isTokenExpired) {
-      final refreshToken = await _getRefreshToken();
-      if (refreshToken != null) {
-        await _refreshAuthDetailsByUsingRefreshToken(refreshToken);
+      if (_refreshTokenCompleter != null) {
+        await _refreshTokenCompleter!.future;
+        return;
       }
+      await _refreshTokenMutex.protect(() async {
+        _refreshTokenCompleter = Completer<void>();
+        try {
+          final refreshToken = await _getRefreshToken();
+          if (refreshToken != null) {
+            await _refreshAuthDetailsByUsingRefreshToken(refreshToken);
+          } else {
+            onInvalidTokenError?.call();
+          }
+        } finally {
+          _refreshTokenCompleter!.complete();
+          _refreshTokenCompleter = null;
+        }
+      });
     }
   }
 
