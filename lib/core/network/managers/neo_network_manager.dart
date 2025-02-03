@@ -184,10 +184,10 @@ class NeoNetworkManager {
 
     final securityContext = SecurityContext();
 
-    for (final String filePath in sslCertificateFilePaths) {
+    await Future.forEach(sslCertificateFilePaths, (filePath) async {
       final sslCertificate = await rootBundle.load(filePath);
       securityContext.setTrustedCertificatesBytes(sslCertificate.buffer.asInt8List());
-    }
+    });
 
     return securityContext;
   }
