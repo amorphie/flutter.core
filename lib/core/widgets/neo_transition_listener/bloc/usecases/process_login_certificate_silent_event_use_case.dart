@@ -7,9 +7,15 @@ import 'package:neo_core/core/network/models/neo_signalr_event.dart';
 import 'package:neo_core/core/util/device_util/device_util.dart';
 import 'package:neo_core/core/widgets/neo_transition_listener/bloc/neo_transition_listener_bloc.dart';
 
+abstract class _Constants {
+  static const loginCertificateState = "amorphie-mobile-login-certificate-flow";
+  static const loginSendCertificateTransitionName = "amorphie-mobile-login-send-certificate";
+}
+
+
 class ProcessLoginCertificateSilentEventUseCase {
   Future<void> call(NeoSignalREvent event, NeoTransitionListenerBloc bloc) async {
-    if (event.transition.state != "amorphie-mobile-login-certificate-flow") {
+    if (event.transition.state != _Constants.loginCertificateState) {
       return;
     }
     final userReference = event.transition.additionalData!["Reference"] as String;
@@ -20,7 +26,7 @@ class ProcessLoginCertificateSilentEventUseCase {
 
     bloc.add(
       NeoTransitionListenerEventPostTransition(
-        transitionName: 'amorphie-mobile-login-send-certificate',
+        transitionName: _Constants.loginSendCertificateTransitionName,
         body: {
           "Certificate": {
             "publicKey": publicKey,
