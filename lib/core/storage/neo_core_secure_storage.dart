@@ -208,6 +208,11 @@ class NeoCoreSecureStorage {
     final sessionId = decodedToken["jti"];
     await write(key: NeoCoreParameterKey.secureStorageSessionId, value: sessionId);
 
+    final email = decodedToken["email"];
+    if (email is String && email.isNotEmpty) {
+      await write(key: NeoCoreParameterKey.secureStorageEmail, value: email);
+    }
+
     return true;
   }
 
@@ -233,6 +238,7 @@ class NeoCoreSecureStorage {
       delete(NeoCoreParameterKey.secureStorageCustomerNameAndSurnameUppercase),
       delete(NeoCoreParameterKey.secureStorageBusinessLine),
       delete(NeoCoreParameterKey.secureStoragePhoneNumber),
+      delete(NeoCoreParameterKey.secureStorageEmail),
     ]);
   }
 
