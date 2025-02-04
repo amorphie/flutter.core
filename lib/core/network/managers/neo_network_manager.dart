@@ -14,11 +14,11 @@ import 'dart:async';
 import 'dart:convert';
 import 'dart:math';
 
+import 'package:dio/dio.dart';
+import 'package:dio/io.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
 import 'package:get_it/get_it.dart';
-import 'package:http/http.dart' as http;
-import 'package:http/io_client.dart';
 import 'package:json_annotation/json_annotation.dart';
 import 'package:logger/logger.dart';
 import 'package:mutex/mutex.dart';
@@ -75,7 +75,7 @@ class NeoNetworkManager {
 
   bool get _isTokenExpired => _tokenExpirationTime != null && DateTime.now().isAfter(_tokenExpirationTime!);
 
-  late final http.Client httpClient;
+  final httpClient = Dio();
 
   NeoNetworkManager({
     required this.httpClientConfig,
@@ -235,61 +235,131 @@ class NeoNetworkManager {
 
   Future<NeoResponse> _requestGet(String fullPath, NeoHttpCall neoCall) async {
     final fullPathWithQueries = _getFullPathWithQueries(fullPath, neoCall.queryProviders);
-    final response = await httpClient
-        .get(
-          Uri.parse(fullPathWithQueries),
-          headers: (await _defaultHeaders)..addAll(neoCall.headerParameters),
-        )
-        .timeout(timeoutDuration);
-    return _createResponse(response, neoCall);
+    try {
+      final response = await httpClient
+          .get(
+            fullPathWithQueries,
+            options: Options(
+              responseType: ResponseType.bytes,
+              headers: (await _defaultHeaders)..addAll(neoCall.headerParameters),
+            ),
+          )
+          .timeout(timeoutDuration);
+
+      return _createResponse(response, neoCall);
+    } on DioException catch (e) {
+      if (e.type == DioExceptionType.connectionTimeout || e.type == DioExceptionType.receiveTimeout) {
+        _neoLogger.logError("[NeoNetworkManager]: Service call timeout! Endpoint: ${neoCall.endpoint}");
+        return NeoResponse.error(const NeoError(responseCode: HttpStatus.requestTimeout));
+      } else {
+        _neoLogger.logError("[NeoNetworkManager]: Service call failed! Endpoint: ${neoCall.endpoint}");
+        return NeoResponse.error(const NeoError());
+      }
+    }
   }
 
   Future<NeoResponse> _requestPost(String fullPath, NeoHttpCall neoCall) async {
     final fullPathWithQueries = _getFullPathWithQueries(fullPath, neoCall.queryProviders);
-    final response = await httpClient
-        .post(
-          Uri.parse(fullPathWithQueries),
-          headers: (await _defaultPostHeaders)..addAll(neoCall.headerParameters),
-          body: json.encode(neoCall.body),
-        )
-        .timeout(timeoutDuration);
-    return _createResponse(response, neoCall);
+    try {
+      final response = await httpClient
+          .post(
+            fullPathWithQueries,
+            data: json.encode(neoCall.body),
+            options: Options(
+              responseType: ResponseType.bytes,
+              headers: (await _defaultPostHeaders)..addAll(neoCall.headerParameters),
+            ),
+          )
+          .timeout(timeoutDuration);
+
+      return _createResponse(response, neoCall);
+    } on DioException catch (e) {
+      if (e.type == DioExceptionType.connectionTimeout || e.type == DioExceptionType.receiveTimeout) {
+        _neoLogger.logError("[NeoNetworkManager]: Service call timeout! Endpoint: ${neoCall.endpoint}");
+        return NeoResponse.error(const NeoError(responseCode: HttpStatus.requestTimeout));
+      } else {
+        _neoLogger.logError("[NeoNetworkManager]: Service call failed! Endpoint: ${neoCall.endpoint}");
+        return NeoResponse.error(const NeoError());
+      }
+    }
   }
 
   Future<NeoResponse> _requestDelete(String fullPath, NeoHttpCall neoCall) async {
     final fullPathWithQueries = _getFullPathWithQueries(fullPath, neoCall.queryProviders);
-    final response = await httpClient
-        .delete(
-          Uri.parse(fullPathWithQueries),
-          headers: (await _defaultHeaders)..addAll(neoCall.headerParameters),
-          body: json.encode(neoCall.body),
-        )
-        .timeout(timeoutDuration);
-    return _createResponse(response, neoCall);
+    try {
+      final response = await httpClient
+          .delete(
+            fullPathWithQueries,
+            data: json.encode(neoCall.body),
+            options: Options(
+              responseType: ResponseType.bytes,
+              headers: (await _defaultHeaders)..addAll(neoCall.headerParameters),
+            ),
+          )
+          .timeout(timeoutDuration);
+
+      return _createResponse(response, neoCall);
+    } on DioException catch (e) {
+      if (e.type == DioExceptionType.connectionTimeout || e.type == DioExceptionType.receiveTimeout) {
+        _neoLogger.logError("[NeoNetworkManager]: Service call timeout! Endpoint: ${neoCall.endpoint}");
+        return NeoResponse.error(const NeoError(responseCode: HttpStatus.requestTimeout));
+      } else {
+        _neoLogger.logError("[NeoNetworkManager]: Service call failed! Endpoint: ${neoCall.endpoint}");
+        return NeoResponse.error(const NeoError());
+      }
+    }
   }
 
   Future<NeoResponse> _requestPut(String fullPath, NeoHttpCall neoCall) async {
     final fullPathWithQueries = _getFullPathWithQueries(fullPath, neoCall.queryProviders);
-    final response = await httpClient
-        .put(
-          Uri.parse(fullPathWithQueries),
-          headers: (await _defaultPostHeaders)..addAll(neoCall.headerParameters),
-          body: json.encode(neoCall.body),
-        )
-        .timeout(timeoutDuration);
-    return _createResponse(response, neoCall);
+    try {
+      final response = await httpClient
+          .put(
+            fullPathWithQueries,
+            data: json.encode(neoCall.body),
+            options: Options(
+              responseType: ResponseType.bytes,
+              headers: (await _defaultPostHeaders)..addAll(neoCall.headerParameters),
+            ),
+          )
+          .timeout(timeoutDuration);
+
+      return _createResponse(response, neoCall);
+    } on DioException catch (e) {
+      if (e.type == DioExceptionType.connectionTimeout || e.type == DioExceptionType.receiveTimeout) {
+        _neoLogger.logError("[NeoNetworkManager]: Service call timeout! Endpoint: ${neoCall.endpoint}");
+        return NeoResponse.error(const NeoError(responseCode: HttpStatus.requestTimeout));
+      } else {
+        _neoLogger.logError("[NeoNetworkManager]: Service call failed! Endpoint: ${neoCall.endpoint}");
+        return NeoResponse.error(const NeoError());
+      }
+    }
   }
 
   Future<NeoResponse> _requestPatch(String fullPath, NeoHttpCall neoCall) async {
     final fullPathWithQueries = _getFullPathWithQueries(fullPath, neoCall.queryProviders);
-    final response = await httpClient
-        .patch(
-          Uri.parse(fullPathWithQueries),
-          headers: (await _defaultPostHeaders)..addAll(neoCall.headerParameters),
-          body: json.encode(neoCall.body),
-        )
-        .timeout(timeoutDuration);
-    return _createResponse(response, neoCall);
+    try {
+      final response = await httpClient
+          .patch(
+            fullPathWithQueries,
+            data: json.encode(neoCall.body),
+            options: Options(
+              responseType: ResponseType.bytes,
+              headers: (await _defaultPostHeaders)..addAll(neoCall.headerParameters),
+            ),
+          )
+          .timeout(timeoutDuration);
+
+      return _createResponse(response, neoCall);
+    } on DioException catch (e) {
+      if (e.type == DioExceptionType.connectionTimeout || e.type == DioExceptionType.receiveTimeout) {
+        _neoLogger.logError("[NeoNetworkManager]: Service call timeout! Endpoint: ${neoCall.endpoint}");
+        return NeoResponse.error(const NeoError(responseCode: HttpStatus.requestTimeout));
+      } else {
+        _neoLogger.logError("[NeoNetworkManager]: Service call failed! Endpoint: ${neoCall.endpoint}");
+        return NeoResponse.error(const NeoError());
+      }
+    }
   }
 
   String _getFullPathWithQueries(String fullPath, List<HttpQueryProvider> queryProviders) {
@@ -305,27 +375,28 @@ class NeoNetworkManager {
     return uri.replace(queryParameters: queryParameters).toString();
   }
 
-  Future<NeoResponse> _createResponse(http.Response response, NeoHttpCall call) async {
+  Future<NeoResponse> _createResponse(Response response, NeoHttpCall call) async {
     Map<String, dynamic>? responseJSON;
     try {
-      const utf8Decoder = Utf8Decoder();
-      final responseString = utf8Decoder.convert(response.bodyBytes);
+      final responseString = const Utf8Decoder().convert(response.data);
       final decodedResponse = json.decode(responseString);
       if (decodedResponse is Map<String, dynamic>) {
         responseJSON = decodedResponse;
       } else {
         responseJSON = {_Constants.wrapperResponseKey: decodedResponse};
       }
-    } catch (_) {
+    } catch (e) {
+      _neoLogger.logError("[NeoNetworkManager]: Response parse error! Endpoint: ${call.endpoint}. $e");
       responseJSON = {};
     }
 
     _logResponse(response);
+    final statusCode = response.statusCode ?? 0;
 
-    if (response.statusCode >= 200 && response.statusCode < 300) {
+    if (statusCode >= 200 && statusCode < 300) {
       onRequestSucceed?.call(call.endpoint, call.requestId);
       return NeoResponse.success(responseJSON);
-    } else if (response.statusCode == _Constants.responseCodeUnauthorized) {
+    } else if (statusCode == _Constants.responseCodeUnauthorized) {
       if (call.endpoint == _Constants.endpointGetToken) {
         final error = NeoError.fromJson(responseJSON);
         _neoLogger.logError("[NeoNetworkManager]: Token service error!");
@@ -350,20 +421,20 @@ class NeoNetworkManager {
       }
     } else {
       try {
-        responseJSON.addAll({'body': response.body});
+        responseJSON.addAll({'body': response.data});
         final hasErrorCode = responseJSON.containsKey("errorCode");
         if (!hasErrorCode) {
-          responseJSON.addAll({'errorCode': response.statusCode});
+          responseJSON.addAll({'errorCode': statusCode});
         }
         return _handleErrorResponse(NeoError.fromJson(responseJSON), call);
       } on MissingRequiredKeysException {
-        final error = NeoError(responseCode: response.statusCode);
+        final error = NeoError(responseCode: statusCode);
         return _handleErrorResponse(error, call);
       } catch (e) {
         _neoLogger.logError(
-          "[NeoNetworkManager]: Service call failed! Status code: ${response.statusCode}.Endpoint: ${call.endpoint}",
+          "[NeoNetworkManager]: Service call failed! Status code: $statusCode.Endpoint: ${call.endpoint}",
         );
-        return _handleErrorResponse(NeoError(responseCode: response.statusCode), call);
+        return _handleErrorResponse(NeoError(responseCode: statusCode), call);
       }
     }
   }
@@ -482,7 +553,6 @@ class NeoNetworkManager {
 
   Future<void> _initHttpClient() async {
     if (kIsWeb) {
-      httpClient = http.Client();
       return;
     }
 
@@ -493,21 +563,22 @@ class NeoNetworkManager {
       client.badCertificateCallback = (X509Certificate cert, String host, int port) => false;
     }
 
-    httpClient = IOClient(client);
+    httpClient.httpClientAdapter = IOHttpClientAdapter(createHttpClient: () => client);
   }
 
-  void _logResponse(http.Response response) {
-    final isSuccess = response.statusCode >= 200 && response.statusCode < 300;
+  void _logResponse(Response response) {
+    final statusCode = response.statusCode ?? 0;
+    final isSuccess = statusCode >= 200 && statusCode < 300;
     final logLevel = isSuccess ? Level.trace : Level.warning;
     switch (logScale) {
       case NeoNetworkManagerLogScale.all:
         _neoLogger.logConsole(
-          "[NeoNetworkManager] Response code: ${response.statusCode}.\nURL: ${response.request?.url}\nBody: ${response.body}",
+          "[NeoNetworkManager] Response code: ${response.statusCode}.\nURL: ${response.requestOptions.uri.path}\nBody: ${response.data}",
           logLevel: logLevel,
         );
       case NeoNetworkManagerLogScale.simplified:
         _neoLogger.logConsole(
-          "[NeoNetworkManager] Response code: ${response.statusCode}.\nURL: ${response.request?.url}",
+          "[NeoNetworkManager] Response code: ${response.statusCode}.\nURL: ${response.requestOptions.uri.path}",
           logLevel: logLevel,
         );
       case NeoNetworkManagerLogScale.none:
