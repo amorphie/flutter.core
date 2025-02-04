@@ -23,15 +23,15 @@ import 'package:json_annotation/json_annotation.dart';
 import 'package:logger/logger.dart';
 import 'package:mutex/mutex.dart';
 import 'package:neo_core/core/analytics/neo_logger.dart';
+import 'package:neo_core/core/network/interceptors/constant_headers_request_interceptor.dart';
+import 'package:neo_core/core/network/interceptors/dynamic_headers_request_interceptor.dart';
 import 'package:neo_core/core/network/models/http_auth_response.dart';
 import 'package:neo_core/core/network/models/http_method.dart';
 import 'package:neo_core/core/network/models/neo_http_call.dart';
 import 'package:neo_core/core/network/models/neo_network_header_key.dart';
 import 'package:neo_core/core/storage/neo_core_parameter_key.dart';
 import 'package:neo_core/core/storage/neo_shared_prefs.dart';
-import 'package:neo_core/core/util/device_util/models/neo_device_info.dart';
 import 'package:neo_core/core/util/uuid_util.dart';
-import 'package:neo_core/core/workflow_form/neo_workflow_manager.dart';
 import 'package:neo_core/neo_core.dart';
 import 'package:universal_io/io.dart';
 
@@ -39,7 +39,7 @@ abstract class _Constants {
   static const int responseCodeUnauthorized = 401;
   static const String wrapperResponseKey = "data";
   static const String endpointGetToken = "get-token";
-  static const String headerValueContentType = "application/json";
+  static const String endpointElastic = "elastic";
   static const String requestKeyClientId = "client_id";
   static const String requestKeyClientSecret = "client_secret";
   static const String requestKeyGrantType = "grant_type";
@@ -48,7 +48,6 @@ abstract class _Constants {
   static const String requestKeyRefreshToken = "refresh_token";
   static const String requestKeyScopes = "scopes";
   static const List<String> requestValueScopes = ["retail-customer"];
-  static const String languageCodeEn = "en";
 }
 
 enum NeoNetworkManagerLogScale { none, simplified, all }
@@ -92,87 +91,13 @@ class NeoNetworkManager {
     this.timeoutDuration = const Duration(minutes: 1),
   });
 
-  /// Read NeoWorkflowManager with try catch, because it depends on NeoNetworkManager
-  NeoWorkflowManager? get _neoWorkflowManager {
-    try {
-      return GetIt.I.get<NeoWorkflowManager>();
-    } catch (e) {
-      return null;
-    }
-  }
-
   Future<void> init({required bool enableSslPinning}) async {
     _enableSslPinning = enableSslPinning;
     await _initHttpClient();
     await getTemporaryTokenForNotLoggedInUser();
   }
 
-  Future<Map<String, String>> get _defaultHeaders async {
-    final results = await Future.wait([
-      secureStorage.read(NeoCoreParameterKey.secureStorageDeviceId),
-      secureStorage.read(NeoCoreParameterKey.secureStorageInstallationId),
-      secureStorage.read(NeoCoreParameterKey.secureStorageDeviceInfo),
-      _authHeader,
-      PackageUtil().getAppVersionWithBuildNumber(),
-    ]);
-
-    final deviceId = results[0] as String? ?? "";
-    final installationId = results[1] as String? ?? "";
-    final deviceInfo = results[2] != null ? NeoDeviceInfo.decode(results[2] as String? ?? "") : null;
-    final authHeader = results[3] as Map<String, String>? ?? {};
-    final appVersion = results[4] as String? ?? "";
-
-    final userAgentHeader = kIsWeb
-        ? <String, String>{}
-        : {
-            NeoNetworkHeaderKey.userAgent: "${deviceInfo?.platform ?? "-"}/"
-                "${defaultHeaders[NeoNetworkHeaderKey.application]}/"
-                "$appVersion/"
-                "${deviceInfo?.version ?? "-"}/"
-                "${deviceInfo?.model ?? "-"}",
-          };
-
-    return {
-      NeoNetworkHeaderKey.contentType: _Constants.headerValueContentType,
-      NeoNetworkHeaderKey.acceptLanguage: _languageCode,
-      NeoNetworkHeaderKey.contentLanguage: _languageCode,
-      NeoNetworkHeaderKey.applicationVersion: appVersion,
-      NeoNetworkHeaderKey.deviceId: deviceId,
-      NeoNetworkHeaderKey.installationId: installationId,
-      NeoNetworkHeaderKey.tokenId: installationId, // TODO: Delete tokenId after the backend changes are done
-      NeoNetworkHeaderKey.requestId: UuidUtil.generateUUIDWithoutHyphen(),
-      NeoNetworkHeaderKey.deviceInfo: deviceInfo?.model ?? "",
-      NeoNetworkHeaderKey.deviceModel: deviceInfo?.model ?? "",
-      NeoNetworkHeaderKey.deviceVersion: deviceInfo?.version ?? "",
-      NeoNetworkHeaderKey.devicePlatform: deviceInfo?.platform ?? "",
-      NeoNetworkHeaderKey.deployment: deviceInfo?.platform ?? "",
-      NeoNetworkHeaderKey.instanceId: _neoWorkflowManager?.instanceId ?? "",
-      NeoNetworkHeaderKey.workflowName: _neoWorkflowManager?.getWorkflowName() ?? "",
-    }
-      ..addAll(authHeader)
-      ..addAll(userAgentHeader)
-      ..addAll(defaultHeaders);
-  }
-
-  String get _languageCode {
-    final languageCodeReadResult = neoSharedPrefs.read(NeoCoreParameterKey.sharedPrefsLanguageCode);
-    final String languageCode = languageCodeReadResult != null ? languageCodeReadResult as String : "";
-
-    if (languageCode == _Constants.languageCodeEn) {
-      return "$languageCode-US";
-    } else {
-      return '$languageCode-${languageCode.toUpperCase()}';
-    }
-  }
-
-  Future<Map<String, String>> get _authHeader async {
-    final authToken = await secureStorage.read(NeoCoreParameterKey.secureStorageAuthToken);
-    return authToken == null ? {} : {NeoNetworkHeaderKey.authorization: 'Bearer $authToken'};
-  }
-
-  Future<Map<String, String>> get _defaultPostHeaders async => <String, String>{}
-    ..addAll(await _defaultHeaders)
-    ..addAll({
+  Map<String, String> get _defaultPostHeaders => <String, String>{}..addAll({
       NeoNetworkHeaderKey.user: UuidUtil.generateUUID(), // STOPSHIP: Delete it
       NeoNetworkHeaderKey.behalfOfUser: UuidUtil.generateUUID(), // STOPSHIP: Delete it
     });
@@ -241,20 +166,14 @@ class NeoNetworkManager {
             fullPathWithQueries,
             options: Options(
               responseType: ResponseType.bytes,
-              headers: (await _defaultHeaders)..addAll(neoCall.headerParameters),
+              headers: neoCall.headerParameters,
             ),
           )
           .timeout(timeoutDuration);
 
       return _createResponse(response, neoCall);
     } on DioException catch (e) {
-      if (e.type == DioExceptionType.connectionTimeout || e.type == DioExceptionType.receiveTimeout) {
-        _neoLogger.logError("[NeoNetworkManager]: Service call timeout! Endpoint: ${neoCall.endpoint}");
-        return NeoResponse.error(const NeoError(responseCode: HttpStatus.requestTimeout));
-      } else {
-        _neoLogger.logError("[NeoNetworkManager]: Service call failed! Endpoint: ${neoCall.endpoint}");
-        return NeoResponse.error(const NeoError());
-      }
+      return _handleDioTimeoutException(e, neoCall);
     }
   }
 
@@ -267,20 +186,28 @@ class NeoNetworkManager {
             data: json.encode(neoCall.body),
             options: Options(
               responseType: ResponseType.bytes,
-              headers: (await _defaultPostHeaders)..addAll(neoCall.headerParameters),
+              headers: _defaultPostHeaders..addAll(neoCall.headerParameters),
             ),
           )
           .timeout(timeoutDuration);
 
       return _createResponse(response, neoCall);
     } on DioException catch (e) {
-      if (e.type == DioExceptionType.connectionTimeout || e.type == DioExceptionType.receiveTimeout) {
+      return _handleDioTimeoutException(e, neoCall);
+    }
+  }
+
+  NeoResponse _handleDioTimeoutException(DioException e, NeoHttpCall neoCall) {
+    if (e.type == DioExceptionType.connectionTimeout || e.type == DioExceptionType.receiveTimeout) {
+      if (neoCall.endpoint != _Constants.endpointElastic) {
         _neoLogger.logError("[NeoNetworkManager]: Service call timeout! Endpoint: ${neoCall.endpoint}");
-        return NeoResponse.error(const NeoError(responseCode: HttpStatus.requestTimeout));
-      } else {
-        _neoLogger.logError("[NeoNetworkManager]: Service call failed! Endpoint: ${neoCall.endpoint}");
-        return NeoResponse.error(const NeoError());
       }
+      return NeoResponse.error(const NeoError(responseCode: HttpStatus.requestTimeout));
+    } else {
+      if (neoCall.endpoint != _Constants.endpointElastic) {
+        _neoLogger.logError("[NeoNetworkManager]: Service call failed! Endpoint: ${neoCall.endpoint}");
+      }
+      return NeoResponse.error(const NeoError());
     }
   }
 
@@ -293,20 +220,14 @@ class NeoNetworkManager {
             data: json.encode(neoCall.body),
             options: Options(
               responseType: ResponseType.bytes,
-              headers: (await _defaultHeaders)..addAll(neoCall.headerParameters),
+              headers: neoCall.headerParameters,
             ),
           )
           .timeout(timeoutDuration);
 
       return _createResponse(response, neoCall);
     } on DioException catch (e) {
-      if (e.type == DioExceptionType.connectionTimeout || e.type == DioExceptionType.receiveTimeout) {
-        _neoLogger.logError("[NeoNetworkManager]: Service call timeout! Endpoint: ${neoCall.endpoint}");
-        return NeoResponse.error(const NeoError(responseCode: HttpStatus.requestTimeout));
-      } else {
-        _neoLogger.logError("[NeoNetworkManager]: Service call failed! Endpoint: ${neoCall.endpoint}");
-        return NeoResponse.error(const NeoError());
-      }
+      return _handleDioTimeoutException(e, neoCall);
     }
   }
 
@@ -319,20 +240,14 @@ class NeoNetworkManager {
             data: json.encode(neoCall.body),
             options: Options(
               responseType: ResponseType.bytes,
-              headers: (await _defaultPostHeaders)..addAll(neoCall.headerParameters),
+              headers: _defaultPostHeaders..addAll(neoCall.headerParameters),
             ),
           )
           .timeout(timeoutDuration);
 
       return _createResponse(response, neoCall);
     } on DioException catch (e) {
-      if (e.type == DioExceptionType.connectionTimeout || e.type == DioExceptionType.receiveTimeout) {
-        _neoLogger.logError("[NeoNetworkManager]: Service call timeout! Endpoint: ${neoCall.endpoint}");
-        return NeoResponse.error(const NeoError(responseCode: HttpStatus.requestTimeout));
-      } else {
-        _neoLogger.logError("[NeoNetworkManager]: Service call failed! Endpoint: ${neoCall.endpoint}");
-        return NeoResponse.error(const NeoError());
-      }
+      return _handleDioTimeoutException(e, neoCall);
     }
   }
 
@@ -345,20 +260,14 @@ class NeoNetworkManager {
             data: json.encode(neoCall.body),
             options: Options(
               responseType: ResponseType.bytes,
-              headers: (await _defaultPostHeaders)..addAll(neoCall.headerParameters),
+              headers: _defaultPostHeaders..addAll(neoCall.headerParameters),
             ),
           )
           .timeout(timeoutDuration);
 
       return _createResponse(response, neoCall);
     } on DioException catch (e) {
-      if (e.type == DioExceptionType.connectionTimeout || e.type == DioExceptionType.receiveTimeout) {
-        _neoLogger.logError("[NeoNetworkManager]: Service call timeout! Endpoint: ${neoCall.endpoint}");
-        return NeoResponse.error(const NeoError(responseCode: HttpStatus.requestTimeout));
-      } else {
-        _neoLogger.logError("[NeoNetworkManager]: Service call failed! Endpoint: ${neoCall.endpoint}");
-        return NeoResponse.error(const NeoError());
-      }
+      return _handleDioTimeoutException(e, neoCall);
     }
   }
 
@@ -386,8 +295,7 @@ class NeoNetworkManager {
         responseJSON = {_Constants.wrapperResponseKey: decodedResponse};
       }
     } catch (e) {
-      _neoLogger.logError("[NeoNetworkManager]: Response parse error! Endpoint: ${call.endpoint}. $e");
-      responseJSON = {};
+      responseJSON = {_Constants.wrapperResponseKey: response.data};
     }
 
     _logResponse(response);
@@ -556,7 +464,7 @@ class NeoNetworkManager {
       return;
     }
 
-    final userAgent = (await _defaultHeaders)[NeoNetworkHeaderKey.userAgent];
+    final userAgent = defaultHeaders[NeoNetworkHeaderKey.userAgent];
     final client = HttpClient(context: _enableSslPinning ? await _getSecurityContext : null)..userAgent = userAgent;
 
     if (_enableSslPinning) {
@@ -564,6 +472,14 @@ class NeoNetworkManager {
     }
 
     httpClient.httpClientAdapter = IOHttpClientAdapter(createHttpClient: () => client);
+    httpClient.interceptors.addAll([
+      ConstantHeadersRequestInterceptor(
+        defaultHeaders: defaultHeaders,
+        secureStorage: secureStorage,
+        neoSharedPrefs: neoSharedPrefs,
+      ),
+      DynamicHeadersRequestInterceptor(secureStorage: secureStorage),
+    ]);
   }
 
   void _logResponse(Response response) {
