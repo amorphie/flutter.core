@@ -58,6 +58,11 @@ dependencies:
   child_builder: ^2.0.1
   template_expressions: ^3.1.5
 
+  # Security
+  flutter_shield:
+    git:
+      url: https://github.com/amorphie/flutter.shield
+
 dependency_overrides:
   uuid: ^4.1.0 # Delete this overrides when signalr_netcore package is updated
 

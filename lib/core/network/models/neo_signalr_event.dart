@@ -38,8 +38,7 @@ class NeoSignalREvent extends Equatable {
   bool get isSilentEvent => type == NeoSignalREventType.silent;
 
   @override
-  List<Object?> get props =>
-      [
+  List<Object?> get props => [
         eventId,
         type,
         status,

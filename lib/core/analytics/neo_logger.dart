@@ -97,6 +97,7 @@ class NeoLogger implements INeoLogger {
     Map<String, dynamic>? properties,
     Map<String, dynamic>? options,
   }) {
+    // ignore: deprecated_member_use
     if (_logLevel.value > logLevel.value || logLevel == Level.off || logLevel == Level.nothing) {
       return;
     }

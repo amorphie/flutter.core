@@ -14,7 +14,6 @@ part of 'neo_transition_listener_bloc.dart';
 
 @immutable
 class NeoTransitionListenerState extends Equatable {
-
   const NeoTransitionListenerState();
 
   @override
