@@ -13,7 +13,9 @@
 import 'package:neo_core/core/network/models/neo_error.dart';
 
 sealed class NeoResponse {
-  const NeoResponse();
+  final int statusCode;
+
+  const NeoResponse({required this.statusCode});
 
   bool get isSuccess {
     return switch (this) {
@@ -32,19 +34,20 @@ sealed class NeoResponse {
     return this as NeoErrorResponse;
   }
 
-  factory NeoResponse.success(Map<String, dynamic> response) => NeoSuccessResponse(response);
+  factory NeoResponse.success(Map<String, dynamic> response, int statusCode) =>
+      NeoSuccessResponse(response, statusCode: statusCode);
 
-  factory NeoResponse.error(NeoError response) => NeoErrorResponse(response);
+  factory NeoResponse.error(NeoError response, int statusCode) => NeoErrorResponse(response, statusCode: statusCode);
 }
 
 final class NeoSuccessResponse extends NeoResponse {
-  const NeoSuccessResponse(this.data);
+  const NeoSuccessResponse(this.data, {required super.statusCode});
 
   final Map<String, dynamic> data;
 }
 
 final class NeoErrorResponse extends NeoResponse {
-  const NeoErrorResponse(this.error);
+  const NeoErrorResponse(this.error, {required super.statusCode});
 
   final NeoError error;
 }
