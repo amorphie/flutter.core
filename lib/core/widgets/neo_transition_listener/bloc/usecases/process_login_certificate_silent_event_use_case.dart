@@ -33,7 +33,7 @@ class ProcessLoginCertificateSilentEventUseCase {
         body: {
           "Certificate": {
             "publicKey": publicKey,
-            "commonName": "$userReference.burgan.com",
+            "commonName": "$userReference.burgan.com.tr",
           },
         },
       ),
