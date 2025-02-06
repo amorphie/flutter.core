@@ -17,6 +17,8 @@ import 'package:neo_core/core/network/query_providers/http_query_provider.dart';
 
 // ignore: must_be_immutable
 class NeoHttpCall extends Equatable {
+  static const extraKey = "neoHttpCall";
+
   final String endpoint;
 
   final String? requestId;
