@@ -116,12 +116,14 @@ class NeoPageBloc extends Bloc<NeoPageEvent, NeoPageState> {
       }
     }
 
-    _formData.addAll(setNestedMapValue(_formData, path, jsonDecode(jsonEncode(event.value))));
+    _formData.addAll(
+        setNestedMapValue(map: _formData, path: path, value: jsonDecode(jsonEncode(event.value)), isAdd: event.isAdd));
     debugPrint("${event.dataPath}\n${jsonEncode(_formData)}");
   }
 }
 
-dynamic setNestedMapValue(dynamic map, List<dynamic> path, dynamic value, [int i = 0]) {
+dynamic setNestedMapValue(
+    {required dynamic map, required List<dynamic> path, required dynamic value, bool isAdd = true, int i = 0}) {
   dynamic current = map;
   final String currentPath = path[i];
 
@@ -143,7 +145,11 @@ dynamic setNestedMapValue(dynamic map, List<dynamic> path, dynamic value, [int i
       final String? id = isList ? currentPath.substring(1, currentPath.length - 1) : null;
       final int index = current.indexWhere((item) => item['_id'] == id);
       if (index > -1) {
-        current[index].addAll(value);
+        if (isAdd) {
+          current[index].addAll(value);
+        } else {
+          current.removeAt(index);
+        }
       } else {
         value['_id'] = id;
         current.add(value);
@@ -152,7 +158,8 @@ dynamic setNestedMapValue(dynamic map, List<dynamic> path, dynamic value, [int i
       current[currentPath].addAll(value);
     }
   } else {
-    current[currentPath] = setNestedMapValue(current[currentPath], path, value, i + 1);
+    current[currentPath] =
+        setNestedMapValue(map: current[currentPath], path: path, value: value, isAdd: isAdd, i: i + 1);
   }
 
   return current;
