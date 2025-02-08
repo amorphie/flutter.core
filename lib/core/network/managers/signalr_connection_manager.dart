@@ -42,7 +42,6 @@ class SignalrConnectionManager {
     required String serverUrl,
     required String methodName,
     required Function({required bool hasConnection}) onConnectionStatusChanged,
-    Function? onReconnected,
   }) async {
     this.methodName = methodName;
 
@@ -68,7 +67,6 @@ class SignalrConnectionManager {
       );
     });
     _hubConnection?.onreconnected(({connectionId}) {
-      onReconnected?.call();
       onConnectionStatusChanged(hasConnection: true);
       _neoLogger.logCustom(
         _Constants.eventNameSignalrOnReconnected,

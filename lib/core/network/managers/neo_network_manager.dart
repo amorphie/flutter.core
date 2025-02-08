@@ -23,13 +23,13 @@ import 'package:json_annotation/json_annotation.dart';
 import 'package:logger/logger.dart';
 import 'package:mutex/mutex.dart';
 import 'package:neo_core/core/analytics/neo_logger.dart';
+import 'package:neo_core/core/network/headers/neo_constant_headers.dart';
 import 'package:neo_core/core/network/models/http_auth_response.dart';
 import 'package:neo_core/core/network/models/http_method.dart';
 import 'package:neo_core/core/network/models/neo_http_call.dart';
 import 'package:neo_core/core/network/models/neo_network_header_key.dart';
 import 'package:neo_core/core/storage/neo_core_parameter_key.dart';
 import 'package:neo_core/core/storage/neo_shared_prefs.dart';
-import 'package:neo_core/core/util/device_util/models/neo_device_info.dart';
 import 'package:neo_core/core/util/uuid_util.dart';
 import 'package:neo_core/core/workflow_form/neo_workflow_manager.dart';
 import 'package:neo_core/neo_core.dart';
@@ -39,7 +39,6 @@ abstract class _Constants {
   static const int responseCodeUnauthorized = 401;
   static const String wrapperResponseKey = "data";
   static const String endpointGetToken = "get-token";
-  static const String headerValueContentType = "application/json";
   static const String requestKeyClientId = "client_id";
   static const String requestKeyClientSecret = "client_secret";
   static const String requestKeyGrantType = "grant_type";
@@ -48,7 +47,6 @@ abstract class _Constants {
   static const String requestKeyRefreshToken = "refresh_token";
   static const String requestKeyScopes = "scopes";
   static const List<String> requestValueScopes = ["retail-customer"];
-  static const String languageCodeEn = "en";
 }
 
 enum NeoNetworkManagerLogScale { none, simplified, all }
@@ -73,7 +71,7 @@ class NeoNetworkManager {
   Completer? _refreshTokenCompleter;
   final _refreshTokenMutex = Mutex();
 
-  bool get _isTokenExpired => _tokenExpirationTime != null && DateTime.now().isAfter(_tokenExpirationTime!);
+  bool get isTokenExpired => _tokenExpirationTime != null && DateTime.now().isAfter(_tokenExpirationTime!);
 
   late final http.Client httpClient;
 
@@ -108,61 +106,19 @@ class NeoNetworkManager {
   }
 
   Future<Map<String, String>> get _defaultHeaders async {
-    final results = await Future.wait([
-      secureStorage.read(NeoCoreParameterKey.secureStorageDeviceId),
-      secureStorage.read(NeoCoreParameterKey.secureStorageInstallationId),
-      secureStorage.read(NeoCoreParameterKey.secureStorageDeviceInfo),
-      _authHeader,
-      PackageUtil().getAppVersionWithBuildNumber(),
-    ]);
-
-    final deviceId = results[0] as String? ?? "";
-    final installationId = results[1] as String? ?? "";
-    final deviceInfo = results[2] != null ? NeoDeviceInfo.decode(results[2] as String? ?? "") : null;
-    final authHeader = results[3] as Map<String, String>? ?? {};
-    final appVersion = results[4] as String? ?? "";
-
-    final userAgentHeader = kIsWeb
-        ? <String, String>{}
-        : {
-            NeoNetworkHeaderKey.userAgent: "${deviceInfo?.platform ?? "-"}/"
-                "${defaultHeaders[NeoNetworkHeaderKey.application]}/"
-                "$appVersion/"
-                "${deviceInfo?.version ?? "-"}/"
-                "${deviceInfo?.model ?? "-"}",
-          };
-
     return {
-      NeoNetworkHeaderKey.contentType: _Constants.headerValueContentType,
-      NeoNetworkHeaderKey.acceptLanguage: _languageCode,
-      NeoNetworkHeaderKey.contentLanguage: _languageCode,
-      NeoNetworkHeaderKey.applicationVersion: appVersion,
-      NeoNetworkHeaderKey.deviceId: deviceId,
-      NeoNetworkHeaderKey.installationId: installationId,
-      NeoNetworkHeaderKey.tokenId: installationId, // TODO: Delete tokenId after the backend changes are done
       NeoNetworkHeaderKey.requestId: UuidUtil.generateUUIDWithoutHyphen(),
-      NeoNetworkHeaderKey.deviceInfo: deviceInfo?.model ?? "",
-      NeoNetworkHeaderKey.deviceModel: deviceInfo?.model ?? "",
-      NeoNetworkHeaderKey.deviceVersion: deviceInfo?.version ?? "",
-      NeoNetworkHeaderKey.devicePlatform: deviceInfo?.platform ?? "",
-      NeoNetworkHeaderKey.deployment: deviceInfo?.platform ?? "",
       NeoNetworkHeaderKey.instanceId: _neoWorkflowManager?.instanceId ?? "",
       NeoNetworkHeaderKey.workflowName: _neoWorkflowManager?.getWorkflowName() ?? "",
     }
-      ..addAll(authHeader)
-      ..addAll(userAgentHeader)
-      ..addAll(defaultHeaders);
-  }
-
-  String get _languageCode {
-    final languageCodeReadResult = neoSharedPrefs.read(NeoCoreParameterKey.sharedPrefsLanguageCode);
-    final String languageCode = languageCodeReadResult != null ? languageCodeReadResult as String : "";
-
-    if (languageCode == _Constants.languageCodeEn) {
-      return "$languageCode-US";
-    } else {
-      return '$languageCode-${languageCode.toUpperCase()}';
-    }
+      ..addAll(await _authHeader)
+      ..addAll(
+        await NeoConstantHeaders(
+          neoSharedPrefs: neoSharedPrefs,
+          secureStorage: secureStorage,
+          defaultHeaders: defaultHeaders,
+        ).getHeaders(),
+      );
   }
 
   Future<Map<String, String>> get _authHeader async {
@@ -458,7 +414,7 @@ class NeoNetworkManager {
   Future<String?> _getRefreshToken() => secureStorage.read(NeoCoreParameterKey.secureStorageRefreshToken);
 
   Future<void> _refreshTokenIfExpired() async {
-    if (_isTokenExpired) {
+    if (isTokenExpired) {
       if (_refreshTokenCompleter != null) {
         await _refreshTokenCompleter!.future;
         return;
