@@ -16,7 +16,7 @@ class NeoConstantHeaders {
   final NeoCoreSecureStorage secureStorage;
   final Map<String, String> defaultHeaders;
 
-  NeoConstantHeaders({required this.neoSharedPrefs, required this.secureStorage, required this.defaultHeaders});
+  const NeoConstantHeaders({required this.neoSharedPrefs, required this.secureStorage, required this.defaultHeaders});
 
   static Map<String, String>? _headers;
 

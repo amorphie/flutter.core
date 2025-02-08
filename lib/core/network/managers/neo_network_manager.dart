@@ -30,7 +30,6 @@ import 'package:neo_core/core/network/models/neo_http_call.dart';
 import 'package:neo_core/core/network/models/neo_network_header_key.dart';
 import 'package:neo_core/core/storage/neo_core_parameter_key.dart';
 import 'package:neo_core/core/storage/neo_shared_prefs.dart';
-import 'package:neo_core/core/util/device_util/models/neo_device_info.dart';
 import 'package:neo_core/core/util/uuid_util.dart';
 import 'package:neo_core/core/workflow_form/neo_workflow_manager.dart';
 import 'package:neo_core/neo_core.dart';
@@ -40,7 +39,6 @@ abstract class _Constants {
   static const int responseCodeUnauthorized = 401;
   static const String wrapperResponseKey = "data";
   static const String endpointGetToken = "get-token";
-  static const String headerValueContentType = "application/json";
   static const String requestKeyClientId = "client_id";
   static const String requestKeyClientSecret = "client_secret";
   static const String requestKeyGrantType = "grant_type";
@@ -49,7 +47,6 @@ abstract class _Constants {
   static const String requestKeyRefreshToken = "refresh_token";
   static const String requestKeyScopes = "scopes";
   static const List<String> requestValueScopes = ["retail-customer"];
-  static const String languageCodeEn = "en";
 }
 
 enum NeoNetworkManagerLogScale { none, simplified, all }
@@ -74,7 +71,7 @@ class NeoNetworkManager {
   Completer? _refreshTokenCompleter;
   final _refreshTokenMutex = Mutex();
 
-  bool get _isTokenExpired => _tokenExpirationTime != null && DateTime.now().isAfter(_tokenExpirationTime!);
+  bool get isTokenExpired => _tokenExpirationTime != null && DateTime.now().isAfter(_tokenExpirationTime!);
 
   late final http.Client httpClient;
 
@@ -417,7 +414,7 @@ class NeoNetworkManager {
   Future<String?> _getRefreshToken() => secureStorage.read(NeoCoreParameterKey.secureStorageRefreshToken);
 
   Future<void> _refreshTokenIfExpired() async {
-    if (_isTokenExpired) {
+    if (isTokenExpired) {
       if (_refreshTokenCompleter != null) {
         await _refreshTokenCompleter!.future;
         return;

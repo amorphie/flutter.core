@@ -13,6 +13,7 @@ abstract class _Constants {
   static const pathParameterWorkflowName = "WORKFLOW_NAME";
   static const pathParameterInstanceId = "INSTANCE_ID";
   static const queryParameterInstanceId = "InstanceId";
+  static const noWorkflowName = "-";
 }
 
 class NeoWorkflowManager {
@@ -23,6 +24,8 @@ class NeoWorkflowManager {
   String _subWorkflowName = "";
 
   NeoWorkflowManager(this.neoNetworkManager);
+
+  bool get hasActiveWorkflow => _workflowName.isNotEmpty && _workflowName != _Constants.noWorkflowName;
 
   void resetInstanceId({bool isSubFlow = false}) {
     if (isSubFlow) {
@@ -146,7 +149,7 @@ class NeoWorkflowManager {
   void terminateWorkflow() {
     resetInstanceId();
     resetInstanceId(isSubFlow: true);
-    _workflowName = "-";
-    _subWorkflowName = "-";
+    _workflowName = _Constants.noWorkflowName;
+    _subWorkflowName = _Constants.noWorkflowName;
   }
 }
