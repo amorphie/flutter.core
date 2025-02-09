@@ -19,6 +19,7 @@ import 'package:neo_core/core/analytics/neo_logger.dart';
 import 'package:neo_core/core/analytics/neo_logger_type.dart';
 import 'package:neo_core/core/network/models/neo_signalr_event.dart';
 import 'package:neo_core/core/network/models/neo_signalr_event_base_state.dart';
+import 'package:signalr_netcore/iretry_policy.dart';
 import 'package:signalr_netcore/signalr_client.dart';
 
 abstract class _Constants {
@@ -28,6 +29,13 @@ abstract class _Constants {
   static const eventNameSignalrInitSucceed = "[SignalrConnectionManager]: init is succeed!";
   static const eventNameSignalrInitFailed = "[SignalrConnectionManager]: init is failed!";
   static const eventCompletionStatusValues = ["worker-completed", "transition-completed"];
+}
+
+class _SignalRReconnectPolicy implements IRetryPolicy {
+  @override
+  int? nextRetryDelayInMilliseconds(RetryContext retryContext) {
+    return null;
+  }
 }
 
 class SignalrConnectionManager {
@@ -51,6 +59,7 @@ class SignalrConnectionManager {
           serverUrl,
           options: HttpConnectionOptions(transport: HttpTransportType.WebSockets, skipNegotiation: true),
         )
+        .withAutomaticReconnect(reconnectPolicy: _SignalRReconnectPolicy())
         .build();
     _hubConnection?.onclose(({error}) {
       onConnectionStatusChanged(hasConnection: false);
