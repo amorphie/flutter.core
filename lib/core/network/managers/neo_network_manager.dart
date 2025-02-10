@@ -426,7 +426,7 @@ class NeoNetworkManager {
           if (refreshToken != null) {
             await _refreshAuthDetailsByUsingRefreshToken(refreshToken);
           } else {
-            onInvalidTokenError?.call();
+            await getTemporaryTokenForNotLoggedInUser();
           }
         } finally {
           _refreshTokenCompleter!.complete();
