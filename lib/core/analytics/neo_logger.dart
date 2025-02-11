@@ -265,9 +265,8 @@ class _LogMessageQueueProcessor {
         }
       } catch (e) {
         _logger.e('Failed to process log message: $e');
-      } finally {
-        _isProcessing = false;
       }
     }
+    _isProcessing = false;
   }
 }
