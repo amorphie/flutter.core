@@ -43,7 +43,7 @@ class NeoAdjust {
     }());
   }
 
-  void logEvent(String eventId)  {
+  void logEvent(String eventId) {
     if (kIsWeb) {
       return;
     }
