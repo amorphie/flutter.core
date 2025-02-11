@@ -43,7 +43,7 @@ class NeoAdjust {
     }());
   }
 
-  Future<void> logEvent(String eventId) async {
+  void logEvent(String eventId)  {
     if (kIsWeb) {
       return;
     }

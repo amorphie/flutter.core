@@ -232,6 +232,8 @@ class _LogMessageQueueProcessor {
     return _instance!;
   }
 
+  final _logger = Logger(printer: _NeoLoggerPrinter(), output: _NeoLoggerOutput());
+
   void _startProcessing() {
     _processingTimer = Timer.periodic(_processingInterval, (_) => _processQueue());
   }
@@ -247,26 +249,25 @@ class _LogMessageQueueProcessor {
 
     _isProcessing = true;
     final pendingMessages = List<LogMessage>.from(_messageQueue);
-    final Logger logger = Logger(printer: _NeoLoggerPrinter(), output: _NeoLoggerOutput());
     _messageQueue.clear();
 
     for (final logMessage in pendingMessages) {
       try {
         if (logMessage.logTypes.contains(NeoLoggerType.logger)) {
-          logger.log(logMessage.logLevel, logMessage.message);
+          _logger.log(logMessage.logLevel, logMessage.message);
         }
 
         if (logMessage.logTypes.contains(NeoLoggerType.elastic)) {
           await neoElastic.logCustom(logMessage.message, logMessage.logLevel.name, parameters: logMessage.properties);
         }
         if (logMessage.logTypes.contains(NeoLoggerType.adjust) && logMessage.message is String) {
-          await neoAdjust.logEvent(logMessage.message);
+          neoAdjust.logEvent(logMessage.message);
         }
       } catch (e) {
-        logger.e('Failed to process log message: $e');
+        _logger.e('Failed to process log message: $e');
+      } finally {
+        _isProcessing = false;
       }
     }
-
-    _isProcessing = false;
   }
 }
