@@ -49,7 +49,7 @@ class NeoLogger implements INeoLogger {
   final NeoAdjust neoAdjust;
   final NeoElastic neoElastic;
   final HttpClientConfig httpClientConfig;
-  late final _LogMessageQueueProcessor _processor;
+  _LogMessageQueueProcessor? _processor;
 
   NeoLogger({
     required this.neoAdjust,
@@ -113,7 +113,7 @@ class NeoLogger implements INeoLogger {
       return;
     }
 
-    _processor.enqueue(
+    _processor?.enqueue(
       NeoLog(
         message: message,
         logLevel: logLevel,
