@@ -18,8 +18,9 @@ import 'dart:developer';
 import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
 import 'package:logger/logger.dart';
+import 'package:mutex/mutex.dart';
 import 'package:neo_core/core/analytics/i_neo_logger.dart';
-import 'package:neo_core/core/analytics/models/log_message.dart';
+import 'package:neo_core/core/analytics/models/neo_log.dart';
 import 'package:neo_core/core/analytics/neo_adjust.dart';
 import 'package:neo_core/core/analytics/neo_crashlytics.dart';
 import 'package:neo_core/core/analytics/neo_elastic.dart';
@@ -76,24 +77,25 @@ class NeoLogger implements INeoLogger {
   Future<void> init({bool enableLogging = false}) async {
     _isLoggingEnabled = enableLogging && !Platform.isMacOS && !Platform.isWindows;
 
-    if (_isLoggingEnabled) {
-      _processor = _LogMessageQueueProcessor(
-        neoAdjust: neoAdjust,
-        neoElastic: neoElastic,
-        httpClientConfig: httpClientConfig,
-      );
-
-      if (!kIsWeb) {
-        await _neoCrashlytics.initializeCrashlytics();
-        await _neoCrashlytics.setEnabled(enabled: true);
-        await _neoCrashlytics.setUserIdentifier();
-      }
-
-      logCustom(
-        _Constants.eventNameAdjustInitSucceed,
-        logTypes: [NeoLoggerType.logger],
-      );
+    if (!_isLoggingEnabled) {
+      return;
     }
+
+    _processor = _LogMessageQueueProcessor(
+      neoAdjust: neoAdjust,
+      neoElastic: neoElastic,
+    );
+
+    if (!kIsWeb) {
+      await _neoCrashlytics.initializeCrashlytics();
+      await _neoCrashlytics.setEnabled(enabled: true);
+      await _neoCrashlytics.setUserIdentifier();
+    }
+
+    logCustom(
+      _Constants.eventNameAdjustInitSucceed,
+      logTypes: [NeoLoggerType.logger],
+    );
   }
 
   @override
@@ -108,13 +110,12 @@ class NeoLogger implements INeoLogger {
       return;
     }
 
-    // ignore: deprecated_member_use
-    if (message == null || _logLevel.value > logLevel.value || logLevel == Level.off || logLevel == Level.nothing) {
+    if (message == null || _logLevel.value > logLevel.value || logLevel == Level.off || logLevel == Level.off) {
       return;
     }
 
     _processor.enqueue(
-      LogMessage(
+      NeoLog(
         message: message,
         logLevel: logLevel,
         logTypes: logTypes,
@@ -202,53 +203,45 @@ class _LogMessageQueueProcessor {
   static _LogMessageQueueProcessor? _instance;
   final NeoAdjust neoAdjust;
   final NeoElastic neoElastic;
-  final HttpClientConfig httpClientConfig;
+  final _processingLock = Mutex();
 
-  static const _processingInterval = Duration(milliseconds: 100);
-  final _messageQueue = <LogMessage>[];
-
-  // ignore: unused_field
-  Timer? _processingTimer;
-  bool _isProcessing = false;
+  final _messageQueue = <NeoLog>[];
 
   _LogMessageQueueProcessor._({
     required this.neoAdjust,
     required this.neoElastic,
-    required this.httpClientConfig,
-  }) {
-    _startProcessing();
-  }
+  });
 
   factory _LogMessageQueueProcessor({
     required NeoAdjust neoAdjust,
     required NeoElastic neoElastic,
-    required HttpClientConfig httpClientConfig,
   }) {
     _instance ??= _LogMessageQueueProcessor._(
       neoAdjust: neoAdjust,
       neoElastic: neoElastic,
-      httpClientConfig: httpClientConfig,
     );
     return _instance!;
   }
 
   final _logger = Logger(printer: _NeoLoggerPrinter(), output: _NeoLoggerOutput());
 
-  void _startProcessing() {
-    _processingTimer = Timer.periodic(_processingInterval, (_) => _processQueue());
-  }
-
-  void enqueue(LogMessage message) {
+  void enqueue(NeoLog message) {
     _messageQueue.add(message);
+    _processQueueIfNeeded();
   }
 
-  Future<void> _processQueue() async {
-    if (_isProcessing || _messageQueue.isEmpty) {
+  Future<void> _processQueueIfNeeded() async {
+    if (_messageQueue.isEmpty) {
       return;
     }
 
-    _isProcessing = true;
-    final pendingMessages = List<LogMessage>.from(_messageQueue);
+    await _processingLock.protect(() async {
+      await _processQueue();
+    });
+  }
+
+  Future<void> _processQueue() async {
+    final pendingMessages = List<NeoLog>.from(_messageQueue);
     _messageQueue.clear();
 
     for (final logMessage in pendingMessages) {
@@ -267,6 +260,5 @@ class _LogMessageQueueProcessor {
         _logger.e('Failed to process log message: $e');
       }
     }
-    _isProcessing = false;
   }
 }
