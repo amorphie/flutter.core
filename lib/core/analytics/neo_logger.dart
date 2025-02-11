@@ -12,12 +12,14 @@
  *
  */
 
+import 'dart:async';
 import 'dart:developer';
 
 import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
 import 'package:logger/logger.dart';
 import 'package:neo_core/core/analytics/i_neo_logger.dart';
+import 'package:neo_core/core/analytics/models/log_message.dart';
 import 'package:neo_core/core/analytics/neo_adjust.dart';
 import 'package:neo_core/core/analytics/neo_crashlytics.dart';
 import 'package:neo_core/core/analytics/neo_elastic.dart';
@@ -47,6 +49,7 @@ class NeoLogger implements INeoLogger {
   final NeoAdjust neoAdjust;
   final NeoElastic neoElastic;
   final HttpClientConfig httpClientConfig;
+  late final _LogMessageQueueProcessor _processor;
 
   NeoLogger({
     required this.neoAdjust,
@@ -54,13 +57,8 @@ class NeoLogger implements INeoLogger {
     required this.httpClientConfig,
   });
 
-  // Getter is required, config may change at runtime
   Level get _logLevel => httpClientConfig.config.logLevel;
-
   final DeviceUtil _deviceUtil = DeviceUtil();
-
-  final Logger _logger = Logger(printer: _NeoLoggerPrinter(), output: _NeoLoggerOutput());
-
   late final NeoCrashlytics _neoCrashlytics = NeoCrashlytics();
 
   @override
@@ -73,20 +71,29 @@ class NeoLogger implements INeoLogger {
     NeoLoggerType.logger,
   ];
 
-  Future<void> init({bool enableLogging = false}) async {
-    if (!enableLogging || Platform.isMacOS || Platform.isWindows) {
-      return;
-    }
-    if (!kIsWeb) {
-      await _neoCrashlytics.initializeCrashlytics();
-      await _neoCrashlytics.setEnabled(enabled: true);
-      await _neoCrashlytics.setUserIdentifier();
-    }
+  bool _isLoggingEnabled = false;
 
-    logCustom(
-      _Constants.eventNameAdjustInitSucceed,
-      logTypes: [NeoLoggerType.logger],
-    );
+  Future<void> init({bool enableLogging = false}) async {
+    _isLoggingEnabled = enableLogging && !Platform.isMacOS && !Platform.isWindows;
+
+    if (_isLoggingEnabled) {
+      _processor = _LogMessageQueueProcessor(
+        neoAdjust: neoAdjust,
+        neoElastic: neoElastic,
+        httpClientConfig: httpClientConfig,
+      );
+
+      if (!kIsWeb) {
+        await _neoCrashlytics.initializeCrashlytics();
+        await _neoCrashlytics.setEnabled(enabled: true);
+        await _neoCrashlytics.setUserIdentifier();
+      }
+
+      logCustom(
+        _Constants.eventNameAdjustInitSucceed,
+        logTypes: [NeoLoggerType.logger],
+      );
+    }
   }
 
   @override
@@ -97,22 +104,24 @@ class NeoLogger implements INeoLogger {
     Map<String, dynamic>? properties,
     Map<String, dynamic>? options,
   }) {
-    // ignore: deprecated_member_use
-    if (_logLevel.value > logLevel.value || logLevel == Level.off || logLevel == Level.nothing) {
+    if (!_isLoggingEnabled) {
       return;
     }
-    if (logTypes.contains(NeoLoggerType.logger)) {
-      _logger.log(logLevel, message);
+
+    // ignore: deprecated_member_use
+    if (message == null || _logLevel.value > logLevel.value || logLevel == Level.off || logLevel == Level.nothing) {
+      return;
     }
-    if (logTypes.contains(NeoLoggerType.elastic)) {
-      neoElastic.logCustom(message, logLevel.name, parameters: properties);
-    }
-    if (logTypes.contains(NeoLoggerType.adjust)) {
-      final String? eventId = message;
-      if (eventId != null) {
-        neoAdjust.logEvent(eventId);
-      }
-    }
+
+    _processor.enqueue(
+      LogMessage(
+        message: message,
+        logLevel: logLevel,
+        logTypes: logTypes,
+        properties: properties,
+        options: options,
+      ),
+    );
   }
 
   @override
@@ -186,5 +195,78 @@ class NeoLogger implements INeoLogger {
 
   void logConsole(dynamic message, {Level logLevel = Level.info}) {
     logCustom(message, logLevel: logLevel, logTypes: [NeoLoggerType.logger]);
+  }
+}
+
+class _LogMessageQueueProcessor {
+  static _LogMessageQueueProcessor? _instance;
+  final NeoAdjust neoAdjust;
+  final NeoElastic neoElastic;
+  final HttpClientConfig httpClientConfig;
+
+  static const _processingInterval = Duration(milliseconds: 100);
+  final _messageQueue = <LogMessage>[];
+
+  // ignore: unused_field
+  Timer? _processingTimer;
+  bool _isProcessing = false;
+
+  _LogMessageQueueProcessor._({
+    required this.neoAdjust,
+    required this.neoElastic,
+    required this.httpClientConfig,
+  }) {
+    _startProcessing();
+  }
+
+  factory _LogMessageQueueProcessor({
+    required NeoAdjust neoAdjust,
+    required NeoElastic neoElastic,
+    required HttpClientConfig httpClientConfig,
+  }) {
+    _instance ??= _LogMessageQueueProcessor._(
+      neoAdjust: neoAdjust,
+      neoElastic: neoElastic,
+      httpClientConfig: httpClientConfig,
+    );
+    return _instance!;
+  }
+
+  void _startProcessing() {
+    _processingTimer = Timer.periodic(_processingInterval, (_) => _processQueue());
+  }
+
+  void enqueue(LogMessage message) {
+    _messageQueue.add(message);
+  }
+
+  Future<void> _processQueue() async {
+    if (_isProcessing || _messageQueue.isEmpty) {
+      return;
+    }
+
+    _isProcessing = true;
+    final pendingMessages = List<LogMessage>.from(_messageQueue);
+    final Logger logger = Logger(printer: _NeoLoggerPrinter(), output: _NeoLoggerOutput());
+    _messageQueue.clear();
+
+    for (final logMessage in pendingMessages) {
+      try {
+        if (logMessage.logTypes.contains(NeoLoggerType.logger)) {
+          logger.log(logMessage.logLevel, logMessage.message);
+        }
+
+        if (logMessage.logTypes.contains(NeoLoggerType.elastic)) {
+          await neoElastic.logCustom(logMessage.message, logMessage.logLevel.name, parameters: logMessage.properties);
+        }
+        if (logMessage.logTypes.contains(NeoLoggerType.adjust) && logMessage.message is String) {
+          await neoAdjust.logEvent(logMessage.message);
+        }
+      } catch (e) {
+        logger.e('Failed to process log message: $e');
+      }
+    }
+
+    _isProcessing = false;
   }
 }
