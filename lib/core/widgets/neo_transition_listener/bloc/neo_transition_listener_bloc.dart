@@ -378,6 +378,7 @@ class NeoTransitionListenerBloc extends Bloc<NeoTransitionListenerEvent, NeoTran
     hasSignalRConnection = hasConnection;
     if (hasConnection) {
       _cancelLongPolling();
+      _getLastTransitionsWithLongPolling(isSubFlow: false, onlyOnce: true);
     } else {
       _getLastTransitionsWithLongPolling(isSubFlow: false);
     }
@@ -396,9 +397,10 @@ class NeoTransitionListenerBloc extends Bloc<NeoTransitionListenerEvent, NeoTran
 
   void _getLastTransitionsWithLongPolling({
     required bool isSubFlow,
+    bool onlyOnce = false,
   }) {
     _cancelLongPolling();
-    if (hasSignalRConnection || isClosed || !neoWorkflowManager.hasActiveWorkflow) {
+    if (!onlyOnce && (hasSignalRConnection || isClosed || !neoWorkflowManager.hasActiveWorkflow)) {
       return;
     }
 
@@ -426,7 +428,9 @@ class NeoTransitionListenerBloc extends Bloc<NeoTransitionListenerEvent, NeoTran
     }
 
     timerCallback();
-    longPollingTimer = Timer.periodic(signalrLongPollingPeriod, timerCallback);
+    if (!onlyOnce) {
+      longPollingTimer = Timer.periodic(signalrLongPollingPeriod, timerCallback);
+    }
   }
 
   void _cancelLongPolling() {

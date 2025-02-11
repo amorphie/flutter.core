@@ -23,6 +23,7 @@ import 'package:json_annotation/json_annotation.dart';
 import 'package:logger/logger.dart';
 import 'package:mutex/mutex.dart';
 import 'package:neo_core/core/analytics/neo_logger.dart';
+import 'package:neo_core/core/encryption/jwt_decoder.dart';
 import 'package:neo_core/core/network/headers/neo_constant_headers.dart';
 import 'package:neo_core/core/network/models/http_auth_response.dart';
 import 'package:neo_core/core/network/models/http_method.dart';
@@ -68,8 +69,9 @@ class NeoNetworkManager {
 
   late final bool _enableSslPinning;
   DateTime? _tokenExpirationTime;
-  Completer? _refreshTokenCompleter;
-  final _refreshTokenMutex = Mutex();
+
+  final _tokenLock = Mutex();
+  Completer? _tokenLockCompleter;
 
   bool get isTokenExpired => _tokenExpirationTime != null && DateTime.now().isAfter(_tokenExpirationTime!);
 
@@ -122,7 +124,7 @@ class NeoNetworkManager {
   }
 
   Future<Map<String, String>> get _authHeader async {
-    final authToken = await secureStorage.read(NeoCoreParameterKey.secureStorageAuthToken);
+    final authToken = await _getToken();
     return authToken == null ? {} : {NeoNetworkHeaderKey.authorization: 'Bearer $authToken'};
   }
 
@@ -149,6 +151,33 @@ class NeoNetworkManager {
   }
 
   Future<NeoResponse> call(NeoHttpCall neoCall) async {
+    if (neoCall.endpoint != _Constants.endpointGetToken) {
+      await _tokenLock.protect(() async {
+        final refreshToken = await _getRefreshToken();
+        final isRefreshTokenExpired = refreshToken == null ||
+            JwtDecoder.isExpired(refreshToken) ||
+            JwtDecoder.getRemainingTime(refreshToken).inSeconds < 60;
+
+        if (isRefreshTokenExpired) {
+          if (await _isTwoFactorAuthenticated) {
+            await _onInvalidTokenError();
+            return NeoResponse.error(const NeoError(responseCode: HttpStatus.forbidden));
+          } else {
+            await getTemporaryTokenForNotLoggedInUser(currentCall: neoCall);
+          }
+        }
+
+        final token = await _getToken();
+        if (token == null) {
+          await _waitForOngoingTokenRequest();
+          await getTemporaryTokenForNotLoggedInUser(currentCall: neoCall);
+        } else if (JwtDecoder.isExpired(token) || JwtDecoder.getRemainingTime(token).inSeconds < 60) {
+          await _waitForOngoingTokenRequest();
+          await _refreshTokenIfExpired();
+        }
+      });
+    }
+
     final fullPath = httpClientConfig.getServiceUrlByKey(
       neoCall.endpoint,
       parameters: neoCall.pathParameters,
@@ -157,10 +186,6 @@ class NeoNetworkManager {
     final method = httpClientConfig.getServiceMethodByKey(neoCall.endpoint);
     if (fullPath == null || method == null) {
       return NeoResponse.error(const NeoError());
-    }
-    await getTemporaryTokenForNotLoggedInUser(currentCall: neoCall);
-    if (neoCall.endpoint != _Constants.endpointGetToken) {
-      await _refreshTokenIfExpired();
     }
 
     NeoResponse response;
@@ -186,6 +211,12 @@ class NeoNetworkManager {
         _neoLogger.logError("[NeoNetworkManager]: Service call failed! Endpoint: ${neoCall.endpoint}");
         return NeoResponse.error(const NeoError());
       }
+    }
+  }
+
+  Future<void> _waitForOngoingTokenRequest() async {
+    if (_tokenLockCompleter != null) {
+      await _tokenLockCompleter!.future;
     }
   }
 
@@ -286,23 +317,8 @@ class NeoNetworkManager {
         final error = NeoError.fromJson(responseJSON);
         _neoLogger.logError("[NeoNetworkManager]: Token service error!");
         return _handleErrorResponse(error, call);
-      }
-      final refreshToken = await _getRefreshToken();
-      if (refreshToken != null) {
-        final result = await _refreshAuthDetailsByUsingRefreshToken(refreshToken);
-        if (result.isSuccess) {
-          return _retryLastCall(call);
-        } else {
-          _neoLogger.logError("[NeoNetworkManager]: Token refresh service error!");
-          return result.asError;
-        }
       } else {
-        final bool isTokenRetrieved = await getTemporaryTokenForNotLoggedInUser(currentCall: call);
-        if (isTokenRetrieved) {
-          return _retryLastCall(call);
-        } else {
-          return NeoResponse.error(const NeoError());
-        }
+        return _retryLastCall(call);
       }
     } else {
       try {
@@ -326,12 +342,16 @@ class NeoNetworkManager {
 
   Future<NeoResponse> _handleErrorResponse(NeoError error, NeoHttpCall call) async {
     if (error.isInvalidTokenError) {
-      await secureStorage.deleteTokensWithRelatedData();
-      onInvalidTokenError?.call();
+      await _onInvalidTokenError();
     } else {
       onRequestFailed?.call(error, call.requestId ?? call.endpoint);
     }
     return NeoResponse.error(error);
+  }
+
+  Future<void> _onInvalidTokenError() async {
+    await secureStorage.deleteTokensWithRelatedData();
+    onInvalidTokenError?.call();
   }
 
   Future<NeoResponse> _retryLastCall(NeoHttpCall neoHttpCall) async {
@@ -363,9 +383,6 @@ class NeoNetworkManager {
     if (response.isSuccess) {
       final authResponse = HttpAuthResponse.fromJson(response.asSuccess.data);
       await setTokensByAuthResponse(authResponse);
-    } else {
-      await secureStorage.deleteTokensWithRelatedData();
-      onInvalidTokenError?.call();
     }
     return response;
   }
@@ -381,13 +398,14 @@ class NeoNetworkManager {
 
   Future<bool> getTemporaryTokenForNotLoggedInUser({NeoHttpCall? currentCall}) async {
     // Prevent infinite call loop
-    if (currentCall?.endpoint == _Constants.endpointGetToken || _isTwoFactorAuthenticated) {
+    if (currentCall?.endpoint == _Constants.endpointGetToken || await _isTwoFactorAuthenticated) {
       return false;
     }
-    final authToken = await secureStorage.read(NeoCoreParameterKey.secureStorageAuthToken);
-    if (authToken != null && authToken.isNotEmpty) {
+    final authToken = await _getToken();
+    if (authToken != null && authToken.isNotEmpty && !JwtDecoder.isExpired(authToken)) {
       return true;
     }
+    _tokenLockCompleter = Completer<void>();
 
     final response = await call(
       NeoHttpCall(
@@ -403,36 +421,38 @@ class NeoNetworkManager {
     if (response.isSuccess) {
       final authResponse = HttpAuthResponse.fromJson(response.asSuccess.data);
       await setTokensByAuthResponse(authResponse);
+      _tokenLockCompleter?.complete();
+      _tokenLockCompleter = null;
       return true;
     } else {
+      _tokenLockCompleter?.complete();
+      _tokenLockCompleter = null;
       return false;
     }
   }
 
-  bool get _isTwoFactorAuthenticated => neoSharedPrefs.read(NeoCoreParameterKey.sharedPrefsAuthStatus) == "2FA";
+  Future<bool> get _isTwoFactorAuthenticated async {
+    final token = await _getToken();
+    if (token == null) {
+      return false;
+    }
+
+    return JwtDecoder.decode(token)["clientAuthorized"] != "1";
+  }
+
+  Future<String?> _getToken() => secureStorage.read(NeoCoreParameterKey.secureStorageAuthToken);
 
   Future<String?> _getRefreshToken() => secureStorage.read(NeoCoreParameterKey.secureStorageRefreshToken);
 
   Future<void> _refreshTokenIfExpired() async {
     if (isTokenExpired) {
-      if (_refreshTokenCompleter != null) {
-        await _refreshTokenCompleter!.future;
-        return;
+      _tokenLockCompleter = Completer<void>();
+      final refreshToken = await _getRefreshToken();
+      if (refreshToken != null) {
+        await _refreshAuthDetailsByUsingRefreshToken(refreshToken);
       }
-      await _refreshTokenMutex.protect(() async {
-        _refreshTokenCompleter = Completer<void>();
-        try {
-          final refreshToken = await _getRefreshToken();
-          if (refreshToken != null) {
-            await _refreshAuthDetailsByUsingRefreshToken(refreshToken);
-          } else {
-            await getTemporaryTokenForNotLoggedInUser();
-          }
-        } finally {
-          _refreshTokenCompleter!.complete();
-          _refreshTokenCompleter = null;
-        }
-      });
+      _tokenLockCompleter?.complete();
+      _tokenLockCompleter = null;
     }
   }
 
