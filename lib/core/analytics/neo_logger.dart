@@ -12,12 +12,14 @@
  *
  */
 
+import 'dart:async';
 import 'dart:developer';
 
 import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
 import 'package:logger/logger.dart';
 import 'package:neo_core/core/analytics/i_neo_logger.dart';
+import 'package:neo_core/core/analytics/models/neo_log.dart';
 import 'package:neo_core/core/analytics/neo_adjust.dart';
 import 'package:neo_core/core/analytics/neo_crashlytics.dart';
 import 'package:neo_core/core/analytics/neo_elastic.dart';
@@ -47,6 +49,7 @@ class NeoLogger implements INeoLogger {
   final NeoAdjust neoAdjust;
   final NeoElastic neoElastic;
   final HttpClientConfig httpClientConfig;
+  _LogMessageQueueProcessor? _processor;
 
   NeoLogger({
     required this.neoAdjust,
@@ -54,13 +57,8 @@ class NeoLogger implements INeoLogger {
     required this.httpClientConfig,
   });
 
-  // Getter is required, config may change at runtime
   Level get _logLevel => httpClientConfig.config.logLevel;
-
   final DeviceUtil _deviceUtil = DeviceUtil();
-
-  final Logger _logger = Logger(printer: _NeoLoggerPrinter(), output: _NeoLoggerOutput());
-
   late final NeoCrashlytics _neoCrashlytics = NeoCrashlytics();
 
   @override
@@ -73,10 +71,20 @@ class NeoLogger implements INeoLogger {
     NeoLoggerType.logger,
   ];
 
+  bool _isLoggingEnabled = false;
+
   Future<void> init({bool enableLogging = false}) async {
-    if (!enableLogging || Platform.isMacOS || Platform.isWindows) {
+    _isLoggingEnabled = enableLogging && !Platform.isMacOS && !Platform.isWindows;
+
+    if (!_isLoggingEnabled) {
       return;
     }
+
+    _processor = _LogMessageQueueProcessor(
+      neoAdjust: neoAdjust,
+      neoElastic: neoElastic,
+    );
+
     if (!kIsWeb) {
       await _neoCrashlytics.initializeCrashlytics();
       await _neoCrashlytics.setEnabled(enabled: true);
@@ -97,22 +105,23 @@ class NeoLogger implements INeoLogger {
     Map<String, dynamic>? properties,
     Map<String, dynamic>? options,
   }) {
-    // ignore: deprecated_member_use
-    if (_logLevel.value > logLevel.value || logLevel == Level.off || logLevel == Level.nothing) {
+    if (!_isLoggingEnabled) {
       return;
     }
-    if (logTypes.contains(NeoLoggerType.logger)) {
-      _logger.log(logLevel, message);
+
+    if (message == null || _logLevel.value > logLevel.value || logLevel == Level.off || logLevel == Level.off) {
+      return;
     }
-    if (logTypes.contains(NeoLoggerType.elastic)) {
-      neoElastic.logCustom(message, logLevel.name, parameters: properties);
-    }
-    if (logTypes.contains(NeoLoggerType.adjust)) {
-      final String? eventId = message;
-      if (eventId != null) {
-        neoAdjust.logEvent(eventId);
-      }
-    }
+
+    _processor?.enqueue(
+      NeoLog(
+        message: message,
+        logLevel: logLevel,
+        logTypes: logTypes,
+        properties: properties,
+        options: options,
+      ),
+    );
   }
 
   @override
@@ -186,5 +195,75 @@ class NeoLogger implements INeoLogger {
 
   void logConsole(dynamic message, {Level logLevel = Level.info}) {
     logCustom(message, logLevel: logLevel, logTypes: [NeoLoggerType.logger]);
+  }
+}
+
+class _LogMessageQueueProcessor {
+  static _LogMessageQueueProcessor? _instance;
+  final NeoAdjust neoAdjust;
+  final NeoElastic neoElastic;
+
+  static const _processingInterval = Duration(milliseconds: 100);
+  final _messageQueue = <NeoLog>[];
+
+  bool _isProcessing = false;
+
+  _LogMessageQueueProcessor._({
+    required this.neoAdjust,
+    required this.neoElastic,
+  });
+
+  factory _LogMessageQueueProcessor({
+    required NeoAdjust neoAdjust,
+    required NeoElastic neoElastic,
+  }) {
+    _instance ??= _LogMessageQueueProcessor._(
+      neoAdjust: neoAdjust,
+      neoElastic: neoElastic,
+    );
+    return _instance!;
+  }
+
+  final _logger = Logger(printer: _NeoLoggerPrinter(), output: _NeoLoggerOutput());
+
+  void enqueue(NeoLog message) {
+    _messageQueue.add(message);
+    _processQueueIfNeeded();
+  }
+
+  Future<void> _processQueueIfNeeded() async {
+    if (!_isProcessing && _messageQueue.isNotEmpty) {
+      await _processQueue();
+    }
+  }
+
+  Future<void> _processQueue() async {
+    _isProcessing = true;
+    final pendingMessages = List<NeoLog>.from(_messageQueue);
+    _messageQueue.clear();
+
+    for (final logMessage in pendingMessages) {
+      try {
+        if (logMessage.logTypes.contains(NeoLoggerType.logger)) {
+          _logger.log(logMessage.logLevel, logMessage.message);
+        }
+
+        if (logMessage.logTypes.contains(NeoLoggerType.elastic)) {
+          await neoElastic.logCustom(logMessage.message, logMessage.logLevel.name, parameters: logMessage.properties);
+        }
+        if (logMessage.logTypes.contains(NeoLoggerType.adjust) && logMessage.message is String) {
+          neoAdjust.logEvent(logMessage.message);
+        }
+      } catch (e) {
+        _logger.e('Failed to process log message: $e');
+      }
+    }
+    _isProcessing = false;
+
+    // Check if new messages arrived while processing
+    if (_messageQueue.isNotEmpty) {
+      await Future.delayed(_processingInterval);
+      await _processQueueIfNeeded();
+    }
   }
 }
