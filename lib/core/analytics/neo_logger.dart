@@ -18,7 +18,6 @@ import 'dart:developer';
 import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
 import 'package:logger/logger.dart';
-import 'package:mutex/mutex.dart';
 import 'package:neo_core/core/analytics/i_neo_logger.dart';
 import 'package:neo_core/core/analytics/models/neo_log.dart';
 import 'package:neo_core/core/analytics/neo_adjust.dart';
@@ -203,9 +202,11 @@ class _LogMessageQueueProcessor {
   static _LogMessageQueueProcessor? _instance;
   final NeoAdjust neoAdjust;
   final NeoElastic neoElastic;
-  final _processingLock = Mutex();
 
+  static const _processingInterval = Duration(milliseconds: 100);
   final _messageQueue = <NeoLog>[];
+
+  bool _isProcessing = false;
 
   _LogMessageQueueProcessor._({
     required this.neoAdjust,
@@ -231,16 +232,13 @@ class _LogMessageQueueProcessor {
   }
 
   Future<void> _processQueueIfNeeded() async {
-    if (_messageQueue.isEmpty) {
-      return;
-    }
-
-    await _processingLock.protect(() async {
+    if (!_isProcessing && _messageQueue.isNotEmpty) {
       await _processQueue();
-    });
+    }
   }
 
   Future<void> _processQueue() async {
+    _isProcessing = true;
     final pendingMessages = List<NeoLog>.from(_messageQueue);
     _messageQueue.clear();
 
@@ -259,6 +257,13 @@ class _LogMessageQueueProcessor {
       } catch (e) {
         _logger.e('Failed to process log message: $e');
       }
+    }
+    _isProcessing = false;
+
+    // Check if new messages arrived while processing
+    if (_messageQueue.isNotEmpty) {
+      await Future.delayed(_processingInterval);
+      await _processQueueIfNeeded();
     }
   }
 }
