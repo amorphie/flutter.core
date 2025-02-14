@@ -48,6 +48,7 @@ class _NeoLoggerOutput extends LogOutput {
 class NeoLogger implements INeoLogger {
   final NeoAdjust neoAdjust;
   final NeoElastic neoElastic;
+  final NeoCrashlytics neoCrashlytics;
   final HttpClientConfig httpClientConfig;
   _LogMessageQueueProcessor? _processor;
 
@@ -55,11 +56,11 @@ class NeoLogger implements INeoLogger {
     required this.neoAdjust,
     required this.neoElastic,
     required this.httpClientConfig,
+    required this.neoCrashlytics,
   });
 
   Level get _logLevel => httpClientConfig.config.logLevel;
   final DeviceUtil _deviceUtil = DeviceUtil();
-  late final NeoCrashlytics _neoCrashlytics = NeoCrashlytics();
 
   @override
   List<NavigatorObserver> observers = [];
@@ -166,7 +167,7 @@ class NeoLogger implements INeoLogger {
     if (kIsWeb) {
       return;
     }
-    _neoCrashlytics.logError(message);
+    neoCrashlytics.logError(message);
     logCustom(message, logLevel: Level.error, logTypes: [NeoLoggerType.elastic]);
   }
 
@@ -175,7 +176,7 @@ class NeoLogger implements INeoLogger {
     if (kIsWeb) {
       return;
     }
-    _neoCrashlytics.logException(exception, stackTrace);
+    neoCrashlytics.logException(exception, stackTrace);
     logCustom(exception, logLevel: Level.fatal, properties: parameters, logTypes: [NeoLoggerType.elastic]);
   }
 
