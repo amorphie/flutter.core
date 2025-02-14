@@ -85,12 +85,6 @@ class NeoLogger implements INeoLogger {
       neoElastic: neoElastic,
     );
 
-    if (!kIsWeb) {
-      await _neoCrashlytics.initializeCrashlytics();
-      await _neoCrashlytics.setEnabled(enabled: true);
-      await _neoCrashlytics.setUserIdentifier();
-    }
-
     logCustom(
       _Constants.eventNameAdjustInitSucceed,
       logTypes: [NeoLoggerType.logger],
@@ -183,14 +177,6 @@ class NeoLogger implements INeoLogger {
     }
     _neoCrashlytics.logException(exception, stackTrace);
     logCustom(exception, logLevel: Level.fatal, properties: parameters, logTypes: [NeoLoggerType.elastic]);
-  }
-
-  @override
-  Future<void> sendUnsentReports() async {
-    if (kIsWeb) {
-      return;
-    }
-    await _neoCrashlytics.sendUnsentReports();
   }
 
   void logConsole(dynamic message, {Level logLevel = Level.info}) {
