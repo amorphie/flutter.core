@@ -37,6 +37,7 @@ abstract class NeoCoreParameterKey {
   static const secureStorageUserInfoIsMobUnapproved = "secureStorage:infrastructure:userInfoIsMobUnapproved";
   static const secureStorageUserRole = "secureStorage:infrastructure:userRole";
 
+  static const sharedPrefsAuthStatus = "shared_pref_key_auth_status";
   static const sharedPrefsFirstRun = "sharedPrefs:infrastructure:firstRun";
   static const sharedPrefsIsHuaweiCompatible = "sharedPrefs:common:sharedPrefsIsHuaweiCompatible";
   static const sharedPrefsLanguageCode = "sharedPrefs:common:languageCode";
