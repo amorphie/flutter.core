@@ -25,6 +25,7 @@ import 'package:mutex/mutex.dart';
 import 'package:neo_core/core/analytics/neo_logger.dart';
 import 'package:neo_core/core/encryption/jwt_decoder.dart';
 import 'package:neo_core/core/network/headers/neo_constant_headers.dart';
+import 'package:neo_core/core/network/headers/neo_dynamic_headers.dart';
 import 'package:neo_core/core/network/models/http_auth_response.dart';
 import 'package:neo_core/core/network/models/http_method.dart';
 import 'package:neo_core/core/network/models/neo_http_call.dart';
@@ -32,7 +33,6 @@ import 'package:neo_core/core/network/models/neo_network_header_key.dart';
 import 'package:neo_core/core/storage/neo_core_parameter_key.dart';
 import 'package:neo_core/core/storage/neo_shared_prefs.dart';
 import 'package:neo_core/core/util/uuid_util.dart';
-import 'package:neo_core/core/workflow_form/neo_workflow_manager.dart';
 import 'package:neo_core/neo_core.dart';
 import 'package:universal_io/io.dart';
 
@@ -92,15 +92,6 @@ class NeoNetworkManager {
     this.timeoutDuration = const Duration(minutes: 1),
   });
 
-  /// Read NeoWorkflowManager with try catch, because it depends on NeoNetworkManager
-  NeoWorkflowManager? get _neoWorkflowManager {
-    try {
-      return GetIt.I.get<NeoWorkflowManager>();
-    } catch (e) {
-      return null;
-    }
-  }
-
   Future<void> init({required bool enableSslPinning}) async {
     _enableSslPinning = enableSslPinning;
     await _initHttpClient();
@@ -108,12 +99,7 @@ class NeoNetworkManager {
   }
 
   Future<Map<String, String>> get _defaultHeaders async {
-    return {
-      NeoNetworkHeaderKey.requestId: UuidUtil.generateUUIDWithoutHyphen(),
-      NeoNetworkHeaderKey.instanceId: _neoWorkflowManager?.instanceId ?? "",
-      NeoNetworkHeaderKey.workflowName: _neoWorkflowManager?.getWorkflowName() ?? "",
-    }
-      ..addAll(await _authHeader)
+    return await NeoDynamicHeaders(neoSharedPrefs: neoSharedPrefs, secureStorage: secureStorage).getHeaders()
       ..addAll(
         await NeoConstantHeaders(
           neoSharedPrefs: neoSharedPrefs,
@@ -121,11 +107,6 @@ class NeoNetworkManager {
           defaultHeaders: defaultHeaders,
         ).getHeaders(),
       );
-  }
-
-  Future<Map<String, String>> get _authHeader async {
-    final authToken = await _getToken();
-    return authToken == null ? {} : {NeoNetworkHeaderKey.authorization: 'Bearer $authToken'};
   }
 
   Future<Map<String, String>> get _defaultPostHeaders async => <String, String>{}
