@@ -24,6 +24,8 @@ class NeoPageBloc extends Bloc<NeoPageEvent, NeoPageState> {
   final NeoWidgetEventBus widgetEventBus;
   final bool isInitialWorkflowPage;
 
+  final void Function(String pageId, String errorMessages)? onValidationError;
+
   final GlobalKey<FormState> formKey = GlobalKey<FormState>();
   final Map<String, dynamic> _formInitialData;
   final Map<String, dynamic> _formData;
@@ -31,6 +33,7 @@ class NeoPageBloc extends Bloc<NeoPageEvent, NeoPageState> {
   final Map<String, bool> _isCustomFieldsValidMap = {};
 
   final List<StreamSubscription> _subscriptionList = [];
+  final Map<String, String> _errorMessagesMap = {};
 
   void addToDisposeList(StreamSubscription subscription) {
     _subscriptionList.add(subscription);
@@ -46,6 +49,7 @@ class NeoPageBloc extends Bloc<NeoPageEvent, NeoPageState> {
     required this.widgetEventBus,
     this.isInitialWorkflowPage = false,
     Map<String, dynamic>? initialPageData,
+    this.onValidationError,
   })  : _formInitialData = Map.from(initialPageData ?? {}),
         _formData = Map.from(initialPageData ?? {}),
         super(const NeoPageState()) {
@@ -131,6 +135,19 @@ class NeoPageBloc extends Bloc<NeoPageEvent, NeoPageState> {
     return stateDifference;
   }
 
+  /// This method is called when errors are found in widget validators and updates the `_errorMessagesMap`.
+  /// [fieldKey]: The unique key of this form field (widgetID, dataKey etc.)
+  /// [errorMessage]: If it is `null` or empty, it means to reset the error.
+  void setFieldErrorMessage(String fieldKey, String? errorMessage) {
+    if (errorMessage?.isEmpty ?? true) {
+      _errorMessagesMap.remove(fieldKey);
+    } else {
+      _errorMessagesMap[fieldKey] = errorMessage!;
+    }
+  }
+
+  String? getFieldErrorMessage(String fieldKey) => _errorMessagesMap[fieldKey];
+
   bool validateForm() {
     bool shouldClear = true;
     for (final entry in _isCustomFieldsValidMap.entries) {
@@ -175,6 +192,8 @@ class NeoPageBloc extends Bloc<NeoPageEvent, NeoPageState> {
       if (failureContext != null) {
         Scrollable.ensureVisible(failureContext, alignment: 0.2);
       }
+      final allErrorMessages = _errorMessagesMap.values.where((msg) => msg.isNotEmpty).join(', ');
+      onValidationError?.call(pageId, allErrorMessages);
     }
     return isValid != null && isValid && isCustomFieldValid;
   }
