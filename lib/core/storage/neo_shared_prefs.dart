@@ -26,7 +26,8 @@ class NeoSharedPrefs {
   // Getter is required, config may change at runtime
   bool get _enableCaching => httpClientConfig.config.cacheStorage;
 
-  NeoLogger get _neoLogger => GetIt.I.get();
+  NeoLogger? get _neoLogger =>
+      (GetIt.I.isRegistered<NeoLogger>() && GetIt.I.isReadySync<NeoLogger>()) ? GetIt.I.get<NeoLogger>() : null;
 
   SharedPreferences? _preferences;
 
@@ -69,7 +70,7 @@ class NeoSharedPrefs {
       return Future.value(false);
     } catch (e) {
       const errorMessage = "[NeoSharedPrefs: Write error]";
-      _neoLogger.logConsole(errorMessage, logLevel: Level.error);
+      _neoLogger?.logConsole(errorMessage, logLevel: Level.error);
       return Future.value(false);
     }
   }

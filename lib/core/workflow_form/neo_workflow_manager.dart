@@ -59,7 +59,8 @@ class NeoWorkflowManager {
 
   String get subFlowInstanceId => _subFlowInstanceId;
 
-  NeoLogger get _neoLogger => GetIt.I.get();
+  NeoLogger? get _neoLogger =>
+      (GetIt.I.isRegistered<NeoLogger>() && GetIt.I.isReadySync<NeoLogger>()) ? GetIt.I.get<NeoLogger>() : null;
 
   Future<NeoResponse> initWorkflow({
     required String workflowName,
@@ -89,7 +90,7 @@ class NeoWorkflowManager {
         queryProviders: queryProviders,
       ),
     );
-    _neoLogger.logConsole('[NeoWorkflowManager] Init Workflow: $response');
+    _neoLogger?.logConsole('[NeoWorkflowManager] Init Workflow: $response');
     return response;
   }
 
@@ -103,7 +104,7 @@ class NeoWorkflowManager {
         },
       ),
     );
-    _neoLogger.logConsole('[NeoWorkflowManager] Get Transitions: $response');
+    _neoLogger?.logConsole('[NeoWorkflowManager] Get Transitions: $response');
     return response;
   }
 

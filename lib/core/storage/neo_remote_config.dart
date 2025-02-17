@@ -14,7 +14,8 @@ class NeoRemoteConfig {
 
   late final FirebaseRemoteConfig _firebaseRemoteConfig = FirebaseRemoteConfig.instance;
 
-  late final NeoLogger _neoLogger = GetIt.I.get();
+  NeoLogger? get _neoLogger =>
+      (GetIt.I.isRegistered<NeoLogger>() && GetIt.I.isReadySync<NeoLogger>()) ? GetIt.I.get<NeoLogger>() : null;
 
   Future<void> init() async {
     try {
@@ -27,10 +28,10 @@ class NeoRemoteConfig {
 
       final bool isSuccess = await _firebaseRemoteConfig.fetchAndActivate();
       if (!isSuccess) {
-        _neoLogger.logError(_Constants.initializationFailMessage);
+        _neoLogger?.logError(_Constants.initializationFailMessage);
       }
     } catch (e) {
-      _neoLogger.logError("${_Constants.initializationFailMessage} Error: $e");
+      _neoLogger?.logError("${_Constants.initializationFailMessage} Error: $e");
     }
   }
 
@@ -38,7 +39,7 @@ class NeoRemoteConfig {
     try {
       await _firebaseRemoteConfig.setDefaults(defaultValues);
     } catch (e) {
-      _neoLogger.logError("${_Constants.setDefaultsFailMessage} Error: $e");
+      _neoLogger?.logError("${_Constants.setDefaultsFailMessage} Error: $e");
     }
   }
 

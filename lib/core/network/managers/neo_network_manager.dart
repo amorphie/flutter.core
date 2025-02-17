@@ -61,7 +61,6 @@ class NeoNetworkManager {
   final Function(String endpoint, String? requestId)? onRequestSucceed;
   final Function(NeoError neoError, String requestId)? onRequestFailed;
   final Function()? onInvalidTokenError;
-  late final NeoLogger _neoLogger = GetIt.I.get();
   final NeoNetworkManagerLogScale logScale;
   final Map<String, String> defaultHeaders;
   final Duration timeoutDuration;
@@ -89,6 +88,9 @@ class NeoNetworkManager {
     this.defaultHeaders = const {},
     this.timeoutDuration = const Duration(minutes: 1),
   });
+
+  NeoLogger? get _neoLogger =>
+      (GetIt.I.isRegistered<NeoLogger>() && GetIt.I.isReadySync<NeoLogger>()) ? GetIt.I.get<NeoLogger>() : null;
 
   /// Read NeoWorkflowManager with try catch, because it depends on NeoNetworkManager
   NeoWorkflowManager? get _neoWorkflowManager {
@@ -180,10 +182,10 @@ class NeoNetworkManager {
       return response;
     } catch (e) {
       if (e is TimeoutException) {
-        _neoLogger.logError("[NeoNetworkManager]: Service call timeout! Endpoint: ${neoCall.endpoint}");
+        _neoLogger?.logError("[NeoNetworkManager]: Service call timeout! Endpoint: ${neoCall.endpoint}");
         return NeoResponse.error(const NeoError(responseCode: HttpStatus.requestTimeout));
       } else {
-        _neoLogger.logError("[NeoNetworkManager]: Service call failed! Endpoint: ${neoCall.endpoint}");
+        _neoLogger?.logError("[NeoNetworkManager]: Service call failed! Endpoint: ${neoCall.endpoint}");
         return NeoResponse.error(const NeoError());
       }
     }
@@ -284,7 +286,7 @@ class NeoNetworkManager {
     } else if (response.statusCode == _Constants.responseCodeUnauthorized) {
       if (call.endpoint == _Constants.endpointGetToken) {
         final error = NeoError.fromJson(responseJSON);
-        _neoLogger.logError("[NeoNetworkManager]: Token service error!");
+        _neoLogger?.logError("[NeoNetworkManager]: Token service error!");
         return _handleErrorResponse(error, call);
       }
       final refreshToken = await _getRefreshToken();
@@ -293,7 +295,7 @@ class NeoNetworkManager {
         if (result.isSuccess) {
           return _retryLastCall(call);
         } else {
-          _neoLogger.logError("[NeoNetworkManager]: Token refresh service error!");
+          _neoLogger?.logError("[NeoNetworkManager]: Token refresh service error!");
           return result.asError;
         }
       } else {
@@ -316,7 +318,7 @@ class NeoNetworkManager {
         final error = NeoError(responseCode: response.statusCode);
         return _handleErrorResponse(error, call);
       } catch (e) {
-        _neoLogger.logError(
+        _neoLogger?.logError(
           "[NeoNetworkManager]: Service call failed! Status code: ${response.statusCode}.Endpoint: ${call.endpoint}",
         );
         return _handleErrorResponse(NeoError(responseCode: response.statusCode), call);
@@ -457,12 +459,12 @@ class NeoNetworkManager {
     final logLevel = isSuccess ? Level.trace : Level.warning;
     switch (logScale) {
       case NeoNetworkManagerLogScale.all:
-        _neoLogger.logConsole(
+        _neoLogger?.logConsole(
           "[NeoNetworkManager] Response code: ${response.statusCode}.\nURL: ${response.request?.url}\nBody: ${response.body}",
           logLevel: logLevel,
         );
       case NeoNetworkManagerLogScale.simplified:
-        _neoLogger.logConsole(
+        _neoLogger?.logConsole(
           "[NeoNetworkManager] Response code: ${response.statusCode}.\nURL: ${response.request?.url}",
           logLevel: logLevel,
         );
