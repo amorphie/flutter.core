@@ -45,11 +45,7 @@ class NeoCrashlytics {
     await _crashlytics.recordError(exception, stackTrace);
   }
 
-  Future<void> setUserIdentifier({required String? userId}) async {
-    if (userId == null) {
-      return;
-    }
-
+  Future<void> setUserIdentifier(String userId) async {
     await _crashlytics.setUserIdentifier(userId);
   }
 }
