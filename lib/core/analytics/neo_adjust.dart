@@ -33,14 +33,6 @@ class NeoAdjust {
           ..deferredDeeplinkCallback = adjustDeferredDeeplinkCallback;
 
     Adjust.start(adjustConfig);
-
-    unawaited(() {
-      try {
-        setAdjustNetworkAttribution();
-      } catch (e) {
-        debugPrint('Failed to set Adjust network attribution: $e');
-      }
-    }());
   }
 
   void logEvent(String eventId) {
