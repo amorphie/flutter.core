@@ -188,6 +188,9 @@ class NeoNetworkManager {
       if (e is TimeoutException) {
         _neoLogger.logError("[NeoNetworkManager]: Service call timeout! Endpoint: ${neoCall.endpoint}");
         return NeoResponse.error(const NeoError(responseCode: HttpStatus.requestTimeout));
+      } else if (e is HandshakeException) {
+        _neoLogger.logConsole("[NeoNetworkManager]: Handshake exception! Endpoint: ${neoCall.endpoint}");
+        return NeoResponse.error(const NeoError());
       } else {
         _neoLogger.logError("[NeoNetworkManager]: Service call failed! Endpoint: ${neoCall.endpoint}");
         return NeoResponse.error(const NeoError());
