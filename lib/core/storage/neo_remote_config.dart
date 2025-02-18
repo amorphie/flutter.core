@@ -23,12 +23,24 @@ class NeoRemoteConfig {
         ),
       );
 
-      final bool isSuccess = await _firebaseRemoteConfig.fetchAndActivate();
-      if (!isSuccess) {
-        neoLogger.logError(_Constants.initializationFailMessage);
-      }
+      await _fetchAndActivate();
+
+      _firebaseRemoteConfig.onConfigUpdated.listen((_) async {
+        await _onConfigUpdated();
+      });
     } catch (e) {
       neoLogger.logError("${_Constants.initializationFailMessage} Error: $e");
+    }
+  }
+
+  Future<void> _onConfigUpdated() async {
+    await _fetchAndActivate();
+  }
+
+  Future<void> _fetchAndActivate() async {
+    final bool isSuccess = await _firebaseRemoteConfig.fetchAndActivate();
+    if (!isSuccess) {
+      neoLogger.logError(_Constants.initializationFailMessage);
     }
   }
 
