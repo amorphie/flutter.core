@@ -37,8 +37,4 @@ abstract class INeoLogger {
 
   void logError(String message);
   void logException(dynamic exception, StackTrace stackTrace, {Map<String, dynamic>? parameters});
-
-  /// If automatic data collection is disabled, this method queues up all the
-  /// reports on a device to send to Crashlytics. Otherwise, this method is a no-op.
-  Future<void> sendUnsentReports();
 }

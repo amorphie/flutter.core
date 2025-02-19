@@ -19,6 +19,7 @@ import 'package:neo_core/core/analytics/neo_logger.dart';
 import 'package:neo_core/core/encryption/jwt_decoder.dart';
 import 'package:neo_core/core/storage/neo_core_parameter_key.dart';
 import 'package:neo_core/core/storage/neo_shared_prefs.dart';
+import 'package:neo_core/core/util/extensions/get_it_extensions.dart';
 import 'package:neo_core/core/util/uuid_util.dart';
 import 'package:neo_core/neo_core.dart';
 
@@ -39,7 +40,7 @@ class NeoCoreSecureStorage {
 
   final Map<String, String?> _cachedValues = {};
 
-  NeoLogger get _neoLogger => GetIt.I.get();
+  NeoLogger? get _neoLogger => GetIt.I.getIfReady<NeoLogger>();
 
   Future<void> write({required String key, required String? value}) {
     if (_enableCaching) {
@@ -58,7 +59,7 @@ class NeoCoreSecureStorage {
         value = await _storage!.read(key: key);
       } catch (e) {
         final errorMessage = '[NeoCoreSecureStorage]: Error occurred while reading value of $key';
-        _neoLogger.logConsole(errorMessage, logLevel: Level.error);
+        _neoLogger?.logConsole(errorMessage, logLevel: Level.error);
       }
       _cachedValues[key] = value;
       return value;
