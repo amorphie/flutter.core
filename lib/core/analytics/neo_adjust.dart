@@ -7,10 +7,6 @@ import 'package:adjust_sdk/adjust_event.dart';
 import 'package:flutter/foundation.dart';
 import 'package:neo_core/neo_core.dart';
 
-abstract class _Constants {
-  static const String urlStrategyDefaultValue = "ADJDataResidencyTR";
-}
-
 class NeoAdjust {
   final void Function(String?)? adjustDeferredDeeplinkCallback;
   final void Function(AdjustAttribution)? adjustAttributionCallback;
@@ -19,7 +15,7 @@ class NeoAdjust {
 
   Future<void> init({
     required String appToken,
-    String urlStrategyValue = _Constants.urlStrategyDefaultValue,
+    String urlStrategyValue = AdjustConfig.DataResidencyTR,
   }) async {
     if (kIsWeb) {
       return;
