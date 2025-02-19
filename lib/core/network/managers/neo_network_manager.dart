@@ -32,6 +32,7 @@ import 'package:neo_core/core/network/models/neo_http_call.dart';
 import 'package:neo_core/core/network/models/neo_network_header_key.dart';
 import 'package:neo_core/core/storage/neo_core_parameter_key.dart';
 import 'package:neo_core/core/storage/neo_shared_prefs.dart';
+import 'package:neo_core/core/util/extensions/get_it_extensions.dart';
 import 'package:neo_core/core/util/uuid_util.dart';
 import 'package:neo_core/neo_core.dart';
 import 'package:universal_io/io.dart';
@@ -91,8 +92,7 @@ class NeoNetworkManager {
     this.timeoutDuration = const Duration(minutes: 1),
   });
 
-  NeoLogger? get _neoLogger =>
-      (GetIt.I.isRegistered<NeoLogger>() && GetIt.I.isReadySync<NeoLogger>()) ? GetIt.I.get<NeoLogger>() : null;
+  NeoLogger? get _neoLogger => GetIt.I.getIfReady<NeoLogger>();
 
   Future<void> init({required bool enableSslPinning}) async {
     _enableSslPinning = enableSslPinning;

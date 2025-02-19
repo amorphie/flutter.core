@@ -19,6 +19,7 @@ import 'package:neo_core/core/analytics/neo_logger.dart';
 import 'package:neo_core/core/encryption/jwt_decoder.dart';
 import 'package:neo_core/core/storage/neo_core_parameter_key.dart';
 import 'package:neo_core/core/storage/neo_shared_prefs.dart';
+import 'package:neo_core/core/util/extensions/get_it_extensions.dart';
 import 'package:neo_core/core/util/uuid_util.dart';
 import 'package:neo_core/neo_core.dart';
 
@@ -39,8 +40,7 @@ class NeoCoreSecureStorage {
 
   final Map<String, String?> _cachedValues = {};
 
-  NeoLogger? get _neoLogger =>
-      (GetIt.I.isRegistered<NeoLogger>() && GetIt.I.isReadySync<NeoLogger>()) ? GetIt.I.get<NeoLogger>() : null;
+  NeoLogger? get _neoLogger => GetIt.I.getIfReady<NeoLogger>();
 
   Future<void> write({required String key, required String? value}) {
     if (_enableCaching) {

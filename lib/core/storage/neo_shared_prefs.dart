@@ -14,6 +14,7 @@ import 'package:get_it/get_it.dart';
 import 'package:logger/logger.dart';
 import 'package:neo_core/core/analytics/neo_logger.dart';
 import 'package:neo_core/core/network/models/http_client_config.dart';
+import 'package:neo_core/core/util/extensions/get_it_extensions.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 class NeoSharedPrefs {
@@ -26,8 +27,7 @@ class NeoSharedPrefs {
   // Getter is required, config may change at runtime
   bool get _enableCaching => httpClientConfig.config.cacheStorage;
 
-  NeoLogger? get _neoLogger =>
-      (GetIt.I.isRegistered<NeoLogger>() && GetIt.I.isReadySync<NeoLogger>()) ? GetIt.I.get<NeoLogger>() : null;
+  NeoLogger? get _neoLogger => GetIt.I.getIfReady<NeoLogger>();
 
   SharedPreferences? _preferences;
 

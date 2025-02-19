@@ -1,6 +1,7 @@
 import 'package:get_it/get_it.dart';
 import 'package:neo_core/core/analytics/neo_logger.dart';
 import 'package:neo_core/core/network/models/neo_http_call.dart';
+import 'package:neo_core/core/util/extensions/get_it_extensions.dart';
 import 'package:neo_core/core/util/uuid_util.dart';
 import 'package:neo_core/neo_core.dart';
 
@@ -59,8 +60,7 @@ class NeoWorkflowManager {
 
   String get subFlowInstanceId => _subFlowInstanceId;
 
-  NeoLogger? get _neoLogger =>
-      (GetIt.I.isRegistered<NeoLogger>() && GetIt.I.isReadySync<NeoLogger>()) ? GetIt.I.get<NeoLogger>() : null;
+  NeoLogger? get _neoLogger => GetIt.I.getIfReady<NeoLogger>();
 
   Future<NeoResponse> initWorkflow({
     required String workflowName,
