@@ -242,14 +242,15 @@ class _LogMessageQueueProcessor {
     final pendingMessages = List<NeoLog>.from(_messageQueue);
     _messageQueue.clear();
 
-    for (final logMessage in pendingMessages) {
+    await Future.forEach<NeoLog>(pendingMessages, (logMessage) async {
       try {
         if (logMessage.logTypes.contains(NeoLoggerType.logger)) {
           _logger.log(logMessage.logLevel, logMessage.message);
         }
 
         if (logMessage.logTypes.contains(NeoLoggerType.elastic)) {
-          await neoElastic.logCustom(logMessage.message, logMessage.logLevel.name, parameters: logMessage.properties);
+          unawaited(
+              neoElastic.logCustom(logMessage.message, logMessage.logLevel.name, parameters: logMessage.properties));
         }
         if (logMessage.logTypes.contains(NeoLoggerType.adjust) && logMessage.message is String) {
           neoAdjust.logEvent(logMessage.message);
@@ -257,7 +258,8 @@ class _LogMessageQueueProcessor {
       } catch (e) {
         _logger.e('Failed to process log message: $e');
       }
-    }
+    });
+
     _isProcessing = false;
 
     // Check if new messages arrived while processing
