@@ -44,8 +44,7 @@ abstract class _Constants {
   static const String requestKeyClientSecret = "client_secret";
   static const String requestKeyGrantType = "grant_type";
   static const String requestValueGrantTypeRefreshToken = "refresh_token";
-  static const String requestValueGrantTypeClientCredentials =
-      "client_credentials";
+  static const String requestValueGrantTypeClientCredentials = "client_credentials";
   static const String requestKeyRefreshToken = "refresh_token";
   static const String requestKeyScopes = "scopes";
   static const List<String> requestValueScopes = ["retail-customer"];
@@ -73,9 +72,7 @@ class NeoNetworkManager {
   final _tokenLock = Mutex();
   Completer? _tokenLockCompleter;
 
-  bool get isTokenExpired =>
-      _tokenExpirationTime != null &&
-      DateTime.now().isAfter(_tokenExpirationTime!);
+  bool get isTokenExpired => _tokenExpirationTime != null && DateTime.now().isAfter(_tokenExpirationTime!);
 
   late final http.Client httpClient;
 
@@ -95,9 +92,7 @@ class NeoNetworkManager {
   });
 
   NeoLogger? get _neoLogger =>
-      (GetIt.I.isRegistered<NeoLogger>() && GetIt.I.isReadySync<NeoLogger>())
-          ? GetIt.I.get<NeoLogger>()
-          : null;
+      (GetIt.I.isRegistered<NeoLogger>() && GetIt.I.isReadySync<NeoLogger>()) ? GetIt.I.get<NeoLogger>() : null;
 
   Future<void> init({required bool enableSslPinning}) async {
     _enableSslPinning = enableSslPinning;
@@ -106,9 +101,7 @@ class NeoNetworkManager {
   }
 
   Future<Map<String, String>> get _defaultHeaders async {
-    return await NeoDynamicHeaders(
-            neoSharedPrefs: neoSharedPrefs, secureStorage: secureStorage)
-        .getHeaders()
+    return await NeoDynamicHeaders(neoSharedPrefs: neoSharedPrefs, secureStorage: secureStorage).getHeaders()
       ..addAll(
         await NeoConstantHeaders(
           neoSharedPrefs: neoSharedPrefs,
@@ -118,15 +111,12 @@ class NeoNetworkManager {
       );
   }
 
-  Future<Map<String, String>> get _defaultPostHeaders async =>
-      <String, String>{}
-        ..addAll(await _defaultHeaders)
-        ..addAll({
-          NeoNetworkHeaderKey.user:
-              UuidUtil.generateUUID(), // STOPSHIP: Delete it
-          NeoNetworkHeaderKey.behalfOfUser:
-              UuidUtil.generateUUID(), // STOPSHIP: Delete it
-        });
+  Future<Map<String, String>> get _defaultPostHeaders async => <String, String>{}
+    ..addAll(await _defaultHeaders)
+    ..addAll({
+      NeoNetworkHeaderKey.user: UuidUtil.generateUUID(), // STOPSHIP: Delete it
+      NeoNetworkHeaderKey.behalfOfUser: UuidUtil.generateUUID(), // STOPSHIP: Delete it
+    });
 
   Future<SecurityContext?> get _getSecurityContext async {
     if (sslCertificateFilePaths.isEmpty) {
@@ -137,8 +127,7 @@ class NeoNetworkManager {
 
     await Future.forEach(sslCertificateFilePaths, (filePath) async {
       final sslCertificate = await rootBundle.load(filePath);
-      securityContext
-          .setTrustedCertificatesBytes(sslCertificate.buffer.asInt8List());
+      securityContext.setTrustedCertificatesBytes(sslCertificate.buffer.asInt8List());
     });
 
     return securityContext;
@@ -155,8 +144,7 @@ class NeoNetworkManager {
         if (isRefreshTokenExpired) {
           if (await _isTwoFactorAuthenticated) {
             await _onInvalidTokenError();
-            return NeoResponse.error(
-                const NeoError(responseCode: HttpStatus.forbidden));
+            return NeoResponse.error(const NeoError(responseCode: HttpStatus.forbidden));
           } else {
             await getTemporaryTokenForNotLoggedInUser(currentCall: neoCall);
           }
@@ -166,8 +154,7 @@ class NeoNetworkManager {
         if (token == null) {
           await _waitForOngoingTokenRequest();
           await getTemporaryTokenForNotLoggedInUser(currentCall: neoCall);
-        } else if (JwtDecoder.isExpired(token) ||
-            JwtDecoder.getRemainingTime(token).inSeconds < 60) {
+        } else if (JwtDecoder.isExpired(token) || JwtDecoder.getRemainingTime(token).inSeconds < 60) {
           await _waitForOngoingTokenRequest();
           await _refreshTokenIfExpired();
         }
@@ -201,17 +188,13 @@ class NeoNetworkManager {
       return response;
     } catch (e) {
       if (e is TimeoutException) {
-        _neoLogger?.logError(
-            "[NeoNetworkManager]: Service call timeout! Endpoint: ${neoCall.endpoint}");
-        return NeoResponse.error(
-            const NeoError(responseCode: HttpStatus.requestTimeout));
+        _neoLogger?.logError("[NeoNetworkManager]: Service call timeout! Endpoint: ${neoCall.endpoint}");
+        return NeoResponse.error(const NeoError(responseCode: HttpStatus.requestTimeout));
       } else if (e is HandshakeException) {
-        _neoLogger.logConsole(
-            "[NeoNetworkManager]: Handshake exception! Endpoint: ${neoCall.endpoint}");
+        _neoLogger?.logConsole("[NeoNetworkManager]: Handshake exception! Endpoint: ${neoCall.endpoint}");
         return NeoResponse.error(const NeoError());
       } else {
-        _neoLogger?.logError(
-            "[NeoNetworkManager]: Service call failed! Endpoint: ${neoCall.endpoint}");
+        _neoLogger?.logError("[NeoNetworkManager]: Service call failed! Endpoint: ${neoCall.endpoint}");
         return NeoResponse.error(const NeoError());
       }
     }
@@ -224,8 +207,7 @@ class NeoNetworkManager {
   }
 
   Future<NeoResponse> _requestGet(String fullPath, NeoHttpCall neoCall) async {
-    final fullPathWithQueries =
-        _getFullPathWithQueries(fullPath, neoCall.queryProviders);
+    final fullPathWithQueries = _getFullPathWithQueries(fullPath, neoCall.queryProviders);
     final response = await httpClient
         .get(
           Uri.parse(fullPathWithQueries),
@@ -236,23 +218,19 @@ class NeoNetworkManager {
   }
 
   Future<NeoResponse> _requestPost(String fullPath, NeoHttpCall neoCall) async {
-    final fullPathWithQueries =
-        _getFullPathWithQueries(fullPath, neoCall.queryProviders);
+    final fullPathWithQueries = _getFullPathWithQueries(fullPath, neoCall.queryProviders);
     final response = await httpClient
         .post(
           Uri.parse(fullPathWithQueries),
-          headers: (await _defaultPostHeaders)
-            ..addAll(neoCall.headerParameters),
+          headers: (await _defaultPostHeaders)..addAll(neoCall.headerParameters),
           body: json.encode(neoCall.body),
         )
         .timeout(timeoutDuration);
     return _createResponse(response, neoCall);
   }
 
-  Future<NeoResponse> _requestDelete(
-      String fullPath, NeoHttpCall neoCall) async {
-    final fullPathWithQueries =
-        _getFullPathWithQueries(fullPath, neoCall.queryProviders);
+  Future<NeoResponse> _requestDelete(String fullPath, NeoHttpCall neoCall) async {
+    final fullPathWithQueries = _getFullPathWithQueries(fullPath, neoCall.queryProviders);
     final response = await httpClient
         .delete(
           Uri.parse(fullPathWithQueries),
@@ -264,40 +242,33 @@ class NeoNetworkManager {
   }
 
   Future<NeoResponse> _requestPut(String fullPath, NeoHttpCall neoCall) async {
-    final fullPathWithQueries =
-        _getFullPathWithQueries(fullPath, neoCall.queryProviders);
+    final fullPathWithQueries = _getFullPathWithQueries(fullPath, neoCall.queryProviders);
     final response = await httpClient
         .put(
           Uri.parse(fullPathWithQueries),
-          headers: (await _defaultPostHeaders)
-            ..addAll(neoCall.headerParameters),
+          headers: (await _defaultPostHeaders)..addAll(neoCall.headerParameters),
           body: json.encode(neoCall.body),
         )
         .timeout(timeoutDuration);
     return _createResponse(response, neoCall);
   }
 
-  Future<NeoResponse> _requestPatch(
-      String fullPath, NeoHttpCall neoCall) async {
-    final fullPathWithQueries =
-        _getFullPathWithQueries(fullPath, neoCall.queryProviders);
+  Future<NeoResponse> _requestPatch(String fullPath, NeoHttpCall neoCall) async {
+    final fullPathWithQueries = _getFullPathWithQueries(fullPath, neoCall.queryProviders);
     final response = await httpClient
         .patch(
           Uri.parse(fullPathWithQueries),
-          headers: (await _defaultPostHeaders)
-            ..addAll(neoCall.headerParameters),
+          headers: (await _defaultPostHeaders)..addAll(neoCall.headerParameters),
           body: json.encode(neoCall.body),
         )
         .timeout(timeoutDuration);
     return _createResponse(response, neoCall);
   }
 
-  String _getFullPathWithQueries(
-      String fullPath, List<HttpQueryProvider> queryProviders) {
+  String _getFullPathWithQueries(String fullPath, List<HttpQueryProvider> queryProviders) {
     final Map<String, dynamic> queryParameters = queryProviders.fold(
       {},
-      (previousValue, element) =>
-          previousValue..addAll(element.queryParameters),
+      (previousValue, element) => previousValue..addAll(element.queryParameters),
     );
     if (queryParameters.isEmpty) {
       return fullPath;
@@ -307,8 +278,7 @@ class NeoNetworkManager {
     return uri.replace(queryParameters: queryParameters).toString();
   }
 
-  Future<NeoResponse> _createResponse(
-      http.Response response, NeoHttpCall call) async {
+  Future<NeoResponse> _createResponse(http.Response response, NeoHttpCall call) async {
     Map<String, dynamic>? responseJSON;
     try {
       const utf8Decoder = Utf8Decoder();
@@ -351,14 +321,12 @@ class NeoNetworkManager {
         _neoLogger?.logError(
           "[NeoNetworkManager]: Service call failed! Status code: ${response.statusCode}.Endpoint: ${call.endpoint}",
         );
-        return _handleErrorResponse(
-            NeoError(responseCode: response.statusCode), call);
+        return _handleErrorResponse(NeoError(responseCode: response.statusCode), call);
       }
     }
   }
 
-  Future<NeoResponse> _handleErrorResponse(
-      NeoError error, NeoHttpCall call) async {
+  Future<NeoResponse> _handleErrorResponse(NeoError error, NeoHttpCall call) async {
     if (error.isInvalidTokenError) {
       await _onInvalidTokenError();
     } else {
@@ -374,8 +342,7 @@ class NeoNetworkManager {
 
   Future<NeoResponse> _retryLastCall(NeoHttpCall neoHttpCall) async {
     if (neoHttpCall.retryCount == null) {
-      neoHttpCall.setRetryCount(
-          httpClientConfig.getRetryCountByKey(neoHttpCall.endpoint));
+      neoHttpCall.setRetryCount(httpClientConfig.getRetryCountByKey(neoHttpCall.endpoint));
     }
     if (_canRetryRequest(neoHttpCall)) {
       neoHttpCall.decreaseRetryCount();
@@ -389,14 +356,12 @@ class NeoNetworkManager {
     return (call.retryCount ?? 0) > 0;
   }
 
-  Future<NeoResponse> _refreshAuthDetailsByUsingRefreshToken(
-      String refreshToken) async {
+  Future<NeoResponse> _refreshAuthDetailsByUsingRefreshToken(String refreshToken) async {
     final response = await call(
       NeoHttpCall(
         endpoint: _Constants.endpointGetToken,
         body: {
-          _Constants.requestKeyGrantType:
-              _Constants.requestValueGrantTypeRefreshToken,
+          _Constants.requestKeyGrantType: _Constants.requestValueGrantTypeRefreshToken,
           _Constants.requestKeyRefreshToken: refreshToken,
         },
       ),
@@ -409,31 +374,21 @@ class NeoNetworkManager {
   }
 
   /// Returns true if two factor authenticated
-  Future<bool> setTokensByAuthResponse(HttpAuthResponse authResponse,
-      {bool? isMobUnapproved}) async {
-    final tokenExpirationDurationInSeconds =
-        max(0, (authResponse.expiresInSeconds) - 60);
-    _tokenExpirationTime =
-        DateTime.now().add(Duration(seconds: tokenExpirationDurationInSeconds));
-    final isTwoFactorAuth = await secureStorage.setAuthToken(authResponse.token,
-        isMobUnapproved: isMobUnapproved);
-    await secureStorage.write(
-        key: NeoCoreParameterKey.secureStorageRefreshToken,
-        value: authResponse.refreshToken);
+  Future<bool> setTokensByAuthResponse(HttpAuthResponse authResponse, {bool? isMobUnapproved}) async {
+    final tokenExpirationDurationInSeconds = max(0, (authResponse.expiresInSeconds) - 60);
+    _tokenExpirationTime = DateTime.now().add(Duration(seconds: tokenExpirationDurationInSeconds));
+    final isTwoFactorAuth = await secureStorage.setAuthToken(authResponse.token, isMobUnapproved: isMobUnapproved);
+    await secureStorage.write(key: NeoCoreParameterKey.secureStorageRefreshToken, value: authResponse.refreshToken);
     return isTwoFactorAuth;
   }
 
-  Future<bool> getTemporaryTokenForNotLoggedInUser(
-      {NeoHttpCall? currentCall}) async {
+  Future<bool> getTemporaryTokenForNotLoggedInUser({NeoHttpCall? currentCall}) async {
     // Prevent infinite call loop
-    if (currentCall?.endpoint == _Constants.endpointGetToken ||
-        await _isTwoFactorAuthenticated) {
+    if (currentCall?.endpoint == _Constants.endpointGetToken || await _isTwoFactorAuthenticated) {
       return false;
     }
     final authToken = await _getToken();
-    if (authToken != null &&
-        authToken.isNotEmpty &&
-        !JwtDecoder.isExpired(authToken)) {
+    if (authToken != null && authToken.isNotEmpty && !JwtDecoder.isExpired(authToken)) {
       return true;
     }
     _tokenLockCompleter = Completer<void>();
@@ -444,8 +399,7 @@ class NeoNetworkManager {
         body: {
           _Constants.requestKeyClientId: workflowClientId,
           _Constants.requestKeyClientSecret: workflowClientSecret,
-          _Constants.requestKeyGrantType:
-              _Constants.requestValueGrantTypeClientCredentials,
+          _Constants.requestKeyGrantType: _Constants.requestValueGrantTypeClientCredentials,
           _Constants.requestKeyScopes: _Constants.requestValueScopes,
         },
       ),
@@ -472,11 +426,9 @@ class NeoNetworkManager {
     return JwtDecoder.decode(token)["clientAuthorized"] != "1";
   }
 
-  Future<String?> _getToken() =>
-      secureStorage.read(NeoCoreParameterKey.secureStorageAuthToken);
+  Future<String?> _getToken() => secureStorage.read(NeoCoreParameterKey.secureStorageAuthToken);
 
-  Future<String?> _getRefreshToken() =>
-      secureStorage.read(NeoCoreParameterKey.secureStorageRefreshToken);
+  Future<String?> _getRefreshToken() => secureStorage.read(NeoCoreParameterKey.secureStorageRefreshToken);
 
   Future<void> _refreshTokenIfExpired() async {
     if (isTokenExpired) {
@@ -497,13 +449,10 @@ class NeoNetworkManager {
     }
 
     final userAgent = (await _defaultHeaders)[NeoNetworkHeaderKey.userAgent];
-    final client = HttpClient(
-        context: _enableSslPinning ? await _getSecurityContext : null)
-      ..userAgent = userAgent;
+    final client = HttpClient(context: _enableSslPinning ? await _getSecurityContext : null)..userAgent = userAgent;
 
     if (_enableSslPinning) {
-      client.badCertificateCallback =
-          (X509Certificate cert, String host, int port) => false;
+      client.badCertificateCallback = (X509Certificate cert, String host, int port) => false;
     }
 
     httpClient = IOClient(client);
