@@ -14,52 +14,53 @@
 
 import 'package:firebase_crashlytics/firebase_crashlytics.dart';
 import 'package:flutter/foundation.dart' show FlutterError, PlatformDispatcher;
-import 'package:get_it/get_it.dart';
-import 'package:neo_core/core/storage/neo_core_parameter_key.dart';
-import 'package:neo_core/core/storage/neo_core_secure_storage.dart';
 
 class NeoCrashlytics {
-  NeoCrashlytics();
+  final bool enabled;
+  NeoCrashlytics({required this.enabled});
 
-  NeoCoreSecureStorage get _neoCoreSecureStorage => GetIt.I.get();
+  FirebaseCrashlytics? _crashlytics;
 
-  final FirebaseCrashlytics _crashlytics = FirebaseCrashlytics.instance;
-
-  Future<void> initializeCrashlytics() async {
-    FlutterError.onError = _crashlytics.recordFlutterFatalError;
-    PlatformDispatcher.instance.onError = (error, stack) {
-      _crashlytics.recordError(error, stack, fatal: true);
-      return true;
-    };
-    await sendUnsentReports();
-  }
-
-  bool get isCrashlyticsCollectionEnabled {
-    return _crashlytics.isCrashlyticsCollectionEnabled;
-  }
-
-  Future<void> logError(String message) async {
-    await _crashlytics.log(message);
-  }
-
-  Future<void> logException(dynamic exception, StackTrace stackTrace) async {
-    await _crashlytics.recordError(exception, stackTrace);
-  }
-
-  Future<void> setUserIdentifier() async {
-    final userId = await _neoCoreSecureStorage.read(NeoCoreParameterKey.secureStorageUserId);
-    if (userId == null) {
+  Future<void> init() async {
+    if (!enabled) {
       return;
     }
 
-    await _crashlytics.setUserIdentifier(userId);
+    _crashlytics = FirebaseCrashlytics.instance;
+
+    FlutterError.onError = _crashlytics?.recordFlutterFatalError;
+    PlatformDispatcher.instance.onError = (error, stack) {
+      _crashlytics?.recordError(error, stack, fatal: true);
+      return true;
+    };
+
+    /// If automatic data collection is disabled, this method queues up all the
+    /// reports on a device to send to Crashlytics. Otherwise, this method is a no-op.
+    await _crashlytics?.sendUnsentReports();
+    await _crashlytics?.setCrashlyticsCollectionEnabled(true);
   }
 
-  Future<void> setEnabled({required bool enabled}) async {
-    await _crashlytics.setCrashlyticsCollectionEnabled(enabled);
+  Future<void> logError(String message) async {
+    if (!enabled) {
+      return;
+    }
+
+    await _crashlytics?.log(message);
   }
 
-  Future<void> sendUnsentReports() async {
-    await _crashlytics.sendUnsentReports();
+  Future<void> logException(dynamic exception, StackTrace stackTrace) async {
+    if (!enabled) {
+      return;
+    }
+
+    await _crashlytics?.recordError(exception, stackTrace);
+  }
+
+  Future<void> setUserIdentifier(String userId) async {
+    if (!enabled) {
+      return;
+    }
+
+    await _crashlytics?.setUserIdentifier(userId);
   }
 }

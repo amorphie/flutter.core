@@ -17,6 +17,7 @@ import 'dart:developer';
 
 import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
+import 'package:get_it/get_it.dart';
 import 'package:logger/logger.dart';
 import 'package:neo_core/core/analytics/i_neo_logger.dart';
 import 'package:neo_core/core/analytics/models/neo_log.dart';
@@ -27,6 +28,7 @@ import 'package:neo_core/core/analytics/neo_logger_type.dart';
 import 'package:neo_core/core/network/models/http_client_config.dart';
 import 'package:neo_core/core/network/models/neo_page_type.dart';
 import 'package:neo_core/core/util/device_util/device_util.dart';
+import 'package:neo_core/core/util/extensions/get_it_extensions.dart';
 import 'package:universal_io/io.dart';
 
 abstract class _Constants {
@@ -59,7 +61,6 @@ class NeoLogger implements INeoLogger {
 
   Level get _logLevel => httpClientConfig.config.logLevel;
   final DeviceUtil _deviceUtil = DeviceUtil();
-  late final NeoCrashlytics _neoCrashlytics = NeoCrashlytics();
 
   @override
   List<NavigatorObserver> observers = [];
@@ -73,6 +74,8 @@ class NeoLogger implements INeoLogger {
 
   bool _isLoggingEnabled = false;
 
+  NeoCrashlytics? get _neoCrashlytics => GetIt.I.getIfReady<NeoCrashlytics>();
+
   Future<void> init({bool enableLogging = false}) async {
     _isLoggingEnabled = enableLogging && !Platform.isMacOS && !Platform.isWindows;
 
@@ -84,12 +87,6 @@ class NeoLogger implements INeoLogger {
       neoAdjust: neoAdjust,
       neoElastic: neoElastic,
     );
-
-    if (!kIsWeb) {
-      await _neoCrashlytics.initializeCrashlytics();
-      await _neoCrashlytics.setEnabled(enabled: true);
-      await _neoCrashlytics.setUserIdentifier();
-    }
 
     logCustom(
       _Constants.eventNameAdjustInitSucceed,
@@ -172,7 +169,7 @@ class NeoLogger implements INeoLogger {
     if (kIsWeb) {
       return;
     }
-    _neoCrashlytics.logError(message);
+    _neoCrashlytics?.logError(message);
     logCustom(message, logLevel: Level.error, logTypes: [NeoLoggerType.elastic]);
   }
 
@@ -181,16 +178,8 @@ class NeoLogger implements INeoLogger {
     if (kIsWeb) {
       return;
     }
-    _neoCrashlytics.logException(exception, stackTrace);
+    _neoCrashlytics?.logException(exception, stackTrace);
     logCustom(exception, logLevel: Level.fatal, properties: parameters, logTypes: [NeoLoggerType.elastic]);
-  }
-
-  @override
-  Future<void> sendUnsentReports() async {
-    if (kIsWeb) {
-      return;
-    }
-    await _neoCrashlytics.sendUnsentReports();
   }
 
   void logConsole(dynamic message, {Level logLevel = Level.info}) {
@@ -242,14 +231,15 @@ class _LogMessageQueueProcessor {
     final pendingMessages = List<NeoLog>.from(_messageQueue);
     _messageQueue.clear();
 
-    for (final logMessage in pendingMessages) {
+    await Future.forEach<NeoLog>(pendingMessages, (logMessage) async {
       try {
         if (logMessage.logTypes.contains(NeoLoggerType.logger)) {
           _logger.log(logMessage.logLevel, logMessage.message);
         }
 
         if (logMessage.logTypes.contains(NeoLoggerType.elastic)) {
-          await neoElastic.logCustom(logMessage.message, logMessage.logLevel.name, parameters: logMessage.properties);
+          unawaited(
+              neoElastic.logCustom(logMessage.message, logMessage.logLevel.name, parameters: logMessage.properties));
         }
         if (logMessage.logTypes.contains(NeoLoggerType.adjust) && logMessage.message is String) {
           neoAdjust.logEvent(logMessage.message);
@@ -257,7 +247,8 @@ class _LogMessageQueueProcessor {
       } catch (e) {
         _logger.e('Failed to process log message: $e');
       }
-    }
+    });
+
     _isProcessing = false;
 
     // Check if new messages arrived while processing
