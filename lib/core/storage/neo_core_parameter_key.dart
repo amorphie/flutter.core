@@ -29,7 +29,7 @@ abstract class NeoCoreParameterKey {
   static const secureStorageLanguage = "secureStorage:common:language";
   static const secureStoragePhoneNumber = "secureStorage:common:phoneNumber";
   static const secureStorageRefreshToken = "secureStorage:infrastructure:refreshToken";
-  static const secureStorageTokenId = "secureStorage:infrastructure:tokenId";
+  static const secureStorageInstallationId = "secureStorage:infrastructure:installationId";
 
   static const sharedPrefsFirstRun = "sharedPrefs:infrastructure:firstRun";
   static const sharedPrefsLanguageCode = "sharedPrefs:common:languageCode";

@@ -64,13 +64,13 @@ class NeoNetworkManager {
   Future<Map<String, String>> get _defaultHeaders async {
     final results = await Future.wait([
       secureStorage.read(NeoCoreParameterKey.secureStorageDeviceId),
-      secureStorage.read(NeoCoreParameterKey.secureStorageTokenId),
+      secureStorage.read(NeoCoreParameterKey.secureStorageInstallationId),
       secureStorage.read(NeoCoreParameterKey.secureStorageDeviceInfo),
       _authHeader,
     ]);
 
     final deviceId = results[0] as String? ?? "";
-    final tokenId = results[1] as String? ?? "";
+    final installationId = results[1] as String? ?? "";
     final deviceInfo = results[2] != null ? NeoDeviceInfo.decode(results[2] as String? ?? "") : null;
     final authHeader = results[3] as Map<String, String>? ?? {};
 
@@ -80,7 +80,7 @@ class NeoNetworkManager {
       NeoNetworkHeaderKey.contentLanguage: _languageCode,
       NeoNetworkHeaderKey.application: _Constants.headerValueApplication,
       NeoNetworkHeaderKey.deviceId: deviceId,
-      NeoNetworkHeaderKey.tokenId: tokenId,
+      NeoNetworkHeaderKey.installationId: installationId,
       NeoNetworkHeaderKey.requestId: const Uuid().v1(),
       NeoNetworkHeaderKey.deviceInfo: deviceInfo?.model ?? "",
       NeoNetworkHeaderKey.deviceModel: deviceInfo?.model ?? "",

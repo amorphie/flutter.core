@@ -20,16 +20,16 @@ class GetWorkflowQueryParametersUseCase {
     final secureStorage = NeoCoreSecureStorage();
     final results = await Future.wait([
       secureStorage.read(NeoCoreParameterKey.secureStorageDeviceId),
-      secureStorage.read(NeoCoreParameterKey.secureStorageTokenId),
+      secureStorage.read(NeoCoreParameterKey.secureStorageInstallationId),
       secureStorage.read(NeoCoreParameterKey.secureStorageAuthToken),
     ]);
 
     final deviceId = results[0] ?? "";
-    final tokenId = results[1] ?? "";
+    final installationId = results[1] ?? "";
     final authToken = results[2] ?? "";
 
     return "?${NeoNetworkHeaderKey.deviceId}=$deviceId&"
-        "${NeoNetworkHeaderKey.tokenId}=$tokenId&"
+        "${NeoNetworkHeaderKey.installationId}=$installationId&"
         "${NeoNetworkHeaderKey.requestId}=${const Uuid().v1()}&"
         "${NeoNetworkHeaderKey.accessToken}=$authToken";
   }
