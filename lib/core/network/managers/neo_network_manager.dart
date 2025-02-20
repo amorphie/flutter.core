@@ -101,7 +101,7 @@ class NeoNetworkManager {
     await getTemporaryTokenForNotLoggedInUser();
   }
 
-  Future<Map<String, String>> _getDefaultHeaders(dynamic body) async {
+  Future<Map<String, String>> _getDefaultHeaders(Map body) async {
     return await NeoDynamicHeaders(neoSharedPrefs: neoSharedPrefs, secureStorage: secureStorage).getHeaders()
     ..addAll(await _isTwoFactorAuthenticated ? await MtlsHeaders(secureStorage: secureStorage).getHeaders(body): {})
       ..addAll(
