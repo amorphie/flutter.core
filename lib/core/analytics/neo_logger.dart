@@ -17,6 +17,7 @@ import 'dart:developer';
 
 import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
+import 'package:get_it/get_it.dart';
 import 'package:logger/logger.dart';
 import 'package:neo_core/core/analytics/i_neo_logger.dart';
 import 'package:neo_core/core/analytics/models/neo_log.dart';
@@ -27,6 +28,7 @@ import 'package:neo_core/core/analytics/neo_logger_type.dart';
 import 'package:neo_core/core/network/models/http_client_config.dart';
 import 'package:neo_core/core/network/models/neo_page_type.dart';
 import 'package:neo_core/core/util/device_util/device_util.dart';
+import 'package:neo_core/core/util/extensions/get_it_extensions.dart';
 import 'package:universal_io/io.dart';
 
 abstract class _Constants {
@@ -48,7 +50,6 @@ class _NeoLoggerOutput extends LogOutput {
 class NeoLogger implements INeoLogger {
   final NeoAdjust neoAdjust;
   final NeoElastic neoElastic;
-  final NeoCrashlytics neoCrashlytics;
   final HttpClientConfig httpClientConfig;
   _LogMessageQueueProcessor? _processor;
 
@@ -56,7 +57,6 @@ class NeoLogger implements INeoLogger {
     required this.neoAdjust,
     required this.neoElastic,
     required this.httpClientConfig,
-    required this.neoCrashlytics,
   });
 
   Level get _logLevel => httpClientConfig.config.logLevel;
@@ -73,6 +73,8 @@ class NeoLogger implements INeoLogger {
   ];
 
   bool _isLoggingEnabled = false;
+
+  NeoCrashlytics? get _neoCrashlytics => GetIt.I.getIfReady<NeoCrashlytics>();
 
   Future<void> init({bool enableLogging = false}) async {
     _isLoggingEnabled = enableLogging && !Platform.isMacOS && !Platform.isWindows;
@@ -167,7 +169,7 @@ class NeoLogger implements INeoLogger {
     if (kIsWeb) {
       return;
     }
-    neoCrashlytics.logError(message);
+    _neoCrashlytics?.logError(message);
     logCustom(message, logLevel: Level.error, logTypes: [NeoLoggerType.elastic]);
   }
 
@@ -176,7 +178,7 @@ class NeoLogger implements INeoLogger {
     if (kIsWeb) {
       return;
     }
-    neoCrashlytics.logException(exception, stackTrace);
+    _neoCrashlytics?.logException(exception, stackTrace);
     logCustom(exception, logLevel: Level.fatal, properties: parameters, logTypes: [NeoLoggerType.elastic]);
   }
 
