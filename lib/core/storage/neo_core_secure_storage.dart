@@ -20,6 +20,7 @@ import 'package:neo_core/core/encryption/jwt_decoder.dart';
 import 'package:neo_core/core/storage/neo_core_parameter_key.dart';
 import 'package:neo_core/core/storage/neo_shared_prefs.dart';
 import 'package:neo_core/core/util/extensions/get_it_extensions.dart';
+import 'package:neo_core/core/util/token_util.dart';
 import 'package:neo_core/core/util/uuid_util.dart';
 import 'package:neo_core/neo_core.dart';
 
@@ -138,11 +139,12 @@ class NeoCoreSecureStorage {
       ],
     );
 
-    final Map<String, dynamic> decodedToken = JwtDecoder.decode(token);
-    final isTwoFactorAuthenticated = decodedToken["clientAuthorized"] != "1";
-    if (!isTwoFactorAuthenticated) {
+    if (!TokenUtil.is2FAToken(token)) {
       return false;
     }
+
+    final Map<String, dynamic> decodedToken = JwtDecoder.decode(token);
+
     final customerId = decodedToken["user.reference"];
     if (customerId is String && customerId.isNotEmpty) {
       await write(key: NeoCoreParameterKey.secureStorageCustomerId, value: customerId);

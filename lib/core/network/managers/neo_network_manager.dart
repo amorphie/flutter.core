@@ -33,6 +33,7 @@ import 'package:neo_core/core/network/models/neo_network_header_key.dart';
 import 'package:neo_core/core/storage/neo_core_parameter_key.dart';
 import 'package:neo_core/core/storage/neo_shared_prefs.dart';
 import 'package:neo_core/core/util/extensions/get_it_extensions.dart';
+import 'package:neo_core/core/util/token_util.dart';
 import 'package:neo_core/core/util/uuid_util.dart';
 import 'package:neo_core/neo_core.dart';
 import 'package:universal_io/io.dart';
@@ -423,7 +424,7 @@ class NeoNetworkManager {
       return false;
     }
 
-    return JwtDecoder.decode(token)["clientAuthorized"] != "1";
+    return TokenUtil.is2FAToken(token);
   }
 
   Future<String?> _getToken() => secureStorage.read(NeoCoreParameterKey.secureStorageAuthToken);
