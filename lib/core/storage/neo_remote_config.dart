@@ -1,5 +1,4 @@
 import 'package:firebase_remote_config/firebase_remote_config.dart';
-import 'package:get_it/get_it.dart';
 import 'package:neo_core/core/analytics/neo_logger.dart';
 
 abstract class _Constants {
@@ -10,11 +9,10 @@ abstract class _Constants {
 }
 
 class NeoRemoteConfig {
-  NeoRemoteConfig();
+  final NeoLogger neoLogger;
+  NeoRemoteConfig({required this.neoLogger});
 
   late final FirebaseRemoteConfig _firebaseRemoteConfig = FirebaseRemoteConfig.instance;
-
-  late final NeoLogger _neoLogger = GetIt.I.get();
 
   Future<void> init() async {
     try {
@@ -25,12 +23,24 @@ class NeoRemoteConfig {
         ),
       );
 
-      final bool isSuccess = await _firebaseRemoteConfig.fetchAndActivate();
-      if (!isSuccess) {
-        _neoLogger.logError(_Constants.initializationFailMessage);
-      }
+      await _fetchAndActivate();
+
+      _firebaseRemoteConfig.onConfigUpdated.listen((_) async {
+        await _onConfigUpdated();
+      });
     } catch (e) {
-      _neoLogger.logError("${_Constants.initializationFailMessage} Error: $e");
+      neoLogger.logError("${_Constants.initializationFailMessage} Error: $e");
+    }
+  }
+
+  Future<void> _onConfigUpdated() async {
+    await _fetchAndActivate();
+  }
+
+  Future<void> _fetchAndActivate() async {
+    final bool isSuccess = await _firebaseRemoteConfig.fetchAndActivate();
+    if (!isSuccess) {
+      neoLogger.logError(_Constants.initializationFailMessage);
     }
   }
 
@@ -38,7 +48,7 @@ class NeoRemoteConfig {
     try {
       await _firebaseRemoteConfig.setDefaults(defaultValues);
     } catch (e) {
-      _neoLogger.logError("${_Constants.setDefaultsFailMessage} Error: $e");
+      neoLogger.logError("${_Constants.setDefaultsFailMessage} Error: $e");
     }
   }
 

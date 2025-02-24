@@ -68,20 +68,6 @@ class SignalrConnectionManager {
         logTypes: [NeoLoggerType.elastic, NeoLoggerType.logger],
       );
     });
-    _hubConnection?.onreconnecting(({error}) {
-      onConnectionStatusChanged(hasConnection: false);
-      _neoLogger.logCustom(
-        _Constants.eventNameSignalrOnReconnecting,
-        logTypes: [NeoLoggerType.elastic, NeoLoggerType.logger],
-      );
-    });
-    _hubConnection?.onreconnected(({connectionId}) {
-      onConnectionStatusChanged(hasConnection: true);
-      _neoLogger.logCustom(
-        _Constants.eventNameSignalrOnReconnected,
-        logTypes: [NeoLoggerType.elastic, NeoLoggerType.logger],
-      );
-    });
 
     if (_hubConnection?.state != HubConnectionState.Connected) {
       try {
