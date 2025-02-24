@@ -25,7 +25,15 @@ class HttpAuthResponse {
   @JsonKey(name: 'expires_in', defaultValue: 0)
   final int expiresInSeconds;
 
-  const HttpAuthResponse({required this.token, required this.refreshToken, required this.expiresInSeconds});
+  @JsonKey(name: 'refresh_token_expires_in', defaultValue: 0)
+  final int refreshTokenExpiresInSeconds;
+
+  const HttpAuthResponse({
+    required this.token,
+    required this.refreshToken,
+    required this.expiresInSeconds,
+    required this.refreshTokenExpiresInSeconds,
+  });
 
   factory HttpAuthResponse.fromJson(Map<String, dynamic> json) => _$HttpAuthResponseFromJson(json);
 }

@@ -70,11 +70,15 @@ class NeoNetworkManager {
 
   late final bool _enableSslPinning;
   DateTime? _tokenExpirationTime;
+  DateTime? _refreshTokenExpirationTime;
 
   final _tokenLock = Mutex();
   Completer? _tokenLockCompleter;
 
   bool get isTokenExpired => _tokenExpirationTime != null && DateTime.now().isAfter(_tokenExpirationTime!);
+
+  bool get isRefreshTokenExpired =>
+      _refreshTokenExpirationTime != null && DateTime.now().isAfter(_refreshTokenExpirationTime!);
 
   late final http.Client httpClient;
 
@@ -138,11 +142,8 @@ class NeoNetworkManager {
     if (neoCall.endpoint != _Constants.endpointGetToken) {
       await _tokenLock.protect(() async {
         final refreshToken = await _getRefreshToken();
-        final isRefreshTokenExpired = refreshToken == null ||
-            JwtDecoder.isExpired(refreshToken) ||
-            JwtDecoder.getRemainingTime(refreshToken).inSeconds < 60;
 
-        if (isRefreshTokenExpired) {
+        if (refreshToken == null || isRefreshTokenExpired) {
           if (await _isTwoFactorAuthenticated) {
             await _onInvalidTokenError();
             return NeoResponse.error(const NeoError(responseCode: HttpStatus.forbidden));
@@ -155,7 +156,7 @@ class NeoNetworkManager {
         if (token == null) {
           await _waitForOngoingTokenRequest();
           await getTemporaryTokenForNotLoggedInUser(currentCall: neoCall);
-        } else if (JwtDecoder.isExpired(token) || JwtDecoder.getRemainingTime(token).inSeconds < 60) {
+        } else if (isTokenExpired) {
           await _waitForOngoingTokenRequest();
           await _refreshTokenIfExpired();
         }
@@ -378,6 +379,8 @@ class NeoNetworkManager {
   Future<bool> setTokensByAuthResponse(HttpAuthResponse authResponse, {bool? isMobUnapproved}) async {
     final tokenExpirationDurationInSeconds = max(0, (authResponse.expiresInSeconds) - 60);
     _tokenExpirationTime = DateTime.now().add(Duration(seconds: tokenExpirationDurationInSeconds));
+    final refreshTokenExpirationDurationInSeconds = max(0, (authResponse.refreshTokenExpiresInSeconds) - 60);
+    _refreshTokenExpirationTime = DateTime.now().add(Duration(seconds: refreshTokenExpirationDurationInSeconds));
     final isTwoFactorAuth = await secureStorage.setAuthToken(authResponse.token, isMobUnapproved: isMobUnapproved);
     await secureStorage.write(key: NeoCoreParameterKey.secureStorageRefreshToken, value: authResponse.refreshToken);
     return isTwoFactorAuth;
@@ -389,7 +392,7 @@ class NeoNetworkManager {
       return false;
     }
     final authToken = await _getToken();
-    if (authToken != null && authToken.isNotEmpty && !JwtDecoder.isExpired(authToken)) {
+    if (authToken != null && authToken.isNotEmpty && !isTokenExpired) {
       return true;
     }
     _tokenLockCompleter = Completer<void>();
