@@ -5,7 +5,8 @@ class TokenUtil {
 
   static bool is2FAToken(String token) {
     final Map<String, dynamic> decodedToken = JwtDecoder.decode(token);
-    final isTwoFactorAuthenticated = decodedToken["clientAuthorized"] != "1" && decodedToken["role"] != "non-customer";
+    final isTwoFactorAuthenticated =
+        decodedToken["clientAuthorized"] != "1" && decodedToken["client_id"] != "Factoring";
     return isTwoFactorAuthenticated;
   }
 }
