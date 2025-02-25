@@ -24,6 +24,7 @@ import 'package:logger/logger.dart';
 import 'package:mutex/mutex.dart';
 import 'package:neo_core/core/analytics/neo_logger.dart';
 import 'package:neo_core/core/encryption/jwt_decoder.dart';
+import 'package:neo_core/core/network/headers/mtls_headers.dart';
 import 'package:neo_core/core/network/headers/neo_constant_headers.dart';
 import 'package:neo_core/core/network/headers/neo_dynamic_headers.dart';
 import 'package:neo_core/core/network/models/http_auth_response.dart';
@@ -100,13 +101,14 @@ class NeoNetworkManager {
   NeoLogger? get _neoLogger => GetIt.I.getIfReady<NeoLogger>();
 
   Future<void> init({required bool enableSslPinning}) async {
-    _enableSslPinning = enableSslPinning;
+    _enableSslPinning = true;
     await _initHttpClient();
     await getTemporaryTokenForNotLoggedInUser();
   }
 
-  Future<Map<String, String>> get _defaultHeaders async {
+  Future<Map<String, String>> _getDefaultHeaders(Map body) async {
     return await NeoDynamicHeaders(neoSharedPrefs: neoSharedPrefs, secureStorage: secureStorage).getHeaders()
+      ..addAll(await _isTwoFactorAuthenticated ? await MtlsHeaders(secureStorage: secureStorage).getHeaders(body) : {})
       ..addAll(
         await NeoConstantHeaders(
           neoSharedPrefs: neoSharedPrefs,
@@ -116,8 +118,8 @@ class NeoNetworkManager {
       );
   }
 
-  Future<Map<String, String>> get _defaultPostHeaders async => <String, String>{}
-    ..addAll(await _defaultHeaders)
+  Future<Map<String, String>> _getDefaultPostHeaders(dynamic body) async => <String, String>{}
+    ..addAll(await _getDefaultHeaders(body))
     ..addAll({
       NeoNetworkHeaderKey.user: UuidUtil.generateUUID(), // STOPSHIP: Delete it
       NeoNetworkHeaderKey.behalfOfUser: UuidUtil.generateUUID(), // STOPSHIP: Delete it
@@ -134,6 +136,21 @@ class NeoNetworkManager {
       final sslCertificate = await rootBundle.load(filePath);
       securityContext.setTrustedCertificatesBytes(sslCertificate.buffer.asInt8List());
     });
+
+    final mtlsResult = await Future.wait([
+      secureStorage.read(NeoCoreParameterKey.secureStorageMtlsClientCertificate),
+      secureStorage.read(NeoCoreParameterKey.secureStorageMtlsPrivateKey),
+    ]);
+
+    final clientCertificate = mtlsResult[0];
+    final privateKey = mtlsResult[1];
+    final bool isMtlsEnabled = clientCertificate != null && privateKey != null;
+
+    if (isMtlsEnabled) {
+      securityContext
+        ..useCertificateChainBytes(utf8.encode(clientCertificate))
+        ..usePrivateKeyBytes(utf8.encode(privateKey));
+    }
 
     return securityContext;
   }
@@ -213,7 +230,7 @@ class NeoNetworkManager {
     final response = await httpClient
         .get(
           Uri.parse(fullPathWithQueries),
-          headers: (await _defaultHeaders)..addAll(neoCall.headerParameters),
+          headers: (await _getDefaultHeaders(neoCall.body))..addAll(neoCall.headerParameters),
         )
         .timeout(timeoutDuration);
     return _createResponse(response, neoCall);
@@ -224,7 +241,7 @@ class NeoNetworkManager {
     final response = await httpClient
         .post(
           Uri.parse(fullPathWithQueries),
-          headers: (await _defaultPostHeaders)..addAll(neoCall.headerParameters),
+          headers: (await _getDefaultPostHeaders(neoCall.body))..addAll(neoCall.headerParameters),
           body: json.encode(neoCall.body),
         )
         .timeout(timeoutDuration);
@@ -236,7 +253,7 @@ class NeoNetworkManager {
     final response = await httpClient
         .delete(
           Uri.parse(fullPathWithQueries),
-          headers: (await _defaultHeaders)..addAll(neoCall.headerParameters),
+          headers: (await _getDefaultHeaders(neoCall.body))..addAll(neoCall.headerParameters),
           body: json.encode(neoCall.body),
         )
         .timeout(timeoutDuration);
@@ -248,7 +265,7 @@ class NeoNetworkManager {
     final response = await httpClient
         .put(
           Uri.parse(fullPathWithQueries),
-          headers: (await _defaultPostHeaders)..addAll(neoCall.headerParameters),
+          headers: (await _getDefaultPostHeaders(neoCall.body))..addAll(neoCall.headerParameters),
           body: json.encode(neoCall.body),
         )
         .timeout(timeoutDuration);
@@ -260,7 +277,7 @@ class NeoNetworkManager {
     final response = await httpClient
         .patch(
           Uri.parse(fullPathWithQueries),
-          headers: (await _defaultPostHeaders)..addAll(neoCall.headerParameters),
+          headers: (await _getDefaultPostHeaders(neoCall.body))..addAll(neoCall.headerParameters),
           body: json.encode(neoCall.body),
         )
         .timeout(timeoutDuration);
@@ -452,7 +469,7 @@ class NeoNetworkManager {
       return;
     }
 
-    final userAgent = (await _defaultHeaders)[NeoNetworkHeaderKey.userAgent];
+    final userAgent = (await _getDefaultHeaders({}))[NeoNetworkHeaderKey.userAgent];
     final client = HttpClient(context: _enableSslPinning ? await _getSecurityContext : null)..userAgent = userAgent;
 
     if (_enableSslPinning) {
