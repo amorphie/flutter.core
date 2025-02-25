@@ -1,3 +1,4 @@
+import 'dart:convert';
 import 'dart:typed_data';
 
 import 'package:flutter_shield/secure_enclave.dart';
@@ -17,7 +18,7 @@ class MtlsHelper {
 
     final result = await _secureEnclavePlugin.sign(
       tag: clientKeyTag,
-      message: Uint8List.fromList(requestBody.toString().codeUnits),
+      message: Uint8List.fromList(utf8.encode(requestBody.toString())),
     );
 
     return result.value;
