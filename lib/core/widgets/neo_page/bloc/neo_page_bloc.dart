@@ -24,7 +24,7 @@ class NeoPageBloc extends Bloc<NeoPageEvent, NeoPageState> {
   final NeoWidgetEventBus widgetEventBus;
   final bool isInitialWorkflowPage;
 
-  final void Function(String pageId, String errorMessages)? onValidationError;
+  final void Function(String pageId, List<String> errorMessages)? onValidationError;
 
   final GlobalKey<FormState> formKey = GlobalKey<FormState>();
   final Map<String, dynamic> _formInitialData;
@@ -192,7 +192,8 @@ class NeoPageBloc extends Bloc<NeoPageEvent, NeoPageState> {
       if (failureContext != null) {
         Scrollable.ensureVisible(failureContext, alignment: 0.2);
       }
-      final allErrorMessages = _errorMessagesMap.values.where((msg) => msg.isNotEmpty).join(', ');
+
+      final List<String> allErrorMessages = _errorMessagesMap.values.where((msg) => msg.isNotEmpty).toList();
       onValidationError?.call(pageId, allErrorMessages);
     }
     return isValid != null && isValid && isCustomFieldValid;
