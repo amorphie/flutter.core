@@ -23,4 +23,23 @@ class MtlsHelper {
 
     return result.value;
   }
+
+  Future<void> storePrivateKeyWithCertificate({
+    required String clientKeyTag,
+    required String privateKey,
+    required String certificate,
+  }) async {
+    await _secureEnclavePlugin.storeServerPrivateKey(tag: clientKeyTag, privateKeyData: base64Decode(privateKey));
+    await _secureEnclavePlugin.storeCertificate(tag: clientKeyTag, certificateData: utf8.encode(certificate));
+  }
+
+  Future<String?> getCertificate({required String clientKeyTag}) async {
+    final certificateResult = await _secureEnclavePlugin.getCertificate(tag: clientKeyTag);
+    return certificateResult.value;
+  }
+
+  Future<String?> getServerPrivateKey({required String clientKeyTag}) async {
+    final privateKeyResult = await _secureEnclavePlugin.getServerKey(tag: clientKeyTag);
+    return privateKeyResult.value;
+  }
 }

@@ -27,6 +27,7 @@ import 'package:neo_core/core/encryption/jwt_decoder.dart';
 import 'package:neo_core/core/network/headers/mtls_headers.dart';
 import 'package:neo_core/core/network/headers/neo_constant_headers.dart';
 import 'package:neo_core/core/network/headers/neo_dynamic_headers.dart';
+import 'package:neo_core/core/network/helpers/mtls_helper.dart';
 import 'package:neo_core/core/network/models/http_auth_response.dart';
 import 'package:neo_core/core/network/models/http_method.dart';
 import 'package:neo_core/core/network/models/neo_http_call.dart';
@@ -70,6 +71,8 @@ class NeoNetworkManager {
   final Duration timeoutDuration;
 
   late final bool _enableSslPinning;
+  late final bool _enableMtls;
+
   DateTime? _tokenExpirationTime;
   DateTime? _refreshTokenExpirationTime;
 
@@ -81,7 +84,9 @@ class NeoNetworkManager {
   bool get isRefreshTokenExpired =>
       _refreshTokenExpirationTime != null && DateTime.now().isAfter(_refreshTokenExpirationTime!);
 
-  late final http.Client httpClient;
+  http.Client? httpClient;
+
+  late final MtlsHelper _mtlsHelper = MtlsHelper();
 
   NeoNetworkManager({
     required this.httpClientConfig,
@@ -100,15 +105,16 @@ class NeoNetworkManager {
 
   NeoLogger? get _neoLogger => GetIt.I.getIfReady<NeoLogger>();
 
-  Future<void> init({required bool enableSslPinning}) async {
+  Future<void> init({required bool enableSslPinning, required bool enableMtls}) async {
     _enableSslPinning = enableSslPinning;
+    _enableMtls = enableMtls;
     await _initHttpClient();
     await getTemporaryTokenForNotLoggedInUser();
   }
 
   Future<Map<String, String>> _getDefaultHeaders(Map body) async {
     return await NeoDynamicHeaders(neoSharedPrefs: neoSharedPrefs, secureStorage: secureStorage).getHeaders()
-    ..addAll(await _isTwoFactorAuthenticated ? await MtlsHeaders(secureStorage: secureStorage).getHeaders(body): {})
+      ..addAll(await _isTwoFactorAuthenticated ? await MtlsHeaders(secureStorage: secureStorage).getHeaders(body) : {})
       ..addAll(
         await NeoConstantHeaders(
           neoSharedPrefs: neoSharedPrefs,
@@ -212,7 +218,7 @@ class NeoNetworkManager {
 
   Future<NeoResponse> _requestGet(String fullPath, NeoHttpCall neoCall) async {
     final fullPathWithQueries = _getFullPathWithQueries(fullPath, neoCall.queryProviders);
-    final response = await httpClient
+    final response = await httpClient!
         .get(
           Uri.parse(fullPathWithQueries),
           headers: (await _getDefaultHeaders(neoCall.body))..addAll(neoCall.headerParameters),
@@ -223,7 +229,7 @@ class NeoNetworkManager {
 
   Future<NeoResponse> _requestPost(String fullPath, NeoHttpCall neoCall) async {
     final fullPathWithQueries = _getFullPathWithQueries(fullPath, neoCall.queryProviders);
-    final response = await httpClient
+    final response = await httpClient!
         .post(
           Uri.parse(fullPathWithQueries),
           headers: (await _getDefaultPostHeaders(neoCall.body))..addAll(neoCall.headerParameters),
@@ -235,7 +241,7 @@ class NeoNetworkManager {
 
   Future<NeoResponse> _requestDelete(String fullPath, NeoHttpCall neoCall) async {
     final fullPathWithQueries = _getFullPathWithQueries(fullPath, neoCall.queryProviders);
-    final response = await httpClient
+    final response = await httpClient!
         .delete(
           Uri.parse(fullPathWithQueries),
           headers: (await _getDefaultHeaders(neoCall.body))..addAll(neoCall.headerParameters),
@@ -247,7 +253,7 @@ class NeoNetworkManager {
 
   Future<NeoResponse> _requestPut(String fullPath, NeoHttpCall neoCall) async {
     final fullPathWithQueries = _getFullPathWithQueries(fullPath, neoCall.queryProviders);
-    final response = await httpClient
+    final response = await httpClient!
         .put(
           Uri.parse(fullPathWithQueries),
           headers: (await _getDefaultPostHeaders(neoCall.body))..addAll(neoCall.headerParameters),
@@ -259,7 +265,7 @@ class NeoNetworkManager {
 
   Future<NeoResponse> _requestPatch(String fullPath, NeoHttpCall neoCall) async {
     final fullPathWithQueries = _getFullPathWithQueries(fullPath, neoCall.queryProviders);
-    final response = await httpClient
+    final response = await httpClient!
         .patch(
           Uri.parse(fullPathWithQueries),
           headers: (await _getDefaultPostHeaders(neoCall.body))..addAll(neoCall.headerParameters),
@@ -448,6 +454,10 @@ class NeoNetworkManager {
     }
   }
 
+  Future<void> updateSecurityContext() async {
+    await _initHttpClient();
+  }
+
   Future<void> _initHttpClient() async {
     if (kIsWeb) {
       httpClient = http.Client();
@@ -455,13 +465,46 @@ class NeoNetworkManager {
     }
 
     final userAgent = (await _getDefaultHeaders({}))[NeoNetworkHeaderKey.userAgent];
-    final client = HttpClient(context: _enableSslPinning ? await _getSecurityContext : null)..userAgent = userAgent;
+    SecurityContext? securityContext = _enableSslPinning ? await _getSecurityContext : null;
+    if (_enableMtls) {
+      securityContext = await _addMtlsCertificateToSecurityContext(securityContext ?? SecurityContext());
+    }
+
+    final client = HttpClient(context: securityContext)..userAgent = userAgent;
 
     if (_enableSslPinning) {
       client.badCertificateCallback = (X509Certificate cert, String host, int port) => false;
     }
 
     httpClient = IOClient(client);
+  }
+
+  Future<SecurityContext?> _addMtlsCertificateToSecurityContext(SecurityContext securityContext) async {
+    final result = await Future.wait([
+      secureStorage.read(NeoCoreParameterKey.secureStorageCustomerId),
+      secureStorage.read(NeoCoreParameterKey.secureStorageDeviceId),
+    ]);
+
+    final userReference = result[0];
+    final deviceId = result[1];
+    final clientKeyTag = "$deviceId$userReference";
+
+    final mtlsResult = await Future.wait([
+      _mtlsHelper.getCertificate(clientKeyTag: clientKeyTag),
+      _mtlsHelper.getServerPrivateKey(clientKeyTag: clientKeyTag),
+    ]);
+
+    final clientCertificate = mtlsResult[0];
+    final privateKey = mtlsResult[1];
+    final bool isMtlsEnabled = clientCertificate != null && privateKey != null;
+
+    if (isMtlsEnabled) {
+      securityContext
+        ..useCertificateChainBytes(utf8.encode(clientCertificate))
+        ..usePrivateKeyBytes(utf8.encode(privateKey));
+      return securityContext;
+    }
+    return null;
   }
 
   void _logResponse(http.Response response) {
