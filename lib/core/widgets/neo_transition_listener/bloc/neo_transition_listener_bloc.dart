@@ -29,6 +29,7 @@ import 'package:neo_core/core/network/models/http_auth_response.dart';
 import 'package:neo_core/core/network/models/neo_signalr_event.dart';
 import 'package:neo_core/core/network/models/neo_signalr_transition_state_type.dart';
 import 'package:neo_core/core/network/neo_network.dart';
+import 'package:neo_core/core/storage/neo_core_parameter_key.dart';
 import 'package:neo_core/core/storage/neo_core_secure_storage.dart';
 import 'package:neo_core/core/widgets/neo_page/bloc/neo_page_bloc.dart';
 import 'package:neo_core/core/widgets/neo_transition_listener/bloc/usecases/process_login_certificate_silent_event_use_case.dart';
@@ -298,8 +299,20 @@ class NeoTransitionListenerBloc extends Bloc<NeoTransitionListenerEvent, NeoTran
         ),
         isMobUnapproved: isMobUnapproved,
       );
+      await _retrieveClientCertificateIfExist(ongoingTransition.additionalData?["clientCert"]);
       await onLoggedInSuccessfully?.call(isTwoFactorAuthenticated: isTwoFactorAuthenticated);
     }
+  }
+
+  Future<void> _retrieveClientCertificateIfExist(Map? data) async {
+    final String? privateKey = data?["privateKey"];
+    final String? certificate = data?["certificate"];
+
+    if (privateKey != null && certificate != null) {
+      await neoCoreSecureStorage.write(key: NeoCoreParameterKey.secureStorageMtlsPrivateKey, value: privateKey);
+      await neoCoreSecureStorage.write(key: NeoCoreParameterKey.secureStorageMtlsClientCertificate, value: certificate);
+    }
+   // neoWorkflowManager.neoNetworkManager.updateSecurityContext()
   }
 
   void _handleRedirectionSettings(NeoSignalRTransition ongoingTransition) {

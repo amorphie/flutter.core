@@ -101,14 +101,14 @@ class NeoNetworkManager {
   NeoLogger? get _neoLogger => GetIt.I.getIfReady<NeoLogger>();
 
   Future<void> init({required bool enableSslPinning}) async {
-    _enableSslPinning = enableSslPinning;
+    _enableSslPinning = true;
     await _initHttpClient();
     await getTemporaryTokenForNotLoggedInUser();
   }
 
   Future<Map<String, String>> _getDefaultHeaders(Map body) async {
     return await NeoDynamicHeaders(neoSharedPrefs: neoSharedPrefs, secureStorage: secureStorage).getHeaders()
-    ..addAll(await _isTwoFactorAuthenticated ? await MtlsHeaders(secureStorage: secureStorage).getHeaders(body): {})
+      ..addAll(await _isTwoFactorAuthenticated ? await MtlsHeaders(secureStorage: secureStorage).getHeaders(body) : {})
       ..addAll(
         await NeoConstantHeaders(
           neoSharedPrefs: neoSharedPrefs,
@@ -136,6 +136,21 @@ class NeoNetworkManager {
       final sslCertificate = await rootBundle.load(filePath);
       securityContext.setTrustedCertificatesBytes(sslCertificate.buffer.asInt8List());
     });
+
+    final mtlsResult = await Future.wait([
+      secureStorage.read(NeoCoreParameterKey.secureStorageMtlsClientCertificate),
+      secureStorage.read(NeoCoreParameterKey.secureStorageMtlsPrivateKey),
+    ]);
+
+    final clientCertificate = mtlsResult[0];
+    final privateKey = mtlsResult[1];
+    final bool isMtlsEnabled = clientCertificate != null && privateKey != null;
+
+    if (isMtlsEnabled) {
+      securityContext
+        ..useCertificateChainBytes(utf8.encode(clientCertificate))
+        ..usePrivateKeyBytes(utf8.encode(privateKey));
+    }
 
     return securityContext;
   }
