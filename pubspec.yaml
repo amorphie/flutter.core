@@ -45,6 +45,7 @@ dependencies:
   flutter_local_notifications: 17.2.2
   firebase_messaging: 15.0.0
   firebase_remote_config: 5.0.1
+  firebase_performance: 0.10.0+1
 
   #Huawei
   huawei_push: ^6.12.0+302
