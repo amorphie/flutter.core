@@ -8,7 +8,6 @@ import 'package:neo_core/core/util/package_util.dart';
 
 abstract class _Constants {
   static const String headerValueContentType = "application/json";
-  static const String languageCodeEn = "en";
 }
 
 class NeoConstantHeaders {
@@ -49,8 +48,6 @@ class NeoConstantHeaders {
 
     return {
       NeoNetworkHeaderKey.contentType: _Constants.headerValueContentType,
-      NeoNetworkHeaderKey.acceptLanguage: _languageCode,
-      NeoNetworkHeaderKey.contentLanguage: _languageCode,
       NeoNetworkHeaderKey.applicationVersion: appVersion,
       NeoNetworkHeaderKey.deviceId: deviceId,
       NeoNetworkHeaderKey.installationId: installationId,
@@ -63,16 +60,5 @@ class NeoConstantHeaders {
     }
       ..addAll(userAgentHeader)
       ..addAll(defaultHeaders);
-  }
-
-  String get _languageCode {
-    final languageCodeReadResult = neoSharedPrefs.read(NeoCoreParameterKey.sharedPrefsLanguageCode);
-    final String languageCode = languageCodeReadResult != null ? languageCodeReadResult as String : "";
-
-    if (languageCode == _Constants.languageCodeEn) {
-      return "$languageCode-US";
-    } else {
-      return '$languageCode-${languageCode.toUpperCase()}';
-    }
   }
 }

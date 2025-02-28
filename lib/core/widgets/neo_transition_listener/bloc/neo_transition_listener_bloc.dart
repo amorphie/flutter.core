@@ -285,11 +285,17 @@ class NeoTransitionListenerBloc extends Bloc<NeoTransitionListenerEvent, NeoTran
     final String? token = ongoingTransition.additionalData?["access_token"];
     final String? refreshToken = ongoingTransition.additionalData?["refresh_token"];
     final int expiresIn = ongoingTransition.additionalData?["expires_in"] ?? 0;
+    final int refreshTokenExpiresIn = ongoingTransition.additionalData?["refresh_token_expires_in"] ?? 0;
     final bool? isMobUnapproved = ongoingTransition.additionalData?["user_info"]?['is_mob_unapproved_caused_by_ekyc'];
 
     if (token != null && token.isNotEmpty) {
       final isTwoFactorAuthenticated = await neoWorkflowManager.neoNetworkManager.setTokensByAuthResponse(
-        HttpAuthResponse(token: token, refreshToken: refreshToken ?? "", expiresInSeconds: expiresIn),
+        HttpAuthResponse(
+          token: token,
+          refreshToken: refreshToken ?? "",
+          expiresInSeconds: expiresIn,
+          refreshTokenExpiresInSeconds: refreshTokenExpiresIn,
+        ),
         isMobUnapproved: isMobUnapproved,
       );
       await onLoggedInSuccessfully?.call(isTwoFactorAuthenticated: isTwoFactorAuthenticated);
@@ -378,6 +384,7 @@ class NeoTransitionListenerBloc extends Bloc<NeoTransitionListenerEvent, NeoTran
     hasSignalRConnection = hasConnection;
     if (hasConnection) {
       _cancelLongPolling();
+      _getLastTransitionsWithLongPolling(isSubFlow: false, onlyOnce: true);
     } else {
       _getLastTransitionsWithLongPolling(isSubFlow: false);
     }
@@ -396,9 +403,10 @@ class NeoTransitionListenerBloc extends Bloc<NeoTransitionListenerEvent, NeoTran
 
   void _getLastTransitionsWithLongPolling({
     required bool isSubFlow,
+    bool onlyOnce = false,
   }) {
     _cancelLongPolling();
-    if (hasSignalRConnection || isClosed || !neoWorkflowManager.hasActiveWorkflow) {
+    if (!onlyOnce && (hasSignalRConnection || isClosed || !neoWorkflowManager.hasActiveWorkflow)) {
       return;
     }
 
@@ -426,7 +434,9 @@ class NeoTransitionListenerBloc extends Bloc<NeoTransitionListenerEvent, NeoTran
     }
 
     timerCallback();
-    longPollingTimer = Timer.periodic(signalrLongPollingPeriod, timerCallback);
+    if (!onlyOnce) {
+      longPollingTimer = Timer.periodic(signalrLongPollingPeriod, timerCallback);
+    }
   }
 
   void _cancelLongPolling() {
