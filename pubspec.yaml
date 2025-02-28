@@ -40,11 +40,11 @@ dependencies:
   uuid: ^4.1.0
 
   # Feature
-  firebase_core: 3.8.0
-  firebase_crashlytics: 4.1.4
+  firebase_core: 3.1.0
+  firebase_crashlytics: 4.0.1
   flutter_local_notifications: 17.2.2
-  firebase_messaging: 15.1.5
-  firebase_remote_config: 5.1.2
+  firebase_messaging: 15.0.0
+  firebase_remote_config: 5.0.1
   firebase_performance: 0.10.0+1
 
   #Huawei
