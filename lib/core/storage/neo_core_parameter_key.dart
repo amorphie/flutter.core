@@ -24,17 +24,20 @@ abstract class NeoCoreParameterKey {
   static const secureStorageCustomerNo = "secureStorage:common:customerNo";
   static const secureStorageCustomerSurname = "secureStorage:common:customerSurname";
   static const secureStorageCustomerNameAndSurnameUppercase = "secureStorage:common:customerNameAndSurnameUppercase";
-  static const secureStorageDeviceId = "secureStorage:infrastructure:deviceId";
+  static const secureStorageDeviceId = "secureStorage:infrastructure:deviceIdV2";
   static const secureStorageDeviceInfo = "secureStorage:infrastructure:deviceInformation";
   static const secureStorageDeviceRegistrationToken = "secureStorage:infrastructure:deviceRegistrationToken";
+  static const secureStorageEmail = "secureStorage:common:email";
   static const secureStorageInstallationId = "secureStorage:infrastructure:installationId";
   static const secureStorageLanguage = "secureStorage:common:language";
   static const secureStoragePhoneNumber = "secureStorage:common:phoneNumber";
   static const secureStorageRefreshToken = "secureStorage:infrastructure:refreshToken";
   static const secureStorageSessionId = "secureStorage:infrastructure:sessionId";
+  static const secureStorageUserId = "secureStorage:infrastructure:userId";
   static const secureStorageUserInfoIsMobUnapproved = "secureStorage:infrastructure:userInfoIsMobUnapproved";
   static const secureStorageUserRole = "secureStorage:infrastructure:userRole";
 
+  static const sharedPrefsAuthStatus = "shared_pref_key_auth_status";
   static const sharedPrefsFirstRun = "sharedPrefs:infrastructure:firstRun";
   static const sharedPrefsIsHuaweiCompatible = "sharedPrefs:common:sharedPrefsIsHuaweiCompatible";
   static const sharedPrefsLanguageCode = "sharedPrefs:common:languageCode";

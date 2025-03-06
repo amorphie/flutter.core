@@ -14,13 +14,13 @@ import 'package:neo_core/core/bus/widget_event_bus/neo_widget_event.dart';
 import 'package:neo_core/core/network/managers/neo_network_manager.dart';
 import 'package:neo_core/core/storage/neo_core_secure_storage.dart';
 import 'package:neo_core/feature/device_registration/usecases/neo_core_register_device_usecase.dart';
+import 'package:neo_core/feature/neo_push_message_payload_handlers/neo_firebase_android_push_message_payload_handler.dart';
 import 'package:universal_io/io.dart';
 
 abstract class _Constant {
   static const androidNotificationChannelID = "high_importance_channel";
   static const androidNotificationChannelName = "High Importance Notifications";
   static const androidNotificationChannelDescription = "This channel is used for important notifications";
-  static const pushNotificationDeeplinkKey = "deeplink";
 }
 
 @pragma('vm:entry-point')
@@ -68,7 +68,7 @@ class _NeoCoreFirebaseMessagingState extends State<NeoCoreFirebaseMessaging> {
   StreamSubscription? _widgetEventStreamSubscription;
 
   void _listenWidgetEventKeys() {
-    _widgetEventStreamSubscription = NeoCoreWidgetEventKeys.initFirebaseAndHuawei.listenEvent(
+    _widgetEventStreamSubscription = NeoCoreWidgetEventKeys.initPushMessagingServices.listenEvent(
       onEventReceived: (NeoWidgetEvent widgetEvent) {
         _init();
       },
@@ -98,33 +98,32 @@ class _NeoCoreFirebaseMessagingState extends State<NeoCoreFirebaseMessaging> {
   }
 
   Future<void> _initNotifications() async {
-    final tokenFirebase = await _getTokenBasedOnPlatform();
-    final tokenAPNS = await _getAPNSTokenBasedOnPlatform();
-    if (tokenFirebase != null) {
-      _onTokenChange(tokenFirebase);
-      registerDevice(tokenFirebase);
-    }
-    if (tokenAPNS != null) {
-      _onAPNSTokenChange(tokenAPNS);
-    }
     if (Platform.isIOS) {
-      NeoCoreFirebaseMessaging.firebaseMessaging.onTokenRefresh.listen(_onAPNSTokenChange);
-    } else if (Platform.isAndroid) {
-      NeoCoreFirebaseMessaging.firebaseMessaging.onTokenRefresh.listen(_onTokenChange);
+      unawaited(
+        _getAPNSTokenBasedOnPlatform().then((apnsToken) {
+          if (apnsToken != null) {
+            _onTokenChange(apnsToken, isAPNS: true);
+          }
+        }),
+      );
     }
+    unawaited(
+      _getTokenBasedOnPlatform().then((firebaseToken) {
+        if (firebaseToken != null) {
+          _onTokenChange(firebaseToken);
+        }
+      }),
+    );
+    NeoCoreFirebaseMessaging.firebaseMessaging.onTokenRefresh.listen(_onTokenChange);
   }
 
-  void _onTokenChange(String token) {
-    _neoLogger.logConsole("[NeoCoreFirebaseMessaging]: Firebase Push token is: $token");
-    if (Platform.isAndroid) {
+  void _onTokenChange(String token, {bool isAPNS = false}) {
+    _neoLogger.logConsole("[NeoCoreMessaging]: Token is: $token. Is APNS: $isAPNS");
+    if (Platform.isAndroid || isAPNS) {
       widget.onTokenChanged.call(token);
     }
-  }
-
-  void _onAPNSTokenChange(String tokenApns) {
-    _neoLogger.logConsole("[NeoCoreFirebaseMessaging]: Firebase APNS token is: $tokenApns");
-    if (Platform.isIOS) {
-      widget.onTokenChanged.call(tokenApns);
+    if (!isAPNS) {
+      registerDevice(token);
     }
   }
 
@@ -133,6 +132,7 @@ class _NeoCoreFirebaseMessagingState extends State<NeoCoreFirebaseMessaging> {
       networkManager: widget.networkManager,
       secureStorage: widget.neoCoreSecureStorage,
       deviceToken: tokenFirebase,
+      isGoogleServiceAvailable: Platform.isAndroid,
     );
   }
 
@@ -207,13 +207,10 @@ class _NeoCoreFirebaseMessagingState extends State<NeoCoreFirebaseMessaging> {
   }
 
   void _handleMessage(RemoteMessage? message) {
-    if (message == null) {
-      return;
-    }
-    final String? deeplinkPath = message.data[_Constant.pushNotificationDeeplinkKey];
-    if (deeplinkPath != null && deeplinkPath.isNotEmpty) {
-      widget.onDeeplinkNavigation?.call(deeplinkPath);
-    }
+    NeoFirebaseAndroidPushMessagePayloadHandler().handleMessage(
+      message: message,
+      onDeeplinkNavigation: widget.onDeeplinkNavigation,
+    );
   }
 
   @override

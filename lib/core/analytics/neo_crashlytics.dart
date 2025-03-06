@@ -16,36 +16,51 @@ import 'package:firebase_crashlytics/firebase_crashlytics.dart';
 import 'package:flutter/foundation.dart' show FlutterError, PlatformDispatcher;
 
 class NeoCrashlytics {
-  NeoCrashlytics();
+  final bool enabled;
+  NeoCrashlytics({required this.enabled});
 
-  final FirebaseCrashlytics _crashlytics = FirebaseCrashlytics.instance;
+  FirebaseCrashlytics? _crashlytics;
 
-  Future<void> initializeCrashlytics() async {
-    FlutterError.onError = _crashlytics.recordFlutterFatalError;
+  Future<void> init() async {
+    if (!enabled) {
+      return;
+    }
+
+    _crashlytics = FirebaseCrashlytics.instance;
+
+    FlutterError.onError = _crashlytics?.recordFlutterFatalError;
     PlatformDispatcher.instance.onError = (error, stack) {
-      _crashlytics.recordError(error, stack, fatal: true);
+      _crashlytics?.recordError(error, stack, fatal: true);
       return true;
     };
-    await sendUnsentReports();
-  }
 
-  bool get isCrashlyticsCollectionEnabled {
-    return _crashlytics.isCrashlyticsCollectionEnabled;
+    /// If automatic data collection is disabled, this method queues up all the
+    /// reports on a device to send to Crashlytics. Otherwise, this method is a no-op.
+    await _crashlytics?.sendUnsentReports();
+    await _crashlytics?.setCrashlyticsCollectionEnabled(true);
   }
 
   Future<void> logError(String message) async {
-    await _crashlytics.log(message);
+    if (!enabled) {
+      return;
+    }
+
+    await _crashlytics?.log(message);
   }
 
   Future<void> logException(dynamic exception, StackTrace stackTrace) async {
-    await _crashlytics.recordError(exception, stackTrace);
+    if (!enabled) {
+      return;
+    }
+
+    await _crashlytics?.recordError(exception, stackTrace);
   }
 
-  Future<void> setEnabled({required bool enabled}) async {
-    await _crashlytics.setCrashlyticsCollectionEnabled(enabled);
-  }
+  Future<void> setUserIdentifier(String userId) async {
+    if (!enabled) {
+      return;
+    }
 
-  Future<void> sendUnsentReports() async {
-    await _crashlytics.sendUnsentReports();
+    await _crashlytics?.setUserIdentifier(userId);
   }
 }

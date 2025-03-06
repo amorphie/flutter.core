@@ -12,6 +12,7 @@
 
 import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/foundation.dart' show kIsWeb;
+import 'package:neo_core/core/util/device_util/device_util.dart';
 import 'package:universal_io/io.dart';
 
 export 'core/bus/neo_bus.dart';
@@ -24,9 +25,12 @@ export 'core/widgets/neo_widgets.dart';
 class NeoCore {
   NeoCore._();
 
-  static Future init() async {
+  static Future init({String? androidId}) async {
     if (!kIsWeb && !Platform.isMacOS) {
       await Firebase.initializeApp();
+    }
+    if (androidId != null) {
+      DeviceUtil.setAndroidId(androidId);
     }
   }
 }

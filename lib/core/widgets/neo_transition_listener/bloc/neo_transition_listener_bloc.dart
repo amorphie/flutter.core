@@ -15,23 +15,23 @@ import 'dart:async';
 import 'package:bloc_concurrency/bloc_concurrency.dart';
 import 'package:collection/collection.dart';
 import 'package:equatable/equatable.dart';
-import 'package:flutter/foundation.dart';
+import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:get_it/get_it.dart';
 import 'package:mutex/mutex.dart';
 import 'package:neo_core/core/analytics/neo_logger.dart';
 import 'package:neo_core/core/analytics/neo_logger_type.dart';
-import 'package:neo_core/core/analytics/neo_posthog.dart';
 import 'package:neo_core/core/bus/neo_bus.dart';
 import 'package:neo_core/core/navigation/models/ekyc_event_data.dart';
 import 'package:neo_core/core/navigation/models/neo_navigation_type.dart';
 import 'package:neo_core/core/navigation/models/signalr_transition_data.dart';
+import 'package:neo_core/core/network/models/http_auth_response.dart';
 import 'package:neo_core/core/network/models/neo_signalr_event.dart';
 import 'package:neo_core/core/network/models/neo_signalr_transition_state_type.dart';
 import 'package:neo_core/core/network/neo_network.dart';
-import 'package:neo_core/core/storage/neo_core_parameter_key.dart';
 import 'package:neo_core/core/storage/neo_core_secure_storage.dart';
 import 'package:neo_core/core/widgets/neo_page/bloc/neo_page_bloc.dart';
+import 'package:neo_core/core/widgets/neo_transition_listener/bloc/usecases/process_login_certificate_silent_event_use_case.dart';
 import 'package:neo_core/core/widgets/neo_transition_listener/usecases/get_workflow_query_parameters_usecase.dart';
 import 'package:neo_core/core/workflow_form/neo_workflow_manager.dart';
 import 'package:universal_io/io.dart';
@@ -41,22 +41,26 @@ part 'neo_transition_listener_event.dart';
 part 'neo_transition_listener_state.dart';
 
 abstract class _Constants {
-  static const signalrLongPollingPeriod = Duration(seconds: 5);
   static const transitionTimeoutDuration = Duration(seconds: 60);
 }
 
-class NeoTransitionListenerBloc extends Bloc<NeoTransitionListenerEvent, NeoTransitionListenerState> {
+class NeoTransitionListenerBloc extends Bloc<NeoTransitionListenerEvent, NeoTransitionListenerState>
+    with WidgetsBindingObserver {
   final NeoCoreSecureStorage neoCoreSecureStorage;
   late final Function(SignalrTransitionData navigationData) onTransitionEvent;
   late final Function(EkycEventData ekycData) onEkycEvent;
   late final Function(NeoError error, {required bool displayAsPopup})? onTransitionError;
-  late final Function({required bool isTwoFactorAuthenticated})? onLoggedInSuccessfully;
+  late final Future Function({required bool isTwoFactorAuthenticated})? onLoggedInSuccessfully;
   late final Function({required bool displayLoading}) onLoadingStatusChanged;
 
   late final SignalrConnectionManager signalrConnectionManager;
   late final List<NeoSignalREvent> _eventList = [];
   late final NeoWorkflowManager neoWorkflowManager;
   late final NeoLogger _neoLogger = GetIt.I.get();
+  late final String signalRServerUrl;
+  late final String signalRMethodName;
+  late final Duration signalrLongPollingPeriod;
+  late final Duration signalRTimeoutDuration;
 
   Completer? _postTransitionTimeoutCompleter;
   Timer? _postTransitionTimeoutTimer;
@@ -65,9 +69,9 @@ class NeoTransitionListenerBloc extends Bloc<NeoTransitionListenerEvent, NeoTran
   bool hasSignalRConnection = false;
   final Mutex _eventProcessorMutex = Mutex();
 
-  NeoTransitionListenerBloc({
-    required this.neoCoreSecureStorage,
-  }) : super(const NeoTransitionListenerState(temporarilyDisabled: false)) {
+  NeoTransitionListenerBloc({required this.neoCoreSecureStorage}) : super(const NeoTransitionListenerState()) {
+    WidgetsBinding.instance.addObserver(this);
+
     on<NeoTransitionListenerEventInit>(_onInit);
     on<NeoTransitionListenerEventInitWorkflow>(
       (event, emit) => _onInitWorkflow(event),
@@ -76,9 +80,6 @@ class NeoTransitionListenerBloc extends Bloc<NeoTransitionListenerEvent, NeoTran
     on<NeoTransitionListenerEventPostTransition>(
       (event, emit) => _onPostTransition(event),
       transformer: droppable(),
-    );
-    on<NeoTransitionListenerEventDisableTemporarily>(
-      (event, emit) => emit(state.copyWith(temporarilyDisabled: event.temporarilyDisabled)),
     );
     on<NeoTransitionListenerEventStopListening>((event, emit) => _onStopListening());
   }
@@ -90,14 +91,16 @@ class NeoTransitionListenerBloc extends Bloc<NeoTransitionListenerEvent, NeoTran
     onTransitionError = event.onTransitionError;
     onLoadingStatusChanged = event.onLoadingStatusChanged;
     neoWorkflowManager = event.neoWorkflowManager;
+    signalRServerUrl = event.signalRServerUrl;
+    signalRMethodName = event.signalRMethodName;
+    signalrConnectionManager = SignalrConnectionManager();
+    signalrLongPollingPeriod = event.signalrLongPollingPeriod;
+    signalRTimeoutDuration = event.signalRTimeoutDuration;
 
-    await _initSignalrConnectionManager(
-      signalrServerUrl: event.signalRServerUrl + await GetWorkflowQueryParametersUseCase().call(neoCoreSecureStorage),
-      signalrMethodName: event.signalRMethodName,
-    );
+    await _initSignalrConnectionManager();
   }
 
-  Future<void> _processEvents() async {
+  Future<void> _processEvents({bool fromSignalR = false}) async {
     if (_eventList.isNotEmpty) {
       await _eventProcessorMutex.protect(() async {
         _eventList.sortBy((element) => element.transition.time);
@@ -111,21 +114,23 @@ class NeoTransitionListenerBloc extends Bloc<NeoTransitionListenerEvent, NeoTran
             processedEvents.add(event);
             continue;
           }
-          if (state.temporarilyDisabled) {
-            add(NeoTransitionListenerEventDisableTemporarily(temporarilyDisabled: false));
-            continue;
-          }
 
           if (_lastProcessedEvent?.transition == null ||
               !event.transition.time.isBefore(_lastProcessedEvent!.transition.time)) {
+            if (fromSignalR) {
+              _cancelLongPolling();
+            }
+
             if (_postTransitionTimeoutCompleter != null && !_postTransitionTimeoutCompleter!.isCompleted) {
               _postTransitionTimeoutTimer?.cancel();
               _postTransitionTimeoutCompleter?.complete();
             }
+
             if (event.transition.workflowStateType.isTerminated) {
               _onStopListening();
             }
             if (event.isSilentEvent) {
+              unawaited(ProcessLoginCertificateSilentEventUseCase().call(event, this));
               GetIt.I.get<NeoWidgetEventBus>().addEvent(
                     NeoWidgetEvent(eventId: NeoPageBloc.dataEventKey, data: event.transition),
                   );
@@ -192,8 +197,6 @@ class NeoTransitionListenerBloc extends Bloc<NeoTransitionListenerEvent, NeoTran
 
   Future<void> _onPostTransition(NeoTransitionListenerEventPostTransition event) async {
     _initPostTransitionTimeoutCompleter(displayLoading: event.displayLoading);
-    _getLastTransitionsWithLongPolling(isSubFlow: event.isSubFlow);
-
     try {
       if (event.displayLoading) {
         onLoadingStatusChanged(displayLoading: true);
@@ -206,7 +209,10 @@ class NeoTransitionListenerBloc extends Bloc<NeoTransitionListenerEvent, NeoTran
       );
       if (response.isError) {
         _completeWithError(response.asError.error, shouldHideLoading: event.displayLoading);
+      } else {
+        unawaited(_initSignalrConnectionManager());
       }
+      _getLastTransitionsWithLongPolling(isSubFlow: event.isSubFlow);
     } catch (e) {
       _completeWithError(e is NeoError ? e : const NeoError(), shouldHideLoading: event.displayLoading);
     }
@@ -222,7 +228,8 @@ class NeoTransitionListenerBloc extends Bloc<NeoTransitionListenerEvent, NeoTran
     _postTransitionTimeoutTimer?.cancel();
 
     _postTransitionTimeoutTimer = Timer(_Constants.transitionTimeoutDuration, () {
-      if (_postTransitionTimeoutCompleter != null && !_postTransitionTimeoutCompleter!.isCompleted) {
+      final isTransitionCompleted = _postTransitionTimeoutCompleter?.isCompleted ?? false;
+      if (!isTransitionCompleted) {
         _completeWithError(const NeoError(), shouldHideLoading: displayLoading);
         _postTransitionTimeoutCompleter!.complete();
       }
@@ -277,15 +284,21 @@ class NeoTransitionListenerBloc extends Bloc<NeoTransitionListenerEvent, NeoTran
   Future<void> _retrieveTokenIfExist(NeoSignalRTransition ongoingTransition) async {
     final String? token = ongoingTransition.additionalData?["access_token"];
     final String? refreshToken = ongoingTransition.additionalData?["refresh_token"];
+    final int expiresIn = ongoingTransition.additionalData?["expires_in"] ?? 0;
+    final int refreshTokenExpiresIn = ongoingTransition.additionalData?["refresh_token_expires_in"] ?? 0;
     final bool? isMobUnapproved = ongoingTransition.additionalData?["user_info"]?['is_mob_unapproved_caused_by_ekyc'];
 
     if (token != null && token.isNotEmpty) {
-      final bool isTwoFactorAuthenticated = await neoCoreSecureStorage.setAuthToken(
-        token,
+      final isTwoFactorAuthenticated = await neoWorkflowManager.neoNetworkManager.setTokensByAuthResponse(
+        HttpAuthResponse(
+          token: token,
+          refreshToken: refreshToken ?? "",
+          expiresInSeconds: expiresIn,
+          refreshTokenExpiresInSeconds: refreshTokenExpiresIn,
+        ),
         isMobUnapproved: isMobUnapproved,
       );
-      await neoCoreSecureStorage.write(key: NeoCoreParameterKey.secureStorageRefreshToken, value: refreshToken ?? "");
-      onLoggedInSuccessfully?.call(isTwoFactorAuthenticated: isTwoFactorAuthenticated);
+      await onLoggedInSuccessfully?.call(isTwoFactorAuthenticated: isTwoFactorAuthenticated);
     }
   }
 
@@ -323,8 +336,6 @@ class NeoTransitionListenerBloc extends Bloc<NeoTransitionListenerEvent, NeoTran
     String? instanceId,
     bool isSubFlow = false,
   }) {
-    _getLastTransitionsWithLongPolling(isSubFlow: isSubFlow);
-
     if (instanceId == null) {
       return neoWorkflowManager.initWorkflow(
         workflowName: workflowName,
@@ -347,25 +358,25 @@ class NeoTransitionListenerBloc extends Bloc<NeoTransitionListenerEvent, NeoTran
     return null;
   }
 
-  Future<void> _initSignalrConnectionManager({
-    required String signalrServerUrl,
-    required String signalrMethodName,
-  }) async {
-    signalrConnectionManager = SignalrConnectionManager(
-      serverUrl: signalrServerUrl,
-      methodName: signalrMethodName,
+  Future<void> _initSignalrConnectionManager() async {
+    if (hasSignalRConnection || neoWorkflowManager.neoNetworkManager.isTokenExpired) {
+      return;
+    }
+    await signalrConnectionManager.init(
+      serverUrl: signalRServerUrl + await GetWorkflowQueryParametersUseCase().call(neoCoreSecureStorage),
+      methodName: signalRMethodName,
+      onConnectionStatusChanged: _onSignalRConnectionStatusChanged,
     );
-    await signalrConnectionManager.init(_onSignalRConnectionStatusChanged);
-    signalrConnectionManager.listenForSignalREvents(onEvent: _addEventToBus);
+    signalrConnectionManager.listenForSignalREvents(onEvent: (event) => _addEventToBus(event, fromSignalR: true));
   }
 
-  void _addEventToBus(NeoSignalREvent event) {
+  void _addEventToBus(NeoSignalREvent event, {required bool fromSignalR}) {
     if (!_eventList
         .any((element) => element.eventId == event.eventId || element.transition.time.isAfter(event.transition.time))) {
       if (!isClosed && _lastProcessedEvent?.eventId != event.eventId) {
         _eventList.add(event);
       }
-      _processEvents();
+      _processEvents(fromSignalR: fromSignalR);
     }
   }
 
@@ -373,41 +384,59 @@ class NeoTransitionListenerBloc extends Bloc<NeoTransitionListenerEvent, NeoTran
     hasSignalRConnection = hasConnection;
     if (hasConnection) {
       _cancelLongPolling();
+      _getLastTransitionsWithLongPolling(isSubFlow: false, onlyOnce: true);
     } else {
+      _getLastTransitionsWithLongPolling(isSubFlow: false);
+    }
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state == AppLifecycleState.paused ||
+        state == AppLifecycleState.inactive ||
+        state == AppLifecycleState.detached) {
+      _cancelLongPolling();
+    } else if (state == AppLifecycleState.resumed) {
       _getLastTransitionsWithLongPolling(isSubFlow: false);
     }
   }
 
   void _getLastTransitionsWithLongPolling({
     required bool isSubFlow,
+    bool onlyOnce = false,
   }) {
     _cancelLongPolling();
-    if (hasSignalRConnection || isClosed) {
+    if (!onlyOnce && (hasSignalRConnection || isClosed || !neoWorkflowManager.hasActiveWorkflow)) {
       return;
     }
 
-    longPollingTimer = Timer.periodic(
-      _Constants.signalrLongPollingPeriod,
-      (timer) async {
-        final response = await neoWorkflowManager.getLastTransitionByLongPolling(isSubFlow: isSubFlow);
-        if (response.isSuccess) {
-          final responseData = response.asSuccess.data;
-          final event = NeoSignalREvent.fromJson(responseData);
-          final events = List.from(event.previousEvents)
-            ..add(event)
-            ..sort((a, b) => a.transition.time.compareTo(b.transition.time));
+    timerCallback([_]) async {
+      final response = await neoWorkflowManager.getLastTransitionByLongPolling(isSubFlow: isSubFlow);
+      if (response.isSuccess) {
+        final responseData = response.asSuccess.data;
+        final event = NeoSignalREvent.fromJson(responseData);
+        final events = List.from(event.previousEvents)
+          ..add(event)
+          ..sort((a, b) => a.transition.time.compareTo(b.transition.time));
 
-          for (final event in events) {
-            _addEventToBus(event);
-          }
-        } else {
-          _neoLogger.logCustom(
-            "[NeoTransitionListener]: Retrieving last event by long polling is failed!",
-            logTypes: [NeoLoggerType.posthog],
-          );
+        for (final event in events) {
+          _addEventToBus(event, fromSignalR: false);
         }
-      },
-    );
+      } else {
+        if (response.asError.error.responseCode == HttpStatus.notFound) {
+          _cancelLongPolling();
+        }
+        _neoLogger.logCustom(
+          "[NeoTransitionListener]: Retrieving last event by long polling is failed!",
+          logTypes: [NeoLoggerType.elastic],
+        );
+      }
+    }
+
+    timerCallback();
+    if (!onlyOnce) {
+      longPollingTimer = Timer.periodic(signalrLongPollingPeriod, timerCallback);
+    }
   }
 
   void _cancelLongPolling() {
@@ -417,6 +446,7 @@ class NeoTransitionListenerBloc extends Bloc<NeoTransitionListenerEvent, NeoTran
 
   @override
   Future<void> close() {
+    WidgetsBinding.instance.removeObserver(this);
     _postTransitionTimeoutTimer?.cancel();
     signalrConnectionManager.stop();
     _cancelLongPolling();

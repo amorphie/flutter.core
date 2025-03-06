@@ -19,6 +19,8 @@ import 'package:neo_core/core/analytics/neo_logger.dart';
 import 'package:neo_core/core/encryption/jwt_decoder.dart';
 import 'package:neo_core/core/storage/neo_core_parameter_key.dart';
 import 'package:neo_core/core/storage/neo_shared_prefs.dart';
+import 'package:neo_core/core/util/extensions/get_it_extensions.dart';
+import 'package:neo_core/core/util/token_util.dart';
 import 'package:neo_core/core/util/uuid_util.dart';
 import 'package:neo_core/neo_core.dart';
 
@@ -27,19 +29,22 @@ abstract class _Constants {
 }
 
 class NeoCoreSecureStorage {
-  final bool enableCaching;
   final NeoSharedPrefs neoSharedPrefs;
+  final HttpClientConfig httpClientConfig;
 
-  NeoCoreSecureStorage({required this.neoSharedPrefs, required this.enableCaching});
+  NeoCoreSecureStorage({required this.neoSharedPrefs, required this.httpClientConfig});
+
+  // Getter is required, config may change at runtime
+  bool get _enableCaching => httpClientConfig.config.cacheStorage;
 
   FlutterSecureStorage? _storage;
 
   final Map<String, String?> _cachedValues = {};
 
-  NeoLogger get _neoLogger => GetIt.I.get();
+  NeoLogger? get _neoLogger => GetIt.I.getIfReady<NeoLogger>();
 
   Future<void> write({required String key, required String? value}) {
-    if (enableCaching) {
+    if (_enableCaching) {
       _cachedValues[key] = value;
     }
 
@@ -47,7 +52,7 @@ class NeoCoreSecureStorage {
   }
 
   Future<String?> read(String key) async {
-    if (enableCaching && _cachedValues.containsKey(key)) {
+    if (_enableCaching && _cachedValues.containsKey(key)) {
       return _cachedValues[key];
     } else if (await _storage!.containsKey(key: key)) {
       String? value;
@@ -55,7 +60,7 @@ class NeoCoreSecureStorage {
         value = await _storage!.read(key: key);
       } catch (e) {
         final errorMessage = '[NeoCoreSecureStorage]: Error occurred while reading value of $key';
-        _neoLogger.logConsole(errorMessage, logLevel: Level.error);
+        _neoLogger?.logConsole(errorMessage, logLevel: Level.error);
       }
       _cachedValues[key] = value;
       return value;
@@ -65,7 +70,7 @@ class NeoCoreSecureStorage {
   }
 
   Future<void> delete(String key) {
-    if (enableCaching) {
+    if (_enableCaching) {
       _cachedValues.remove(key);
     }
 
@@ -73,7 +78,7 @@ class NeoCoreSecureStorage {
   }
 
   Future<void> deleteAll() {
-    if (enableCaching) {
+    if (_enableCaching) {
       _cachedValues.clear();
     }
 
@@ -113,7 +118,7 @@ class NeoCoreSecureStorage {
     if (!await _storage!.containsKey(key: NeoCoreParameterKey.secureStorageDeviceId) && deviceId != null) {
       await write(key: NeoCoreParameterKey.secureStorageDeviceId, value: deviceId);
     }
-    if (!await _storage!.containsKey(key: NeoCoreParameterKey.secureStorageDeviceInfo) && deviceInfo != null) {
+    if (deviceInfo != null) {
       await write(key: NeoCoreParameterKey.secureStorageDeviceInfo, value: deviceInfo.encode());
     }
     if (!await _storage!.containsKey(key: NeoCoreParameterKey.secureStorageInstallationId)) {
@@ -134,14 +139,20 @@ class NeoCoreSecureStorage {
       ],
     );
 
-    final Map<String, dynamic> decodedToken = JwtDecoder.decode(token);
-    final isTwoFactorAuthenticated = decodedToken["clientAuthorized"] != "1";
-    if (!isTwoFactorAuthenticated) {
+    if (!TokenUtil.is2FAToken(token)) {
       return false;
     }
+
+    final Map<String, dynamic> decodedToken = JwtDecoder.decode(token);
+
     final customerId = decodedToken["user.reference"];
     if (customerId is String && customerId.isNotEmpty) {
       await write(key: NeoCoreParameterKey.secureStorageCustomerId, value: customerId);
+    }
+
+    final userId = decodedToken["user.id"];
+    if (userId is String && userId.isNotEmpty) {
+      await write(key: NeoCoreParameterKey.secureStorageUserId, value: userId);
     }
 
     final customerNo = decodedToken["customer_no"];
@@ -200,6 +211,11 @@ class NeoCoreSecureStorage {
     final sessionId = decodedToken["jti"];
     await write(key: NeoCoreParameterKey.secureStorageSessionId, value: sessionId);
 
+    final email = decodedToken["email"];
+    if (email is String && email.isNotEmpty) {
+      await write(key: NeoCoreParameterKey.secureStorageEmail, value: email);
+    }
+
     return true;
   }
 
@@ -216,6 +232,7 @@ class NeoCoreSecureStorage {
   Future<void> deleteCustomer() {
     return Future.wait([
       deleteTokensWithRelatedData(),
+      delete(NeoCoreParameterKey.secureStorageUserId),
       delete(NeoCoreParameterKey.secureStorageCustomerId),
       delete(NeoCoreParameterKey.secureStorageCustomerNo),
       delete(NeoCoreParameterKey.secureStorageCustomerName),
@@ -224,6 +241,7 @@ class NeoCoreSecureStorage {
       delete(NeoCoreParameterKey.secureStorageCustomerNameAndSurnameUppercase),
       delete(NeoCoreParameterKey.secureStorageBusinessLine),
       delete(NeoCoreParameterKey.secureStoragePhoneNumber),
+      delete(NeoCoreParameterKey.secureStorageEmail),
     ]);
   }
 

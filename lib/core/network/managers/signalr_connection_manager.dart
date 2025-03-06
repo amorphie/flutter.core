@@ -19,6 +19,7 @@ import 'package:neo_core/core/analytics/neo_logger.dart';
 import 'package:neo_core/core/analytics/neo_logger_type.dart';
 import 'package:neo_core/core/network/models/neo_signalr_event.dart';
 import 'package:neo_core/core/network/models/neo_signalr_event_base_state.dart';
+import 'package:signalr_netcore/iretry_policy.dart';
 import 'package:signalr_netcore/signalr_client.dart';
 
 abstract class _Constants {
@@ -30,41 +31,41 @@ abstract class _Constants {
   static const eventCompletionStatusValues = ["worker-completed", "transition-completed"];
 }
 
+class _SignalRReconnectPolicy implements IRetryPolicy {
+  @override
+  int? nextRetryDelayInMilliseconds(RetryContext retryContext) {
+    return null;
+  }
+}
+
 class SignalrConnectionManager {
-  final String serverUrl;
-  final String methodName;
-
   HubConnection? _hubConnection;
+  String? methodName;
 
-  SignalrConnectionManager({required this.serverUrl, required this.methodName});
+  SignalrConnectionManager();
 
   NeoLogger get _neoLogger => GetIt.I.get();
 
-  Future init(Function({required bool hasConnection}) onConnectionStatusChanged) async {
+  Future init({
+    required String serverUrl,
+    required String methodName,
+    required Function({required bool hasConnection}) onConnectionStatusChanged,
+  }) async {
+    this.methodName = methodName;
+
+    await stop();
     _hubConnection = HubConnectionBuilder()
         .withUrl(
-      serverUrl,
-      options: HttpConnectionOptions(transport: HttpTransportType.WebSockets, skipNegotiation: true),
-    )
-        .withAutomaticReconnect(retryDelays: [2000, 5000, 10000, 20000]).build();
+          serverUrl,
+          options: HttpConnectionOptions(transport: HttpTransportType.WebSockets, skipNegotiation: true),
+        )
+        .withAutomaticReconnect(reconnectPolicy: _SignalRReconnectPolicy())
+        .build();
     _hubConnection?.onclose(({error}) {
-      _neoLogger.logCustom(
-        _Constants.eventNameSignalrOnClose,
-        logTypes: [NeoLoggerType.posthog, NeoLoggerType.elastic, NeoLoggerType.logger],
-      );
-    });
-    _hubConnection?.onreconnecting(({error}) {
       onConnectionStatusChanged(hasConnection: false);
       _neoLogger.logCustom(
-        _Constants.eventNameSignalrOnReconnecting,
-        logTypes: [NeoLoggerType.posthog, NeoLoggerType.elastic, NeoLoggerType.logger],
-      );
-    });
-    _hubConnection?.onreconnected(({connectionId}) {
-      onConnectionStatusChanged(hasConnection: true);
-      _neoLogger.logCustom(
-        _Constants.eventNameSignalrOnReconnected,
-        logTypes: [NeoLoggerType.posthog, NeoLoggerType.elastic, NeoLoggerType.logger],
+        _Constants.eventNameSignalrOnClose,
+        logTypes: [NeoLoggerType.elastic, NeoLoggerType.logger],
       );
     });
 
@@ -74,19 +75,22 @@ class SignalrConnectionManager {
         onConnectionStatusChanged(hasConnection: true);
         _neoLogger.logCustom(
           _Constants.eventNameSignalrInitSucceed,
-          logTypes: [NeoLoggerType.posthog, NeoLoggerType.elastic, NeoLoggerType.logger],
+          logTypes: [NeoLoggerType.elastic, NeoLoggerType.logger],
         );
-      } on Exception catch (e, stacktrace) {
+      } catch (e) {
         onConnectionStatusChanged(hasConnection: false);
         _neoLogger
-          ..logException("${_Constants.eventNameSignalrInitFailed} $e", stacktrace)
+          ..logError("${_Constants.eventNameSignalrInitFailed} $e")
           ..logConsole(_Constants.eventNameSignalrInitFailed);
       }
     }
   }
 
   void listenForSignalREvents({required Function(NeoSignalREvent event) onEvent}) {
-    _hubConnection?.on(methodName, (List<Object?>? transitions) {
+    if (methodName == null) {
+      return;
+    }
+    _hubConnection?.on(methodName ?? "", (List<Object?>? transitions) {
       if (kDebugMode) {
         _neoLogger.logConsole('[SignalrConnectionManager] Transition: $transitions');
       }
@@ -121,7 +125,11 @@ class SignalrConnectionManager {
         .firstOrNull;
   }
 
-  void stop() {
-    _hubConnection?.stop();
+  Future<void> stop() async {
+    try {
+      await _hubConnection?.stop();
+    } catch (_) {
+      // No-op
+    }
   }
 }
