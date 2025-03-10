@@ -23,7 +23,6 @@ import 'package:json_annotation/json_annotation.dart';
 import 'package:logger/logger.dart';
 import 'package:mutex/mutex.dart';
 import 'package:neo_core/core/analytics/neo_logger.dart';
-import 'package:neo_core/core/encryption/jwt_decoder.dart';
 import 'package:neo_core/core/network/headers/mtls_headers.dart';
 import 'package:neo_core/core/network/headers/neo_constant_headers.dart';
 import 'package:neo_core/core/network/headers/neo_dynamic_headers.dart';
@@ -71,7 +70,6 @@ class NeoNetworkManager {
   final Duration timeoutDuration;
 
   late final bool _enableSslPinning;
-  late final bool _enableMtls;
 
   DateTime? _tokenExpirationTime;
   DateTime? _refreshTokenExpirationTime;
@@ -105,9 +103,8 @@ class NeoNetworkManager {
 
   NeoLogger? get _neoLogger => GetIt.I.getIfReady<NeoLogger>();
 
-  Future<void> init({required bool enableSslPinning, required bool enableMtls}) async {
+  Future<void> init({required bool enableSslPinning}) async {
     _enableSslPinning = enableSslPinning;
-    _enableMtls = enableMtls;
     await _initHttpClient();
     await getTemporaryTokenForNotLoggedInUser();
   }
@@ -466,9 +463,7 @@ class NeoNetworkManager {
 
     final userAgent = (await _getDefaultHeaders({}))[NeoNetworkHeaderKey.userAgent];
     SecurityContext? securityContext = _enableSslPinning ? await _getSecurityContext : null;
-    if (_enableMtls) {
-      securityContext = await _addMtlsCertificateToSecurityContext(securityContext ?? SecurityContext());
-    }
+    securityContext = await _addMtlsCertificateToSecurityContext(securityContext);
 
     final client = HttpClient(context: securityContext)..userAgent = userAgent;
 
@@ -479,7 +474,7 @@ class NeoNetworkManager {
     httpClient = IOClient(client);
   }
 
-  Future<SecurityContext?> _addMtlsCertificateToSecurityContext(SecurityContext securityContext) async {
+  Future<SecurityContext?> _addMtlsCertificateToSecurityContext(SecurityContext? securityContext) async {
     final result = await Future.wait([
       secureStorage.read(NeoCoreParameterKey.secureStorageCustomerId),
       secureStorage.read(NeoCoreParameterKey.secureStorageDeviceId),
@@ -499,12 +494,12 @@ class NeoNetworkManager {
     final bool isMtlsEnabled = clientCertificate != null && privateKey != null;
 
     if (isMtlsEnabled) {
-      securityContext
+      final context = securityContext ?? SecurityContext();
+      return context
         ..useCertificateChainBytes(utf8.encode(clientCertificate))
         ..usePrivateKeyBytes(utf8.encode(privateKey));
-      return securityContext;
     }
-    return null;
+    return securityContext;
   }
 
   void _logResponse(http.Response response) {
