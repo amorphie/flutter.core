@@ -32,7 +32,21 @@ class HttpService {
   @JsonKey(name: 'retryCount')
   final int? retryCount;
 
-  const HttpService({required this.key, required this.method, required this.host, required this.name, this.retryCount});
+  @JsonKey(name: 'mtls')
+  final bool mtls;
+
+  @JsonKey(name: 'sign')
+  final bool sign;
+
+  const HttpService({
+    required this.key,
+    required this.method,
+    required this.host,
+    required this.name,
+    this.retryCount,
+    this.mtls = false,
+    this.sign = false,
+  });
 
   factory HttpService.fromJson(Map<String, dynamic> json) => _$HttpServiceFromJson(json);
 }

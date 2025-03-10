@@ -11,31 +11,41 @@
  */
 
 import 'package:collection/collection.dart';
-import 'package:json_annotation/json_annotation.dart';
 import 'package:neo_core/core/network/models/http_client_config_parameters.dart';
 import 'package:neo_core/core/network/models/http_host_details.dart';
 import 'package:neo_core/core/network/models/http_method.dart';
 import 'package:neo_core/core/network/models/http_service.dart';
+import 'package:neo_core/core/network/models/mtls_enabled_transition.dart';
 
-part 'http_client_config.g.dart';
-
-@JsonSerializable(createToJson: false)
 class HttpClientConfig {
-  @JsonKey(name: 'hosts', defaultValue: [])
   final List<HttpHostDetails> hosts;
+  final List<HttpService> services;
+  final List<MtlsEnabledTransition> mtlsEnabledTransitions;
 
-  @JsonKey(name: 'config')
   HttpClientConfigParameters _config;
 
-  @JsonKey(name: 'services', defaultValue: [])
-  final List<HttpService> services;
-
-  HttpClientConfig({required this.hosts, required HttpClientConfigParameters config, required this.services})
-      : _config = config;
+  HttpClientConfig({
+    required this.hosts,
+    required HttpClientConfigParameters config,
+    required this.services,
+    this.mtlsEnabledTransitions = const [],
+  }) : _config = config;
 
   HttpClientConfigParameters get config => _config;
 
-  factory HttpClientConfig.fromJson(Map<String, dynamic> json) => _$HttpClientConfigFromJson(json);
+  HttpClientConfig copyWith({
+    List<HttpHostDetails>? hosts,
+    HttpClientConfigParameters? config,
+    List<HttpService>? services,
+    List<MtlsEnabledTransition>? mtlsEnabledTransitions,
+  }) {
+    return HttpClientConfig(
+      hosts: hosts ?? this.hosts,
+      config: config ?? this.config,
+      services: services ?? this.services,
+      mtlsEnabledTransitions: mtlsEnabledTransitions ?? this.mtlsEnabledTransitions,
+    );
+  }
 
   void updateConfig(HttpClientConfig newConfig) {
     hosts
@@ -45,6 +55,9 @@ class HttpClientConfig {
     services
       ..clear()
       ..addAll(newConfig.services);
+    mtlsEnabledTransitions
+      ..clear()
+      ..addAll(newConfig.mtlsEnabledTransitions);
   }
 
   HttpMethod? getServiceMethodByKey(String key) {
