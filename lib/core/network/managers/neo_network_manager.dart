@@ -85,6 +85,7 @@ class NeoNetworkManager {
   http.Client? httpClient;
 
   late final MtlsHelper _mtlsHelper = MtlsHelper();
+  late final MtlsHeaders _mtlsHeaders = MtlsHeaders(secureStorage: secureStorage);
 
   NeoNetworkManager({
     required this.httpClientConfig,
@@ -113,7 +114,7 @@ class NeoNetworkManager {
     return await NeoDynamicHeaders(neoSharedPrefs: neoSharedPrefs, secureStorage: secureStorage).getHeaders()
       ..addAll(
         neoCall?.signForMtls ?? false
-            ? await MtlsHeaders(secureStorage: secureStorage).getHeaders(neoCall?.body ?? {})
+            ? await _mtlsHeaders.getHeaders(neoCall?.body ?? {})
             : {},
       )
       ..addAll(
