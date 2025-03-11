@@ -5,14 +5,14 @@ part 'mtls_enabled_transition_config.g.dart';
 @JsonSerializable(createToJson: false)
 class MtlsEnabledTransitionConfig {
   @JsonKey(name: 'sign')
-  final bool sign;
+  final bool signForMtls;
 
   @JsonKey(name: 'mtls')
-  final bool mtls;
+  final bool enableMtls;
 
   const MtlsEnabledTransitionConfig({
-    this.sign = false,
-    this.mtls = false,
+    this.signForMtls = false,
+    this.enableMtls = false,
   });
 
   factory MtlsEnabledTransitionConfig.fromJson(Map<String, dynamic> json) => _$MtlsEnabledTransitionConfigFromJson(json);

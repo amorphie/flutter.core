@@ -109,9 +109,13 @@ class NeoNetworkManager {
     await getTemporaryTokenForNotLoggedInUser();
   }
 
-  Future<Map<String, String>> _getDefaultHeaders(Map body) async {
+  Future<Map<String, String>> _getDefaultHeaders(NeoHttpCall? neoCall) async {
     return await NeoDynamicHeaders(neoSharedPrefs: neoSharedPrefs, secureStorage: secureStorage).getHeaders()
-      ..addAll(await _isTwoFactorAuthenticated ? await MtlsHeaders(secureStorage: secureStorage).getHeaders(body) : {})
+      ..addAll(
+        neoCall?.signForMtls ?? false
+            ? await MtlsHeaders(secureStorage: secureStorage).getHeaders(neoCall?.body ?? {})
+            : {},
+      )
       ..addAll(
         await NeoConstantHeaders(
           neoSharedPrefs: neoSharedPrefs,
@@ -121,8 +125,8 @@ class NeoNetworkManager {
       );
   }
 
-  Future<Map<String, String>> _getDefaultPostHeaders(dynamic body) async => <String, String>{}
-    ..addAll(await _getDefaultHeaders(body))
+  Future<Map<String, String>> _getDefaultPostHeaders(NeoHttpCall neoCall) async => <String, String>{}
+    ..addAll(await _getDefaultHeaders(neoCall))
     ..addAll({
       NeoNetworkHeaderKey.user: UuidUtil.generateUUID(), // STOPSHIP: Delete it
       NeoNetworkHeaderKey.behalfOfUser: UuidUtil.generateUUID(), // STOPSHIP: Delete it
@@ -168,8 +172,9 @@ class NeoNetworkManager {
       });
     }
 
-    final fullPath = httpClientConfig.getServiceUrlByKey(
+    final fullPath = (httpClientConfig..setMtlsStatusForHttpCall(neoCall)).getServiceUrlByKey(
       neoCall.endpoint,
+      enableMtls: neoCall.enableMtls,
       parameters: neoCall.pathParameters,
       useHttps: neoCall.useHttps,
     );
@@ -218,7 +223,7 @@ class NeoNetworkManager {
     final response = await httpClient!
         .get(
           Uri.parse(fullPathWithQueries),
-          headers: (await _getDefaultHeaders(neoCall.body))..addAll(neoCall.headerParameters),
+          headers: (await _getDefaultHeaders(neoCall))..addAll(neoCall.headerParameters),
         )
         .timeout(timeoutDuration);
     return _createResponse(response, neoCall);
@@ -229,7 +234,7 @@ class NeoNetworkManager {
     final response = await httpClient!
         .post(
           Uri.parse(fullPathWithQueries),
-          headers: (await _getDefaultPostHeaders(neoCall.body))..addAll(neoCall.headerParameters),
+          headers: (await _getDefaultPostHeaders(neoCall))..addAll(neoCall.headerParameters),
           body: json.encode(neoCall.body),
         )
         .timeout(timeoutDuration);
@@ -241,7 +246,7 @@ class NeoNetworkManager {
     final response = await httpClient!
         .delete(
           Uri.parse(fullPathWithQueries),
-          headers: (await _getDefaultHeaders(neoCall.body))..addAll(neoCall.headerParameters),
+          headers: (await _getDefaultHeaders(neoCall))..addAll(neoCall.headerParameters),
           body: json.encode(neoCall.body),
         )
         .timeout(timeoutDuration);
@@ -253,7 +258,7 @@ class NeoNetworkManager {
     final response = await httpClient!
         .put(
           Uri.parse(fullPathWithQueries),
-          headers: (await _getDefaultPostHeaders(neoCall.body))..addAll(neoCall.headerParameters),
+          headers: (await _getDefaultPostHeaders(neoCall))..addAll(neoCall.headerParameters),
           body: json.encode(neoCall.body),
         )
         .timeout(timeoutDuration);
@@ -265,7 +270,7 @@ class NeoNetworkManager {
     final response = await httpClient!
         .patch(
           Uri.parse(fullPathWithQueries),
-          headers: (await _getDefaultPostHeaders(neoCall.body))..addAll(neoCall.headerParameters),
+          headers: (await _getDefaultPostHeaders(neoCall))..addAll(neoCall.headerParameters),
           body: json.encode(neoCall.body),
         )
         .timeout(timeoutDuration);
@@ -461,7 +466,7 @@ class NeoNetworkManager {
       return;
     }
 
-    final userAgent = (await _getDefaultHeaders({}))[NeoNetworkHeaderKey.userAgent];
+    final userAgent = (await _getDefaultHeaders(null))[NeoNetworkHeaderKey.userAgent];
     SecurityContext? securityContext = _enableSslPinning ? await _getSecurityContext : null;
     securityContext = await _addMtlsCertificateToSecurityContext(securityContext);
 

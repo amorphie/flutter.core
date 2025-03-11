@@ -9,6 +9,6 @@ part of 'mtls_enabled_transition_config.dart';
 MtlsEnabledTransitionConfig _$MtlsEnabledTransitionConfigFromJson(
         Map<String, dynamic> json) =>
     MtlsEnabledTransitionConfig(
-      sign: json['sign'] as bool? ?? false,
-      mtls: json['mtls'] as bool? ?? false,
+      signForMtls: json['sign'] as bool? ?? false,
+      enableMtls: json['mtls'] as bool? ?? false,
     );
