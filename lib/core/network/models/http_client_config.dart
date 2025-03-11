@@ -16,6 +16,7 @@ import 'package:neo_core/core/network/models/http_host_details.dart';
 import 'package:neo_core/core/network/models/http_method.dart';
 import 'package:neo_core/core/network/models/http_service.dart';
 import 'package:neo_core/core/network/models/mtls_enabled_transition.dart';
+import 'package:neo_core/core/workflow_form/neo_workflow_manager.dart';
 
 class HttpClientConfig {
   final List<HttpHostDetails> hosts;
@@ -70,7 +71,17 @@ class HttpClientConfig {
     if (service == null) {
       return null;
     }
-    final baseUrl = _getBaseUrlByHost(service.host);
+    final isMtlsEnabledTransition = service.key == NeoWorkflowManager.endpointPostTransition &&
+        (mtlsEnabledTransitions
+                .firstWhereOrNull(
+                  (transition) =>
+                      transition.transitionName == parameters?[NeoWorkflowManager.pathParameterTransitionName],
+                )
+                ?.config
+                .mtls ??
+            false);
+    final enableMtls = isMtlsEnabledTransition || service.enableMtls;
+    final baseUrl = _getBaseUrlByHost(service.host, enableMtls);
     if (baseUrl == null) {
       return null;
     }
@@ -96,8 +107,9 @@ class HttpClientConfig {
     return services.firstWhereOrNull((element) => element.key == key);
   }
 
-  String? _getBaseUrlByHost(String host) {
-    return hosts.firstWhereOrNull((element) => element.key == host)?.activeHosts.firstOrNull?.host;
+  String? _getBaseUrlByHost(String host, bool mtlsEnabled) {
+    final activeHost = hosts.firstWhereOrNull((element) => element.key == host)?.activeHosts.firstOrNull;
+    return mtlsEnabled ? activeHost?.mtlsHost : activeHost?.host;
   }
 
   int? _getRetryCountByHost(String host) {
