@@ -9,8 +9,6 @@ abstract class _Constants {
   static const endpointInitWorkflow = "init-workflow";
   static const endpointGetAvailableTransitions = "get-workflow-available-steps";
   static const endpointGetLastEventByLongPolling = "get-last-wf-event-by-long-polling";
-  static const endpointPostTransition = "post-transition-to-workflow";
-  static const pathParameterTransitionName = "TRANSITION_NAME";
   static const pathParameterWorkflowName = "WORKFLOW_NAME";
   static const pathParameterInstanceId = "INSTANCE_ID";
   static const queryParameterInstanceId = "InstanceId";
@@ -18,6 +16,9 @@ abstract class _Constants {
 }
 
 class NeoWorkflowManager {
+  static const endpointPostTransition = "post-transition-to-workflow";
+  static const pathParameterTransitionName = "TRANSITION_NAME";
+
   final NeoNetworkManager neoNetworkManager;
   String _instanceId = UuidUtil.generateUUID();
   String _subFlowInstanceId = UuidUtil.generateUUID();
@@ -116,10 +117,10 @@ class NeoWorkflowManager {
   }) async {
     return neoNetworkManager.call(
       NeoHttpCall(
-        endpoint: _Constants.endpointPostTransition,
+        endpoint: endpointPostTransition,
         pathParameters: {
           _Constants.pathParameterInstanceId: _getActiveInstanceId(isSubFlow: isSubFlow),
-          _Constants.pathParameterTransitionName: transitionName,
+          pathParameterTransitionName: transitionName,
         },
         headerParameters: headerParameters ?? {},
         body: body,

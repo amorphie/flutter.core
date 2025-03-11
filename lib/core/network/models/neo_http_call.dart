@@ -35,8 +35,20 @@ class NeoHttpCall extends Equatable {
 
   int? get retryCount => _retryCount;
 
+  bool enableMtls = false;
+  bool signForMtls = false;
+
   @override
-  List<Object?> get props => [requestId, endpoint, body, pathParameters, queryProviders, useHttps];
+  List<Object?> get props => [
+        requestId,
+        endpoint,
+        body,
+        pathParameters,
+        queryProviders,
+        useHttps,
+        enableMtls,
+        signForMtls,
+      ];
 
   NeoHttpCall({
     required this.endpoint,
@@ -50,6 +62,11 @@ class NeoHttpCall extends Equatable {
 
   void setRetryCount(int retryCount) {
     _retryCount = retryCount;
+  }
+
+  void setMtlsStatus({required bool enableMtls, required bool signForMtls}) {
+    this.enableMtls = enableMtls;
+    this.signForMtls = signForMtls;
   }
 
   void decreaseRetryCount() {

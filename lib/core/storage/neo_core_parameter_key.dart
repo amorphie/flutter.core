@@ -30,6 +30,8 @@ abstract class NeoCoreParameterKey {
   static const secureStorageEmail = "secureStorage:common:email";
   static const secureStorageInstallationId = "secureStorage:infrastructure:installationId";
   static const secureStorageLanguage = "secureStorage:common:language";
+  static const secureStorageMtlsClientCertificate = "secureStorage:mtls:clientCertificate";
+  static const secureStorageMtlsPrivateKey = "secureStorage:mtls:privateKey";
   static const secureStoragePhoneNumber = "secureStorage:common:phoneNumber";
   static const secureStorageRefreshToken = "secureStorage:infrastructure:refreshToken";
   static const secureStorageSessionId = "secureStorage:infrastructure:sessionId";
