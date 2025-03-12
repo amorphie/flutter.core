@@ -24,8 +24,6 @@ import 'package:signalr_netcore/signalr_client.dart';
 
 abstract class _Constants {
   static const eventNameSignalrOnClose = "[SignalrConnectionManager]: onClose is called!";
-  static const eventNameSignalrOnReconnecting = "[SignalrConnectionManager]: onReconnecting is called!";
-  static const eventNameSignalrOnReconnected = "[SignalrConnectionManager]: onReconnected is called!";
   static const eventNameSignalrInitSucceed = "[SignalrConnectionManager]: init is succeed!";
   static const eventNameSignalrInitFailed = "[SignalrConnectionManager]: init is failed!";
   static const eventCompletionStatusValues = ["worker-completed", "transition-completed"];
@@ -120,7 +118,7 @@ class SignalrConnectionManager {
             return null;
           }
         })
-        .whereNotNull()
+        .nonNulls
         .toList()
         .firstOrNull;
   }
