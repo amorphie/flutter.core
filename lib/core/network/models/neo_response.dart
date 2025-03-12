@@ -10,41 +10,8 @@
  * Any reproduction of this material must contain this notice.
  */
 
-import 'package:neo_core/core/network/models/neo_error.dart';
+import 'package:neo_core/core/util/models/neo_result.dart';
 
-sealed class NeoResponse {
-  const NeoResponse();
-
-  bool get isSuccess {
-    return switch (this) {
-      NeoErrorResponse(error: final _) => false,
-      NeoSuccessResponse(data: final _) => true,
-    };
-  }
-
-  bool get isError => !isSuccess;
-
-  NeoSuccessResponse get asSuccess {
-    return this as NeoSuccessResponse;
-  }
-
-  NeoErrorResponse get asError {
-    return this as NeoErrorResponse;
-  }
-
-  factory NeoResponse.success(Map<String, dynamic> response) => NeoSuccessResponse(response);
-
-  factory NeoResponse.error(NeoError response) => NeoErrorResponse(response);
-}
-
-final class NeoSuccessResponse extends NeoResponse {
-  const NeoSuccessResponse(this.data);
-
-  final Map<String, dynamic> data;
-}
-
-final class NeoErrorResponse extends NeoResponse {
-  const NeoErrorResponse(this.error);
-
-  final NeoError error;
-}
+typedef NeoResponse = NeoResult<Map<String, dynamic>>;
+typedef NeoErrorResponse = NeoErrorResult<Map<String, dynamic>>;
+typedef NeoSuccessResponse = NeoSuccessResult<Map<String, dynamic>>;

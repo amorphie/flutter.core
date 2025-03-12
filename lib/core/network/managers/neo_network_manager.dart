@@ -23,7 +23,6 @@ import 'package:json_annotation/json_annotation.dart';
 import 'package:logger/logger.dart';
 import 'package:mutex/mutex.dart';
 import 'package:neo_core/core/analytics/neo_logger.dart';
-import 'package:neo_core/core/encryption/jwt_decoder.dart';
 import 'package:neo_core/core/network/headers/neo_constant_headers.dart';
 import 'package:neo_core/core/network/headers/neo_dynamic_headers.dart';
 import 'package:neo_core/core/network/models/http_auth_response.dart';
