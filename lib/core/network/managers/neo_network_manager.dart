@@ -118,7 +118,7 @@ class NeoNetworkManager {
     final fullPath = httpClientConfig.getServiceUrlByKey(
       neoCall.endpoint,
       parameters: neoCall.pathParameters,
-      useHttps: neoCall.useHttps,
+      useHttps: false,
     );
     final method = httpClientConfig.getServiceMethodByKey(neoCall.endpoint);
     if (fullPath == null || method == null) {
