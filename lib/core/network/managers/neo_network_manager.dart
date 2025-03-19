@@ -113,9 +113,7 @@ class NeoNetworkManager {
   Future<Map<String, String>> _getDefaultHeaders(NeoHttpCall? neoCall) async {
     return await NeoDynamicHeaders(neoSharedPrefs: neoSharedPrefs, secureStorage: secureStorage).getHeaders()
       ..addAll(
-        neoCall?.signForMtls ?? false
-            ? await _mtlsHeaders.getHeaders(neoCall?.body ?? {})
-            : {},
+        neoCall?.signForMtls ?? false ? await _mtlsHeaders.getHeaders(neoCall?.body ?? {}) : {},
       )
       ..addAll(
         await NeoConstantHeaders(
@@ -173,7 +171,8 @@ class NeoNetworkManager {
       });
     }
 
-    final fullPath = (httpClientConfig..setMtlsStatusForHttpCall(neoCall)).getServiceUrlByKey(
+    await httpClientConfig.setMtlsStatusForHttpCall(neoCall, _mtlsHelper, secureStorage);
+    final fullPath = httpClientConfig.getServiceUrlByKey(
       neoCall.endpoint,
       enableMtls: neoCall.enableMtls,
       parameters: neoCall.pathParameters,

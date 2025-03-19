@@ -11,12 +11,15 @@
  */
 
 import 'package:collection/collection.dart';
+import 'package:neo_core/core/network/helpers/mtls_helper.dart';
 import 'package:neo_core/core/network/models/http_client_config_parameters.dart';
 import 'package:neo_core/core/network/models/http_host_details.dart';
 import 'package:neo_core/core/network/models/http_method.dart';
 import 'package:neo_core/core/network/models/http_service.dart';
 import 'package:neo_core/core/network/models/mtls_enabled_transition.dart';
 import 'package:neo_core/core/network/models/neo_http_call.dart';
+import 'package:neo_core/core/storage/neo_core_parameter_key.dart';
+import 'package:neo_core/core/storage/neo_core_secure_storage.dart';
 import 'package:neo_core/core/workflow_form/neo_workflow_manager.dart';
 
 class HttpClientConfig {
@@ -66,7 +69,11 @@ class HttpClientConfig {
     return _findServiceByKey(key)?.method;
   }
 
-  void setMtlsStatusForHttpCall(NeoHttpCall neoHttpCall) {
+  Future<void> setMtlsStatusForHttpCall(
+    NeoHttpCall neoHttpCall,
+    MtlsHelper mtlsHelper,
+    NeoCoreSecureStorage secureStorage,
+  ) async {
     final service = _findServiceByKey(neoHttpCall.endpoint);
     if (service == null) {
       return;
@@ -83,7 +90,20 @@ class HttpClientConfig {
     final isMtlsEnabledTransition = mtlsConfig?.enableMtls ?? false;
     final shouldSignTransitionForMtls = mtlsConfig?.signForMtls ?? false;
 
-    final enableMtls = isMtlsEnabledTransition || service.enableMtls;
+    bool enableMtls = isMtlsEnabledTransition || service.enableMtls;
+    if (enableMtls) {
+      final result = await Future.wait([
+        secureStorage.read(NeoCoreParameterKey.secureStorageCustomerId),
+        secureStorage.read(NeoCoreParameterKey.secureStorageDeviceId),
+      ]);
+
+      final userReference = result[0];
+      final deviceId = result[1];
+      final clientKeyTag = "$deviceId$userReference";
+      final certificate = await mtlsHelper.getCertificate(clientKeyTag: clientKeyTag);
+      enableMtls &= certificate != null;
+    }
+
     final signForMtls = shouldSignTransitionForMtls || service.signForMtls;
 
     neoHttpCall.setMtlsStatus(enableMtls: enableMtls, signForMtls: signForMtls);
