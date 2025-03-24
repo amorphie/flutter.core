@@ -60,6 +60,7 @@ class _NeoCoreMessagingState extends State<NeoCoreMessaging> {
     if (kIsWeb) {
       return;
     }
+
     if (Platform.isIOS) {
       NeoIosPushMessagePayloadHandler().init(onDeeplinkNavigationParam: widget.onDeeplinkNavigation);
     }
