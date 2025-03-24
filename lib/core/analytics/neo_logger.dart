@@ -239,7 +239,8 @@ class _LogMessageQueueProcessor {
 
         if (logMessage.logTypes.contains(NeoLoggerType.elastic)) {
           unawaited(
-              neoElastic.logCustom(logMessage.message, logMessage.logLevel.name, parameters: logMessage.properties));
+            neoElastic.logCustom(logMessage.message, logMessage.logLevel.name, parameters: logMessage.properties),
+          );
         }
         if (logMessage.logTypes.contains(NeoLoggerType.adjust) && logMessage.message is String) {
           neoAdjust.logEvent(logMessage.message);
