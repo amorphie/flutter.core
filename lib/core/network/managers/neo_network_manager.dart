@@ -357,6 +357,14 @@ class NeoNetworkManager {
     return (call.retryCount ?? 0) > 0;
   }
 
+  Future<NeoResponse> refreshToken() async {
+    final refreshToken = await _getRefreshToken();
+    if (refreshToken != null) {
+      return _refreshAuthDetailsByUsingRefreshToken(refreshToken);
+    }
+    return NeoResponse.error(const NeoError(), responseHeaders: {});
+  }
+
   Future<NeoResponse> _refreshAuthDetailsByUsingRefreshToken(String refreshToken) async {
     final response = await call(
       NeoHttpCall(
@@ -436,10 +444,7 @@ class NeoNetworkManager {
   Future<void> _refreshTokenIfExpired() async {
     if (isTokenExpired) {
       _tokenLockCompleter = Completer<void>();
-      final refreshToken = await _getRefreshToken();
-      if (refreshToken != null) {
-        await _refreshAuthDetailsByUsingRefreshToken(refreshToken);
-      }
+      await refreshToken();
       _tokenLockCompleter?.complete();
       _tokenLockCompleter = null;
     }
