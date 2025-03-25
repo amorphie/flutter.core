@@ -70,6 +70,7 @@ class NeoNetworkManager {
   late final bool _enableSslPinning;
   DateTime? _tokenExpirationTime;
   DateTime? _refreshTokenExpirationTime;
+  HttpAuthResponse? _lastAuthResponse;
 
   final _tokenLock = Mutex();
   Completer? _tokenLockCompleter;
@@ -97,6 +98,8 @@ class NeoNetworkManager {
   });
 
   NeoLogger? get _neoLogger => GetIt.I.getIfReady<NeoLogger>();
+
+  int? get tokenExpiresInSeconds => _lastAuthResponse?.expiresInSeconds;
 
   Future<void> init({required bool enableSslPinning}) async {
     _enableSslPinning = enableSslPinning;
@@ -384,6 +387,7 @@ class NeoNetworkManager {
 
   /// Returns true if two factor authenticated
   Future<bool> setTokensByAuthResponse(HttpAuthResponse authResponse, {bool? isMobUnapproved}) async {
+    _lastAuthResponse = authResponse;
     final tokenExpirationDurationInSeconds = max(0, (authResponse.expiresInSeconds) - 60);
     _tokenExpirationTime = DateTime.now().add(Duration(seconds: tokenExpirationDurationInSeconds));
     final refreshTokenExpirationDurationInSeconds = max(0, (authResponse.refreshTokenExpiresInSeconds) - 60);
