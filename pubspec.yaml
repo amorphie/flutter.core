@@ -53,6 +53,7 @@ dependencies:
   # Analytics
   logger: ^2.2.0
   adjust_sdk: 4.38.1
+  sentry_flutter: ^8.14.1
 
   # Dynamic Widget Building
   json_dynamic_widget: ^7.2.0
@@ -74,6 +75,7 @@ dev_dependencies:
   flutter_lints: ^2.0.0
   json_serializable: ^6.7.1
   build_runner: ^2.4.6
+  sentry_dart_plugin: ^2.4.1
 
 flutter:
   uses-material-design: true
