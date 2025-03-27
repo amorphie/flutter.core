@@ -101,6 +101,12 @@ class NeoNetworkManager {
 
   int? get tokenExpiresInSeconds => _lastAuthResponse?.expiresInSeconds;
 
+  late final NeoConstantHeaders neoConstantHeaders = NeoConstantHeaders(
+    neoSharedPrefs: neoSharedPrefs,
+    secureStorage: secureStorage,
+    defaultHeaders: defaultHeaders,
+  );
+
   Future<void> init({required bool enableSslPinning}) async {
     _enableSslPinning = enableSslPinning;
     await _initHttpClient();
@@ -109,13 +115,7 @@ class NeoNetworkManager {
 
   Future<Map<String, String>> get _defaultHeaders async {
     return await NeoDynamicHeaders(neoSharedPrefs: neoSharedPrefs, secureStorage: secureStorage).getHeaders()
-      ..addAll(
-        await NeoConstantHeaders(
-          neoSharedPrefs: neoSharedPrefs,
-          secureStorage: secureStorage,
-          defaultHeaders: defaultHeaders,
-        ).getHeaders(),
-      );
+      ..addAll(await neoConstantHeaders.getHeaders());
   }
 
   Future<Map<String, String>> get _defaultPostHeaders async => <String, String>{}
