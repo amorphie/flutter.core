@@ -1,4 +1,3 @@
-import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:get_it/get_it.dart';
 import 'package:http/http.dart';
@@ -22,7 +21,9 @@ class NeoSentry {
           ..httpClient = httpClient
           ..environment = environment
           ..release = release
-          ..debug = kDebugMode; // TODO: Get it from config
+          ..experimental.replay.onErrorSampleRate = 1.0
+          ..tracesSampleRate = 1.0 // TODO: Get it from config
+          ..debug = false; // TODO: Get it from config
       },
       appRunner: () => runApp(SentryWidget(child: child)),
     );
