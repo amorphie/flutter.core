@@ -35,6 +35,7 @@ import 'package:neo_core/core/util/extensions/get_it_extensions.dart';
 import 'package:neo_core/core/util/token_util.dart';
 import 'package:neo_core/core/util/uuid_util.dart';
 import 'package:neo_core/neo_core.dart';
+import 'package:sentry_flutter/sentry_flutter.dart';
 import 'package:universal_io/io.dart';
 
 abstract class _Constants {
@@ -456,7 +457,7 @@ class NeoNetworkManager {
 
   Future<void> _initHttpClient() async {
     if (kIsWeb) {
-      httpClient = http.Client();
+      httpClient = _wrapWithSentryHttpClient(http.Client());
       return;
     }
 
@@ -467,7 +468,14 @@ class NeoNetworkManager {
       client.badCertificateCallback = (X509Certificate cert, String host, int port) => false;
     }
 
-    httpClient = IOClient(client);
+    httpClient = _wrapWithSentryHttpClient(IOClient(client));
+  }
+
+  SentryHttpClient _wrapWithSentryHttpClient(http.Client client) {
+    return SentryHttpClient(
+      client: client,
+      failedRequestStatusCodes: [SentryStatusCode.range(400, 599)],
+    );
   }
 
   void _logResponse(http.Response response) {
