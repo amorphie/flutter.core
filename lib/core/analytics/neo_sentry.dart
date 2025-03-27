@@ -8,13 +8,21 @@ import 'package:sentry_flutter/sentry_flutter.dart';
 class NeoSentry {
   late final NeoNetworkManager _neoNetworkManager = GetIt.I<NeoNetworkManager>();
 
-  Future<void> init({required Client httpClient, required String dsn, required Widget child}) async {
+  Future<void> init({
+    required Client httpClient,
+    required String dsn,
+    required String environment,
+    required String release,
+    required Widget child,
+  }) async {
     await SentryFlutter.init(
       (options) {
         options
           ..dsn = dsn
           ..httpClient = httpClient
-          ..debug = kDebugMode;
+          ..environment = environment
+          ..release = release
+          ..debug = kDebugMode; // TODO: Get it from config
       },
       appRunner: () => runApp(SentryWidget(child: child)),
     );
