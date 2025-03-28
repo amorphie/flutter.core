@@ -40,4 +40,16 @@ class NeoSentry {
   Future<void> clearUser() async {
     await Sentry.configureScope((scope) => scope.setUser(null));
   }
+
+  Future<void> logCustom(dynamic message, String level, {List<dynamic>? parameters}) async {
+    await Sentry.captureMessage(
+      message.toString(),
+      level: SentryLevel.fromName(level),
+      params: parameters,
+    );
+  }
+
+  Future<void> logException(dynamic exception, StackTrace stackTrace) async {
+    await Sentry.captureException(exception, stackTrace: stackTrace);
+  }
 }

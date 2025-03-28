@@ -25,6 +25,7 @@ import 'package:neo_core/core/analytics/neo_adjust.dart';
 import 'package:neo_core/core/analytics/neo_crashlytics.dart';
 import 'package:neo_core/core/analytics/neo_elastic.dart';
 import 'package:neo_core/core/analytics/neo_logger_type.dart';
+import 'package:neo_core/core/analytics/neo_sentry.dart';
 import 'package:neo_core/core/network/models/http_client_config.dart';
 import 'package:neo_core/core/network/models/neo_page_type.dart';
 import 'package:neo_core/core/util/device_util/device_util.dart';
@@ -50,12 +51,14 @@ class _NeoLoggerOutput extends LogOutput {
 class NeoLogger implements INeoLogger {
   final NeoAdjust neoAdjust;
   final NeoElastic neoElastic;
+  final NeoSentry neoSentry;
   final HttpClientConfig httpClientConfig;
   _LogMessageQueueProcessor? _processor;
 
   NeoLogger({
     required this.neoAdjust,
     required this.neoElastic,
+    required this.neoSentry,
     required this.httpClientConfig,
   });
 
@@ -70,6 +73,7 @@ class NeoLogger implements INeoLogger {
     NeoLoggerType.adjust,
     NeoLoggerType.elastic,
     NeoLoggerType.logger,
+    NeoLoggerType.sentry,
   ];
 
   bool _isLoggingEnabled = false;
@@ -86,6 +90,7 @@ class NeoLogger implements INeoLogger {
     _processor = _LogMessageQueueProcessor(
       neoAdjust: neoAdjust,
       neoElastic: neoElastic,
+      neoSentry: neoSentry,
     );
 
     logCustom(
@@ -152,34 +157,38 @@ class NeoLogger implements INeoLogger {
         message,
         logLevel: Level.warning,
         properties: parameters,
-        logTypes: [NeoLoggerType.logger, NeoLoggerType.elastic],
+        logTypes: [NeoLoggerType.logger, NeoLoggerType.elastic, NeoLoggerType.sentry],
       );
     } else {
       logCustom(
         message,
         logLevel: Level.trace,
         properties: parameters,
-        logTypes: [NeoLoggerType.logger, NeoLoggerType.elastic],
+        logTypes: [NeoLoggerType.logger, NeoLoggerType.elastic, NeoLoggerType.sentry],
       );
     }
   }
 
   @override
   void logError(String message) {
-    if (kIsWeb) {
-      return;
+    if (!kIsWeb) {
+      _neoCrashlytics?.logError(message);
     }
-    _neoCrashlytics?.logError(message);
-    logCustom(message, logLevel: Level.error, logTypes: [NeoLoggerType.elastic]);
+    logCustom(message, logLevel: Level.error, logTypes: [NeoLoggerType.elastic, NeoLoggerType.sentry]);
   }
 
   @override
   void logException(dynamic exception, StackTrace stackTrace, {Map<String, dynamic>? parameters}) {
-    if (kIsWeb) {
-      return;
+    if (!kIsWeb) {
+      _neoCrashlytics?.logException(exception, stackTrace);
     }
-    _neoCrashlytics?.logException(exception, stackTrace);
-    logCustom(exception, logLevel: Level.fatal, properties: parameters, logTypes: [NeoLoggerType.elastic]);
+    neoSentry.logException(exception, stackTrace);
+    logCustom(
+      exception,
+      logLevel: Level.fatal,
+      properties: parameters,
+      logTypes: [NeoLoggerType.elastic, NeoLoggerType.sentry],
+    );
   }
 
   void logConsole(dynamic message, {Level logLevel = Level.info}) {
@@ -191,6 +200,7 @@ class _LogMessageQueueProcessor {
   static _LogMessageQueueProcessor? _instance;
   final NeoAdjust neoAdjust;
   final NeoElastic neoElastic;
+  final NeoSentry neoSentry;
 
   static const _processingInterval = Duration(milliseconds: 100);
   final _messageQueue = <NeoLog>[];
@@ -200,15 +210,18 @@ class _LogMessageQueueProcessor {
   _LogMessageQueueProcessor._({
     required this.neoAdjust,
     required this.neoElastic,
+    required this.neoSentry,
   });
 
   factory _LogMessageQueueProcessor({
     required NeoAdjust neoAdjust,
     required NeoElastic neoElastic,
+    required NeoSentry neoSentry,
   }) {
     _instance ??= _LogMessageQueueProcessor._(
       neoAdjust: neoAdjust,
       neoElastic: neoElastic,
+      neoSentry: neoSentry,
     );
     return _instance!;
   }
@@ -235,6 +248,15 @@ class _LogMessageQueueProcessor {
       try {
         if (logMessage.logTypes.contains(NeoLoggerType.logger)) {
           _logger.log(logMessage.logLevel, logMessage.message);
+        }
+        if (logMessage.logTypes.contains(NeoLoggerType.sentry)) {
+          unawaited(
+            neoSentry.logCustom(
+              logMessage.message,
+              logMessage.logLevel.name,
+              parameters: logMessage.properties?.entries.toList(),
+            ),
+          );
         }
 
         if (logMessage.logTypes.contains(NeoLoggerType.elastic)) {
