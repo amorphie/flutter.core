@@ -305,6 +305,7 @@ class NeoNetworkManager {
         _neoLogger?.logError("[NeoNetworkManager]: Token service error!");
         return _handleErrorResponse(error, call);
       } else {
+        await refreshToken();
         return _retryLastCall(call);
       }
     } else {
@@ -355,6 +356,14 @@ class NeoNetworkManager {
 
   bool _canRetryRequest(NeoHttpCall call) {
     return (call.retryCount ?? 0) > 0;
+  }
+
+  Future<NeoResponse> refreshToken() async {
+    final refreshToken = await _getRefreshToken();
+    if (refreshToken != null) {
+      return _refreshAuthDetailsByUsingRefreshToken(refreshToken);
+    }
+    return NeoResponse.error(const NeoError());
   }
 
   Future<NeoResponse> _refreshAuthDetailsByUsingRefreshToken(String refreshToken) async {
@@ -436,10 +445,7 @@ class NeoNetworkManager {
   Future<void> _refreshTokenIfExpired() async {
     if (isTokenExpired) {
       _tokenLockCompleter = Completer<void>();
-      final refreshToken = await _getRefreshToken();
-      if (refreshToken != null) {
-        await _refreshAuthDetailsByUsingRefreshToken(refreshToken);
-      }
+      await refreshToken();
       _tokenLockCompleter?.complete();
       _tokenLockCompleter = null;
     }
