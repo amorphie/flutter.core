@@ -308,6 +308,7 @@ class NeoNetworkManager {
         _neoLogger?.logError("[NeoNetworkManager]: Token service error!");
         return _handleErrorResponse(error, call, response);
       } else {
+        await refreshToken();
         return _retryLastCall(call, response);
       }
     } else {
