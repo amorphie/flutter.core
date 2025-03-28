@@ -70,6 +70,7 @@ class NeoNetworkManager {
   late final bool _enableSslPinning;
   DateTime? _tokenExpirationTime;
   DateTime? _refreshTokenExpirationTime;
+  HttpAuthResponse? _lastAuthResponse;
 
   final _tokenLock = Mutex();
   Completer? _tokenLockCompleter;
@@ -97,6 +98,8 @@ class NeoNetworkManager {
   });
 
   NeoLogger? get _neoLogger => GetIt.I.getIfReady<NeoLogger>();
+
+  int? get tokenExpiresInSeconds => _lastAuthResponse?.expiresInSeconds;
 
   Future<void> init({required bool enableSslPinning}) async {
     _enableSslPinning = enableSslPinning;
@@ -145,7 +148,7 @@ class NeoNetworkManager {
         if (refreshToken == null || isRefreshTokenExpired) {
           if (await _isTwoFactorAuthenticated) {
             await _onInvalidTokenError();
-            return NeoResponse.error(const NeoError(responseCode: HttpStatus.forbidden));
+            return NeoResponse.error(const NeoError(responseCode: HttpStatus.forbidden), responseHeaders: {});
           } else {
             await getTemporaryTokenForNotLoggedInUser(currentCall: neoCall);
           }
@@ -169,7 +172,7 @@ class NeoNetworkManager {
     );
     final method = httpClientConfig.getServiceMethodByKey(neoCall.endpoint);
     if (fullPath == null || method == null) {
-      return NeoResponse.error(const NeoError());
+      return NeoResponse.error(const NeoError(), responseHeaders: {});
     }
 
     NeoResponse response;
@@ -190,13 +193,13 @@ class NeoNetworkManager {
     } catch (e) {
       if (e is TimeoutException) {
         _neoLogger?.logError("[NeoNetworkManager]: Service call timeout! Endpoint: ${neoCall.endpoint}");
-        return NeoResponse.error(const NeoError(responseCode: HttpStatus.requestTimeout));
+        return NeoResponse.error(const NeoError(responseCode: HttpStatus.requestTimeout), responseHeaders: {});
       } else if (e is HandshakeException) {
         _neoLogger?.logConsole("[NeoNetworkManager]: Handshake exception! Endpoint: ${neoCall.endpoint}");
-        return NeoResponse.error(const NeoError());
+        return NeoResponse.error(const NeoError(), responseHeaders: {});
       } else {
         _neoLogger?.logError("[NeoNetworkManager]: Service call failed! Endpoint: ${neoCall.endpoint}");
-        return NeoResponse.error(const NeoError());
+        return NeoResponse.error(const NeoError(), responseHeaders: {});
       }
     }
   }
@@ -298,15 +301,15 @@ class NeoNetworkManager {
 
     if (response.statusCode >= 200 && response.statusCode < 300) {
       onRequestSucceed?.call(call.endpoint, call.requestId);
-      return NeoResponse.success(responseJSON);
+      return NeoResponse.success(responseJSON, statusCode: response.statusCode, responseHeaders: response.headers);
     } else if (response.statusCode == _Constants.responseCodeUnauthorized) {
       if (call.endpoint == _Constants.endpointGetToken) {
         final error = NeoError.fromJson(responseJSON);
         _neoLogger?.logError("[NeoNetworkManager]: Token service error!");
-        return _handleErrorResponse(error, call);
+        return _handleErrorResponse(error, call, response);
       } else {
         await refreshToken();
-        return _retryLastCall(call);
+        return _retryLastCall(call, response);
       }
     } else {
       try {
@@ -315,26 +318,26 @@ class NeoNetworkManager {
         if (!hasErrorCode) {
           responseJSON.addAll({'errorCode': response.statusCode});
         }
-        return _handleErrorResponse(NeoError.fromJson(responseJSON), call);
+        return _handleErrorResponse(NeoError.fromJson(responseJSON), call, response);
       } on MissingRequiredKeysException {
         final error = NeoError(responseCode: response.statusCode);
-        return _handleErrorResponse(error, call);
+        return _handleErrorResponse(error, call, response);
       } catch (e) {
         _neoLogger?.logError(
           "[NeoNetworkManager]: Service call failed! Status code: ${response.statusCode}.Endpoint: ${call.endpoint}",
         );
-        return _handleErrorResponse(NeoError(responseCode: response.statusCode), call);
+        return _handleErrorResponse(NeoError(responseCode: response.statusCode), call, response);
       }
     }
   }
 
-  Future<NeoResponse> _handleErrorResponse(NeoError error, NeoHttpCall call) async {
+  Future<NeoResponse> _handleErrorResponse(NeoError error, NeoHttpCall call, http.Response response) async {
     if (error.isInvalidTokenError) {
       await _onInvalidTokenError();
     } else {
       onRequestFailed?.call(error, call.requestId ?? call.endpoint);
     }
-    return NeoResponse.error(error);
+    return NeoResponse.error(error, responseHeaders: response.headers);
   }
 
   Future<void> _onInvalidTokenError() async {
@@ -342,7 +345,7 @@ class NeoNetworkManager {
     onInvalidTokenError?.call();
   }
 
-  Future<NeoResponse> _retryLastCall(NeoHttpCall neoHttpCall) async {
+  Future<NeoResponse> _retryLastCall(NeoHttpCall neoHttpCall, http.Response response) async {
     if (neoHttpCall.retryCount == null) {
       neoHttpCall.setRetryCount(httpClientConfig.getRetryCountByKey(neoHttpCall.endpoint));
     }
@@ -350,7 +353,7 @@ class NeoNetworkManager {
       neoHttpCall.decreaseRetryCount();
       return call(neoHttpCall);
     } else {
-      return NeoResponse.error(const NeoError());
+      return NeoResponse.error(const NeoError(), responseHeaders: response.headers);
     }
   }
 
@@ -363,7 +366,7 @@ class NeoNetworkManager {
     if (refreshToken != null) {
       return _refreshAuthDetailsByUsingRefreshToken(refreshToken);
     }
-    return NeoResponse.error(const NeoError());
+    return NeoResponse.error(const NeoError(), responseHeaders: {});
   }
 
   Future<NeoResponse> _refreshAuthDetailsByUsingRefreshToken(String refreshToken) async {
@@ -385,6 +388,7 @@ class NeoNetworkManager {
 
   /// Returns true if two factor authenticated
   Future<bool> setTokensByAuthResponse(HttpAuthResponse authResponse, {bool? isMobUnapproved}) async {
+    _lastAuthResponse = authResponse;
     final tokenExpirationDurationInSeconds = max(0, (authResponse.expiresInSeconds) - 60);
     _tokenExpirationTime = DateTime.now().add(Duration(seconds: tokenExpirationDurationInSeconds));
     final refreshTokenExpirationDurationInSeconds = max(0, (authResponse.refreshTokenExpiresInSeconds) - 60);
