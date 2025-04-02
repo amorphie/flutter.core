@@ -176,6 +176,12 @@ class NeoNetworkManager {
       return NeoResponse.error(const NeoError(), responseHeaders: {});
     }
 
+    final span = Sentry.startTransaction(
+      neoCall.endpoint,
+      'http.client',
+      description: 'HTTP $method ${neoCall.endpoint}',
+    );
+
     NeoResponse response;
     try {
       switch (method) {
@@ -190,16 +196,25 @@ class NeoNetworkManager {
         case HttpMethod.patch:
           response = await _requestPatch(fullPath, neoCall);
       }
+      unawaited(
+        span.finish(
+          status:
+              response.isSuccess ? const SpanStatus.ok() : SpanStatus.fromHttpStatusCode(response.asError.statusCode),
+        ),
+      );
       return response;
     } catch (e) {
       if (e is TimeoutException) {
         _neoLogger?.logError("[NeoNetworkManager]: Service call timeout! Endpoint: ${neoCall.endpoint}");
+        unawaited(span.finish(status: const SpanStatus.deadlineExceeded()));
         return NeoResponse.error(const NeoError(responseCode: HttpStatus.requestTimeout), responseHeaders: {});
       } else if (e is HandshakeException) {
         _neoLogger?.logConsole("[NeoNetworkManager]: Handshake exception! Endpoint: ${neoCall.endpoint}");
+        unawaited(span.finish(status: const SpanStatus.internalError()));
         return NeoResponse.error(const NeoError(), responseHeaders: {});
       } else {
         _neoLogger?.logError("[NeoNetworkManager]: Service call failed! Endpoint: ${neoCall.endpoint}");
+        unawaited(span.finish(status: const SpanStatus.internalError()));
         return NeoResponse.error(const NeoError(), responseHeaders: {});
       }
     }
