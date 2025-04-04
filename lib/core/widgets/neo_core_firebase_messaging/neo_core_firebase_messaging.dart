@@ -20,12 +20,14 @@ import 'package:universal_io/io.dart';
 abstract class _Constant {
   static const androidNotificationChannelID = "high_importance_channel";
   static const androidNotificationChannelName = "High Importance Notifications";
-  static const androidNotificationChannelDescription = "This channel is used for important notifications";
+  static const androidNotificationChannelDescription =
+      "This channel is used for important notifications";
 }
 
 @pragma('vm:entry-point')
 Future<void> onBackgroundMessage(RemoteMessage message) async {
-  debugPrint("[NeoCoreFirebaseMessaging]: Background notification was triggered by ${message.notification}");
+  debugPrint(
+      "[NeoCoreFirebaseMessaging]: Background notification was triggered by ${message.notification}");
   return Future.value();
 }
 
@@ -49,10 +51,12 @@ class NeoCoreFirebaseMessaging extends StatefulWidget {
 
   static FirebaseMessaging get firebaseMessaging => _firebaseMessaging;
 
-  static final FirebaseMessaging _firebaseMessaging = FirebaseMessaging.instance;
+  static final FirebaseMessaging _firebaseMessaging =
+      FirebaseMessaging.instance;
 
   @override
-  State<NeoCoreFirebaseMessaging> createState() => _NeoCoreFirebaseMessagingState();
+  State<NeoCoreFirebaseMessaging> createState() =>
+      _NeoCoreFirebaseMessagingState();
 }
 
 class _NeoCoreFirebaseMessagingState extends State<NeoCoreFirebaseMessaging> {
@@ -68,7 +72,8 @@ class _NeoCoreFirebaseMessagingState extends State<NeoCoreFirebaseMessaging> {
   StreamSubscription? _widgetEventStreamSubscription;
 
   void _listenWidgetEventKeys() {
-    _widgetEventStreamSubscription = NeoCoreWidgetEventKeys.initPushMessagingServices.listenEvent(
+    _widgetEventStreamSubscription =
+        NeoCoreWidgetEventKeys.initPushMessagingServices.listenEvent(
       onEventReceived: (NeoWidgetEvent widgetEvent) {
         _init();
       },
@@ -114,11 +119,13 @@ class _NeoCoreFirebaseMessagingState extends State<NeoCoreFirebaseMessaging> {
         }
       }),
     );
-    NeoCoreFirebaseMessaging.firebaseMessaging.onTokenRefresh.listen(_onTokenChange);
+    NeoCoreFirebaseMessaging.firebaseMessaging.onTokenRefresh
+        .listen(_onTokenChange);
   }
 
   void _onTokenChange(String token, {bool isAPNS = false}) {
-    _neoLogger.logConsole("[NeoCoreMessaging]: Token is: $token. Is APNS: $isAPNS");
+    _neoLogger
+        .logConsole("[NeoCoreMessaging]: Token is: $token. Is APNS: $isAPNS");
     if (Platform.isAndroid || isAPNS) {
       widget.onTokenChanged.call(token);
     }
@@ -138,10 +145,13 @@ class _NeoCoreFirebaseMessagingState extends State<NeoCoreFirebaseMessaging> {
 
   Future<void> _initPushNotifications() async {
     await NeoCoreFirebaseMessaging.firebaseMessaging
-        .setForegroundNotificationPresentationOptions(alert: true, badge: true, sound: true);
+        .setForegroundNotificationPresentationOptions(
+            alert: true, badge: true, sound: true);
 
     // Get any messages which caused the application to open from a terminated state.
-    await NeoCoreFirebaseMessaging.firebaseMessaging.getInitialMessage().then(_handleMessage);
+    await NeoCoreFirebaseMessaging.firebaseMessaging
+        .getInitialMessage()
+        .then(_handleMessage);
 
     // Also handle any interaction when the app is in the background via Stream listener
     FirebaseMessaging.onMessageOpenedApp.listen(_handleMessage);
@@ -151,8 +161,8 @@ class _NeoCoreFirebaseMessagingState extends State<NeoCoreFirebaseMessaging> {
 
     // This is called when an incoming FCM payload is received while the Flutter instance is in the foreground.
     FirebaseMessaging.onMessage.listen((message) {
-      _neoLogger
-          .logConsole("[NeoCoreFirebaseMessaging]: Foreground notification was triggered by ${message.notification}");
+      _neoLogger.logConsole(
+          "[NeoCoreFirebaseMessaging]: Foreground notification was triggered by ${message.notification}");
       final notification = message.notification;
       if (notification == null || !Platform.isAndroid) {
         return;
@@ -167,6 +177,8 @@ class _NeoCoreFirebaseMessagingState extends State<NeoCoreFirebaseMessaging> {
             _androidChannel.name,
             channelDescription: _androidChannel.description,
             icon: widget.androidDefaultIcon,
+            sound: const RawResourceAndroidNotificationSound('ON_AND.mp3'),
+            importance: Importance.max,
           ),
         ),
         payload: jsonEncode(message.toMap()),
@@ -180,10 +192,12 @@ class _NeoCoreFirebaseMessagingState extends State<NeoCoreFirebaseMessaging> {
     final settings = InitializationSettings(android: android);
     await _localNotifications.initialize(
       settings,
-      onDidReceiveNotificationResponse: (NotificationResponse notificationResponse) {
+      onDidReceiveNotificationResponse:
+          (NotificationResponse notificationResponse) {
         switch (notificationResponse.notificationResponseType) {
           case NotificationResponseType.selectedNotification:
-            _handleMessage(RemoteMessage.fromMap(jsonDecode(notificationResponse.payload ?? "")));
+            _handleMessage(RemoteMessage.fromMap(
+                jsonDecode(notificationResponse.payload ?? "")));
             break;
           case NotificationResponseType.selectedNotificationAction:
             break;
@@ -191,7 +205,8 @@ class _NeoCoreFirebaseMessagingState extends State<NeoCoreFirebaseMessaging> {
       },
     );
     await _localNotifications
-        .resolvePlatformSpecificImplementation<AndroidFlutterLocalNotificationsPlugin>()
+        .resolvePlatformSpecificImplementation<
+            AndroidFlutterLocalNotificationsPlugin>()
         ?.createNotificationChannel(_androidChannel);
   }
 
