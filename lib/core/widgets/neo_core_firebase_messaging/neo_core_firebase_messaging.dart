@@ -187,6 +187,8 @@ class _NeoCoreFirebaseMessagingState extends State<NeoCoreFirebaseMessaging> {
   }
 
   Future<void> _initLocalNotifications() async {
+    _neoLogger
+        .logConsole("[NeoCoreFirebaseMessaging]: _initLocalNotifications");
     final String androidIcon = widget.androidDefaultIcon ?? "";
     final android = AndroidInitializationSettings(androidIcon);
     final settings = InitializationSettings(android: android);
