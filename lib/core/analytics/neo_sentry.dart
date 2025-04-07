@@ -12,6 +12,8 @@ class NeoSentry {
     required String dsn,
     required String environment,
     required String release,
+    required bool enableInDebug,
+    required double tracesSampleRate,
     required Widget child,
   }) async {
     await SentryFlutter.init(
@@ -22,8 +24,9 @@ class NeoSentry {
           ..environment = environment
           ..release = release
           ..experimental.replay.onErrorSampleRate = 1.0
-          ..tracesSampleRate = 1.0 // TODO: Get it from config
-          ..debug = false; // TODO: Get it from config
+          ..tracesSampleRate = tracesSampleRate
+          ..enableTimeToFullDisplayTracing = true
+          ..debug = enableInDebug;
       },
       appRunner: () => runApp(SentryWidget(child: child)),
     );
