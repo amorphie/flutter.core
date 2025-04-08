@@ -144,6 +144,8 @@ class _NeoCoreFirebaseMessagingState extends State<NeoCoreFirebaseMessaging> {
   }
 
   Future<void> _initPushNotifications() async {
+    _neoLogger
+        .logConsole("[NeoCoreFirebaseMessaging]: _initLocalNotifications");
     await NeoCoreFirebaseMessaging.firebaseMessaging
         .setForegroundNotificationPresentationOptions(
             alert: true, badge: true, sound: true);
@@ -167,6 +169,10 @@ class _NeoCoreFirebaseMessagingState extends State<NeoCoreFirebaseMessaging> {
       if (notification == null || !Platform.isAndroid) {
         return;
       }
+      const DarwinNotificationDetails iOSPlatformChannelSpecifics =
+          DarwinNotificationDetails(
+              sound: 'on_ios.caf' // add the sound file name with the extension
+              );
       _localNotifications.show(
         notification.hashCode,
         notification.title,
@@ -177,9 +183,10 @@ class _NeoCoreFirebaseMessagingState extends State<NeoCoreFirebaseMessaging> {
             _androidChannel.name,
             channelDescription: _androidChannel.description,
             icon: widget.androidDefaultIcon,
-            sound: const RawResourceAndroidNotificationSound('on_and.mp3'),
+            sound: const RawResourceAndroidNotificationSound('on_and'),
             importance: Importance.max,
           ),
+          iOS: iOSPlatformChannelSpecifics,
         ),
         payload: jsonEncode(message.toMap()),
       );
@@ -224,6 +231,7 @@ class _NeoCoreFirebaseMessagingState extends State<NeoCoreFirebaseMessaging> {
   }
 
   void _handleMessage(RemoteMessage? message) {
+    _neoLogger.logConsole("[NeoCoreFirebaseMessaging]: _handleMessage");
     NeoFirebaseAndroidPushMessagePayloadHandler().handleMessage(
       message: message,
       onDeeplinkNavigation: widget.onDeeplinkNavigation,
