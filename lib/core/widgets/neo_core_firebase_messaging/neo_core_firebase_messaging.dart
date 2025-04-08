@@ -183,6 +183,7 @@ class _NeoCoreFirebaseMessagingState extends State<NeoCoreFirebaseMessaging> {
             _androidChannel.name,
             channelDescription: _androidChannel.description,
             icon: widget.androidDefaultIcon,
+            playSound: true,
             sound: const RawResourceAndroidNotificationSound('on_and'),
             importance: Importance.max,
           ),
