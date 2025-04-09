@@ -21,6 +21,8 @@ abstract class _Constant {
   static const androidNotificationChannelID = "high_importance_channel";
   static const androidNotificationChannelName = "High Importance Notifications";
   static const androidNotificationChannelDescription = "This channel is used for important notifications";
+  static const androidNotificationSound = RawResourceAndroidNotificationSound('on_and');
+  static const androidNotificationImportance = Importance.max;
 }
 
 @pragma('vm:entry-point')
@@ -60,6 +62,8 @@ class _NeoCoreFirebaseMessagingState extends State<NeoCoreFirebaseMessaging> {
     _Constant.androidNotificationChannelID,
     _Constant.androidNotificationChannelName,
     description: _Constant.androidNotificationChannelDescription,
+    sound: _Constant.androidNotificationSound,
+    importance: _Constant.androidNotificationImportance,
   );
   final _localNotifications = FlutterLocalNotificationsPlugin();
 
@@ -167,6 +171,14 @@ class _NeoCoreFirebaseMessagingState extends State<NeoCoreFirebaseMessaging> {
             _androidChannel.name,
             channelDescription: _androidChannel.description,
             icon: widget.androidDefaultIcon,
+            sound: _androidChannel.sound,
+            importance: _androidChannel.importance,
+          ),
+          iOS: const DarwinNotificationDetails(
+            presentAlert: true,
+            presentBadge: true,
+            presentSound: true,
+            sound: 'on_ios.wav',
           ),
         ),
         payload: jsonEncode(message.toMap()),
