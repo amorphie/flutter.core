@@ -21,7 +21,6 @@ abstract class _Constant {
   static const androidNotificationChannelID = "high_importance_channel";
   static const androidNotificationChannelName = "High Importance Notifications";
   static const androidNotificationChannelDescription = "This channel is used for important notifications";
-  static const androidNotificationSound = RawResourceAndroidNotificationSound('on_and');
   static const androidNotificationImportance = Importance.max;
 }
 
@@ -38,6 +37,7 @@ class NeoCoreFirebaseMessaging extends StatefulWidget {
     required this.neoCoreSecureStorage,
     required this.onTokenChanged,
     this.androidDefaultIcon,
+    this.notificationSound,
     this.onDeeplinkNavigation,
     super.key,
   });
@@ -47,6 +47,7 @@ class NeoCoreFirebaseMessaging extends StatefulWidget {
   final NeoCoreSecureStorage neoCoreSecureStorage;
   final Function(String) onTokenChanged;
   final String? androidDefaultIcon;
+  final String? notificationSound;
   final Function(String)? onDeeplinkNavigation;
 
   static FirebaseMessaging get firebaseMessaging => _firebaseMessaging;
@@ -58,13 +59,7 @@ class NeoCoreFirebaseMessaging extends StatefulWidget {
 }
 
 class _NeoCoreFirebaseMessagingState extends State<NeoCoreFirebaseMessaging> {
-  final _androidChannel = const AndroidNotificationChannel(
-    _Constant.androidNotificationChannelID,
-    _Constant.androidNotificationChannelName,
-    description: _Constant.androidNotificationChannelDescription,
-    sound: _Constant.androidNotificationSound,
-    importance: _Constant.androidNotificationImportance,
-  );
+  late AndroidNotificationChannel _androidChannel;
   final _localNotifications = FlutterLocalNotificationsPlugin();
 
   NeoLogger get _neoLogger => GetIt.I.get();
@@ -83,6 +78,7 @@ class _NeoCoreFirebaseMessagingState extends State<NeoCoreFirebaseMessaging> {
     if (kIsWeb) {
       return;
     }
+    _initNotificationChannel();
     _initNotifications();
     _initPushNotifications();
     if (Platform.isAndroid) {
@@ -99,6 +95,19 @@ class _NeoCoreFirebaseMessagingState extends State<NeoCoreFirebaseMessaging> {
   void initState() {
     super.initState();
     _listenWidgetEventKeys();
+  }
+
+  void _initNotificationChannel() {
+    if (Platform.isAndroid) {
+      _androidChannel = AndroidNotificationChannel(
+        _Constant.androidNotificationChannelID,
+        _Constant.androidNotificationChannelName,
+        description: _Constant.androidNotificationChannelDescription,
+        importance: _Constant.androidNotificationImportance,
+        sound:
+            (widget.notificationSound != null) ? RawResourceAndroidNotificationSound(widget.notificationSound) : null,
+      );
+    }
   }
 
   Future<void> _initNotifications() async {
@@ -173,12 +182,6 @@ class _NeoCoreFirebaseMessagingState extends State<NeoCoreFirebaseMessaging> {
             icon: widget.androidDefaultIcon,
             sound: _androidChannel.sound,
             importance: _androidChannel.importance,
-          ),
-          iOS: const DarwinNotificationDetails(
-            presentAlert: true,
-            presentBadge: true,
-            presentSound: true,
-            sound: 'on_ios.wav',
           ),
         ),
         payload: jsonEncode(message.toMap()),

@@ -24,6 +24,7 @@ class NeoCoreMessaging extends StatefulWidget {
   final NeoCoreSecureStorage neoCoreSecureStorage;
   final Function(String) onTokenChanged;
   final String? androidDefaultIcon;
+  final String? notificationSound;
   final Function(String)? onDeeplinkNavigation;
 
   const NeoCoreMessaging({
@@ -33,6 +34,7 @@ class NeoCoreMessaging extends StatefulWidget {
     required this.neoCoreSecureStorage,
     required this.onTokenChanged,
     this.androidDefaultIcon,
+    this.notificationSound,
     this.onDeeplinkNavigation,
     super.key,
   });
@@ -94,6 +96,7 @@ class _NeoCoreMessagingState extends State<NeoCoreMessaging> {
           neoCoreSecureStorage: widget.neoCoreSecureStorage,
           onTokenChanged: widget.onTokenChanged,
           androidDefaultIcon: widget.androidDefaultIcon,
+          notificationSound: widget.notificationSound,
           onDeeplinkNavigation: widget.onDeeplinkNavigation,
           child: widget.child,
         );
