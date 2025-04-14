@@ -1,11 +1,10 @@
 import 'dart:async';
 import 'dart:convert';
-
 import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:get_it/get_it.dart';
-import 'package:huawei_push/huawei_push.dart'; // Huawei Push Kit
+import 'package:huawei_push/huawei_push.dart' hide Importance;
 import 'package:neo_core/core/analytics/neo_logger.dart';
 import 'package:neo_core/core/bus/widget_event_bus/neo_core_widget_event_keys.dart';
 import 'package:neo_core/core/bus/widget_event_bus/neo_widget_event.dart';
@@ -19,6 +18,7 @@ abstract class _Constant {
   static const androidNotificationChannelID = "high_importance_channel";
   static const androidNotificationChannelName = "High Importance Notifications";
   static const androidNotificationChannelDescription = "This channel is used for important notifications";
+  static const androidNotificationImportance = Importance.max;
 }
 
 @pragma('vm:entry-point')
@@ -34,6 +34,7 @@ class NeoCoreHuaweiMessaging extends StatefulWidget {
     required this.neoCoreSecureStorage,
     required this.onTokenChanged,
     this.androidDefaultIcon,
+    this.notificationSound,
     this.onDeeplinkNavigation,
     super.key,
   });
@@ -43,6 +44,7 @@ class NeoCoreHuaweiMessaging extends StatefulWidget {
   final NeoCoreSecureStorage neoCoreSecureStorage;
   final Function(String) onTokenChanged;
   final String? androidDefaultIcon;
+  final String? notificationSound;
   final Function(String)? onDeeplinkNavigation;
 
   @override
@@ -50,11 +52,7 @@ class NeoCoreHuaweiMessaging extends StatefulWidget {
 }
 
 class _NeoCoreHuaweiMessagingState extends State<NeoCoreHuaweiMessaging> {
-  final _androidChannel = const AndroidNotificationChannel(
-    _Constant.androidNotificationChannelID,
-    _Constant.androidNotificationChannelName,
-    description: _Constant.androidNotificationChannelDescription,
-  );
+  late AndroidNotificationChannel _androidChannel;
   final _localNotifications = FlutterLocalNotificationsPlugin();
 
   NeoLogger get _neoLogger => GetIt.I.get();
@@ -73,6 +71,7 @@ class _NeoCoreHuaweiMessagingState extends State<NeoCoreHuaweiMessaging> {
     if (kIsWeb) {
       return;
     }
+    _initNotificationChannel();
     _initPushNotifications();
     _initNotifications();
     if (Platform.isAndroid) {
@@ -89,6 +88,16 @@ class _NeoCoreHuaweiMessagingState extends State<NeoCoreHuaweiMessaging> {
   void initState() {
     super.initState();
     _listenWidgetEventKeys();
+  }
+
+  void _initNotificationChannel() {
+    _androidChannel = AndroidNotificationChannel(
+      _Constant.androidNotificationChannelID,
+      _Constant.androidNotificationChannelName,
+      description: _Constant.androidNotificationChannelDescription,
+      importance: _Constant.androidNotificationImportance,
+      sound: (widget.notificationSound != null) ? RawResourceAndroidNotificationSound(widget.notificationSound) : null,
+    );
   }
 
   Future<void> _initNotifications() async {
@@ -181,6 +190,8 @@ class _NeoCoreHuaweiMessagingState extends State<NeoCoreHuaweiMessaging> {
           _androidChannel.name,
           channelDescription: _androidChannel.description,
           icon: widget.androidDefaultIcon,
+          sound: _androidChannel.sound,
+          importance: _androidChannel.importance,
         ),
       ),
       payload: jsonEncode(message.data),

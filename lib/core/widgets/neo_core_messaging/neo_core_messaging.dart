@@ -87,6 +87,7 @@ class _NeoCoreMessagingState extends State<NeoCoreMessaging> {
           neoCoreSecureStorage: widget.neoCoreSecureStorage,
           onTokenChanged: widget.onTokenChanged,
           androidDefaultIcon: widget.androidDefaultIcon,
+          notificationSound: widget.notificationSound,
           onDeeplinkNavigation: widget.onDeeplinkNavigation,
           child: widget.child,
         );
