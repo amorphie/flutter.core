@@ -18,7 +18,7 @@ abstract class _Constant {
   static const androidNotificationChannelID = "high_importance_channel";
   static const androidNotificationChannelName = "High Importance Notifications";
   static const androidNotificationChannelDescription = "This channel is used for important notifications";
-  static const androidNotificationImportance = Importance.max;
+//  static const androidNotificationImportance = Importance.max;
 }
 
 @pragma('vm:entry-point')
@@ -95,7 +95,7 @@ class _NeoCoreHuaweiMessagingState extends State<NeoCoreHuaweiMessaging> {
       _Constant.androidNotificationChannelID,
       _Constant.androidNotificationChannelName,
       description: _Constant.androidNotificationChannelDescription,
-      importance: _Constant.androidNotificationImportance,
+      //importance: _Constant.androidNotificationImportance,
       sound: (widget.notificationSound != null) ? RawResourceAndroidNotificationSound(widget.notificationSound) : null,
     );
   }
@@ -183,7 +183,7 @@ class _NeoCoreHuaweiMessagingState extends State<NeoCoreHuaweiMessaging> {
     }
     _localNotifications.show(
       notification.hashCode,
-      notification.title,
+      "notification.title,",
       notification.body,
       NotificationDetails(
         android: AndroidNotificationDetails(
@@ -192,7 +192,7 @@ class _NeoCoreHuaweiMessagingState extends State<NeoCoreHuaweiMessaging> {
           channelDescription: _androidChannel.description,
           icon: widget.androidDefaultIcon,
           sound: _androidChannel.sound,
-          importance: _androidChannel.importance,
+          //importance: _androidChannel.importance,
         ),
       ),
       payload: jsonEncode(message.data),
