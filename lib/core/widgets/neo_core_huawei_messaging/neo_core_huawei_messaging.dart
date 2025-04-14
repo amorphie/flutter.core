@@ -176,6 +176,7 @@ class _NeoCoreHuaweiMessagingState extends State<NeoCoreHuaweiMessaging> {
   }
 
   void _onMessageReceived(RemoteMessage message) {
+    _neoLogger.logConsole("[NeoCoreHuaweiMessaging]: Foreground notification was triggered by ${message.notification}");
     final notification = message.notification;
     if (notification == null || !Platform.isAndroid) {
       return;
