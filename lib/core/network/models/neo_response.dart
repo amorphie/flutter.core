@@ -13,12 +13,15 @@
 import 'package:neo_core/core/network/models/neo_error.dart';
 
 sealed class NeoResponse {
-  const NeoResponse();
+  final int statusCode;
+  final Map<String, String> headers;
+
+  const NeoResponse({required this.statusCode, required this.headers});
 
   bool get isSuccess {
     return switch (this) {
-      NeoErrorResponse(error: final _) => false,
-      NeoSuccessResponse(data: final _) => true,
+      NeoSuccessResponse _ => true,
+      NeoErrorResponse _ => false,
     };
   }
 
@@ -32,19 +35,28 @@ sealed class NeoResponse {
     return this as NeoErrorResponse;
   }
 
-  factory NeoResponse.success(Map<String, dynamic> response) => NeoSuccessResponse(response);
+  factory NeoResponse.success(
+    Map<String, dynamic> data, {
+    required int statusCode,
+    required Map<String, String> responseHeaders,
+  }) =>
+      NeoSuccessResponse(data, statusCode: statusCode, headers: responseHeaders);
 
-  factory NeoResponse.error(NeoError response) => NeoErrorResponse(response);
+  factory NeoResponse.error(NeoError error, {required Map<String, String> responseHeaders}) => NeoErrorResponse(
+        error,
+        statusCode: error.responseCode,
+        headers: responseHeaders,
+      );
 }
 
 final class NeoSuccessResponse extends NeoResponse {
-  const NeoSuccessResponse(this.data);
+  const NeoSuccessResponse(this.data, {required super.statusCode, required super.headers});
 
   final Map<String, dynamic> data;
 }
 
 final class NeoErrorResponse extends NeoResponse {
-  const NeoErrorResponse(this.error);
+  const NeoErrorResponse(this.error, {required super.statusCode, required super.headers});
 
   final NeoError error;
 }

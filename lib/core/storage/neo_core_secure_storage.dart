@@ -115,7 +115,7 @@ class NeoCoreSecureStorage {
     final deviceUtil = DeviceUtil();
     final deviceId = await deviceUtil.getDeviceId();
     final deviceInfo = await deviceUtil.getDeviceInfo();
-    if (!await _storage!.containsKey(key: NeoCoreParameterKey.secureStorageDeviceId) && deviceId != null) {
+    if (deviceId != null) {
       await write(key: NeoCoreParameterKey.secureStorageDeviceId, value: deviceId);
     }
     if (deviceInfo != null) {
