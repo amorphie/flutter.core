@@ -31,6 +31,7 @@ abstract class NeoNetworkHeaderKey {
   static const ifNoneMatch = "If-None-Match";
   static const installationId = "X-Installation-Id";
   static const instanceId = "X-Instance-Id";
+  static const jwsSignature = "X-JWS-Signature";
   static const requestId = "X-Request-Id";
   static const tokenId = "X-Token-Id";
   static const user = "User";

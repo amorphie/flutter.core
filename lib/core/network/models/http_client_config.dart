@@ -11,31 +11,46 @@
  */
 
 import 'package:collection/collection.dart';
-import 'package:json_annotation/json_annotation.dart';
+import 'package:neo_core/core/network/helpers/mtls_helper.dart';
 import 'package:neo_core/core/network/models/http_client_config_parameters.dart';
 import 'package:neo_core/core/network/models/http_host_details.dart';
 import 'package:neo_core/core/network/models/http_method.dart';
 import 'package:neo_core/core/network/models/http_service.dart';
+import 'package:neo_core/core/network/models/mtls_enabled_transition.dart';
+import 'package:neo_core/core/network/models/neo_http_call.dart';
+import 'package:neo_core/core/storage/neo_core_parameter_key.dart';
+import 'package:neo_core/core/storage/neo_core_secure_storage.dart';
+import 'package:neo_core/core/workflow_form/neo_workflow_manager.dart';
 
-part 'http_client_config.g.dart';
-
-@JsonSerializable(createToJson: false)
 class HttpClientConfig {
-  @JsonKey(name: 'hosts', defaultValue: [])
   final List<HttpHostDetails> hosts;
+  final List<HttpService> services;
+  final List<MtlsEnabledTransition> mtlsEnabledTransitions;
 
-  @JsonKey(name: 'config')
   HttpClientConfigParameters _config;
 
-  @JsonKey(name: 'services', defaultValue: [])
-  final List<HttpService> services;
-
-  HttpClientConfig({required this.hosts, required HttpClientConfigParameters config, required this.services})
-      : _config = config;
+  HttpClientConfig({
+    required this.hosts,
+    required HttpClientConfigParameters config,
+    required this.services,
+    this.mtlsEnabledTransitions = const [],
+  }) : _config = config;
 
   HttpClientConfigParameters get config => _config;
 
-  factory HttpClientConfig.fromJson(Map<String, dynamic> json) => _$HttpClientConfigFromJson(json);
+  HttpClientConfig copyWith({
+    List<HttpHostDetails>? hosts,
+    HttpClientConfigParameters? config,
+    List<HttpService>? services,
+    List<MtlsEnabledTransition>? mtlsEnabledTransitions,
+  }) {
+    return HttpClientConfig(
+      hosts: hosts ?? this.hosts,
+      config: config ?? this.config,
+      services: services ?? this.services,
+      mtlsEnabledTransitions: mtlsEnabledTransitions ?? this.mtlsEnabledTransitions,
+    );
+  }
 
   void updateConfig(HttpClientConfig newConfig) {
     hosts
@@ -45,19 +60,68 @@ class HttpClientConfig {
     services
       ..clear()
       ..addAll(newConfig.services);
+    mtlsEnabledTransitions
+      ..clear()
+      ..addAll(newConfig.mtlsEnabledTransitions);
   }
 
   HttpMethod? getServiceMethodByKey(String key) {
     return _findServiceByKey(key)?.method;
   }
 
-  String? getServiceUrlByKey(String key, {Map<String, String>? parameters, bool useHttps = true}) {
+  Future<void> setMtlsStatusForHttpCall(
+    NeoHttpCall neoHttpCall,
+    MtlsHelper mtlsHelper,
+    NeoCoreSecureStorage secureStorage,
+  ) async {
+    final service = _findServiceByKey(neoHttpCall.endpoint);
+    if (service == null) {
+      return;
+    }
+    final mtlsConfig = service.key == NeoWorkflowManager.endpointPostTransition
+        ? mtlsEnabledTransitions
+            .firstWhereOrNull(
+              (transition) =>
+                  transition.transitionName ==
+                  neoHttpCall.pathParameters?[NeoWorkflowManager.pathParameterTransitionName],
+            )
+            ?.config
+        : null;
+    final isMtlsEnabledTransition = mtlsConfig?.enableMtls ?? false;
+    final shouldSignTransitionForMtls = mtlsConfig?.signForMtls ?? false;
+
+    bool enableMtls = isMtlsEnabledTransition || service.enableMtls;
+    if (enableMtls) {
+      final result = await Future.wait([
+        secureStorage.read(NeoCoreParameterKey.secureStorageCustomerId),
+        secureStorage.read(NeoCoreParameterKey.secureStorageDeviceId),
+      ]);
+
+      final userReference = result[0];
+      final deviceId = result[1];
+      final clientKeyTag = "$deviceId$userReference";
+      final certificate = await mtlsHelper.getCertificate(clientKeyTag: clientKeyTag);
+      enableMtls &= certificate != null;
+    }
+
+    final signForMtls = shouldSignTransitionForMtls || service.signForMtls;
+
+    neoHttpCall.setMtlsStatus(enableMtls: enableMtls, signForMtls: signForMtls);
+  }
+
+  String? getServiceUrlByKey(
+    String key, {
+    required bool enableMtls,
+    Map<String, String>? parameters,
+    bool useHttps = true,
+  }) {
     final prefix = useHttps ? "https://" : "http://";
     final service = _findServiceByKey(key);
     if (service == null) {
       return null;
     }
-    final baseUrl = _getBaseUrlByHost(service.host);
+
+    final baseUrl = _getBaseUrlByHost(service.host, enableMtls);
     if (baseUrl == null) {
       return null;
     }
@@ -83,8 +147,9 @@ class HttpClientConfig {
     return services.firstWhereOrNull((element) => element.key == key);
   }
 
-  String? _getBaseUrlByHost(String host) {
-    return hosts.firstWhereOrNull((element) => element.key == host)?.activeHosts.firstOrNull?.host;
+  String? _getBaseUrlByHost(String host, bool enableMtls) {
+    final activeHost = hosts.firstWhereOrNull((element) => element.key == host)?.activeHosts.firstOrNull;
+    return enableMtls ? activeHost?.mtlsHost : activeHost?.host;
   }
 
   int? _getRetryCountByHost(String host) {
