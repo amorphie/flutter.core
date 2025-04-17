@@ -1090,10 +1090,10 @@ packages:
     dependency: "direct main"
     description:
       name: signalr_netcore
-      sha256: "51c8e453b20d505060083790f3474ad8addfa13e181c9de0fd1f47c4beac6980"
+      sha256: f0726f7dea94ca7e08ee21366e9caf21350c9f7f48939994c51307eae16a678c
       url: "https://pub.dev"
     source: hosted
-    version: "1.4.1"
+    version: "1.4.3"
   sky_engine:
     dependency: transitive
     description: flutter
