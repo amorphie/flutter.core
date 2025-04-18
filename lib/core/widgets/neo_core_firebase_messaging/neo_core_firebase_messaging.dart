@@ -183,6 +183,12 @@ class _NeoCoreFirebaseMessagingState extends State<NeoCoreFirebaseMessaging> {
             sound: _androidChannel.sound,
             importance: _androidChannel.importance,
           ),
+          iOS: DarwinNotificationDetails(
+            presentAlert: true,
+            presentBadge: true,
+            presentSound: true,
+            sound: widget.notificationSound != null ? "${widget.notificationSound}.wav" : null,
+          ),
         ),
         payload: jsonEncode(message.toMap()),
       );
