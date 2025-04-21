@@ -19,6 +19,7 @@ part 'http_active_host.g.dart';
 
 abstract class _Constants {
   static const keyHost = 'host';
+  static const keyMtlsHost = 'mtls-host';
   static const keyRetryCount = 'retry-count';
 }
 
@@ -27,16 +28,20 @@ class HttpActiveHost extends Equatable {
   @JsonKey(name: _Constants.keyHost, defaultValue: "")
   final String host;
 
+  @JsonKey(name: _Constants.keyMtlsHost, defaultValue: "")
+  final String mtlsHost;
+
   @JsonKey(name: _Constants.keyRetryCount, defaultValue: 0)
   final int retryCount;
 
-  const HttpActiveHost({required this.host, required this.retryCount});
+  const HttpActiveHost({required this.host, required this.mtlsHost, required this.retryCount});
 
   factory HttpActiveHost.fromJson(Map<String, dynamic> json) => _$HttpActiveHostFromJson(json);
 
   String encode() {
     return jsonEncode({
       _Constants.keyHost: host,
+      _Constants.keyMtlsHost: mtlsHost,
       _Constants.keyRetryCount: retryCount,
     });
   }
@@ -47,5 +52,5 @@ class HttpActiveHost extends Equatable {
   }
 
   @override
-  List<Object?> get props => [host, retryCount];
+  List<Object?> get props => [host, mtlsHost, retryCount];
 }
