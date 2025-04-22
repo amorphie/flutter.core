@@ -20,7 +20,7 @@ dependencies:
   bloc_concurrency: ^0.2.5
   equatable: ^2.0.5
   json_annotation: ^4.8.1
-  signalr_netcore: ^1.4.0
+  signalr_netcore: 1.4.3
   flutter_secure_storage: 9.2.2
   shared_preferences: ^2.2.2
   device_info_plus: ^11.2.2
