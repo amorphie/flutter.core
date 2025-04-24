@@ -7,7 +7,8 @@ part of 'neo_error.dart';
 // **************************************************************************
 
 NeoError _$NeoErrorFromJson(Map<String, dynamic> json) => NeoError(
-      responseCode: json['errorCode'] as int? ?? _Constants.defaultErrorCode,
+      responseCode:
+          (json['errorCode'] as num?)?.toInt() ?? _Constants.defaultErrorCode,
       errorType:
           $enumDecodeNullable(_$NeoErrorTypeEnumMap, json['errorType']) ??
               _Constants.defaultErrorDisplayMode,
