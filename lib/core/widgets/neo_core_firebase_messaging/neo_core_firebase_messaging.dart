@@ -167,7 +167,7 @@ class _NeoCoreFirebaseMessagingState extends State<NeoCoreFirebaseMessaging> {
       _neoLogger
           .logConsole("[NeoCoreFirebaseMessaging]: Foreground notification was triggered by ${message.notification}");
       final notification = message.notification;
-      if (notification == null || !Platform.isAndroid) {
+      if (notification == null || !Platform.isAndroid || !Platform.isIOS) {
         return;
       }
       _localNotifications.show(
