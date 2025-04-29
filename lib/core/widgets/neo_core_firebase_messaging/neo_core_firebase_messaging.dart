@@ -187,7 +187,7 @@ class _NeoCoreFirebaseMessagingState extends State<NeoCoreFirebaseMessaging> {
             presentAlert: true,
             presentBadge: true,
             presentSound: true,
-            sound: widget.notificationSound != null ? "${widget.notificationSound}.wav" : null,
+            sound: widget.notificationSound != null ? "${widget.notificationSound}.caf" : null,
           ),
         ),
         payload: jsonEncode(message.toMap()),
