@@ -71,6 +71,8 @@ class NeoNetworkManager {
 
   late final bool _enableSslPinning;
 
+  bool get _isMtlsEnabled => httpClientConfig.config.enableMtls;
+
   DateTime? _tokenExpirationTime;
   DateTime? _refreshTokenExpirationTime;
   HttpAuthResponse? _lastAuthResponse;
@@ -116,7 +118,7 @@ class NeoNetworkManager {
   Future<Map<String, String>> _getDefaultHeaders(NeoHttpCall? neoCall) async {
     return await NeoDynamicHeaders(neoSharedPrefs: neoSharedPrefs, secureStorage: secureStorage).getHeaders()
       ..addAll(
-        neoCall?.signForMtls ?? false ? await _mtlsHeaders.getHeaders(neoCall?.body ?? {}) : {},
+        _isMtlsEnabled && (neoCall?.signForMtls ?? false) ? await _mtlsHeaders.getHeaders(neoCall?.body ?? {}) : {},
       )
       ..addAll(
         await NeoConstantHeaders(
@@ -174,7 +176,9 @@ class NeoNetworkManager {
       });
     }
 
-    await httpClientConfig.setMtlsStatusForHttpCall(neoCall, _mtlsHelper, secureStorage);
+    if (_isMtlsEnabled) {
+      await httpClientConfig.setMtlsStatusForHttpCall(neoCall, _mtlsHelper, secureStorage);
+    }
     final fullPath = httpClientConfig.getServiceUrlByKey(
       neoCall.endpoint,
       enableMtls: neoCall.enableMtls,
@@ -506,7 +510,7 @@ class NeoNetworkManager {
 
     final clientCertificate = mtlsResult[0];
     final privateKey = mtlsResult[1];
-    final bool isMtlsEnabled = clientCertificate != null && privateKey != null;
+    final bool isMtlsEnabled = _isMtlsEnabled && clientCertificate != null && privateKey != null;
 
     if (isMtlsEnabled) {
       final context = securityContext ?? SecurityContext();

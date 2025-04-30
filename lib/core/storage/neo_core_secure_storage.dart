@@ -113,6 +113,7 @@ class NeoCoreSecureStorage {
 
   Future<void> _setInitialParameters() async {
     final deviceUtil = DeviceUtil();
+    // ignore:deprecated_member_use_from_same_package
     final deviceId = await deviceUtil.getDeviceId();
     final deviceInfo = await deviceUtil.getDeviceInfo();
     if (deviceId != null) {

@@ -19,6 +19,7 @@ import 'package:universal_io/io.dart';
 class DeviceUtil {
   static String? _androidId;
 
+  @Deprecated("Do not use this method. Get device id from secure storage instead.")
   Future<String?> getDeviceId() async {
     final deviceInfo = DeviceInfoPlugin();
     if (kIsWeb) {
