@@ -117,7 +117,7 @@ class _NeoCoreHuaweiMessagingState extends State<NeoCoreHuaweiMessaging> {
   }
 
   void _onTokenChange(String token) {
-    _neoLogger.logConsole("[NeoCoreHuaweiMessaging]: Firebase Push token is: $token");
+    debugPrint("[NeoCoreHuaweiMessaging]: Firebase Push token is: $token");
     widget.onTokenChanged.call(token);
     NeoCoreRegisterDeviceUseCase().call(
       networkManager: widget.networkManager,
@@ -176,7 +176,7 @@ class _NeoCoreHuaweiMessagingState extends State<NeoCoreHuaweiMessaging> {
   }
 
   void _onMessageReceived(RemoteMessage message) {
-    _neoLogger.logConsole("[NeoCoreHuaweiMessaging]: Foreground notification was triggered by ${message.notification}");
+    debugPrint("[NeoCoreHuaweiMessaging]: Foreground notification was triggered by ${message.notification}");
     final notification = message.notification;
     if (notification == null || !Platform.isAndroid) {
       return;
