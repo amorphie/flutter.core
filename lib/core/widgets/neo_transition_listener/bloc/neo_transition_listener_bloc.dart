@@ -39,7 +39,6 @@ import 'package:neo_core/core/workflow_form/neo_workflow_manager.dart';
 import 'package:universal_io/io.dart';
 
 part 'neo_transition_listener_event.dart';
-
 part 'neo_transition_listener_state.dart';
 
 abstract class _Constants {
@@ -132,7 +131,7 @@ class NeoTransitionListenerBloc extends Bloc<NeoTransitionListenerEvent, NeoTran
               _onStopListening();
             }
             if (event.isSilentEvent) {
-              unawaited(ProcessLoginCertificateSilentEventUseCase().call(event, this));
+              unawaited(ProcessLoginCertificateSilentEventUseCase().call(event, this, neoCoreSecureStorage));
               GetIt.I.get<NeoWidgetEventBus>().addEvent(
                     NeoWidgetEvent(eventId: NeoPageBloc.dataEventKey, data: event.transition),
                   );

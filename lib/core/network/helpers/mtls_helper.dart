@@ -18,10 +18,13 @@ class MtlsHelper {
 
     final result = await _secureEnclavePlugin.sign(
       tag: clientKeyTag,
-      message: Uint8List.fromList(utf8.encode(requestBody.toString())),
+      message: Uint8List.fromList(utf8.encode(jsonEncode(requestBody))),
     );
+    if (result.value == null) {
+      return null;
+    }
 
-    return result.value;
+    return base64Encode(Uint8List.fromList(utf8.encode(result.value!)));
   }
 
   Future<void> storePrivateKeyWithCertificate({
