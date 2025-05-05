@@ -67,6 +67,7 @@ dependencies:
 
 dependency_overrides:
   web: 1.0.0 # TODO: Update other dependencies and delete this override
+  flutter_secure_storage: 9.0.0
 
 dev_dependencies:
   flutter_test:
