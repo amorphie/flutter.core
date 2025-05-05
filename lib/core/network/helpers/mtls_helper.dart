@@ -36,7 +36,10 @@ class MtlsHelper {
     required String certificate,
   }) async {
     await _secureEnclavePlugin.storeServerPrivateKey(tag: clientKeyTag, privateKeyData: base64Decode(privateKey));
-    await _secureEnclavePlugin.storeCertificate(tag: clientKeyTag, certificateData: utf8.encode(certificate));
+    print('TEST: Certificate store start. $certificate');
+    final data = utf8.encode(certificate);
+    print('TEST: Data is $data');
+    await _secureEnclavePlugin.storeCertificate(tag: clientKeyTag, certificateData: data);
     print('TEST: Certificate stored successfully with tag: $clientKeyTag');
   }
 
