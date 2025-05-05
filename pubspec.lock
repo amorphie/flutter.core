@@ -527,8 +527,8 @@ packages:
     dependency: "direct main"
     description:
       path: "."
-      ref: "v1.0.8"
-      resolved-ref: "3b16079ea8c6fbb419313be39b7e23222dd048cf"
+      ref: "v1.0.10"
+      resolved-ref: "6239c0482f8a1f34a8742ee16d2eb0696cc32f4e"
       url: "https://github.com/amorphie/flutter.shield"
     source: git
     version: "0.1.1"

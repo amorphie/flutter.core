@@ -21,7 +21,7 @@ dependencies:
   equatable: ^2.0.5
   json_annotation: ^4.8.1
   signalr_netcore: 1.4.3
-  flutter_secure_storage: 9.2.4
+  flutter_secure_storage: 9.0.0
   shared_preferences: ^2.2.2
   device_info_plus: ^11.2.2
   package_info_plus: ^8.0.0
@@ -63,11 +63,10 @@ dependencies:
   flutter_shield:
     git:
       url: https://github.com/amorphie/flutter.shield
-      ref: v1.0.8
+      ref: v1.0.10
 
 dependency_overrides:
   web: 1.0.0 # TODO: Update other dependencies and delete this override
-  flutter_secure_storage: 9.0.0
 
 dev_dependencies:
   flutter_test:
