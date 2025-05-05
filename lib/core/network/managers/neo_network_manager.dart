@@ -510,13 +510,20 @@ class NeoNetworkManager {
 
     final clientCertificate = mtlsResult[0];
     final privateKey = mtlsResult[1];
+
+    print('TEST: Client certificate: $clientCertificate');
+    print('TEST: Private key: $privateKey');
     final bool isMtlsEnabled = _isMtlsEnabled && clientCertificate != null && privateKey != null;
+
+    print('TEST: isMtlsEnabled: $isMtlsEnabled');
 
     if (isMtlsEnabled) {
       final context = securityContext ?? SecurityContext();
-      return context
+      final secContext = context
         ..useCertificateChainBytes(utf8.encode(clientCertificate))
         ..usePrivateKeyBytes(utf8.encode(privateKey));
+      print('TEST: Security context created with client certificate and private key. Security context: $secContext');
+      return secContext;
     }
     return securityContext;
   }
