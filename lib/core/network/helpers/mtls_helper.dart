@@ -39,8 +39,8 @@ class MtlsHelper {
     print('TEST: Certificate store start. $certificate');
     final data = utf8.encode(certificate);
     print('TEST: Data is $data');
-    await _secureEnclavePlugin.storeCertificate(tag: clientKeyTag, certificateData: data);
-    print('TEST: Certificate stored successfully with tag: $clientKeyTag');
+    final result = await _secureEnclavePlugin.storeCertificate(tag: clientKeyTag, certificateData: data);
+    print('TEST: Certificate stored successfully with tag: $clientKeyTag. Result: ${result.value}');
   }
 
   Future<String?> getCertificate({required String clientKeyTag}) async {
