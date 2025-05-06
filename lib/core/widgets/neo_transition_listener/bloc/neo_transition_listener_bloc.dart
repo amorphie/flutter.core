@@ -15,6 +15,7 @@ import 'dart:async';
 import 'package:bloc_concurrency/bloc_concurrency.dart';
 import 'package:collection/collection.dart';
 import 'package:equatable/equatable.dart';
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:get_it/get_it.dart';
@@ -305,6 +306,9 @@ class NeoTransitionListenerBloc extends Bloc<NeoTransitionListenerEvent, NeoTran
   }
 
   Future<void> _retrieveClientCertificateIfExist(Map? data) async {
+    if (kIsWeb) {
+      return;
+    }
     final String? privateKey = data?["privateKey"];
     final String? certificate = data?["certificate"];
 
