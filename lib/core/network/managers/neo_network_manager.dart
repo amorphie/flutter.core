@@ -71,7 +71,7 @@ class NeoNetworkManager {
 
   late final bool _enableSslPinning;
 
-  bool get _isMtlsEnabled => httpClientConfig.config.enableMtls;
+  bool get _isMtlsEnabled => !kIsWeb && httpClientConfig.config.enableMtls;
 
   DateTime? _tokenExpirationTime;
   DateTime? _refreshTokenExpirationTime;
