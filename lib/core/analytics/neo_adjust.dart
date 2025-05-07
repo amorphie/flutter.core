@@ -5,7 +5,7 @@ import 'package:adjust_sdk/adjust_attribution.dart';
 import 'package:adjust_sdk/adjust_config.dart';
 import 'package:adjust_sdk/adjust_event.dart';
 import 'package:flutter/foundation.dart';
-import 'package:neo_core/core/storage/neo_core_parameter_key.dart';
+import 'package:neo_core/core/managers/parameter_manager/neo_core_parameter_key.dart';
 import 'package:neo_core/neo_core.dart';
 
 class NeoAdjust {

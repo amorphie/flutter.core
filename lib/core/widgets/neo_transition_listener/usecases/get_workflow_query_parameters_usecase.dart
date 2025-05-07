@@ -10,8 +10,8 @@
  * Any reproduction of this material must contain this notice.
  */
 
+import 'package:neo_core/core/managers/parameter_manager/neo_core_parameter_key.dart';
 import 'package:neo_core/core/network/models/neo_network_header_key.dart';
-import 'package:neo_core/core/storage/neo_core_parameter_key.dart';
 import 'package:neo_core/core/storage/neo_core_secure_storage.dart';
 import 'package:neo_core/core/util/uuid_util.dart';
 

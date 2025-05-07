@@ -1,7 +1,7 @@
 import "package:flutter/foundation.dart";
+import 'package:neo_core/core/managers/parameter_manager/neo_core_parameter_key.dart';
 import "package:neo_core/core/network/managers/neo_network_manager.dart";
 import "package:neo_core/core/network/models/neo_http_call.dart";
-import 'package:neo_core/core/storage/neo_core_parameter_key.dart';
 import "package:neo_core/core/storage/neo_core_secure_storage.dart";
 import "package:package_info_plus/package_info_plus.dart";
 

@@ -10,9 +10,9 @@
  * Any reproduction of this material must contain this notice.
  */
 
+import 'package:neo_core/core/managers/parameter_manager/neo_core_parameter_key.dart';
 import 'package:neo_core/core/network/managers/neo_network_manager.dart';
 import 'package:neo_core/core/network/models/neo_http_call.dart';
-import 'package:neo_core/core/storage/neo_core_parameter_key.dart';
 import 'package:neo_core/core/storage/neo_core_secure_storage.dart';
 import 'package:neo_core/core/util/device_util/device_util.dart';
 import 'package:neo_core/core/util/device_util/models/neo_device_info.dart';
