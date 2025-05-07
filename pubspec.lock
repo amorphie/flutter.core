@@ -615,7 +615,7 @@ packages:
     source: hosted
     version: "6.12.0+303"
   interpolation:
-    dependency: transitive
+    dependency: "direct main"
     description:
       name: interpolation
       sha256: "6b70243bde8352eca91681d5cb2022fcb8806b3559223c9d3f205b1349e96c5e"
