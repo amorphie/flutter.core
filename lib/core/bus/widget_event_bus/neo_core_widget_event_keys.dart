@@ -4,6 +4,13 @@ import 'dart:async';
 import 'package:neo_core/neo_core.dart';
 
 enum NeoCoreWidgetEventKeys {
+  globalNavigationMaybePop,
+  globalNavigationPop,
+  globalNavigationPopUntil,
+  globalNavigationPush,
+  globalNavigationPushAsRoot,
+  globalNavigationPushReplacement,
+  globalNavigationSystemPop,
   globalSignalrNetworkError,
   initPushMessagingServices,
   neoSmsOtpListenerAutofillOtp,
