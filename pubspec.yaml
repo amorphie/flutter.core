@@ -58,6 +58,10 @@ dependencies:
   # Analytics
   logger: ^2.2.0
   adjust_sdk: 4.38.1
+  dataroid_plugin_flutter:
+    git:
+      url: https://gitlab.com/commencis-mobile/dataroid-plugin-flutter.git
+      ref: 3.0.2
 
   # Dynamic Widget Building
   json_dynamic_widget: ^7.2.0

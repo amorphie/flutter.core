@@ -230,6 +230,15 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "2.3.7"
+  dataroid_plugin_flutter:
+    dependency: "direct main"
+    description:
+      path: "."
+      ref: "3.0.2"
+      resolved-ref: "86782ef31c5e68ec01ad28af41649a66d2baf051"
+      url: "https://gitlab.com/commencis-mobile/dataroid-plugin-flutter.git"
+    source: git
+    version: "3.0.2"
   dbus:
     dependency: transitive
     description:
