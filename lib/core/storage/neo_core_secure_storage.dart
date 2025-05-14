@@ -20,6 +20,7 @@ import 'package:neo_core/core/encryption/jwt_decoder.dart';
 import 'package:neo_core/core/managers/parameter_manager/neo_core_parameter_key.dart';
 import 'package:neo_core/core/storage/neo_shared_prefs.dart';
 import 'package:neo_core/core/util/extensions/get_it_extensions.dart';
+import 'package:neo_core/core/util/models/neo_auth_status.dart';
 import 'package:neo_core/core/util/token_util.dart';
 import 'package:neo_core/core/util/uuid_util.dart';
 import 'package:neo_core/neo_core.dart';
@@ -255,5 +256,19 @@ class NeoCoreSecureStorage {
       value: isMobUnapproved.toString(),
     );
   }
-// endregion
+
+  Future<NeoAuthStatus> getAuthStatus() async {
+    final authStatusKey = await read(NeoCoreParameterKey.sharedPrefsAuthStatus);
+
+    if (authStatusKey == null || authStatusKey.isEmpty) {
+      return NeoAuthStatus.notLoggedIn;
+    }
+
+    return NeoAuthStatus.fromKey(authStatusKey!);
+  }
+
+  Future<void>? setAuthStatus(NeoAuthStatus authStatus) {
+    return write(key: NeoCoreParameterKey.sharedPrefsAuthStatus, value: authStatus.key);
+  }
+  // endregion
 }
