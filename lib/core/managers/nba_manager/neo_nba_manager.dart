@@ -1,5 +1,7 @@
 import 'dart:async';
 
+import 'package:neo_core/core/analytics/neo_analytics.dart';
+import 'package:neo_core/core/bus/widget_event_bus/neo_core_widget_event_keys.dart';
 import 'package:neo_core/core/environment_variables/neo_environment.dart';
 import 'package:neo_core/core/environment_variables/neo_environment_type.dart';
 import 'package:neo_core/core/managers/dengage_manager/dengage_manager.dart';
@@ -89,17 +91,17 @@ class NeoNbaManager {
   }
 
   void _reportToDataroid(String fromPage, String toPage) {
-    /* TODO STOPSHIP: Refactor with widget event bus event
-    dataroidRepository
-      ..stopScreenTracking(fromPage)
-      ..startScreenTracking(
-        label: toPage,
-        viewClass: toPage,
-        attributes: {
-          "from_page": fromPage,
-          "to_page": toPage,
-        },
+    NeoCoreWidgetEventKeys.globalAnalyticEvent
+      ..sendEvent(data: NeoAnalyticEventStopScreenTracking(label: fromPage))
+      ..sendEvent(
+        data: NeoAnalyticEventStartScreenTracking(
+          label: toPage,
+          viewClass: toPage,
+          attributes: {
+            "from_page": fromPage,
+            "to_page": toPage,
+          },
+        ),
       );
-     */
   }
 }

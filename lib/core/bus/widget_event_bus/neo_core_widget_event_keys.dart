@@ -4,6 +4,7 @@ import 'dart:async';
 import 'package:neo_core/neo_core.dart';
 
 enum NeoCoreWidgetEventKeys {
+  globalAnalyticEvent,
   globalNavigationMaybePop,
   globalNavigationPop,
   globalNavigationPopUntil,
