@@ -200,6 +200,12 @@ class NeoTransitionListenerBloc extends Bloc<NeoTransitionListenerEvent, NeoTran
   Future<void> _onPostTransition(NeoTransitionListenerEventPostTransition event) async {
     _initPostTransitionTimeoutCompleter(displayLoading: event.displayLoading);
     try {
+      if (event.resetInstanceId) {
+        neoWorkflowManager.resetInstanceId(isSubFlow: event.isSubFlow);
+      }
+      if (event.workflowName != null && event.workflowName!.isNotEmpty) {
+        neoWorkflowManager.setWorkflowName(event.workflowName!, isSubFlow: event.isSubFlow);
+      }
       if (event.displayLoading) {
         onLoadingStatusChanged(displayLoading: true);
       }
