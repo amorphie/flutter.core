@@ -14,6 +14,8 @@ enum NeoCoreWidgetEventKeys {
   globalNavigationSystemPop,
   globalSignalrNetworkError,
   initPushMessagingServices,
+  neoRouteObserverDidPopEvent,
+  neoRouteObserverNavigationEvent,
   neoSmsOtpListenerAutofillOtp,
 }
 
