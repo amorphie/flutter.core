@@ -119,6 +119,15 @@ class NeoTransitionListenerEventPostTransition extends NeoTransitionListenerEven
       ];
 }
 
+class NeoTransitionListenerEventUpdateSignalrServerUrl extends NeoTransitionListenerEvent {
+  final String serverUrl;
+
+  NeoTransitionListenerEventUpdateSignalrServerUrl({required this.serverUrl});
+
+  @override
+  List<Object?> get props => [serverUrl];
+}
+
 class NeoTransitionListenerEventStopListening extends NeoTransitionListenerEvent {
   @override
   List<Object?> get props => [];
