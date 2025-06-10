@@ -1,15 +1,3 @@
-/*
- * neo_bank
- *
- * Created on 29/1/2024.
- * Copyright (c) 2024 BurganBank. All rights reserved.
- *
- * Save to the extent permitted by law, you may not use, copy, modify,
- * distribute or create derivative works of this material or any part
- * of it without the prior written consent of BurganBank.
- * Any reproduction of this material must contain this notice.
- */
-
 import 'package:collection/collection.dart';
 import 'package:flutter/foundation.dart';
 
@@ -99,6 +87,15 @@ extension NeoEnvironmentTypeExtension on NeoEnvironmentType {
 
   bool get isCallCenter {
     return isBurganCallCenter || isOnCallCenter;
+  }
+
+  bool get isDev {
+    return switch (this) {
+      NeoEnvironmentType.dev => true,
+      NeoEnvironmentType.onDev => true,
+      NeoEnvironmentType.ibDev => true,
+      _ => false,
+    };
   }
 
   bool get isPrep {
