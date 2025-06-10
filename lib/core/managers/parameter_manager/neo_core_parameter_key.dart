@@ -29,6 +29,7 @@ abstract class NeoCoreParameterKey {
   static const sharedPrefsAuthStatus = "shared_pref_key_auth_status";
   static const sharedPrefsFirstRun = "sharedPrefs:infrastructure:firstRun";
   static const sharedPrefsIsHuaweiCompatible = "sharedPrefs:common:sharedPrefsIsHuaweiCompatible";
+  static const sharedPrefsIsQAHostSelected = "sharedPrefs:infrastructure:isQAHostSelected";
   static const sharedPrefsLanguageCode = "sharedPrefs:common:languageCode";
   static const sharedPrefsLocalizationResponseDigest = "sharedPrefs:infrastructure:localizationResponseDigest";
   static const sharedPrefsLocalizationResponseBase64 = "sharedPrefs:infrastructure:localizationResponseBase64";

@@ -18,15 +18,12 @@ import 'package:neo_core/core/util/extensions/get_it_extensions.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 class NeoSharedPrefs {
-  final HttpClientConfig httpClientConfig;
-
-  NeoSharedPrefs({
-    required this.httpClientConfig,
-  });
+  NeoSharedPrefs();
 
   // Getter is required, config may change at runtime
-  bool get _enableCaching => httpClientConfig.config.cacheStorage;
+  bool get _enableCaching => httpClientConfig?.config.cacheStorage ?? false;
 
+  HttpClientConfig? get httpClientConfig => GetIt.I.getIfReady<HttpClientConfig>();
   NeoLogger? get _neoLogger => GetIt.I.getIfReady<NeoLogger>();
 
   SharedPreferences? _preferences;

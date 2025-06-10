@@ -59,7 +59,7 @@ class NeoTransitionListenerBloc extends Bloc<NeoTransitionListenerEvent, NeoTran
   late final List<NeoSignalREvent> _eventList = [];
   late final NeoWorkflowManager neoWorkflowManager;
   late final NeoLogger _neoLogger = GetIt.I.get();
-  late final String signalRServerUrl;
+  late String signalRServerUrl;
   late final String signalRMethodName;
   late final Duration signalrLongPollingPeriod;
   late final Duration signalRTimeoutDuration;
@@ -83,6 +83,7 @@ class NeoTransitionListenerBloc extends Bloc<NeoTransitionListenerEvent, NeoTran
       (event, emit) => _onPostTransition(event),
       transformer: droppable(),
     );
+    on<NeoTransitionListenerEventUpdateSignalrServerUrl>(_onUpdateSignalrServerUrl);
     on<NeoTransitionListenerEventStopListening>((event, emit) => _onStopListening());
   }
 
@@ -200,6 +201,12 @@ class NeoTransitionListenerBloc extends Bloc<NeoTransitionListenerEvent, NeoTran
   Future<void> _onPostTransition(NeoTransitionListenerEventPostTransition event) async {
     _initPostTransitionTimeoutCompleter(displayLoading: event.displayLoading);
     try {
+      if (event.resetInstanceId) {
+        neoWorkflowManager.resetInstanceId(isSubFlow: event.isSubFlow);
+      }
+      if (event.workflowName != null && event.workflowName!.isNotEmpty) {
+        neoWorkflowManager.setWorkflowName(event.workflowName!, isSubFlow: event.isSubFlow);
+      }
       if (event.displayLoading) {
         onLoadingStatusChanged(displayLoading: true);
       }
@@ -218,6 +225,10 @@ class NeoTransitionListenerBloc extends Bloc<NeoTransitionListenerEvent, NeoTran
     } catch (e) {
       _completeWithError(e is NeoError ? e : const NeoError(), shouldHideLoading: event.displayLoading);
     }
+  }
+
+  Future<void> _onUpdateSignalrServerUrl(event, emit) async {
+    signalRServerUrl = event.serverUrl;
   }
 
   void _onStopListening() {
