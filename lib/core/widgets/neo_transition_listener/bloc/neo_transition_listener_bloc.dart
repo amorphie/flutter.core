@@ -46,7 +46,8 @@ abstract class _Constants {
   static const transitionTimeoutDuration = Duration(seconds: 60);
 }
 
-class NeoTransitionListenerBloc extends Bloc<NeoTransitionListenerEvent, NeoTransitionListenerState> with WidgetsBindingObserver {
+class NeoTransitionListenerBloc extends Bloc<NeoTransitionListenerEvent, NeoTransitionListenerState>
+    with WidgetsBindingObserver {
   final NeoCoreSecureStorage neoCoreSecureStorage;
   late final Function(SignalrTransitionData navigationData) onTransitionEvent;
   late final Function(EkycEventData ekycData) onEkycEvent;
@@ -117,7 +118,8 @@ class NeoTransitionListenerBloc extends Bloc<NeoTransitionListenerEvent, NeoTran
             continue;
           }
 
-          if (_lastProcessedEvent?.transition == null || !event.transition.time.isBefore(_lastProcessedEvent!.transition.time)) {
+          if (_lastProcessedEvent?.transition == null ||
+              !event.transition.time.isBefore(_lastProcessedEvent!.transition.time)) {
             if (fromSignalR) {
               _cancelLongPolling();
             }
@@ -180,7 +182,8 @@ class NeoTransitionListenerBloc extends Bloc<NeoTransitionListenerEvent, NeoTran
       onTransitionEvent(
         SignalrTransitionData(
           navigationPath: responseData["init-page-name"],
-          navigationType: event.navigationType ?? NeoNavigationType.fromJson(responseData["navigation"]) ?? NeoNavigationType.push,
+          navigationType:
+              event.navigationType ?? NeoNavigationType.fromJson(responseData["navigation"]) ?? NeoNavigationType.push,
           pageId: responseData["state"],
           viewSource: responseData["view-source"],
           initialData: additionalData is Map ? additionalData.cast() : {"data": additionalData},
@@ -329,7 +332,7 @@ class NeoTransitionListenerBloc extends Bloc<NeoTransitionListenerEvent, NeoTran
       final userReference = result[0];
       final deviceId = result[1];
 
-      await MtlsHelper(neoLogger: _neoLogger).storePrivateKeyWithCertificate(
+      await MtlsHelper().storePrivateKeyWithCertificate(
         clientKeyTag: "$deviceId$userReference",
         privateKey: privateKey,
         certificate: certificate,
@@ -407,7 +410,8 @@ class NeoTransitionListenerBloc extends Bloc<NeoTransitionListenerEvent, NeoTran
   }
 
   void _addEventToBus(NeoSignalREvent event, {required bool fromSignalR}) {
-    if (!_eventList.any((element) => element.eventId == event.eventId || element.transition.time.isAfter(event.transition.time))) {
+    if (!_eventList
+        .any((element) => element.eventId == event.eventId || element.transition.time.isAfter(event.transition.time))) {
       if (!isClosed && _lastProcessedEvent?.eventId != event.eventId) {
         _eventList.add(event);
       }
@@ -427,7 +431,9 @@ class NeoTransitionListenerBloc extends Bloc<NeoTransitionListenerEvent, NeoTran
 
   @override
   void didChangeAppLifecycleState(AppLifecycleState state) {
-    if (state == AppLifecycleState.paused || state == AppLifecycleState.inactive || state == AppLifecycleState.detached) {
+    if (state == AppLifecycleState.paused ||
+        state == AppLifecycleState.inactive ||
+        state == AppLifecycleState.detached) {
       _cancelLongPolling();
     } else if (state == AppLifecycleState.resumed) {
       _getLastTransitionsWithLongPolling(isSubFlow: false);
