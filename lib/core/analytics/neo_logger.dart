@@ -166,20 +166,20 @@ class NeoLogger implements INeoLogger {
 
   @override
   void logError(String message) {
+    logCustom(message, logLevel: Level.error, logTypes: [NeoLoggerType.elastic]);
     if (kIsWeb) {
       return;
     }
     _neoCrashlytics?.logError(message);
-    logCustom(message, logLevel: Level.error, logTypes: [NeoLoggerType.elastic]);
   }
 
   @override
   void logException(dynamic exception, StackTrace stackTrace, {Map<String, dynamic>? parameters}) {
+    logCustom(exception, logLevel: Level.fatal, properties: parameters, logTypes: [NeoLoggerType.elastic]);
     if (kIsWeb) {
       return;
     }
     _neoCrashlytics?.logException(exception, stackTrace);
-    logCustom(exception, logLevel: Level.fatal, properties: parameters, logTypes: [NeoLoggerType.elastic]);
   }
 
   void logConsole(dynamic message, {Level logLevel = Level.info}) {
