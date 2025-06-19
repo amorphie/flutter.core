@@ -1,3 +1,4 @@
+import 'package:neo_core/core/analytics/neo_logger.dart';
 import 'package:neo_core/core/network/helpers/mtls_helper.dart';
 import 'package:neo_core/core/network/models/neo_network_header_key.dart';
 import 'package:neo_core/core/storage/neo_core_parameter_key.dart';
@@ -5,12 +6,13 @@ import 'package:neo_core/core/storage/neo_core_secure_storage.dart';
 
 class MtlsHeaders {
   final NeoCoreSecureStorage secureStorage;
+  final NeoLogger neoLogger;
 
-  late final MtlsHelper _mtlsHelper = MtlsHelper();
+  late final MtlsHelper _mtlsHelper = MtlsHelper(neoLogger: neoLogger);
 
   String? _deviceId;
 
-  MtlsHeaders({required this.secureStorage});
+  MtlsHeaders({required this.secureStorage, required this.neoLogger});
 
   Future<Map<String, String>> getHeaders(Map requestBody) async {
     return _getJwsSignatureHeader(requestBody);

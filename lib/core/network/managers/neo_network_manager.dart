@@ -82,12 +82,11 @@ class NeoNetworkManager {
 
   bool get isTokenExpired => _tokenExpirationTime != null && DateTime.now().isAfter(_tokenExpirationTime!);
 
-  bool get isRefreshTokenExpired =>
-      _refreshTokenExpirationTime != null && DateTime.now().isAfter(_refreshTokenExpirationTime!);
+  bool get isRefreshTokenExpired => _refreshTokenExpirationTime != null && DateTime.now().isAfter(_refreshTokenExpirationTime!);
 
   http.Client? httpClient;
 
-  late final MtlsHelper _mtlsHelper = MtlsHelper();
+  late final MtlsHelper _mtlsHelper = MtlsHelper(neoLogger: _neoLogger!);
   late final MtlsHeaders _mtlsHeaders = MtlsHeaders(secureStorage: secureStorage);
 
   NeoNetworkManager({

@@ -1,10 +1,20 @@
+// ignore_for_file: public_member_api_docs, sort_constructors_first
 import 'dart:convert';
 import 'dart:typed_data';
 
 import 'package:flutter_shield/secure_enclave.dart';
 
+import 'package:neo_core/core/analytics/neo_logger.dart';
+
 class MtlsHelper {
-  late final _secureEnclavePlugin = SecureEnclave();
+  final NeoLogger neoLogger;
+  MtlsHelper({
+    required this.neoLogger,
+  });
+  late final _secureEnclavePlugin = SecureEnclave()
+    ..log = (logData) async {
+      neoLogger.logCustom(json.encode(logData.toJson()));
+    };
 
   Future<String?> sign({required String clientKeyTag, required Map? requestBody}) async {
     if (requestBody == null || requestBody.isEmpty) {
