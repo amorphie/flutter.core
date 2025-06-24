@@ -9,5 +9,6 @@ part of 'http_active_host.dart';
 HttpActiveHost _$HttpActiveHostFromJson(Map<String, dynamic> json) =>
     HttpActiveHost(
       host: json['host'] as String? ?? '',
-      retryCount: json['retry-count'] as int? ?? 0,
+      mtlsHost: json['mtls-host'] as String? ?? '',
+      retryCount: (json['retry-count'] as num?)?.toInt() ?? 0,
     );

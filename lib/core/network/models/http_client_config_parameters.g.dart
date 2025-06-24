@@ -15,4 +15,5 @@ HttpClientConfigParameters _$HttpClientConfigParametersFromJson(
           ? Level.off
           : HttpClientConfigParameters._logLevelFromJson(
               json['log-level'] as String),
+      enableMtls: json['enable-mtls'] as bool? ?? true,
     );

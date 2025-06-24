@@ -15,6 +15,7 @@ import 'dart:async';
 import 'package:bloc_concurrency/bloc_concurrency.dart';
 import 'package:collection/collection.dart';
 import 'package:equatable/equatable.dart';
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:get_it/get_it.dart';
@@ -25,10 +26,12 @@ import 'package:neo_core/core/bus/neo_bus.dart';
 import 'package:neo_core/core/navigation/models/ekyc_event_data.dart';
 import 'package:neo_core/core/navigation/models/neo_navigation_type.dart';
 import 'package:neo_core/core/navigation/models/signalr_transition_data.dart';
+import 'package:neo_core/core/network/helpers/mtls_helper.dart';
 import 'package:neo_core/core/network/models/http_auth_response.dart';
 import 'package:neo_core/core/network/models/neo_signalr_event.dart';
 import 'package:neo_core/core/network/models/neo_signalr_transition_state_type.dart';
 import 'package:neo_core/core/network/neo_network.dart';
+import 'package:neo_core/core/storage/neo_core_parameter_key.dart';
 import 'package:neo_core/core/storage/neo_core_secure_storage.dart';
 import 'package:neo_core/core/widgets/neo_page/bloc/neo_page_bloc.dart';
 import 'package:neo_core/core/widgets/neo_transition_listener/bloc/usecases/process_login_certificate_silent_event_use_case.dart';
@@ -37,7 +40,6 @@ import 'package:neo_core/core/workflow_form/neo_workflow_manager.dart';
 import 'package:universal_io/io.dart';
 
 part 'neo_transition_listener_event.dart';
-
 part 'neo_transition_listener_state.dart';
 
 abstract class _Constants {
@@ -57,7 +59,7 @@ class NeoTransitionListenerBloc extends Bloc<NeoTransitionListenerEvent, NeoTran
   late final List<NeoSignalREvent> _eventList = [];
   late final NeoWorkflowManager neoWorkflowManager;
   late final NeoLogger _neoLogger = GetIt.I.get();
-  late final String signalRServerUrl;
+  late String signalRServerUrl;
   late final String signalRMethodName;
   late final Duration signalrLongPollingPeriod;
   late final Duration signalRTimeoutDuration;
@@ -81,6 +83,7 @@ class NeoTransitionListenerBloc extends Bloc<NeoTransitionListenerEvent, NeoTran
       (event, emit) => _onPostTransition(event),
       transformer: droppable(),
     );
+    on<NeoTransitionListenerEventUpdateSignalrServerUrl>(_onUpdateSignalrServerUrl);
     on<NeoTransitionListenerEventStopListening>((event, emit) => _onStopListening());
   }
 
@@ -130,7 +133,7 @@ class NeoTransitionListenerBloc extends Bloc<NeoTransitionListenerEvent, NeoTran
               _onStopListening();
             }
             if (event.isSilentEvent) {
-              unawaited(ProcessLoginCertificateSilentEventUseCase().call(event, this));
+              unawaited(ProcessLoginCertificateSilentEventUseCase().call(event, this, neoCoreSecureStorage));
               GetIt.I.get<NeoWidgetEventBus>().addEvent(
                     NeoWidgetEvent(eventId: NeoPageBloc.dataEventKey, data: event.transition),
                   );
@@ -198,6 +201,12 @@ class NeoTransitionListenerBloc extends Bloc<NeoTransitionListenerEvent, NeoTran
   Future<void> _onPostTransition(NeoTransitionListenerEventPostTransition event) async {
     _initPostTransitionTimeoutCompleter(displayLoading: event.displayLoading);
     try {
+      if (event.resetInstanceId) {
+        neoWorkflowManager.resetInstanceId(isSubFlow: event.isSubFlow);
+      }
+      if (event.workflowName != null && event.workflowName!.isNotEmpty) {
+        neoWorkflowManager.setWorkflowName(event.workflowName!, isSubFlow: event.isSubFlow);
+      }
       if (event.displayLoading) {
         onLoadingStatusChanged(displayLoading: true);
       }
@@ -216,6 +225,10 @@ class NeoTransitionListenerBloc extends Bloc<NeoTransitionListenerEvent, NeoTran
     } catch (e) {
       _completeWithError(e is NeoError ? e : const NeoError(), shouldHideLoading: event.displayLoading);
     }
+  }
+
+  Future<void> _onUpdateSignalrServerUrl(event, emit) async {
+    signalRServerUrl = event.serverUrl;
   }
 
   void _onStopListening() {
@@ -298,8 +311,34 @@ class NeoTransitionListenerBloc extends Bloc<NeoTransitionListenerEvent, NeoTran
         ),
         isMobUnapproved: isMobUnapproved,
       );
+      await _retrieveClientCertificateIfExist(ongoingTransition.additionalData?["clientCert"]);
       await onLoggedInSuccessfully?.call(isTwoFactorAuthenticated: isTwoFactorAuthenticated);
     }
+  }
+
+  Future<void> _retrieveClientCertificateIfExist(Map? data) async {
+    if (kIsWeb) {
+      return;
+    }
+    final String? privateKey = data?["privateKey"];
+    final String? certificate = data?["certificate"];
+
+    if (privateKey != null && certificate != null) {
+      final result = await Future.wait([
+        neoCoreSecureStorage.read(NeoCoreParameterKey.secureStorageCustomerId),
+        neoCoreSecureStorage.read(NeoCoreParameterKey.secureStorageDeviceId),
+      ]);
+
+      final userReference = result[0];
+      final deviceId = result[1];
+
+      await MtlsHelper().storePrivateKeyWithCertificate(
+        clientKeyTag: "$deviceId$userReference",
+        privateKey: privateKey,
+        certificate: certificate,
+      );
+    }
+    await neoWorkflowManager.neoNetworkManager.updateSecurityContext();
   }
 
   void _handleRedirectionSettings(NeoSignalRTransition ongoingTransition) {
