@@ -71,7 +71,7 @@ class NeoNetworkManager {
 
   late final bool _enableSslPinning;
 
-  bool get _isMtlsEnabled => httpClientConfig.config.enableMtls;
+  bool get _isMtlsEnabled => !kIsWeb && httpClientConfig.config.enableMtls;
 
   DateTime? _tokenExpirationTime;
   DateTime? _refreshTokenExpirationTime;
@@ -503,13 +503,8 @@ class NeoNetworkManager {
     final deviceId = result[1];
     final clientKeyTag = "$deviceId$userReference";
 
-    final mtlsResult = await Future.wait([
-      _mtlsHelper.getCertificate(clientKeyTag: clientKeyTag),
-      _mtlsHelper.getServerPrivateKey(clientKeyTag: clientKeyTag),
-    ]);
-
-    final clientCertificate = mtlsResult[0];
-    final privateKey = mtlsResult[1];
+    final clientCertificate = await _mtlsHelper.getCertificate(clientKeyTag: clientKeyTag);
+    final privateKey = await _mtlsHelper.getServerPrivateKey(clientKeyTag: clientKeyTag);
     final bool isMtlsEnabled = _isMtlsEnabled && clientCertificate != null && privateKey != null;
 
     if (isMtlsEnabled) {

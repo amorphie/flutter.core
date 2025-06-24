@@ -479,10 +479,10 @@ packages:
     dependency: "direct main"
     description:
       name: flutter_secure_storage
-      sha256: "165164745e6afb5c0e3e3fcc72a012fb9e58496fb26ffb92cf22e16a821e85d0"
+      sha256: ffdbb60130e4665d2af814a0267c481bcf522c41ae2e43caf69fa0146876d685
       url: "https://pub.dev"
     source: hosted
-    version: "9.2.2"
+    version: "9.0.0"
   flutter_secure_storage_linux:
     dependency: transitive
     description:
@@ -527,8 +527,8 @@ packages:
     dependency: "direct main"
     description:
       path: "."
-      ref: "v1.0.6"
-      resolved-ref: "4e0aad4e9e5b6cd269ec605f3cbf031548b82aeb"
+      ref: "v1.0.12"
+      resolved-ref: "51012fe6c97762d600d9ecf1fa598034f1944ea8"
       url: "https://github.com/amorphie/flutter.shield"
     source: git
     version: "0.1.1"

@@ -28,6 +28,7 @@ class NeoAdjust {
         AdjustConfig(appToken, kDebugMode ? AdjustEnvironment.sandbox : AdjustEnvironment.production)
           ..externalDeviceId = deviceId
           ..urlStrategy = urlStrategyValue
+          ..attributionCallback = adjustAttributionCallback
           ..deferredDeeplinkCallback = adjustDeferredDeeplinkCallback;
 
     Adjust.start(adjustConfig);
@@ -39,13 +40,5 @@ class NeoAdjust {
     }
 
     Adjust.trackEvent(AdjustEvent(eventId));
-  }
-
-  Future<void> setAdjustNetworkAttribution() async {
-    if (kIsWeb || adjustAttributionCallback == null) {
-      return;
-    }
-
-    await Adjust.getAttribution().then(adjustAttributionCallback!);
   }
 }
