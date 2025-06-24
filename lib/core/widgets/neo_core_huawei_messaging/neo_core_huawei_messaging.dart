@@ -95,7 +95,6 @@ class _NeoCoreHuaweiMessagingState extends State<NeoCoreHuaweiMessaging> {
       _Constant.androidNotificationChannelID,
       _Constant.androidNotificationChannelName,
       description: _Constant.androidNotificationChannelDescription,
-      //importance: _Constant.androidNotificationImportance,
       sound: (widget.notificationSound != null) ? RawResourceAndroidNotificationSound(widget.notificationSound) : null,
     );
   }
