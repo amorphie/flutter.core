@@ -20,19 +20,15 @@ class HttpHostDetails {
   @JsonKey(name: 'key', defaultValue: "")
   final String key;
 
-  @JsonKey(name: 'oauth-client', defaultValue: "")
-  final String oauthClient;
-
-  @JsonKey(name: 'oauth-server', defaultValue: "")
-  final String oauthServer;
+  @JsonKey(name: 'workflow-hub-url', defaultValue: "")
+  final String workflowHubUrl;
 
   @JsonKey(name: 'active-hosts', defaultValue: [])
   final List<HttpActiveHost> activeHosts;
 
   const HttpHostDetails({
     required this.key,
-    required this.oauthClient,
-    required this.oauthServer,
+    required this.workflowHubUrl,
     required this.activeHosts,
   });
 

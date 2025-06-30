@@ -90,21 +90,42 @@ class NeoTransitionListenerEventInitWorkflow extends NeoTransitionListenerEvent 
 
 class NeoTransitionListenerEventPostTransition extends NeoTransitionListenerEvent {
   final String transitionName;
+  final String? workflowName;
   final Map<String, dynamic> body;
   final Map<String, String>? headerParameters;
   final bool displayLoading;
   final bool isSubFlow;
+  final bool resetInstanceId;
 
   NeoTransitionListenerEventPostTransition({
     required this.transitionName,
     required this.body,
+    this.workflowName,
     this.headerParameters,
     this.displayLoading = true,
     this.isSubFlow = false,
+    this.resetInstanceId = false,
   });
 
   @override
-  List<Object?> get props => [transitionName, body, headerParameters, displayLoading, isSubFlow];
+  List<Object?> get props => [
+        transitionName,
+        workflowName,
+        body,
+        headerParameters,
+        displayLoading,
+        isSubFlow,
+        resetInstanceId,
+      ];
+}
+
+class NeoTransitionListenerEventUpdateSignalrServerUrl extends NeoTransitionListenerEvent {
+  final String serverUrl;
+
+  NeoTransitionListenerEventUpdateSignalrServerUrl({required this.serverUrl});
+
+  @override
+  List<Object?> get props => [serverUrl];
 }
 
 class NeoTransitionListenerEventStopListening extends NeoTransitionListenerEvent {
