@@ -52,7 +52,7 @@ class NeoCoreHuaweiMessaging extends StatefulWidget {
 }
 
 class _NeoCoreHuaweiMessagingState extends State<NeoCoreHuaweiMessaging> {
-  late AndroidNotificationChannel _androidChannel;
+  AndroidNotificationChannel? _androidChannel;
   final _localNotifications = FlutterLocalNotificationsPlugin();
 
   NeoLogger get _neoLogger => GetIt.I.get();
@@ -147,10 +147,11 @@ class _NeoCoreHuaweiMessagingState extends State<NeoCoreHuaweiMessaging> {
         }
       },
     );
-
-    await _localNotifications
-        .resolvePlatformSpecificImplementation<AndroidFlutterLocalNotificationsPlugin>()
-        ?.createNotificationChannel(_androidChannel);
+    if (_androidChannel != null) {
+      await _localNotifications
+          .resolvePlatformSpecificImplementation<AndroidFlutterLocalNotificationsPlugin>()
+          ?.createNotificationChannel(_androidChannel!);
+    }
   }
 
   void _handleMessage(Map<String, dynamic> messageData) {
@@ -177,7 +178,7 @@ class _NeoCoreHuaweiMessagingState extends State<NeoCoreHuaweiMessaging> {
   void _onMessageReceived(RemoteMessage message) {
     debugPrint("[NeoCoreHuaweiMessaging]: Foreground notification was triggered by ${message.notification}");
     final notification = message.notification;
-    if (notification == null || !Platform.isAndroid) {
+    if (notification == null || !Platform.isAndroid || _androidChannel == null) {
       return;
     }
     _localNotifications.show(
@@ -186,11 +187,11 @@ class _NeoCoreHuaweiMessagingState extends State<NeoCoreHuaweiMessaging> {
       notification.body,
       NotificationDetails(
         android: AndroidNotificationDetails(
-          _androidChannel.id,
-          _androidChannel.name,
-          channelDescription: _androidChannel.description,
+          _androidChannel!.id,
+          _androidChannel!.name,
+          channelDescription: _androidChannel!.description,
           icon: widget.androidDefaultIcon,
-          sound: _androidChannel.sound,
+          sound: _androidChannel!.sound,
         ),
       ),
       payload: jsonEncode(message.data),

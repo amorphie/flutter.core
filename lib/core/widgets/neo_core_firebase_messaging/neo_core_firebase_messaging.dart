@@ -59,7 +59,7 @@ class NeoCoreFirebaseMessaging extends StatefulWidget {
 }
 
 class _NeoCoreFirebaseMessagingState extends State<NeoCoreFirebaseMessaging> {
-  late AndroidNotificationChannel _androidChannel;
+  AndroidNotificationChannel? _androidChannel;
   final _localNotifications = FlutterLocalNotificationsPlugin();
 
   NeoLogger get _neoLogger => GetIt.I.get();
@@ -167,7 +167,7 @@ class _NeoCoreFirebaseMessagingState extends State<NeoCoreFirebaseMessaging> {
       _neoLogger
           .logConsole("[NeoCoreFirebaseMessaging]: Foreground notification was triggered by ${message.notification}");
       final notification = message.notification;
-      if (notification == null || !Platform.isAndroid) {
+      if (notification == null || !Platform.isAndroid || _androidChannel == null) {
         return;
       }
       _localNotifications.show(
@@ -176,12 +176,12 @@ class _NeoCoreFirebaseMessagingState extends State<NeoCoreFirebaseMessaging> {
         notification.body,
         NotificationDetails(
           android: AndroidNotificationDetails(
-            _androidChannel.id,
-            _androidChannel.name,
-            channelDescription: _androidChannel.description,
+            _androidChannel!.id,
+            _androidChannel!.name,
+            channelDescription: _androidChannel!.description,
             icon: widget.androidDefaultIcon,
-            sound: _androidChannel.sound,
-            importance: _androidChannel.importance,
+            sound: _androidChannel!.sound,
+            importance: _androidChannel!.importance,
           ),
         ),
         payload: jsonEncode(message.toMap()),
@@ -205,9 +205,11 @@ class _NeoCoreFirebaseMessagingState extends State<NeoCoreFirebaseMessaging> {
         }
       },
     );
-    await _localNotifications
-        .resolvePlatformSpecificImplementation<AndroidFlutterLocalNotificationsPlugin>()
-        ?.createNotificationChannel(_androidChannel);
+    if (_androidChannel != null) {
+      await _localNotifications
+          .resolvePlatformSpecificImplementation<AndroidFlutterLocalNotificationsPlugin>()
+          ?.createNotificationChannel(_androidChannel!);
+    }
   }
 
   Future<String?> _getTokenBasedOnPlatform() async {
