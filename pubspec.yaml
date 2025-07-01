@@ -67,7 +67,7 @@ dependencies:
   flutter_shield:
     git:
       url: https://github.com/amorphie/flutter.shield
-      ref: v1.0.13
+      ref: b65d88ac2a74788e2df441bb5b5a1a68db67bbb1
 
 dependency_overrides:
   web: 1.0.0 # TODO: Update other dependencies and delete this override
