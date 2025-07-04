@@ -34,6 +34,7 @@ class NeoCoreHuaweiMessaging extends StatefulWidget {
     required this.neoCoreSecureStorage,
     required this.onTokenChanged,
     this.androidDefaultIcon,
+    this.notificationSound,
     this.onDeeplinkNavigation,
     super.key,
   });
@@ -43,6 +44,7 @@ class NeoCoreHuaweiMessaging extends StatefulWidget {
   final NeoCoreSecureStorage neoCoreSecureStorage;
   final Function(String) onTokenChanged;
   final String? androidDefaultIcon;
+  final String? notificationSound;
   final Function(String)? onDeeplinkNavigation;
 
   @override
@@ -50,11 +52,7 @@ class NeoCoreHuaweiMessaging extends StatefulWidget {
 }
 
 class _NeoCoreHuaweiMessagingState extends State<NeoCoreHuaweiMessaging> {
-  final _androidChannel = const AndroidNotificationChannel(
-    _Constant.androidNotificationChannelID,
-    _Constant.androidNotificationChannelName,
-    description: _Constant.androidNotificationChannelDescription,
-  );
+  AndroidNotificationChannel? _androidChannel;
   final _localNotifications = FlutterLocalNotificationsPlugin();
 
   NeoLogger get _neoLogger => GetIt.I.get();
@@ -73,6 +71,7 @@ class _NeoCoreHuaweiMessagingState extends State<NeoCoreHuaweiMessaging> {
     if (kIsWeb) {
       return;
     }
+    _initNotificationChannel();
     _initPushNotifications();
     _initNotifications();
     if (Platform.isAndroid) {
@@ -89,6 +88,15 @@ class _NeoCoreHuaweiMessagingState extends State<NeoCoreHuaweiMessaging> {
   void initState() {
     super.initState();
     _listenWidgetEventKeys();
+  }
+
+  void _initNotificationChannel() {
+    _androidChannel = AndroidNotificationChannel(
+      _Constant.androidNotificationChannelID,
+      _Constant.androidNotificationChannelName,
+      description: _Constant.androidNotificationChannelDescription,
+      sound: (widget.notificationSound != null) ? RawResourceAndroidNotificationSound(widget.notificationSound) : null,
+    );
   }
 
   Future<void> _initNotifications() async {
@@ -108,7 +116,7 @@ class _NeoCoreHuaweiMessagingState extends State<NeoCoreHuaweiMessaging> {
   }
 
   void _onTokenChange(String token) {
-    _neoLogger.logConsole("[NeoCoreHuaweiMessaging]: Firebase Push token is: $token");
+    debugPrint("[NeoCoreHuaweiMessaging]: Firebase Push token is: $token");
     widget.onTokenChanged.call(token);
     NeoCoreRegisterDeviceUseCase().call(
       networkManager: widget.networkManager,
@@ -139,10 +147,11 @@ class _NeoCoreHuaweiMessagingState extends State<NeoCoreHuaweiMessaging> {
         }
       },
     );
-
-    await _localNotifications
-        .resolvePlatformSpecificImplementation<AndroidFlutterLocalNotificationsPlugin>()
-        ?.createNotificationChannel(_androidChannel);
+    if (_androidChannel != null) {
+      await _localNotifications
+          .resolvePlatformSpecificImplementation<AndroidFlutterLocalNotificationsPlugin>()
+          ?.createNotificationChannel(_androidChannel!);
+    }
   }
 
   void _handleMessage(Map<String, dynamic> messageData) {
@@ -167,8 +176,9 @@ class _NeoCoreHuaweiMessagingState extends State<NeoCoreHuaweiMessaging> {
   }
 
   void _onMessageReceived(RemoteMessage message) {
+    debugPrint("[NeoCoreHuaweiMessaging]: Foreground notification was triggered by ${message.notification}");
     final notification = message.notification;
-    if (notification == null || !Platform.isAndroid) {
+    if (notification == null || !Platform.isAndroid || _androidChannel == null) {
       return;
     }
     _localNotifications.show(
@@ -177,10 +187,11 @@ class _NeoCoreHuaweiMessagingState extends State<NeoCoreHuaweiMessaging> {
       notification.body,
       NotificationDetails(
         android: AndroidNotificationDetails(
-          _androidChannel.id,
-          _androidChannel.name,
-          channelDescription: _androidChannel.description,
+          _androidChannel!.id,
+          _androidChannel!.name,
+          channelDescription: _androidChannel!.description,
           icon: widget.androidDefaultIcon,
+          sound: _androidChannel!.sound,
         ),
       ),
       payload: jsonEncode(message.data),
