@@ -12,8 +12,7 @@ class MtlsHelper {
 
   NeoLogger? get _neoLogger => GetIt.I.getIfReady<NeoLogger>();
 
-  late final _secureEnclavePlugin = SecureEnclave()
-    ..log = (logData) async => _neoLogger?.logCustom(json.encode(logData.toJson()));
+  late final _secureEnclavePlugin = SecureEnclave()..log = (logData) async => _neoLogger?.logCustom(logData.toString());
 
   Future<String?> sign({required String clientKeyTag, required Map? requestBody}) async {
     if (requestBody == null || requestBody.isEmpty) {
