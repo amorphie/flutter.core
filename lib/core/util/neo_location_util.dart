@@ -3,6 +3,14 @@ import 'package:location/location.dart';
 class NeoLocationUtil {
   final Location _location = Location();
 
+  static LocationData? _cachedLocation;
+
+  static LocationData? get cachedLocation => _cachedLocation;
+
+  void cacheLocation(LocationData location) {
+    _cachedLocation = location;
+  }
+
   Future<LocationData?> getCurrentLocation() async {
     bool serviceEnabled = false;
 
@@ -14,8 +22,7 @@ class NeoLocationUtil {
       }
     }
 
-    final isPermissionGranted = await checkAndRequestPermission() == PermissionStatus.granted;
-    if (!isPermissionGranted) {
+    if (!await hasLocationPermission()) {
       return null;
     }
 
