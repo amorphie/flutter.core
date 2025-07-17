@@ -7,8 +7,6 @@ import 'package:neo_core/core/analytics/neo_logger.dart';
 import 'package:neo_core/core/util/extensions/get_it_extensions.dart';
 
 class MtlsHelper {
-  MtlsHelper();
-
   NeoLogger? get _neoLogger => GetIt.I.getIfReady<NeoLogger>();
 
   late final _secureEnclavePlugin = SecureEnclave()..log = (logData) async => _neoLogger?.logCustom(logData.toString());
