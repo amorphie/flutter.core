@@ -29,7 +29,6 @@ import 'package:neo_core/core/network/models/http_client_config.dart';
 import 'package:neo_core/core/network/models/neo_page_type.dart';
 import 'package:neo_core/core/util/device_util/device_util.dart';
 import 'package:neo_core/core/util/extensions/get_it_extensions.dart';
-import 'package:universal_io/io.dart';
 
 abstract class _Constants {
   static const criticalBuildingDurationInMilliseconds = 1000;
@@ -77,7 +76,7 @@ class NeoLogger implements INeoLogger {
   NeoCrashlytics? get _neoCrashlytics => GetIt.I.getIfReady<NeoCrashlytics>();
 
   Future<void> init({bool enableLogging = false}) async {
-    _isLoggingEnabled = enableLogging && !Platform.isMacOS && !Platform.isWindows;
+    _isLoggingEnabled = enableLogging;
 
     if (!_isLoggingEnabled) {
       return;
