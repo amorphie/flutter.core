@@ -1,9 +1,10 @@
+import 'package:flutter/foundation.dart';
 import 'package:get_it/get_it.dart';
 import 'package:location/location.dart';
 import 'package:neo_core/core/analytics/neo_logger.dart';
 
 class NeoLocationUtil {
-  final Location _location = Location();
+  late final Location _location = Location();
 
   static LocationData? _cachedLocation;
 
@@ -16,6 +17,9 @@ class NeoLocationUtil {
   }
 
   Future<LocationData?> getCurrentLocation() async {
+    if (kIsWeb) {
+      return null;
+    }
     try {
       bool serviceEnabled = false;
 
@@ -39,6 +43,9 @@ class NeoLocationUtil {
   }
 
   Future<PermissionStatus?> checkAndRequestPermission() async {
+    if (kIsWeb) {
+      return null;
+    }
     try {
       PermissionStatus permissionStatus = await _location.hasPermission();
       if (permissionStatus == PermissionStatus.denied) {
@@ -52,6 +59,9 @@ class NeoLocationUtil {
   }
 
   Future<bool> hasLocationPermission() async {
+    if (kIsWeb) {
+      return false;
+    }
     try {
       final permissionStatus = await _location.hasPermission();
       return permissionStatus == PermissionStatus.granted || permissionStatus == PermissionStatus.grantedLimited;
