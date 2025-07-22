@@ -193,6 +193,7 @@ class NeoTransitionListenerBloc extends Bloc<NeoTransitionListenerEvent, NeoTran
           transitionId: (responseData["transition"] as List?)?.firstOrNull?["transition"] ?? "",
           queryParameters: event.queryParameters,
           useSubNavigator: event.useSubNavigator,
+          useRootNavigator: event.useRootNavigator,
           isInitialPage: true,
         ),
       );
