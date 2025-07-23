@@ -22,6 +22,7 @@ class NeoDynamicHeaders {
       NeoNetworkHeaderKey.acceptLanguage: _languageCode,
       NeoNetworkHeaderKey.contentLanguage: _languageCode,
       NeoNetworkHeaderKey.location: _location,
+      NeoNetworkHeaderKey.userId: await _userId,
       NeoNetworkHeaderKey.requestId: UuidUtil.generateUUIDWithoutHyphen(),
       NeoNetworkHeaderKey.instanceId: _neoWorkflowManager?.instanceId ?? "",
       NeoNetworkHeaderKey.workflowName: _neoWorkflowManager?.getWorkflowName() ?? "",
@@ -61,6 +62,11 @@ class NeoDynamicHeaders {
     return NeoLocationUtil.cachedLocation != null
         ? "Latitude: ${NeoLocationUtil.cachedLocation?.latitude} Longitude: ${NeoLocationUtil.cachedLocation?.longitude}"
         : "-";
+  }
+
+  Future<String> get _userId async {
+    final userId = await secureStorage.read(NeoCoreParameterKey.secureStorageUserId);
+    return userId ?? "-";
   }
 
   Future<Map<String, String>> get _locationPermissionHeader async {
