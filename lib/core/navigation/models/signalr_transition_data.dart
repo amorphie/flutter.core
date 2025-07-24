@@ -26,6 +26,7 @@ abstract class _Constant {
   static const keyStatusCode = "statusCode";
   static const keyWorkflowSuffix = "queryParameters";
   static const keyUseSubNavigator = "useSubNavigator";
+  static const keyUseRootNavigator = "useRootNavigator";
   static const keyIsInitialPage = "isInitialPage";
   static const statusCodeRedirectToLogin = "302";
 }
@@ -42,6 +43,7 @@ class SignalrTransitionData {
   final String? statusCode;
   final Map<String, dynamic>? queryParameters;
   final bool useSubNavigator;
+  final bool useRootNavigator;
   final bool isInitialPage;
 
   SignalrTransitionData({
@@ -56,6 +58,7 @@ class SignalrTransitionData {
     this.statusCode,
     this.queryParameters,
     this.useSubNavigator = false,
+    this.useRootNavigator = false,
     this.isInitialPage = false,
   });
 
@@ -72,6 +75,7 @@ class SignalrTransitionData {
       _Constant.keyStatusCode: statusCode,
       _Constant.keyWorkflowSuffix: queryParameters,
       _Constant.keyUseSubNavigator: useSubNavigator,
+      _Constant.keyUseRootNavigator: useRootNavigator,
       _Constant.keyIsInitialPage: isInitialPage,
     });
   }
@@ -90,6 +94,7 @@ class SignalrTransitionData {
       statusCode: jsonMap[_Constant.keyStatusCode],
       queryParameters: jsonMap[_Constant.keyWorkflowSuffix],
       useSubNavigator: jsonMap[_Constant.keyUseSubNavigator],
+      useRootNavigator: jsonMap[_Constant.keyUseRootNavigator],
       isInitialPage: jsonMap[_Constant.keyIsInitialPage],
     );
   }
