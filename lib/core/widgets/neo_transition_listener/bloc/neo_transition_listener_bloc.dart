@@ -293,6 +293,7 @@ class NeoTransitionListenerBloc extends Bloc<NeoTransitionListenerEvent, NeoTran
         statusCode: transition.statusCode,
         statusMessage: transition.statusMessage,
         isInitialPage: transition.workflowStateType == NeoSignalRTransitionStateType.start,
+        useRootNavigator: transition.initialData["useRootNavigator"] == true,
       );
       onTransitionEvent(transitionData);
     }
