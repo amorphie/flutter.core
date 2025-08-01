@@ -14,6 +14,8 @@
 
 import 'package:firebase_crashlytics/firebase_crashlytics.dart';
 import 'package:flutter/foundation.dart' show FlutterError, PlatformDispatcher;
+import 'package:neo_core/core/util/extensions/http_exception_extensions.dart';
+import 'package:universal_io/io.dart';
 
 class NeoCrashlytics {
   final bool enabled;
@@ -28,7 +30,15 @@ class NeoCrashlytics {
 
     _crashlytics = FirebaseCrashlytics.instance;
 
-    FlutterError.onError = _crashlytics?.recordFlutterFatalError;
+    FlutterError.onError = (errorDetails) {
+      final exception = errorDetails.exception;
+      if (exception is HttpException && exception.isNonCriticalError) {
+        return;
+      }
+
+      _crashlytics?.recordFlutterFatalError(errorDetails);
+    };
+
     PlatformDispatcher.instance.onError = (error, stack) {
       _crashlytics?.recordError(error, stack, fatal: true);
       return true;
