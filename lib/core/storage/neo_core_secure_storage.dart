@@ -43,12 +43,16 @@ class NeoCoreSecureStorage {
 
   NeoLogger? get _neoLogger => GetIt.I.getIfReady<NeoLogger>();
 
-  Future<void> write({required String key, required String? value}) {
+  Future<void> write({
+    required String key,
+    required String? value,
+    IOSOptions? iOptions = const IOSOptions(accessibility: KeychainAccessibility.first_unlock_this_device),
+  }) {
     if (_enableCaching) {
       _cachedValues[key] = value;
     }
 
-    return _storage!.write(key: key, value: value);
+    return _storage!.write(key: key, value: value, iOptions: iOptions);
   }
 
   Future<String?> read(String key) async {
@@ -97,18 +101,7 @@ class NeoCoreSecureStorage {
       ),
     );
     _cachedValues.clear();
-    await _checkFirstRun();
     await _setInitialParameters();
-  }
-
-  Future<bool> _checkFirstRun() async {
-    final isFirstRun = neoSharedPrefs.read(NeoCoreParameterKey.sharedPrefsFirstRun);
-
-    if (isFirstRun == null || isFirstRun as bool) {
-      await deleteAll();
-    }
-
-    return neoSharedPrefs.write(NeoCoreParameterKey.sharedPrefsFirstRun, false);
   }
 
   Future<void> _setInitialParameters() async {
