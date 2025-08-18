@@ -16,59 +16,127 @@ sealed class NeoTransitionListenerEvent extends Equatable {}
 
 class NeoTransitionListenerEventInit extends NeoTransitionListenerEvent {
   final NeoWorkflowManager neoWorkflowManager;
-  final NeoSubWorkflowManager neoSubWorkflowManager;
   final String signalRServerUrl;
   final String signalRMethodName;
-  final Function(SignalrTransitionData navigationData) onTransitionSuccess;
+  final Function(SignalrTransitionData navigationData) onTransitionEvent;
+  final Function(NeoSignalRTransition data) onSilentEvent;
   final Function(EkycEventData eventData) onEkycEvent;
-  final VoidCallback? onLoggedInSuccessfully;
-  final Function(NeoError error)? onTransitionError;
+  final Future Function({required bool isTwoFactorAuthenticated})? onLoggedInSuccessfully;
+  final Function(NeoError error, {required bool displayAsPopup})? onTransitionError;
   final Function({required bool displayLoading}) onLoadingStatusChanged;
-  final bool bypassSignalr;
+  final Duration signalrLongPollingPeriod;
+  final Duration signalRTimeoutDuration;
 
   NeoTransitionListenerEventInit({
     required this.neoWorkflowManager,
-    required this.neoSubWorkflowManager,
     required this.signalRServerUrl,
     required this.signalRMethodName,
-    required this.onTransitionSuccess,
+    required this.onTransitionEvent,
+    required this.onSilentEvent,
     required this.onEkycEvent,
     required this.onLoggedInSuccessfully,
     required this.onTransitionError,
     required this.onLoadingStatusChanged,
-    required this.bypassSignalr,
+    required this.signalrLongPollingPeriod,
+    required this.signalRTimeoutDuration,
   });
 
   @override
   List<Object?> get props => [
         neoWorkflowManager,
-        neoSubWorkflowManager,
         signalRServerUrl,
         signalRMethodName,
-        onTransitionSuccess,
+        onTransitionEvent,
         onEkycEvent,
         onLoggedInSuccessfully,
         onTransitionError,
         onLoadingStatusChanged,
-        bypassSignalr,
+        signalrLongPollingPeriod,
+        signalRTimeoutDuration,
+      ];
+}
+
+class NeoTransitionListenerEventInitWorkflow extends NeoTransitionListenerEvent {
+  final String workflowName;
+  final Map<String, dynamic>? queryParameters;
+  final Map<String, String>? headerParameters;
+  final bool displayLoading;
+  final bool isSubFlow;
+  final Map<String, dynamic>? initialData;
+  final NeoNavigationType? navigationType;
+  final bool useSubNavigator;
+  final bool useRootNavigator;
+
+  NeoTransitionListenerEventInitWorkflow({
+    required this.workflowName,
+    this.queryParameters,
+    this.headerParameters,
+    this.isSubFlow = false,
+    this.displayLoading = true,
+    this.initialData,
+    this.navigationType,
+    this.useSubNavigator = false,
+    this.useRootNavigator = false,
+  });
+
+  @override
+  List<Object?> get props => [
+        workflowName,
+        queryParameters,
+        headerParameters,
+        isSubFlow,
+        displayLoading,
+        initialData,
+        navigationType,
+        useSubNavigator,
+        useRootNavigator,
       ];
 }
 
 class NeoTransitionListenerEventPostTransition extends NeoTransitionListenerEvent {
   final String transitionName;
+  final String? workflowName;
   final Map<String, dynamic> body;
+  final Map<String, String>? headerParameters;
   final String? instanceId;
-  final bool isSubFlow;
   final bool displayLoading;
+  final bool isSubFlow;
+  final bool resetInstanceId;
 
   NeoTransitionListenerEventPostTransition({
     required this.transitionName,
     required this.body,
+    this.workflowName,
+    this.headerParameters,
     this.instanceId,
-    this.isSubFlow = false,
     this.displayLoading = true,
+    this.isSubFlow = false,
+    this.resetInstanceId = false,
   });
 
   @override
-  List<Object?> get props => [transitionName, body, isSubFlow, displayLoading];
+  List<Object?> get props => [
+        transitionName,
+        workflowName,
+        body,
+        headerParameters,
+        instanceId,
+        displayLoading,
+        isSubFlow,
+        resetInstanceId,
+      ];
+}
+
+class NeoTransitionListenerEventUpdateSignalrServerUrl extends NeoTransitionListenerEvent {
+  final String serverUrl;
+
+  NeoTransitionListenerEventUpdateSignalrServerUrl({required this.serverUrl});
+
+  @override
+  List<Object?> get props => [serverUrl];
+}
+
+class NeoTransitionListenerEventStopListening extends NeoTransitionListenerEvent {
+  @override
+  List<Object?> get props => [];
 }

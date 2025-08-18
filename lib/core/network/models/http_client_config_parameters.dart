@@ -9,6 +9,7 @@ class HttpClientConfigParameters {
     required this.cachePages,
     required this.cacheStorage,
     required this.logLevel,
+    this.enableMtls = true,
   });
 
   @JsonKey(name: 'cache-pages', defaultValue: false)
@@ -16,6 +17,9 @@ class HttpClientConfigParameters {
 
   @JsonKey(name: 'cache-storage', defaultValue: false)
   final bool cacheStorage;
+
+  @JsonKey(name: 'enable-mtls')
+  final bool enableMtls;
 
   @JsonKey(name: 'log-level', fromJson: _logLevelFromJson, defaultValue: Level.off)
   final Level logLevel;

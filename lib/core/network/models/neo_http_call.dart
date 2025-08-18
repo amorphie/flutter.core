@@ -19,6 +19,8 @@ import 'package:neo_core/core/network/query_providers/http_query_provider.dart';
 class NeoHttpCall extends Equatable {
   final String endpoint;
 
+  final String? requestId;
+
   final Map<String, dynamic> body;
 
   final Map<String, String>? pathParameters;
@@ -33,11 +35,24 @@ class NeoHttpCall extends Equatable {
 
   int? get retryCount => _retryCount;
 
+  bool enableMtls = false;
+  bool signForMtls = false;
+
   @override
-  List<Object?> get props => [endpoint, body, pathParameters, queryProviders, useHttps];
+  List<Object?> get props => [
+        requestId,
+        endpoint,
+        body,
+        pathParameters,
+        queryProviders,
+        useHttps,
+        enableMtls,
+        signForMtls,
+      ];
 
   NeoHttpCall({
     required this.endpoint,
+    this.requestId,
     this.body = const {},
     this.queryProviders = const [],
     this.useHttps = true,
@@ -47,6 +62,11 @@ class NeoHttpCall extends Equatable {
 
   void setRetryCount(int retryCount) {
     _retryCount = retryCount;
+  }
+
+  void setMtlsStatus({required bool enableMtls, required bool signForMtls}) {
+    this.enableMtls = enableMtls;
+    this.signForMtls = signForMtls;
   }
 
   void decreaseRetryCount() {

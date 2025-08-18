@@ -12,32 +12,25 @@
 
 import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/foundation.dart' show kIsWeb;
-import 'package:neo_core/core/analytics/neo_logger.dart';
-import 'package:neo_core/core/storage/neo_core_secure_storage.dart';
-import 'package:neo_core/core/storage/neo_shared_prefs.dart';
+import 'package:neo_core/core/util/device_util/device_util.dart';
 import 'package:universal_io/io.dart';
 
 export 'core/bus/neo_bus.dart';
 export 'core/network/neo_network.dart';
 export 'core/storage/neo_storage.dart';
 export 'core/util/device_util/device_util.dart';
+export 'core/util/package_util.dart';
 export 'core/widgets/neo_widgets.dart';
 
 class NeoCore {
   NeoCore._();
 
-  static Future init({
-    bool enableCrashlytics = false,
-    bool enablePosthog = false,
-  }) async {
-    await NeoSharedPrefs().init();
-    // Order is important, NeoCoreSecureStorage uses NeoSharedPrefs
-    await NeoCoreSecureStorage().init();
+  static Future init({String? androidId}) async {
     if (!kIsWeb && !Platform.isMacOS) {
       await Firebase.initializeApp();
     }
-    if (!Platform.isMacOS) {
-      await NeoLogger().init(enableCrashlytics: enableCrashlytics, enablePosthog: enablePosthog);
+    if (androidId != null) {
+      DeviceUtil.setAndroidId(androidId);
     }
   }
 }

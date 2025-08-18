@@ -7,24 +7,28 @@ part of 'neo_error.dart';
 // **************************************************************************
 
 NeoError _$NeoErrorFromJson(Map<String, dynamic> json) => NeoError(
-      responseCode: json['errorCode'] as int? ?? _Constants.defaultErrorCode,
-      displayMode: $enumDecodeNullable(
-              _$NeoErrorDisplayMethodEnumMap, json['errorType']) ??
-          _Constants.defaultErrorDisplayMode,
+      responseCode:
+          (json['errorCode'] as num?)?.toInt() ?? _Constants.defaultErrorCode,
+      errorType:
+          $enumDecodeNullable(_$NeoErrorTypeEnumMap, json['errorType']) ??
+              _Constants.defaultErrorDisplayMode,
       error: json['error'] == null
           ? const NeoErrorDetail()
           : NeoErrorDetail.fromJson(json['error'] as Map<String, dynamic>),
+      body: json['body'],
     );
 
 Map<String, dynamic> _$NeoErrorToJson(NeoError instance) => <String, dynamic>{
       'errorCode': instance.responseCode,
-      'errorType': _$NeoErrorDisplayMethodEnumMap[instance.displayMode]!,
+      'errorType': _$NeoErrorTypeEnumMap[instance.errorType]!,
       'error': instance.error,
+      'body': instance.body,
     };
 
-const _$NeoErrorDisplayMethodEnumMap = {
-  NeoErrorDisplayMethod.popup: 'popup',
-  NeoErrorDisplayMethod.inline: 'inline',
+const _$NeoErrorTypeEnumMap = {
+  NeoErrorType.popup: 'popup',
+  NeoErrorType.inline: 'inline',
+  NeoErrorType.invalidToken: 'invalid_token',
 };
 
 NeoErrorDetail _$NeoErrorDetailFromJson(Map<String, dynamic> json) =>

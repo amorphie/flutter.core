@@ -10,5 +10,7 @@ HttpAuthResponse _$HttpAuthResponseFromJson(Map<String, dynamic> json) =>
     HttpAuthResponse(
       token: json['access_token'] as String? ?? '',
       refreshToken: json['refresh_token'] as String? ?? '',
-      expiresInSeconds: json['expires_in'] as int?,
+      expiresInSeconds: (json['expires_in'] as num?)?.toInt() ?? 0,
+      refreshTokenExpiresInSeconds:
+          (json['refresh_token_expires_in'] as num?)?.toInt() ?? 0,
     );

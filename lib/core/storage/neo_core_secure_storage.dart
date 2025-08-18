@@ -13,37 +13,39 @@
 import 'dart:async';
 import 'dart:convert';
 
-import 'package:flutter/foundation.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:get_it/get_it.dart';
+import 'package:logger/logger.dart';
 import 'package:neo_core/core/analytics/neo_logger.dart';
 import 'package:neo_core/core/encryption/jwt_decoder.dart';
 import 'package:neo_core/core/storage/neo_core_parameter_key.dart';
 import 'package:neo_core/core/storage/neo_shared_prefs.dart';
+import 'package:neo_core/core/util/extensions/get_it_extensions.dart';
+import 'package:neo_core/core/util/token_util.dart';
+import 'package:neo_core/core/util/uuid_util.dart';
 import 'package:neo_core/neo_core.dart';
-import 'package:uuid/uuid.dart';
 
-class _Constants {
+abstract class _Constants {
   static const StorageCipherAlgorithm storageCipherAlgorithm = StorageCipherAlgorithm.AES_GCM_NoPadding;
 }
 
 class NeoCoreSecureStorage {
-  static final NeoCoreSecureStorage _singleton = NeoCoreSecureStorage._internal();
+  final NeoSharedPrefs neoSharedPrefs;
+  final HttpClientConfig httpClientConfig;
 
-  factory NeoCoreSecureStorage() {
-    return _singleton;
-  }
+  NeoCoreSecureStorage({required this.neoSharedPrefs, required this.httpClientConfig});
 
-  NeoCoreSecureStorage._internal() : isCachingEnabled = GetIt.I.get<HttpClientConfig>().config.cacheStorage;
+  // Getter is required, config may change at runtime
+  bool get _enableCaching => httpClientConfig.config.cacheStorage;
 
   FlutterSecureStorage? _storage;
 
-  final bool isCachingEnabled;
-
   final Map<String, String?> _cachedValues = {};
 
+  NeoLogger? get _neoLogger => GetIt.I.getIfReady<NeoLogger>();
+
   Future<void> write({required String key, required String? value}) {
-    if (isCachingEnabled) {
+    if (_enableCaching) {
       _cachedValues[key] = value;
     }
 
@@ -51,7 +53,7 @@ class NeoCoreSecureStorage {
   }
 
   Future<String?> read(String key) async {
-    if (isCachingEnabled && _cachedValues.containsKey(key)) {
+    if (_enableCaching && _cachedValues.containsKey(key)) {
       return _cachedValues[key];
     } else if (await _storage!.containsKey(key: key)) {
       String? value;
@@ -59,8 +61,7 @@ class NeoCoreSecureStorage {
         value = await _storage!.read(key: key);
       } catch (e) {
         final errorMessage = '[NeoCoreSecureStorage]: Error occurred while reading value of $key';
-        debugPrint(errorMessage);
-        NeoLogger().logError(errorMessage);
+        _neoLogger?.logConsole(errorMessage, logLevel: Level.error);
       }
       _cachedValues[key] = value;
       return value;
@@ -70,7 +71,7 @@ class NeoCoreSecureStorage {
   }
 
   Future<void> delete(String key) {
-    if (isCachingEnabled) {
+    if (_enableCaching) {
       _cachedValues.remove(key);
     }
 
@@ -78,7 +79,7 @@ class NeoCoreSecureStorage {
   }
 
   Future<void> deleteAll() {
-    if (isCachingEnabled) {
+    if (_enableCaching) {
       _cachedValues.clear();
     }
 
@@ -102,7 +103,6 @@ class NeoCoreSecureStorage {
   }
 
   Future<bool> _checkFirstRun() async {
-    final neoSharedPrefs = NeoSharedPrefs();
     final isFirstRun = neoSharedPrefs.read(NeoCoreParameterKey.sharedPrefsFirstRun);
 
     if (isFirstRun == null || isFirstRun as bool) {
@@ -114,16 +114,17 @@ class NeoCoreSecureStorage {
 
   Future<void> _setInitialParameters() async {
     final deviceUtil = DeviceUtil();
+    // ignore:deprecated_member_use_from_same_package
     final deviceId = await deviceUtil.getDeviceId();
     final deviceInfo = await deviceUtil.getDeviceInfo();
-    if (!await _storage!.containsKey(key: NeoCoreParameterKey.secureStorageDeviceId) && deviceId != null) {
+    if (deviceId != null) {
       await write(key: NeoCoreParameterKey.secureStorageDeviceId, value: deviceId);
     }
-    if (!await _storage!.containsKey(key: NeoCoreParameterKey.secureStorageDeviceInfo) && deviceInfo != null) {
+    if (deviceInfo != null) {
       await write(key: NeoCoreParameterKey.secureStorageDeviceInfo, value: deviceInfo.encode());
     }
-    if (!await _storage!.containsKey(key: NeoCoreParameterKey.secureStorageTokenId)) {
-      await write(key: NeoCoreParameterKey.secureStorageTokenId, value: const Uuid().v1());
+    if (!await _storage!.containsKey(key: NeoCoreParameterKey.secureStorageInstallationId)) {
+      await write(key: NeoCoreParameterKey.secureStorageInstallationId, value: UuidUtil.generateUUIDWithoutHyphen());
     }
   }
 
@@ -131,8 +132,18 @@ class NeoCoreSecureStorage {
 
   // region: Custom Operations
   /// Set auth token(JWT), customerId and customerNameAndSurname from encoded JWT
-  Future setAuthToken(String token) async {
-    await write(key: NeoCoreParameterKey.secureStorageAuthToken, value: token);
+  /// and returns isTwoFactorAuthenticated status
+  Future<bool> setAuthToken(String token, {bool? isMobUnapproved}) async {
+    await Future.wait(
+      [
+        write(key: NeoCoreParameterKey.secureStorageAuthToken, value: token),
+        _writeIsMobUnapprovedStatus(isMobUnapproved),
+      ],
+    );
+
+    if (!TokenUtil.is2FAToken(token)) {
+      return false;
+    }
 
     final Map<String, dynamic> decodedToken = JwtDecoder.decode(token);
 
@@ -147,8 +158,32 @@ class NeoCoreSecureStorage {
       await write(key: NeoCoreParameterKey.secureStorageRole, value: role);
     }
 
+    final userId = decodedToken["user.id"];
+    if (userId is String && userId.isNotEmpty) {
+      await write(key: NeoCoreParameterKey.secureStorageUserId, value: userId);
+    }
+
+    final customerNo = decodedToken["customer_no"];
+    if (customerNo is String && customerNo.isNotEmpty) {
+      await write(key: NeoCoreParameterKey.secureStorageCustomerNo, value: customerNo);
+    }
+
     final customerName = decodedToken["given_name"];
+    if (customerName is String && customerName.isNotEmpty) {
+      await write(
+        key: NeoCoreParameterKey.secureStorageCustomerName,
+        value: customerName,
+      );
+    }
+
     final customerSurname = decodedToken["family_name"];
+    if (customerSurname is String && customerSurname.isNotEmpty) {
+      await write(
+        key: NeoCoreParameterKey.secureStorageCustomerSurname,
+        value: customerSurname,
+      );
+    }
+
     if (customerName is String && customerName.isNotEmpty && customerSurname is String && customerSurname.isNotEmpty) {
       await write(
         key: NeoCoreParameterKey.secureStorageCustomerNameAndSurname,
@@ -177,24 +212,55 @@ class NeoCoreSecureStorage {
     if (phoneNumber is String && phoneNumber.isNotEmpty) {
       await write(key: NeoCoreParameterKey.secureStoragePhoneNumber, value: phoneNumber);
     }
+
+    final userRole = decodedToken["role"];
+    await write(key: NeoCoreParameterKey.secureStorageUserRole, value: userRole);
+
+    final sessionId = decodedToken["jti"];
+    await write(key: NeoCoreParameterKey.secureStorageSessionId, value: sessionId);
+
+    final email = decodedToken["email"];
+    if (email is String && email.isNotEmpty) {
+      await write(key: NeoCoreParameterKey.secureStorageEmail, value: email);
+    }
+
+    return true;
   }
 
-  Future<void> deleteTokens() {
+  Future<void> deleteTokensWithRelatedData() {
     return Future.wait([
       delete(NeoCoreParameterKey.secureStorageAuthToken),
       delete(NeoCoreParameterKey.secureStorageRefreshToken),
+      delete(NeoCoreParameterKey.secureStorageUserRole),
+      delete(NeoCoreParameterKey.secureStorageSessionId),
+      delete(NeoCoreParameterKey.secureStorageUserInfoIsMobUnapproved),
     ]);
   }
 
   Future<void> deleteCustomer() {
     return Future.wait([
-      deleteTokens(),
+      deleteTokensWithRelatedData(),
+      delete(NeoCoreParameterKey.secureStorageUserId),
       delete(NeoCoreParameterKey.secureStorageCustomerId),
+      delete(NeoCoreParameterKey.secureStorageCustomerNo),
+      delete(NeoCoreParameterKey.secureStorageCustomerName),
+      delete(NeoCoreParameterKey.secureStorageCustomerSurname),
       delete(NeoCoreParameterKey.secureStorageCustomerNameAndSurname),
       delete(NeoCoreParameterKey.secureStorageCustomerNameAndSurnameUppercase),
       delete(NeoCoreParameterKey.secureStorageBusinessLine),
       delete(NeoCoreParameterKey.secureStoragePhoneNumber),
+      delete(NeoCoreParameterKey.secureStorageEmail),
     ]);
+  }
+
+  Future<void> _writeIsMobUnapprovedStatus(bool? isMobUnapproved) async {
+    if (isMobUnapproved == null) {
+      return;
+    }
+    return write(
+      key: NeoCoreParameterKey.secureStorageUserInfoIsMobUnapproved,
+      value: isMobUnapproved.toString(),
+    );
   }
 // endregion
 }

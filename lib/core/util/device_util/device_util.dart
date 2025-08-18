@@ -13,23 +13,29 @@
 import 'package:device_info_plus/device_info_plus.dart';
 import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:neo_core/core/util/device_util/models/neo_device_info.dart';
+import 'package:neo_core/core/util/uuid_util.dart';
 import 'package:universal_io/io.dart';
-import 'package:uuid/uuid.dart';
 
 class DeviceUtil {
+  static String? _androidId;
+
+  @Deprecated("Do not use this method. Get device id from secure storage instead.")
   Future<String?> getDeviceId() async {
     final deviceInfo = DeviceInfoPlugin();
     if (kIsWeb) {
-      return const Uuid().v1();
+      return UuidUtil.generateUUID();
     } else if (Platform.isIOS) {
       final iosInfo = await deviceInfo.iosInfo;
       return iosInfo.identifierForVendor;
     } else if (Platform.isAndroid) {
-      final androidInfo = await deviceInfo.androidInfo;
-      return androidInfo.id;
+      return _androidId ?? UuidUtil.generateUUID();
     } else {
       return null;
     }
+  }
+
+  static void setAndroidId(String androidId) {
+    _androidId = androidId;
   }
 
   Future<NeoDeviceInfo?> getDeviceInfo() async {
@@ -38,7 +44,7 @@ class DeviceUtil {
       return NeoDeviceInfo(model: "", platform: getPlatformName(), version: "");
     } else if (Platform.isIOS) {
       final iosInfo = await deviceInfo.iosInfo;
-      return NeoDeviceInfo(model: iosInfo.name, platform: getPlatformName(), version: iosInfo.systemVersion);
+      return NeoDeviceInfo(model: iosInfo.utsname.machine, platform: getPlatformName(), version: iosInfo.systemVersion);
     } else if (Platform.isAndroid) {
       final androidInfo = await deviceInfo.androidInfo;
       final brand = androidInfo.brand.isNotEmpty

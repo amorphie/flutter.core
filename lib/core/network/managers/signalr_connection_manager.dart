@@ -11,105 +11,123 @@
  */
 
 import 'dart:convert';
-import 'dart:developer';
 
 import 'package:collection/collection.dart';
 import 'package:flutter/foundation.dart' show kDebugMode;
-import 'package:flutter/material.dart';
+import 'package:get_it/get_it.dart';
 import 'package:neo_core/core/analytics/neo_logger.dart';
-import 'package:neo_core/core/network/models/neo_signalr_transition.dart';
+import 'package:neo_core/core/analytics/neo_logger_type.dart';
+import 'package:neo_core/core/network/models/neo_signalr_event.dart';
+import 'package:neo_core/core/network/models/neo_signalr_event_base_state.dart';
+import 'package:signalr_netcore/iretry_policy.dart';
 import 'package:signalr_netcore/signalr_client.dart';
 
 abstract class _Constants {
   static const eventNameSignalrOnClose = "[SignalrConnectionManager]: onClose is called!";
-  static const eventNameSignalrOnReconnecting = "[SignalrConnectionManager]: onReconnecting is called!";
-  static const eventNameSignalrOnReconnected = "[SignalrConnectionManager]: onReconnected is called!";
   static const eventNameSignalrInitSucceed = "[SignalrConnectionManager]: init is succeed!";
   static const eventNameSignalrInitFailed = "[SignalrConnectionManager]: init is failed!";
-  static const transitionSubjectKey = "subject";
-  static const transitionSubjectValue = ["worker-completed", "transition-completed"];
-  static const transitionResponseDataKey = "data";
+  static const eventCompletionStatusValues = ["worker-completed", "transition-completed"];
+}
+
+class _SignalRReconnectPolicy implements IRetryPolicy {
+  @override
+  int? nextRetryDelayInMilliseconds(RetryContext retryContext) {
+    return null;
+  }
 }
 
 class SignalrConnectionManager {
-  final String serverUrl;
-  final String methodName;
-  final NeoLogger _neoLogger;
-
   HubConnection? _hubConnection;
+  String? methodName;
 
-  SignalrConnectionManager({
-    required this.serverUrl,
-    required this.methodName,
-  }) : _neoLogger = NeoLogger();
+  SignalrConnectionManager();
 
-  Future init() async {
+  NeoLogger get _neoLogger => GetIt.I.get();
+
+  Future init({
+    required String serverUrl,
+    required String methodName,
+    required Function({required bool hasConnection}) onConnectionStatusChanged,
+  }) async {
+    this.methodName = methodName;
+
+    await stop();
     _hubConnection = HubConnectionBuilder()
         .withUrl(
-      serverUrl,
-      options: HttpConnectionOptions(transport: HttpTransportType.WebSockets, skipNegotiation: true),
-    )
-        .withAutomaticReconnect(retryDelays: [2000, 5000, 10000, 20000]).build();
+          serverUrl,
+          options: HttpConnectionOptions(transport: HttpTransportType.WebSockets, skipNegotiation: true),
+        )
+        .withAutomaticReconnect(reconnectPolicy: _SignalRReconnectPolicy())
+        .build();
     _hubConnection?.onclose(({error}) {
-      _neoLogger.logEvent(_Constants.eventNameSignalrOnClose);
-      debugPrint(_Constants.eventNameSignalrOnClose);
-    });
-    _hubConnection?.onreconnecting(({error}) {
-      _neoLogger.logEvent(_Constants.eventNameSignalrOnReconnecting);
-      debugPrint(_Constants.eventNameSignalrOnReconnecting);
-    });
-    _hubConnection?.onreconnected(({connectionId}) {
-      _neoLogger.logEvent(_Constants.eventNameSignalrOnReconnected);
-      debugPrint(_Constants.eventNameSignalrOnReconnected);
+      onConnectionStatusChanged(hasConnection: false);
+      _neoLogger.logCustom(
+        _Constants.eventNameSignalrOnClose,
+        logTypes: [NeoLoggerType.elastic, NeoLoggerType.logger],
+      );
     });
 
     if (_hubConnection?.state != HubConnectionState.Connected) {
       try {
         await _hubConnection?.start();
-        _neoLogger.logEvent(_Constants.eventNameSignalrInitSucceed);
-        debugPrint(_Constants.eventNameSignalrInitSucceed);
-      } on Exception catch (e, stacktrace) {
-        _neoLogger.logException("${_Constants.eventNameSignalrInitFailed} $e", stacktrace);
-        debugPrint(_Constants.eventNameSignalrInitFailed);
+        onConnectionStatusChanged(hasConnection: true);
+        _neoLogger.logCustom(
+          _Constants.eventNameSignalrInitSucceed,
+          logTypes: [NeoLoggerType.elastic, NeoLoggerType.logger],
+        );
+      } catch (e) {
+        onConnectionStatusChanged(hasConnection: false);
+        _neoLogger
+          ..logError("${_Constants.eventNameSignalrInitFailed} $e")
+          ..logConsole(_Constants.eventNameSignalrInitFailed);
       }
     }
   }
 
-  void listenForTransitionEvents({required Function(NeoSignalRTransition transition) onTransition}) {
-    _hubConnection?.on(methodName, (List<Object?>? transitions) {
+  void listenForSignalREvents({required Function(NeoSignalREvent event) onEvent}) {
+    if (methodName == null) {
+      return;
+    }
+    _hubConnection?.on(methodName ?? "", (List<Object?>? transitions) {
       if (kDebugMode) {
-        log('\n[SignalrConnectionManager] Transition: $transitions');
+        _neoLogger.logConsole('[SignalrConnectionManager] Transition: $transitions');
       }
       if (transitions == null) {
         return;
       }
-      final NeoSignalRTransition? ongoingTransition = _parseOngoingTransition(transitions);
-      if (ongoingTransition == null) {
+      final NeoSignalREvent? ongoingEvent = _parseOngoingEvent(transitions);
+      if (ongoingEvent == null) {
         return;
       }
-      onTransition(ongoingTransition);
+      onEvent(ongoingEvent);
     });
   }
 
-  NeoSignalRTransition? _parseOngoingTransition(List<Object?> transitions) {
+  NeoSignalREvent? _parseOngoingEvent(List<Object?> transitions) {
     return transitions
         .map((transition) {
           try {
             final transitionJsonDecoded = jsonDecode(transition is String ? transition : "{}");
-            if (!_Constants.transitionSubjectValue.contains(transitionJsonDecoded[_Constants.transitionSubjectKey])) {
+            final event = NeoSignalREvent.fromJson(transitionJsonDecoded);
+            if (!_Constants.eventCompletionStatusValues.contains(event.status) ||
+                event.baseState != NeoSignalREventBaseState.completed) {
               return null;
             }
-            return NeoSignalRTransition.fromJson(transitionJsonDecoded[_Constants.transitionResponseDataKey]);
+            return event;
           } catch (_) {
             return null;
           }
         })
-        .whereNotNull()
+        .nonNulls
         .toList()
         .firstOrNull;
   }
 
-  void stop() {
-    _hubConnection?.stop();
+  Future<void> stop() async {
+    try {
+      await _hubConnection?.stop();
+    } catch (_) {
+      // No-op
+    }
   }
 }

@@ -10,37 +10,35 @@
  * Any reproduction of this material must contain this notice.
  */
 
-import 'package:flutter/cupertino.dart';
 import 'package:get_it/get_it.dart';
+import 'package:logger/logger.dart';
 import 'package:neo_core/core/analytics/neo_logger.dart';
 import 'package:neo_core/core/network/models/http_client_config.dart';
+import 'package:neo_core/core/util/extensions/get_it_extensions.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 class NeoSharedPrefs {
-  static final NeoSharedPrefs _singleton = NeoSharedPrefs._internal();
+  NeoSharedPrefs();
 
-  factory NeoSharedPrefs() {
-    return _singleton;
-  }
+  // Getter is required, config may change at runtime
+  bool get _enableCaching => httpClientConfig?.config.cacheStorage ?? false;
 
-  NeoSharedPrefs._internal() : isCachingEnabled = GetIt.I.get<HttpClientConfig>().config.cacheStorage;
-
-  final bool isCachingEnabled;
+  HttpClientConfig? get httpClientConfig => GetIt.I.getIfReady<HttpClientConfig>();
+  NeoLogger? get _neoLogger => GetIt.I.getIfReady<NeoLogger>();
 
   SharedPreferences? _preferences;
 
   final Map<String, dynamic> _cachedValues = {};
 
-  Future<SharedPreferences> init() async {
+  Future<void> init() async {
     if (_preferences != null) {
-      return _preferences!;
+      return;
     }
     _preferences = await SharedPreferences.getInstance();
-    return _preferences!;
   }
 
   Object? read(String key) {
-    if (isCachingEnabled && _cachedValues.containsKey(key)) {
+    if (_enableCaching && _cachedValues.containsKey(key)) {
       return _cachedValues[key];
     }
 
@@ -51,7 +49,7 @@ class NeoSharedPrefs {
   }
 
   Future<bool> write(String key, Object value) {
-    if (isCachingEnabled) {
+    if (_enableCaching) {
       _cachedValues[key] = value;
     }
 
@@ -69,14 +67,13 @@ class NeoSharedPrefs {
       return Future.value(false);
     } catch (e) {
       const errorMessage = "[NeoSharedPrefs: Write error]";
-      debugPrint(errorMessage);
-      NeoLogger().logError(errorMessage);
+      _neoLogger?.logConsole(errorMessage, logLevel: Level.error);
       return Future.value(false);
     }
   }
 
   Future<bool> delete(String key) {
-    if (isCachingEnabled) {
+    if (_enableCaching) {
       _cachedValues.remove(key);
     }
 
@@ -84,7 +81,7 @@ class NeoSharedPrefs {
   }
 
   Future<bool> clear() {
-    if (isCachingEnabled) {
+    if (_enableCaching) {
       _cachedValues.clear();
     }
 

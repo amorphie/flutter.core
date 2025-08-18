@@ -7,25 +7,32 @@ publish_to: 'none' # Remove this line if you wish to publish to pub.dev
 version: 0.0.1
 
 environment:
-  sdk: '>=3.3.4 <4.0.0'
+  sdk: '>=3.4.0 <4.0.0'
 
 dependencies:
   flutter:
     sdk: flutter
 
   # Core
-  http: 1.2.1
+  http: 1.3.0
   rxdart: ^0.27.7
   flutter_bloc: ^8.1.3
+  bloc_concurrency: ^0.2.5
   equatable: ^2.0.5
   json_annotation: ^4.8.1
-  signalr_netcore: ^1.3.5 # Remove dependency_overrides when update is possible
-  flutter_secure_storage: ^9.0.0
+  signalr_netcore: 1.4.3
+
+  # DO NOT CHANGE [flutter_secure_storage] VERSION
+  # HIGHER VERSIONS HAVE PROBLEMS IN mTLS FOR iOS SUCH AS v9.2.2
+  flutter_secure_storage: 9.0.0 # READ UP
+
   shared_preferences: ^2.2.2
-  device_info_plus: ^9.1.0
+  device_info_plus: ^11.2.2
+  package_info_plus: ^8.0.0
   collection: ^1.17.1
   meta: ^1.9.1
   universal_io: ^2.2.2
+  mutex: ^3.1.0
 
   # DI
   get_it: ^7.6.0
@@ -35,20 +42,37 @@ dependencies:
 
   # Utility
   uuid: ^4.1.0
+  location: 7.0.1
 
   # Feature
-  firebase_core: ^2.24.0
-  firebase_crashlytics: ^3.4.6
-  flutter_local_notifications: ^16.2.0
-  firebase_messaging: ^14.7.9
+  firebase_core: 3.1.0
+  firebase_crashlytics: 4.0.1
+  flutter_local_notifications: 17.2.2
+  firebase_messaging: 15.0.0
+  firebase_remote_config: 5.0.1
+  firebase_performance: 0.10.0+1
 
-  # Posthog
-  posthog_flutter: ^3.3.0
+  #Huawei
+  huawei_push: ^6.12.0+302
+
+  # Analytics
   logger: ^2.2.0
   url_launcher: ^6.3.0
+  adjust_sdk: 4.38.1
+
+  # Dynamic Widget Building
+  json_dynamic_widget: ^7.2.0
+  child_builder: ^2.0.1
+  template_expressions: ^3.1.5
+
+  # Security
+  flutter_shield:
+    git:
+      url: https://github.com/amorphie/flutter.shield
+      ref: v1.0.18
 
 dependency_overrides:
-  uuid: ^4.1.0 # Delete this overrides when signalr_netcore package is updated
+  web: 1.0.0 # TODO: Update other dependencies and delete this override
 
 dev_dependencies:
   flutter_test:

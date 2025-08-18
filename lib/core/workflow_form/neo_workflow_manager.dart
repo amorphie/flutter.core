@@ -1,60 +1,101 @@
-import 'package:flutter/material.dart';
+import 'package:get_it/get_it.dart';
+import 'package:neo_core/core/analytics/neo_logger.dart';
 import 'package:neo_core/core/network/models/neo_http_call.dart';
+import 'package:neo_core/core/util/extensions/get_it_extensions.dart';
+import 'package:neo_core/core/util/uuid_util.dart';
 import 'package:neo_core/neo_core.dart';
-import 'package:uuid/uuid.dart';
 
 abstract class _Constants {
   static const endpointInitWorkflow = "init-workflow";
   static const endpointGetAvailableTransitions = "get-workflow-available-steps";
   static const endpointGetLastEventByLongPolling = "get-last-wf-event-by-long-polling";
-  static const endpointPostTransition = "post-transition-to-workflow";
-  static const pathParameterTransitionName = "TRANSITION_NAME";
   static const pathParameterWorkflowName = "WORKFLOW_NAME";
   static const pathParameterInstanceId = "INSTANCE_ID";
   static const queryParameterInstanceId = "InstanceId";
-  static const queryParameterSuffix = "suffix";
+  static const noWorkflowName = "-";
 }
 
 class NeoWorkflowManager {
+  static const endpointPostTransition = "post-transition-to-workflow";
+  static const pathParameterTransitionName = "TRANSITION_NAME";
+
   final NeoNetworkManager neoNetworkManager;
-  String _instanceId = const Uuid().v1();
-  static String workflowName = "";
+  String _instanceId = UuidUtil.generateUUID();
+  String _subFlowInstanceId = UuidUtil.generateUUID();
+  String _workflowName = "";
+  String _subWorkflowName = "";
 
   NeoWorkflowManager(this.neoNetworkManager);
 
-  void resetInstanceId() {
-    _instanceId = const Uuid().v1();
+  bool get hasActiveWorkflow => _workflowName.isNotEmpty && _workflowName != _Constants.noWorkflowName;
+
+  void resetInstanceId({bool isSubFlow = false}) {
+    if (isSubFlow) {
+      _subFlowInstanceId = UuidUtil.generateUUID();
+    } else {
+      _instanceId = UuidUtil.generateUUID();
+    }
   }
 
-  void setInstanceId(String? newInstanceId) {
-    _instanceId = newInstanceId ?? _instanceId;
+  void setInstanceId(String? newInstanceId, {bool isSubFlow = false}) {
+    if (isSubFlow) {
+      _subFlowInstanceId = newInstanceId ?? _subFlowInstanceId;
+    } else {
+      _instanceId = newInstanceId ?? _instanceId;
+    }
+  }
+
+  void setWorkflowName(String workflowName, {bool isSubFlow = false}) {
+    if (isSubFlow) {
+      _subWorkflowName = workflowName;
+    } else {
+      _workflowName = workflowName;
+    }
+  }
+
+  String getWorkflowName({bool isSubFlow = false}) {
+    return isSubFlow ? _subWorkflowName : _workflowName;
   }
 
   String get instanceId => _instanceId;
 
-  Future<Map<String, dynamic>> initWorkflow({required String workflowName, String? suffix}) async {
-    NeoWorkflowManager.workflowName = workflowName;
-    resetInstanceId();
+  String get subFlowInstanceId => _subFlowInstanceId;
+
+  NeoLogger? get _neoLogger => GetIt.I.getIfReady<NeoLogger>();
+
+  Future<NeoResponse> initWorkflow({
+    required String workflowName,
+    Map<String, dynamic>? queryParameters,
+    Map<String, String>? headerParameters,
+    bool isSubFlow = false,
+  }) async {
+    if (isSubFlow) {
+      _subWorkflowName = workflowName;
+    } else {
+      _workflowName = workflowName;
+    }
+    resetInstanceId(isSubFlow: isSubFlow);
 
     final List<HttpQueryProvider> queryProviders = [];
-    if (suffix != null) {
-      queryProviders.add(HttpQueryProvider({_Constants.queryParameterSuffix: suffix}));
+    if (queryParameters != null) {
+      queryProviders.add(HttpQueryProvider(queryParameters));
     }
 
     final response = await neoNetworkManager.call(
       NeoHttpCall(
         endpoint: _Constants.endpointInitWorkflow,
         pathParameters: {
-          _Constants.pathParameterWorkflowName: workflowName,
+          _Constants.pathParameterWorkflowName: _getActiveWorkflowName(isSubFlow: isSubFlow),
         },
+        headerParameters: headerParameters ?? {},
         queryProviders: queryProviders,
       ),
     );
-    debugPrint('\n[NeoWorkflowManager] Init Workflow: $response');
+    _neoLogger?.logConsole('[NeoWorkflowManager] Init Workflow: $response');
     return response;
   }
 
-  Future<Map<String, dynamic>> getAvailableTransitions({String? instanceId}) async {
+  Future<NeoResponse> getAvailableTransitions({String? instanceId}) async {
     setInstanceId(instanceId);
     final response = await neoNetworkManager.call(
       NeoHttpCall(
@@ -64,35 +105,54 @@ class NeoWorkflowManager {
         },
       ),
     );
-    debugPrint('\n[NeoWorkflowManager] Get Transitions: $response');
+    _neoLogger?.logConsole('[NeoWorkflowManager] Get Transitions: $response');
     return response;
   }
 
-  Future postTransition({
+  Future<NeoResponse> postTransition({
     required String transitionName,
     required Map<String, dynamic> body,
+    Map<String, String>? headerParameters,
+    bool isSubFlow = false,
+    String? instanceId,
   }) async {
-    await neoNetworkManager.call(
+    return neoNetworkManager.call(
       NeoHttpCall(
-        endpoint: _Constants.endpointPostTransition,
+        endpoint: endpointPostTransition,
         pathParameters: {
-          _Constants.pathParameterInstanceId: _instanceId,
-          _Constants.pathParameterTransitionName: transitionName,
+          _Constants.pathParameterInstanceId: instanceId ?? _getActiveInstanceId(isSubFlow: isSubFlow),
+          pathParameterTransitionName: transitionName,
         },
+        headerParameters: headerParameters ?? {},
         body: body,
       ),
     );
   }
 
-  Future<Map<String, dynamic>> getLastTransitionByLongPolling() async {
+  Future<NeoResponse> getLastTransitionByLongPolling({bool isSubFlow = false}) async {
     return neoNetworkManager.call(
       NeoHttpCall(
         endpoint: _Constants.endpointGetLastEventByLongPolling,
-        pathParameters: {_Constants.pathParameterWorkflowName: workflowName},
+        pathParameters: {_Constants.pathParameterWorkflowName: _getActiveWorkflowName(isSubFlow: isSubFlow)},
         queryProviders: [
-          HttpQueryProvider({_Constants.queryParameterInstanceId: _instanceId}),
+          HttpQueryProvider({_Constants.queryParameterInstanceId: _getActiveInstanceId(isSubFlow: isSubFlow)}),
         ],
       ),
     );
+  }
+
+  String _getActiveWorkflowName({bool isSubFlow = false}) {
+    return isSubFlow ? _subWorkflowName : _workflowName;
+  }
+
+  String _getActiveInstanceId({bool isSubFlow = false}) {
+    return isSubFlow ? _subFlowInstanceId : _instanceId;
+  }
+
+  void terminateWorkflow() {
+    resetInstanceId();
+    resetInstanceId(isSubFlow: true);
+    _workflowName = _Constants.noWorkflowName;
+    _subWorkflowName = _Constants.noWorkflowName;
   }
 }

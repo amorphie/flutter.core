@@ -24,7 +24,10 @@ abstract class _Constant {
   static const keyTransitionId = "transitionId";
   static const keyStatusMessage = "statusMessage";
   static const keyStatusCode = "statusCode";
-  static const keyWorkflowSuffix = "workflowSuffix";
+  static const keyWorkflowSuffix = "queryParameters";
+  static const keyUseSubNavigator = "useSubNavigator";
+  static const keyUseRootNavigator = "useRootNavigator";
+  static const keyIsInitialPage = "isInitialPage";
   static const statusCodeRedirectToLogin = "302";
 }
 
@@ -35,13 +38,16 @@ class SignalrTransitionData {
   final String? viewSource;
   final Map<String, dynamic> initialData;
   final bool isBackNavigation;
-  final String transitionId;
+  final String? transitionId;
   final String? statusMessage;
   final String? statusCode;
-  final String? workflowSuffix;
+  final Map<String, dynamic>? queryParameters;
+  final bool useSubNavigator;
+  final bool useRootNavigator;
+  final bool isInitialPage;
 
   SignalrTransitionData({
-    required this.transitionId,
+    this.transitionId,
     this.navigationPath,
     this.navigationType,
     this.pageId,
@@ -50,7 +56,10 @@ class SignalrTransitionData {
     this.isBackNavigation = false,
     this.statusMessage,
     this.statusCode,
-    this.workflowSuffix,
+    this.queryParameters,
+    this.useSubNavigator = false,
+    this.useRootNavigator = false,
+    this.isInitialPage = false,
   });
 
   String encode() {
@@ -64,7 +73,10 @@ class SignalrTransitionData {
       _Constant.keyTransitionId: transitionId,
       _Constant.keyStatusMessage: statusMessage,
       _Constant.keyStatusCode: statusCode,
-      _Constant.keyWorkflowSuffix: workflowSuffix,
+      _Constant.keyWorkflowSuffix: queryParameters,
+      _Constant.keyUseSubNavigator: useSubNavigator,
+      _Constant.keyUseRootNavigator: useRootNavigator,
+      _Constant.keyIsInitialPage: isInitialPage,
     });
   }
 
@@ -80,7 +92,10 @@ class SignalrTransitionData {
       transitionId: jsonMap[_Constant.keyTransitionId],
       statusMessage: jsonMap[_Constant.keyStatusMessage],
       statusCode: jsonMap[_Constant.keyStatusCode],
-      workflowSuffix: jsonMap[_Constant.keyWorkflowSuffix],
+      queryParameters: jsonMap[_Constant.keyWorkflowSuffix],
+      useSubNavigator: jsonMap[_Constant.keyUseSubNavigator],
+      useRootNavigator: jsonMap[_Constant.keyUseRootNavigator],
+      isInitialPage: jsonMap[_Constant.keyIsInitialPage],
     );
   }
 }

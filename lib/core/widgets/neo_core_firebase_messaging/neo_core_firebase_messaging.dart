@@ -2,22 +2,31 @@ import 'dart:async';
 import 'dart:convert';
 
 import 'package:firebase_messaging/firebase_messaging.dart';
+import 'package:flutter/cupertino.dart';
 import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
+import 'package:flutter/widgets.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
+import 'package:get_it/get_it.dart';
+import 'package:neo_core/core/analytics/neo_logger.dart';
+import 'package:neo_core/core/bus/widget_event_bus/neo_core_widget_event_keys.dart';
+import 'package:neo_core/core/bus/widget_event_bus/neo_widget_event.dart';
 import 'package:neo_core/core/network/managers/neo_network_manager.dart';
+import 'package:neo_core/core/storage/neo_core_secure_storage.dart';
 import 'package:neo_core/feature/device_registration/usecases/neo_core_register_device_usecase.dart';
+import 'package:neo_core/feature/neo_push_message_payload_handlers/neo_firebase_android_push_message_payload_handler.dart';
 import 'package:universal_io/io.dart';
 
 abstract class _Constant {
   static const androidNotificationChannelID = "high_importance_channel";
   static const androidNotificationChannelName = "High Importance Notifications";
   static const androidNotificationChannelDescription = "This channel is used for important notifications";
-  static const pushNotificationDeeplinkKey = "deeplink";
+  static const androidNotificationImportance = Importance.max;
 }
 
 @pragma('vm:entry-point')
 Future<void> onBackgroundMessage(RemoteMessage message) async {
+  debugPrint("[NeoCoreFirebaseMessaging]: Background notification was triggered by ${message.notification}");
   return Future.value();
 }
 
@@ -25,29 +34,57 @@ class NeoCoreFirebaseMessaging extends StatefulWidget {
   const NeoCoreFirebaseMessaging({
     required this.child,
     required this.networkManager,
+    required this.neoCoreSecureStorage,
+    required this.onTokenChanged,
     this.androidDefaultIcon,
+    this.notificationSound,
     this.onDeeplinkNavigation,
     super.key,
   });
 
   final Widget child;
   final NeoNetworkManager networkManager;
+  final NeoCoreSecureStorage neoCoreSecureStorage;
+  final Function(String) onTokenChanged;
   final String? androidDefaultIcon;
+  final String? notificationSound;
   final Function(String)? onDeeplinkNavigation;
+
+  static FirebaseMessaging get firebaseMessaging => _firebaseMessaging;
+
+  static final FirebaseMessaging _firebaseMessaging = FirebaseMessaging.instance;
 
   @override
   State<NeoCoreFirebaseMessaging> createState() => _NeoCoreFirebaseMessagingState();
 }
 
 class _NeoCoreFirebaseMessagingState extends State<NeoCoreFirebaseMessaging> {
-  late FirebaseMessaging _firebaseMessaging;
-
-  final _androidChannel = const AndroidNotificationChannel(
-    _Constant.androidNotificationChannelID,
-    _Constant.androidNotificationChannelName,
-    description: _Constant.androidNotificationChannelDescription,
-  );
+  AndroidNotificationChannel? _androidChannel;
   final _localNotifications = FlutterLocalNotificationsPlugin();
+
+  NeoLogger get _neoLogger => GetIt.I.get();
+
+  StreamSubscription? _widgetEventStreamSubscription;
+
+  void _listenWidgetEventKeys() {
+    _widgetEventStreamSubscription = NeoCoreWidgetEventKeys.initPushMessagingServices.listenEvent(
+      onEventReceived: (NeoWidgetEvent widgetEvent) {
+        _init();
+      },
+    );
+  }
+
+  void _init() {
+    if (kIsWeb) {
+      return;
+    }
+    _initNotificationChannel();
+    _initNotifications();
+    _initPushNotifications();
+    if (Platform.isAndroid) {
+      _initLocalNotifications();
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -57,36 +94,67 @@ class _NeoCoreFirebaseMessagingState extends State<NeoCoreFirebaseMessaging> {
   @override
   void initState() {
     super.initState();
-    if (kIsWeb) {
-      return;
-    }
-    _firebaseMessaging = FirebaseMessaging.instance;
-    _initNotifications();
-    _initPushNotifications();
+    _listenWidgetEventKeys();
+  }
+
+  void _initNotificationChannel() {
     if (Platform.isAndroid) {
-      _initLocalNotifications();
+      _androidChannel = AndroidNotificationChannel(
+        _Constant.androidNotificationChannelID,
+        _Constant.androidNotificationChannelName,
+        description: _Constant.androidNotificationChannelDescription,
+        importance: _Constant.androidNotificationImportance,
+        sound:
+            (widget.notificationSound != null) ? RawResourceAndroidNotificationSound(widget.notificationSound) : null,
+      );
     }
   }
 
   Future<void> _initNotifications() async {
-    await _firebaseMessaging.requestPermission();
-
-    final token = await _getTokenBasedOnPlatform();
-    if (token != null) {
-      _onTokenChange(token);
+    if (Platform.isIOS) {
+      unawaited(
+        _getAPNSTokenBasedOnPlatform().then((apnsToken) {
+          if (apnsToken != null) {
+            _onTokenChange(apnsToken, isAPNS: true);
+          }
+        }),
+      );
     }
-    _firebaseMessaging.onTokenRefresh.listen(_onTokenChange);
+    unawaited(
+      _getTokenBasedOnPlatform().then((firebaseToken) {
+        if (firebaseToken != null) {
+          _onTokenChange(firebaseToken);
+        }
+      }),
+    );
+    NeoCoreFirebaseMessaging.firebaseMessaging.onTokenRefresh.listen(_onTokenChange);
   }
 
-  void _onTokenChange(String token) {
-    NeoCoreRegisterDeviceUseCase().call(networkManager: widget.networkManager, deviceToken: token);
+  void _onTokenChange(String token, {bool isAPNS = false}) {
+    _neoLogger.logConsole("[NeoCoreMessaging]: Token is: $token. Is APNS: $isAPNS");
+    if (Platform.isAndroid || isAPNS) {
+      widget.onTokenChanged.call(token);
+    }
+    if (!isAPNS) {
+      registerDevice(token);
+    }
+  }
+
+  void registerDevice(String tokenFirebase) {
+    NeoCoreRegisterDeviceUseCase().call(
+      networkManager: widget.networkManager,
+      secureStorage: widget.neoCoreSecureStorage,
+      deviceToken: tokenFirebase,
+      isGoogleServiceAvailable: Platform.isAndroid,
+    );
   }
 
   Future<void> _initPushNotifications() async {
-    await _firebaseMessaging.setForegroundNotificationPresentationOptions(alert: true, badge: true, sound: true);
+    await NeoCoreFirebaseMessaging.firebaseMessaging
+        .setForegroundNotificationPresentationOptions(alert: true, badge: true, sound: true);
 
     // Get any messages which caused the application to open from a terminated state.
-    await _firebaseMessaging.getInitialMessage().then(_handleMessage);
+    await NeoCoreFirebaseMessaging.firebaseMessaging.getInitialMessage().then(_handleMessage);
 
     // Also handle any interaction when the app is in the background via Stream listener
     FirebaseMessaging.onMessageOpenedApp.listen(_handleMessage);
@@ -96,8 +164,10 @@ class _NeoCoreFirebaseMessagingState extends State<NeoCoreFirebaseMessaging> {
 
     // This is called when an incoming FCM payload is received while the Flutter instance is in the foreground.
     FirebaseMessaging.onMessage.listen((message) {
+      _neoLogger
+          .logConsole("[NeoCoreFirebaseMessaging]: Foreground notification was triggered by ${message.notification}");
       final notification = message.notification;
-      if (notification == null || !Platform.isAndroid) {
+      if (notification == null || !Platform.isAndroid || _androidChannel == null) {
         return;
       }
       _localNotifications.show(
@@ -106,10 +176,12 @@ class _NeoCoreFirebaseMessagingState extends State<NeoCoreFirebaseMessaging> {
         notification.body,
         NotificationDetails(
           android: AndroidNotificationDetails(
-            _androidChannel.id,
-            _androidChannel.name,
-            channelDescription: _androidChannel.description,
+            _androidChannel!.id,
+            _androidChannel!.name,
+            channelDescription: _androidChannel!.description,
             icon: widget.androidDefaultIcon,
+            sound: _androidChannel!.sound,
+            importance: _androidChannel!.importance,
           ),
         ),
         payload: jsonEncode(message.toMap()),
@@ -133,30 +205,34 @@ class _NeoCoreFirebaseMessagingState extends State<NeoCoreFirebaseMessaging> {
         }
       },
     );
-    await _localNotifications
-        .resolvePlatformSpecificImplementation<AndroidFlutterLocalNotificationsPlugin>()
-        ?.createNotificationChannel(_androidChannel);
+    if (_androidChannel != null) {
+      await _localNotifications
+          .resolvePlatformSpecificImplementation<AndroidFlutterLocalNotificationsPlugin>()
+          ?.createNotificationChannel(_androidChannel!);
+    }
   }
 
   Future<String?> _getTokenBasedOnPlatform() async {
-    String? token;
     if (kIsWeb) {
       return null;
-    } else if (Platform.isIOS) {
-      token = await _firebaseMessaging.getAPNSToken();
-    } else if (Platform.isAndroid) {
-      token = await _firebaseMessaging.getToken();
     }
-    return token;
+    return NeoCoreFirebaseMessaging.firebaseMessaging.getToken();
+  }
+
+  Future<String?> _getAPNSTokenBasedOnPlatform() async {
+    return NeoCoreFirebaseMessaging.firebaseMessaging.getAPNSToken();
   }
 
   void _handleMessage(RemoteMessage? message) {
-    if (message == null) {
-      return;
-    }
-    final String? deeplinkPath = message.data[_Constant.pushNotificationDeeplinkKey];
-    if (deeplinkPath != null && deeplinkPath.isNotEmpty) {
-      widget.onDeeplinkNavigation?.call(deeplinkPath);
-    }
+    NeoFirebaseAndroidPushMessagePayloadHandler().handleMessage(
+      message: message,
+      onDeeplinkNavigation: widget.onDeeplinkNavigation,
+    );
+  }
+
+  @override
+  void dispose() {
+    _widgetEventStreamSubscription?.cancel();
+    super.dispose();
   }
 }
