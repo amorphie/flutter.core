@@ -5,8 +5,8 @@ import 'package:get_it/get_it.dart';
 import 'package:neo_core/core/analytics/neo_logger.dart';
 import 'package:neo_core/core/isolates/execute_isolated.dart';
 import 'package:neo_core/core/isolates/isolate_data.dart';
+import 'package:neo_core/core/managers/parameter_manager/neo_core_parameter_key.dart';
 import 'package:neo_core/core/network/models/neo_signalr_event.dart';
-import 'package:neo_core/core/storage/neo_core_parameter_key.dart';
 import 'package:neo_core/core/storage/neo_core_secure_storage.dart';
 import 'package:neo_core/core/widgets/neo_transition_listener/bloc/neo_transition_listener_bloc.dart';
 

@@ -1,6 +1,6 @@
 import 'package:flutter/foundation.dart';
+import 'package:neo_core/core/managers/parameter_manager/neo_core_parameter_key.dart';
 import 'package:neo_core/core/network/models/neo_network_header_key.dart';
-import 'package:neo_core/core/storage/neo_core_parameter_key.dart';
 import 'package:neo_core/core/storage/neo_core_secure_storage.dart';
 import 'package:neo_core/core/storage/neo_shared_prefs.dart';
 import 'package:neo_core/core/util/device_util/models/neo_device_info.dart';
