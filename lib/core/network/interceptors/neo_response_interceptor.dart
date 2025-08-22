@@ -6,9 +6,9 @@ import 'package:get_it/get_it.dart';
 import 'package:http/http.dart';
 import 'package:logger/logger.dart';
 import 'package:neo_core/core/analytics/neo_logger.dart';
+import 'package:neo_core/core/managers/parameter_manager/neo_core_parameter_key.dart';
 import 'package:neo_core/core/network/helpers/mtls_helper.dart';
 import 'package:neo_core/core/network/models/neo_network_header_key.dart';
-import 'package:neo_core/core/storage/neo_core_parameter_key.dart';
 import 'package:neo_core/core/storage/neo_core_secure_storage.dart';
 import 'package:neo_core/core/util/extensions/get_it_extensions.dart';
 
