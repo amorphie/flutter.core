@@ -13,6 +13,7 @@
 import 'dart:convert';
 
 import 'package:equatable/equatable.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:interpolation/interpolation.dart';
 import 'package:neo_core/core/analytics/neo_logger.dart';
@@ -142,6 +143,15 @@ class LocalizationBloc extends Bloc<LocalizationEvent, LocalizationState> {
       localizationData = json.decode(utf8.decode(base64Decode(localizationDataBase64)));
       emit(state.copyWith(lastUpdatedTime: DateTime.now()));
     }
+  }
+
+  static void addLocalization(String key, Map<String, String> translations) {
+    if (key.isEmpty || translations.isEmpty) {
+      debugPrint('[LocalizationBloc] Warning: Attempted to add empty key or translations');
+      return;
+    }
+
+    localizationData[key] = Map<String, String>.from(translations);
   }
 }
 
