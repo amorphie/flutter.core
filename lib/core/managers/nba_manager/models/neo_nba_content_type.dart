@@ -3,10 +3,14 @@ import 'package:json_annotation/json_annotation.dart';
 @JsonEnum()
 enum NeoNbaContentType {
   @JsonValue(4)
-  image,
+  image('image'),
   @JsonValue(5)
-  dynamicWidget,
+  dynamicWidget('dynamicWidget'),
   ;
+
+  final String value;
+
+  const NeoNbaContentType(this.value);
 
   static NeoNbaContentType fromJson(String value) {
     switch (value) {
