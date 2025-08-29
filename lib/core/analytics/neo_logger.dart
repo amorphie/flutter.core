@@ -164,8 +164,8 @@ class NeoLogger implements INeoLogger {
   }
 
   @override
-  void logError(String message) {
-    logCustom(message, logLevel: Level.error, logTypes: [NeoLoggerType.elastic]);
+  void logError(String message, {Map<String, dynamic>? properties}) {
+    logCustom(message, logLevel: Level.error, logTypes: [NeoLoggerType.elastic], properties: properties);
     if (kIsWeb) {
       return;
     }
