@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:get_it/get_it.dart';
 import 'package:http/http.dart';
@@ -15,6 +17,7 @@ class NeoSentry {
     required bool enableInDebug,
     required double tracesSampleRate,
     required Widget child,
+    required String? userId,
   }) async {
     await SentryFlutter.init(
       (options) {
@@ -30,14 +33,15 @@ class NeoSentry {
       },
       appRunner: () => runApp(SentryWidget(child: child)),
     );
+    await setUser(id: userId);
   }
 
-  Future<void> setUser({required String id}) async {
+  Future<void> setUser({required String? id}) async {
     await Sentry.configureScope(
       (scope) async {
         await scope.setUser(
           SentryUser(
-            id: id,
+            id: id ?? scope.user?.id,
             data: await _neoNetworkManager.neoConstantHeaders.getHeaders(),
             ipAddress: '{{auto}}',
           ),
