@@ -35,7 +35,13 @@ class NeoSentry {
   Future<void> setUser({required String id}) async {
     await Sentry.configureScope(
       (scope) async {
-        await scope.setUser(SentryUser(id: id, data: await _neoNetworkManager.neoConstantHeaders.getHeaders()));
+        await scope.setUser(
+          SentryUser(
+            id: id,
+            data: await _neoNetworkManager.neoConstantHeaders.getHeaders(),
+            ipAddress: '{{auto}}',
+          ),
+        );
       },
     );
   }
