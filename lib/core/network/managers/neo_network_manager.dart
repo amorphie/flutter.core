@@ -69,6 +69,7 @@ class NeoNetworkManager {
   final NeoNetworkManagerLogScale logScale;
   final Map<String, String> defaultHeaders;
   final Duration timeoutDuration;
+  final bool isBackoffice;
 
   late final bool _enableSslPinning;
 
@@ -104,6 +105,7 @@ class NeoNetworkManager {
     this.logScale = NeoNetworkManagerLogScale.simplified,
     this.defaultHeaders = const {},
     this.timeoutDuration = const Duration(minutes: 1),
+    this.isBackoffice = false,
   });
 
   NeoLogger? get _neoLogger => GetIt.I.getIfReady<NeoLogger>();
@@ -126,6 +128,7 @@ class NeoNetworkManager {
           neoSharedPrefs: neoSharedPrefs,
           secureStorage: secureStorage,
           defaultHeaders: defaultHeaders,
+          isBackoffice: isBackoffice,
         ).getHeaders(),
       );
   }
