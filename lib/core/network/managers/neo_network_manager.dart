@@ -579,7 +579,7 @@ class NeoNetworkManager {
       "jti": UuidUtil.generateUUID(),
       "nbf": now.millisecondsSinceEpoch ~/ 1000,
       "exp": now.add(const Duration(minutes: 2)).millisecondsSinceEpoch ~/ 1000,
-      "device_Id": deviceId,
+      "device_id": deviceId,
       "installation_id": installationId,
     };
 
