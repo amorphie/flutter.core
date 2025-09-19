@@ -19,6 +19,7 @@ import 'package:flutter/services.dart';
 import 'package:get_it/get_it.dart';
 import 'package:http/http.dart' as http;
 import 'package:http/io_client.dart';
+import 'package:jose/jose.dart';
 import 'package:json_annotation/json_annotation.dart';
 import 'package:logger/logger.dart';
 import 'package:mutex/mutex.dart';
@@ -34,6 +35,7 @@ import 'package:neo_core/core/network/models/neo_http_call.dart';
 import 'package:neo_core/core/network/models/neo_network_header_key.dart';
 import 'package:neo_core/core/storage/neo_core_parameter_key.dart';
 import 'package:neo_core/core/storage/neo_shared_prefs.dart';
+import 'package:neo_core/core/storage/neo_core_secure_storage.dart';
 import 'package:neo_core/core/util/extensions/get_it_extensions.dart';
 import 'package:neo_core/core/util/token_util.dart';
 import 'package:neo_core/core/util/uuid_util.dart';
@@ -395,10 +397,16 @@ class NeoNetworkManager {
     final response = await call(
       NeoHttpCall(
         endpoint: _Constants.endpointGetToken,
-        body: {
-          _Constants.requestKeyGrantType: _Constants.requestValueGrantTypeRefreshToken,
-          _Constants.requestKeyRefreshToken: refreshToken,
-        },
+        body: await _isExistUser
+            ? {
+                "grant_type": "refresh_token",
+                "client_assertion": await createJwtTokenForAccessRequest(),
+                "scopes": ["openid"],
+              }
+            : {
+                _Constants.requestKeyGrantType: _Constants.requestValueGrantTypeRefreshToken,
+                _Constants.requestKeyRefreshToken: refreshToken,
+              },
       ),
     );
     if (response.isSuccess) {
@@ -430,16 +438,22 @@ class NeoNetworkManager {
       return true;
     }
     _tokenLockCompleter = Completer<void>();
-
+    //TODO: Get Token URL from config
     final response = await call(
       NeoHttpCall(
         endpoint: _Constants.endpointGetToken,
-        body: {
-          _Constants.requestKeyClientId: workflowClientId,
-          _Constants.requestKeyClientSecret: workflowClientSecret,
-          _Constants.requestKeyGrantType: _Constants.requestValueGrantTypeClientCredentials,
-          _Constants.requestKeyScopes: _Constants.requestValueScopes,
-        },
+        body: await _isExistUser
+            ? {
+                "grant_type": "urn:ietf:params:oauth:grant-type:burgan-certificate-assertion",
+                "client_assertion": await createJwtTokenForAccessRequest(),
+                "scopes": ["openid"],
+              }
+            : {
+                _Constants.requestKeyClientId: workflowClientId,
+                _Constants.requestKeyClientSecret: workflowClientSecret,
+                _Constants.requestKeyGrantType: _Constants.requestValueGrantTypeClientCredentials,
+                _Constants.requestKeyScopes: _Constants.requestValueScopes,
+              },
       ),
     );
     if (response.isSuccess) {
@@ -539,5 +553,54 @@ class NeoNetworkManager {
         );
       case NeoNetworkManagerLogScale.none:
     }
+  }
+
+  Future<bool> get _isExistUser async {
+    final customerId = await secureStorage.read(NeoCoreParameterKey.secureStorageCustomerId);
+    final authStatus = await neoSharedPrefs.read(NeoCoreParameterKey.sharedPrefsAuthStatus);
+
+    return (customerId != null && customerId.isNotEmpty) || (authStatus != null && authStatus == "1FA");
+  }
+
+  Future<String> createJwtTokenForAccessRequest() async {
+    final customerId = await secureStorage.read(NeoCoreParameterKey.secureStorageCustomerId);
+    final installationId = await secureStorage.read(NeoCoreParameterKey.secureStorageInstallationId);
+    final deviceId = await secureStorage.read(NeoCoreParameterKey.secureStorageDeviceId);
+
+    final serverPrivateKey = await MtlsHelper().getServerPrivateKey(clientKeyTag: "$deviceId$customerId");
+    final now = DateTime.now().toUtc();
+
+    // Claims (RFC 7523 uyumlu)
+
+    final claims = {
+      "iss": workflowClientId,
+      "sub": customerId,
+      "aud": "BurganIam",
+      "jti": UuidUtil.generateUUIDWithoutHyphen(),
+      "nbf": now.millisecondsSinceEpoch ~/ 1000,
+      "exp": now.add(const Duration(minutes: 2)).millisecondsSinceEpoch ~/ 1000,
+      "device_Id": deviceId,
+      "installation_id": installationId,
+    };
+
+    // RSA key yükle
+
+    final keyStore = JsonWebKeyStore();
+
+    final jwk = JsonWebKey.fromPem(serverPrivateKey!);
+
+    keyStore.addKey(jwk);
+
+    // JWT oluştur
+
+    final builder = JsonWebSignatureBuilder()
+      ..jsonContent = claims
+      ..addRecipient(jwk, algorithm: "RS256");
+
+    final jws = builder.build();
+
+    // İmzalı JWT string
+
+    return jws.toCompactSerialization();
   }
 }
