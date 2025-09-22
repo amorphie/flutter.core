@@ -400,7 +400,7 @@ class NeoNetworkManager {
         body: await _isExistUser
             ? {
                 "grant_type": "refresh_token",
-                "client_assertion": await createJwtTokenForAccessRequest(),
+                "client_assertion": await createJwtTokenForAccessRequest(true),
                 "scopes": ["openid"],
               }
             : {
@@ -445,7 +445,7 @@ class NeoNetworkManager {
         body: await _isExistUser
             ? {
                 "grant_type": "urn:ietf:params:oauth:grant-type:burgan-certificate-assertion",
-                "client_assertion": await createJwtTokenForAccessRequest(),
+                "client_assertion": await createJwtTokenForAccessRequest(false),
                 "scopes": ["openid"],
               }
             : {
@@ -562,7 +562,7 @@ class NeoNetworkManager {
     return (customerId != null && customerId.isNotEmpty) || (authStatus != null && authStatus == "1FA");
   }
 
-  Future<String> createJwtTokenForAccessRequest() async {
+  Future<String> createJwtTokenForAccessRequest(bool isRefreshToken) async {
     final customerId = await secureStorage.read(NeoCoreParameterKey.secureStorageCustomerId);
     final installationId = await secureStorage.read(NeoCoreParameterKey.secureStorageInstallationId);
     final deviceId = await secureStorage.read(NeoCoreParameterKey.secureStorageDeviceId);
@@ -583,6 +583,9 @@ class NeoNetworkManager {
       "installation_id": installationId,
     };
 
+    if (isRefreshToken) {
+      claims["refresh_token"] = await _getRefreshToken();
+    }
     // RSA key yükle
 
     final keyStore = JsonWebKeyStore();
