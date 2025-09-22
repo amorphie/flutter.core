@@ -24,6 +24,8 @@ export 'core/util/package_util.dart';
 export 'core/widgets/neo_widgets.dart';
 export 'core/workflow_form/neo_workflow_manager.dart';
 export 'core/workflow_form/workflow_router.dart';
+export 'core/workflow_form/workflow_instance_manager.dart';
+export 'core/workflow_form/workflow_engine_config.dart';
 export 'core/workflow_form/vnext/vnext_workflow_client.dart';
 export 'core/workflow_form/vnext/vnext_config.dart';
 export 'core/di/application_module.dart';

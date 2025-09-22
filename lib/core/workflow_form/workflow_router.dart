@@ -11,10 +11,13 @@
  */
 
 import 'package:neo_core/core/analytics/neo_logger.dart';
+import 'package:neo_core/core/network/models/http_client_config.dart';
 import 'package:neo_core/core/network/models/neo_error.dart';
 import 'package:neo_core/core/network/models/neo_response.dart';
 import 'package:neo_core/core/workflow_form/neo_workflow_manager.dart';
 import 'package:neo_core/core/workflow_form/vnext/vnext_workflow_client.dart';
+import 'package:neo_core/core/workflow_form/workflow_engine_config.dart';
+import 'package:neo_core/core/workflow_form/workflow_instance_manager.dart';
 
 /// Configuration for workflow routing decisions
 class WorkflowRouterConfig {
@@ -36,20 +39,27 @@ class WorkflowRouterConfig {
       vNextDomain!.isNotEmpty;
 }
 
-/// Router that directs workflow operations to V1 or V2 implementations
-/// Maintains backward compatibility while enabling gradual vNext adoption
-class WorkflowRouter {
+/// Enhanced router that directs workflow operations to V1 or V2 implementations
+/// with configuration-driven engine selection and multi-instance support
+class EnhancedWorkflowRouter {
   final NeoWorkflowManager v1Manager;
   final VNextWorkflowClient v2Client;
   final NeoLogger logger;
-  final WorkflowRouterConfig config;
+  final HttpClientConfig httpClientConfig;
+  final WorkflowInstanceManager instanceManager;
 
-  WorkflowRouter({
+  EnhancedWorkflowRouter({
     required this.v1Manager,
     required this.v2Client,
     required this.logger,
-    required this.config,
+    required this.httpClientConfig,
+    required this.instanceManager,
   });
+
+  /// Get workflow engine configuration for a workflow name
+  WorkflowEngineConfig _getConfigForWorkflow(String workflowName) {
+    return httpClientConfig.getWorkflowConfig(workflowName);
+  }
 
   /// Initialize workflow - routes to V1 or V2 based on configuration
   Future<NeoResponse> initWorkflow({
@@ -58,106 +68,296 @@ class WorkflowRouter {
     Map<String, String>? headerParameters,
     bool isSubFlow = false,
   }) async {
-    logger.logConsole('[WorkflowRouter] initWorkflow called for: $workflowName, V2 enabled: ${config.enableV2Workflows}, can use V2: ${config.canUseV2}');
+    final engineConfig = _getConfigForWorkflow(workflowName);
+    
+    logger.logConsole('[EnhancedWorkflowRouter] initWorkflow called for: $workflowName, engine: ${engineConfig.engine}, valid: ${engineConfig.isValid}');
 
-    if (config.canUseV2) {
-      logger.logConsole('[WorkflowRouter] Routing initWorkflow to V2 (vNext)');
+    if (engineConfig.isVNext && engineConfig.isValid) {
+      return _initvNextWorkflow(workflowName, engineConfig, queryParameters, headerParameters, isSubFlow);
+    } else {
+      return _initAmorphieWorkflow(workflowName, engineConfig, queryParameters, headerParameters, isSubFlow);
+    }
+  }
+
+  /// Initialize workflow using vNext (V2) engine
+  Future<NeoResponse> _initvNextWorkflow(
+    String workflowName,
+    WorkflowEngineConfig engineConfig,
+    Map<String, dynamic>? queryParameters,
+    Map<String, String>? headerParameters,
+    bool isSubFlow,
+  ) async {
+    logger.logConsole('[EnhancedWorkflowRouter] Routing initWorkflow to V2 (vNext)');
+    
+    try {
       final v2Response = await v2Client.initWorkflow(
-        domain: config.vNextDomain!,
+        domain: engineConfig.vNextDomain!,
         workflowName: workflowName,
         key: _generateKey(),
         attributes: queryParameters ?? const {},
-        tags: const [],
         headers: headerParameters,
       );
       
+      // Track the instance in instance manager
+      if (v2Response is NeoSuccessResponse) {
+        final instanceId = v2Response.data['instanceId'] as String?;
+        if (instanceId != null) {
+          instanceManager.trackInstance(WorkflowInstanceEntity(
+            instanceId: instanceId,
+            workflowName: workflowName,
+            engine: 'vnext',
+            status: 'active',
+            currentState: v2Response.data['currentState'] as String?,
+            attributes: queryParameters ?? {},
+            createdAt: DateTime.now(),
+            updatedAt: DateTime.now(),
+            vNextDomain: engineConfig.vNextDomain,
+            metadata: {
+              'engineConfig': engineConfig.toJson(),
+              'isSubFlow': isSubFlow,
+            },
+          ));
+        }
+      }
+      
       return _convertV2ToV1Response(v2Response, isInit: true, workflowName: workflowName);
-    } else {
-      logger.logConsole('[WorkflowRouter] Routing initWorkflow to V1 (NeoWorkflowManager)');
-      return v1Manager.initWorkflow(
+    } catch (e, stackTrace) {
+      logger.logConsole('[EnhancedWorkflowRouter] ERROR: V2 initWorkflow failed: $e\nStackTrace: $stackTrace');
+      
+      // Fallback to V1 if V2 fails and fallback is enabled
+      if (engineConfig.config['fallbackToV1'] == true) {
+        logger.logConsole('[EnhancedWorkflowRouter] Falling back to V1 due to V2 failure');
+        return _initAmorphieWorkflow(workflowName, engineConfig, queryParameters, headerParameters, isSubFlow);
+      }
+      
+      return NeoErrorResponse(
+        NeoError(
+          responseCode: 500,
+          error: NeoErrorDetail(description: 'vNext workflow initialization failed: $e'),
+        ),
+        statusCode: 500,
+        headers: {},
+      );
+    }
+  }
+
+  /// Initialize workflow using amorphie (V1) engine
+  Future<NeoResponse> _initAmorphieWorkflow(
+    String workflowName,
+    WorkflowEngineConfig engineConfig,
+    Map<String, dynamic>? queryParameters,
+    Map<String, String>? headerParameters,
+    bool isSubFlow,
+  ) async {
+    logger.logConsole('[EnhancedWorkflowRouter] Routing initWorkflow to V1 (amorphie)');
+    
+    try {
+      final response = await v1Manager.initWorkflow(
         workflowName: workflowName,
         queryParameters: queryParameters,
         headerParameters: headerParameters,
         isSubFlow: isSubFlow,
       );
+      
+      // Track the instance in instance manager
+      if (response is NeoSuccessResponse) {
+        final instanceId = isSubFlow ? v1Manager.subFlowInstanceId : v1Manager.instanceId;
+        
+        instanceManager.trackInstance(WorkflowInstanceEntity(
+          instanceId: instanceId,
+          workflowName: workflowName,
+          engine: 'amorphie',
+          status: 'active',
+          currentState: response.data['state'] as String?,
+          attributes: queryParameters ?? {},
+          createdAt: DateTime.now(),
+          updatedAt: DateTime.now(),
+          metadata: {
+            'engineConfig': engineConfig.toJson(),
+            'isSubFlow': isSubFlow,
+          },
+        ));
+      }
+      
+      return response;
+    } catch (e, stackTrace) {
+      logger.logConsole('[EnhancedWorkflowRouter] ERROR: V1 initWorkflow failed: $e\nStackTrace: $stackTrace');
+      return NeoErrorResponse(
+        NeoError(
+          responseCode: 500,
+          error: NeoErrorDetail(description: 'amorphie workflow initialization failed: $e'),
+        ),
+        statusCode: 500,
+        headers: {},
+      );
     }
   }
 
-  /// Post transition - routes to V1 or V2 based on configuration
+  /// Post transition - routes to V1 or V2 based on instanceId and configuration
   Future<NeoResponse> postTransition({
     required String transitionName,
     required Map<String, dynamic> body,
     Map<String, String>? headerParameters,
     bool isSubFlow = false,
   }) async {
-    logger.logConsole('[WorkflowRouter] postTransition called for: $transitionName, V2 enabled: ${config.enableV2Workflows}, can use V2: ${config.canUseV2}');
+    logger.logConsole('[EnhancedWorkflowRouter] postTransition called for: $transitionName');
 
-    if (config.canUseV2) {
-      logger.logConsole('[WorkflowRouter] Routing postTransition to V2 (vNext)');
-      
-      // Extract instanceId from body or use current instance
-      final instanceId = body['instanceId'] as String? ?? _getCurrentInstanceId();
-      if (instanceId == null) {
-        logger.logError('[WorkflowRouter] No instanceId available for V2 transition');
-        return NeoErrorResponse(
-          const NeoError(
-            responseCode: 400,
-            error: NeoErrorDetail(description: 'No instanceId available for vNext transition'),
-          ),
-          statusCode: 400,
-          headers: {},
-        );
-      }
+    // Try to get instanceId from body or current managers
+    final instanceId = body['instanceId'] as String? ?? 
+                      (isSubFlow ? v1Manager.subFlowInstanceId : v1Manager.instanceId);
+    
+    if (instanceId == null || instanceId.isEmpty) {
+      logger.logConsole('[EnhancedWorkflowRouter] ERROR: No instanceId available for transition');
+      return NeoErrorResponse(
+        const NeoError(
+          responseCode: 400,
+          error: NeoErrorDetail(description: 'No instanceId available for transition'),
+        ),
+        statusCode: 400,
+        headers: {},
+      );
+    }
 
+    // Get instance information from instance manager
+    final instance = instanceManager.getInstance(instanceId);
+    if (instance == null) {
+      logger.logConsole('[EnhancedWorkflowRouter] WARNING: Instance not found in manager, determining engine from managers');
+      // Fallback to V1 if instance not tracked
+      return _postTransitionV1(transitionName, body, headerParameters, isSubFlow);
+    }
+
+    // Route based on instance engine
+    if (instance.engine == 'vnext') {
+      return _postTransitionV2(transitionName, body, headerParameters, instance);
+    } else {
+      return _postTransitionV1(transitionName, body, headerParameters, isSubFlow);
+    }
+  }
+
+  /// Post transition using vNext (V2) engine
+  Future<NeoResponse> _postTransitionV2(
+    String transitionName,
+    Map<String, dynamic> body,
+    Map<String, String>? headerParameters,
+    WorkflowInstanceEntity instance,
+  ) async {
+    logger.logConsole('[EnhancedWorkflowRouter] Routing postTransition to V2 (vNext)');
+    
+    try {
       final v2Response = await v2Client.postTransition(
-        domain: config.vNextDomain!,
-        workflowName: v1Manager.getWorkflowName(),
-        instanceId: instanceId,
+        domain: instance.vNextDomain!,
+        workflowName: instance.workflowName,
+        instanceId: instance.instanceId,
         transitionKey: transitionName,
         data: body,
         headers: headerParameters,
       );
       
+      // Update instance in manager
+      if (v2Response is NeoSuccessResponse) {
+        instanceManager.updateInstanceOnEvent(
+          instance.instanceId,
+          newStatus: v2Response.data['status'] as String?,
+          newState: v2Response.data['currentState'] as String?,
+          additionalAttributes: body,
+          additionalMetadata: {
+            'lastTransition': transitionName,
+            'lastTransitionAt': DateTime.now().toIso8601String(),
+          },
+        );
+      }
+      
       return _convertV2ToV1Response(v2Response, transitionName: transitionName);
-    } else {
-      logger.logConsole('[WorkflowRouter] Routing postTransition to V1 (NeoWorkflowManager)');
-      return v1Manager.postTransition(
+    } catch (e, stackTrace) {
+      logger.logConsole('[EnhancedWorkflowRouter] ERROR: V2 postTransition failed: $e\nStackTrace: $stackTrace');
+      return NeoErrorResponse(
+        NeoError(
+          responseCode: 500,
+          error: NeoErrorDetail(description: 'vNext transition failed: $e'),
+        ),
+        statusCode: 500,
+        headers: {},
+      );
+    }
+  }
+
+  /// Post transition using amorphie (V1) engine
+  Future<NeoResponse> _postTransitionV1(
+    String transitionName,
+    Map<String, dynamic> body,
+    Map<String, String>? headerParameters,
+    bool isSubFlow,
+  ) async {
+    logger.logConsole('[EnhancedWorkflowRouter] Routing postTransition to V1 (amorphie)');
+    
+    try {
+      final response = await v1Manager.postTransition(
         transitionName: transitionName,
         body: body,
         headerParameters: headerParameters,
         isSubFlow: isSubFlow,
       );
+      
+      // Update instance in manager
+      if (response is NeoSuccessResponse) {
+        final instanceId = isSubFlow ? v1Manager.subFlowInstanceId : v1Manager.instanceId;
+        instanceManager.updateInstanceOnEvent(
+          instanceId,
+          newStatus: response.data['status'] as String?,
+          newState: response.data['state'] as String?,
+          additionalAttributes: body,
+          additionalMetadata: {
+            'lastTransition': transitionName,
+            'lastTransitionAt': DateTime.now().toIso8601String(),
+          },
+        );
+      }
+      
+      return response;
+    } catch (e, stackTrace) {
+      logger.logConsole('[EnhancedWorkflowRouter] ERROR: V1 postTransition failed: $e\nStackTrace: $stackTrace');
+      return NeoErrorResponse(
+        NeoError(
+          responseCode: 500,
+          error: NeoErrorDetail(description: 'amorphie transition failed: $e'),
+        ),
+        statusCode: 500,
+        headers: {},
+      );
     }
   }
 
-  /// Get available transitions - routes to V1 or V2 based on configuration
+  /// Get available transitions - routes to V1 or V2 based on instance
   Future<NeoResponse> getAvailableTransitions({String? instanceId}) async {
-    logger.logConsole('[WorkflowRouter] getAvailableTransitions called, V2 enabled: ${config.enableV2Workflows}, can use V2: ${config.canUseV2}');
+    logger.logConsole('[EnhancedWorkflowRouter] getAvailableTransitions called');
 
-    if (config.canUseV2) {
-      logger.logConsole('[WorkflowRouter] Routing getAvailableTransitions to V2 (vNext)');
+    final targetInstanceId = instanceId ?? v1Manager.instanceId;
+    if (targetInstanceId == null || targetInstanceId.isEmpty) {
+      logger.logConsole('[EnhancedWorkflowRouter] ERROR: No instanceId available for transitions');
+      return const NeoErrorResponse(
+        NeoError(
+          responseCode: 400,
+          error: NeoErrorDetail(description: 'No instanceId available for transitions'),
+        ),
+        statusCode: 400,
+        headers: {},
+      );
+    }
+
+    // Get instance information to determine engine
+    final instance = instanceManager.getInstance(targetInstanceId);
+    
+    if (instance?.engine == 'vnext' && instance?.vNextDomain != null) {
+      logger.logConsole('[EnhancedWorkflowRouter] Routing getAvailableTransitions to V2 (vNext)');
       
-      final targetInstanceId = instanceId ?? _getCurrentInstanceId();
-      if (targetInstanceId == null) {
-        logger.logError('[WorkflowRouter] No instanceId available for V2 transitions');
-        return const NeoErrorResponse(
-          NeoError(
-            responseCode: 400,
-            error: NeoErrorDetail(description: 'No instanceId available for vNext transitions'),
-          ),
-          statusCode: 400,
-          headers: {},
-        );
-      }
-
       final v2Response = await v2Client.getAvailableTransitions(
-        domain: config.vNextDomain!,
-        workflowName: v1Manager.getWorkflowName(),
+        domain: instance!.vNextDomain!,
+        workflowName: instance.workflowName,
         instanceId: targetInstanceId,
       );
       return _convertV2ToV1Response(v2Response);
     } else {
-      logger.logConsole('[WorkflowRouter] Routing getAvailableTransitions to V1 (NeoWorkflowManager)');
+      logger.logConsole('[EnhancedWorkflowRouter] Routing getAvailableTransitions to V1 (amorphie)');
       return v1Manager.getAvailableTransitions(instanceId: instanceId);
     }
   }
@@ -242,12 +442,6 @@ class WorkflowRouter {
     return v2Response;
   }
 
-  /// Get current instance ID (simplified for minimal implementation)
-  /// In a real implementation, this would maintain state properly
-  String? _getCurrentInstanceId() {
-    // For now, delegate to V1 manager's instance ID
-    return v1Manager.instanceId;
-  }
 
   String _generateKey() {
     // Minimal unique key for vNext start. In real impl, use a stronger ID.
@@ -260,9 +454,75 @@ class WorkflowRouter {
     v1Manager.setInstanceId(instanceId);
   }
 
-  /// Check if V2 is available and properly configured
-  bool get isV2Available => config.canUseV2;
+  // Instance management methods
 
-  /// Get current configuration
-  WorkflowRouterConfig get routerConfig => config;
+  /// Get all active workflow instances
+  List<WorkflowInstanceEntity> getAllActiveInstances() {
+    return instanceManager.getActiveWorkflows();
+  }
+
+  /// Get instances for a specific workflow name
+  List<WorkflowInstanceEntity> getInstancesByWorkflow(String workflowName) {
+    return instanceManager.getInstancesByWorkflow(workflowName);
+  }
+
+  /// Get instances by engine type
+  List<WorkflowInstanceEntity> getInstancesByEngine(String engine) {
+    return instanceManager.getWorkflowsByEngine(engine);
+  }
+
+  /// Search instances with filters
+  List<WorkflowInstanceEntity> searchInstances({
+    String? workflowName,
+    String? status,
+    String? engine,
+    String? vNextDomain,
+    Map<String, dynamic>? attributeFilters,
+  }) {
+    return instanceManager.searchInstances(
+      workflowName: workflowName,
+      status: status,
+      engine: engine,
+      vNextDomain: vNextDomain,
+      attributeFilters: attributeFilters,
+    );
+  }
+
+  /// Terminate a specific workflow instance
+  void terminateInstance(String instanceId, {String? reason}) {
+    instanceManager.terminateInstance(instanceId, reason: reason);
+  }
+
+  /// Get workflow instance statistics
+  Map<String, int> getInstanceStats() {
+    return instanceManager.getInstanceStats();
+  }
+
+  /// Get comprehensive router and instance manager statistics
+  Map<String, dynamic> getRouterStats() {
+    final managerStats = instanceManager.getManagerStats();
+    final configSummary = httpClientConfig.getWorkflowConfigSummary();
+    
+    return {
+      'instanceManager': managerStats,
+      'workflowConfigs': configSummary,
+      'engineCapabilities': {
+        'hasVNextWorkflows': httpClientConfig.hasVNextWorkflows,
+        'vNextWorkflows': httpClientConfig.getWorkflowsForEngine('vnext'),
+        'amorphieWorkflows': httpClientConfig.getWorkflowsForEngine('amorphie'),
+      },
+      'configValidation': httpClientConfig.validateWorkflowConfigs(),
+    };
+  }
+
+  /// Listen to workflow instance events
+  Stream<WorkflowInstanceEvent> get instanceEventStream => instanceManager.eventStream;
+
+  /// Check if router has vNext capabilities
+  bool get hasVNextCapabilities => httpClientConfig.hasVNextWorkflows;
+
+  /// Get workflow configuration for a specific workflow
+  WorkflowEngineConfig getWorkflowConfig(String workflowName) {
+    return _getConfigForWorkflow(workflowName);
+  }
 }

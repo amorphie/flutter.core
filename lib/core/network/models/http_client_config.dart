@@ -21,11 +21,15 @@ import 'package:neo_core/core/network/models/neo_http_call.dart';
 import 'package:neo_core/core/storage/neo_core_parameter_key.dart';
 import 'package:neo_core/core/storage/neo_core_secure_storage.dart';
 import 'package:neo_core/core/workflow_form/neo_workflow_manager.dart';
+import 'package:neo_core/core/workflow_form/workflow_engine_config.dart';
 
 class HttpClientConfig {
   final List<HttpHostDetails> hosts;
   final List<HttpService> services;
   final List<MtlsEnabledTransition> mtlsEnabledTransitions;
+  final Map<String, WorkflowEngineConfig> workflowConfigs;
+  final WorkflowEngineConfig defaultWorkflowConfig;
+  final List<HttpHostDetails> vNextHosts;
 
   HttpClientConfigParameters _config;
 
@@ -34,7 +38,15 @@ class HttpClientConfig {
     required HttpClientConfigParameters config,
     required this.services,
     this.mtlsEnabledTransitions = const [],
-  }) : _config = config;
+    this.workflowConfigs = const {},
+    WorkflowEngineConfig? defaultWorkflowConfig,
+    this.vNextHosts = const [],
+  }) : _config = config,
+       defaultWorkflowConfig = defaultWorkflowConfig ?? WorkflowEngineConfig(
+         workflowName: 'default',
+         engine: 'amorphie',
+         config: {},
+       );
 
   HttpClientConfigParameters get config => _config;
 
@@ -43,12 +55,18 @@ class HttpClientConfig {
     HttpClientConfigParameters? config,
     List<HttpService>? services,
     List<MtlsEnabledTransition>? mtlsEnabledTransitions,
+    Map<String, WorkflowEngineConfig>? workflowConfigs,
+    WorkflowEngineConfig? defaultWorkflowConfig,
+    List<HttpHostDetails>? vNextHosts,
   }) {
     return HttpClientConfig(
       hosts: hosts ?? this.hosts,
       config: config ?? this.config,
       services: services ?? this.services,
       mtlsEnabledTransitions: mtlsEnabledTransitions ?? this.mtlsEnabledTransitions,
+      workflowConfigs: workflowConfigs ?? this.workflowConfigs,
+      defaultWorkflowConfig: defaultWorkflowConfig ?? this.defaultWorkflowConfig,
+      vNextHosts: vNextHosts ?? this.vNextHosts,
     );
   }
 
@@ -63,6 +81,12 @@ class HttpClientConfig {
     mtlsEnabledTransitions
       ..clear()
       ..addAll(newConfig.mtlsEnabledTransitions);
+    workflowConfigs
+      ..clear()
+      ..addAll(newConfig.workflowConfigs);
+    vNextHosts
+      ..clear()
+      ..addAll(newConfig.vNextHosts);
   }
 
   HttpMethod? getServiceMethodByKey(String key) {
@@ -154,5 +178,57 @@ class HttpClientConfig {
 
   int? _getRetryCountByHost(String host) {
     return hosts.firstWhereOrNull((element) => element.key == host)?.activeHosts.firstOrNull?.retryCount;
+  }
+
+  // Workflow configuration methods
+
+  /// Get workflow engine configuration for a specific workflow name
+  WorkflowEngineConfig getWorkflowConfig(String workflowName) {
+    return WorkflowEngineConfigParser.getConfigForWorkflow(
+      workflowName,
+      workflowConfigs,
+      defaultWorkflowConfig,
+    );
+  }
+
+  /// Get vNext host URL for vNext workflows
+  String? getVNextHostUrl({bool enableMtls = false}) {
+    final vNextHost = vNextHosts.firstOrNull;
+    if (vNextHost == null) return null;
+
+    final activeHost = vNextHost.activeHosts.firstOrNull;
+    if (activeHost == null) return null;
+
+    final host = enableMtls ? activeHost.mtlsHost : activeHost.host;
+    return host != null && host.isNotEmpty ? 'https://$host' : null;
+  }
+
+  /// Check if any workflow is configured to use vNext
+  bool get hasVNextWorkflows {
+    if (defaultWorkflowConfig.isVNext) return true;
+    return workflowConfigs.values.any((config) => config.isVNext);
+  }
+
+  /// Get all workflow names configured for a specific engine
+  List<String> getWorkflowsForEngine(String engine) {
+    final workflows = <String>[];
+    
+    for (final entry in workflowConfigs.entries) {
+      if (entry.value.engine == engine) {
+        workflows.add(entry.key);
+      }
+    }
+    
+    return workflows;
+  }
+
+  /// Get workflow configuration summary
+  Map<String, dynamic> getWorkflowConfigSummary() {
+    return WorkflowEngineConfigParser.getConfigSummary(workflowConfigs, defaultWorkflowConfig);
+  }
+
+  /// Validate all workflow configurations
+  List<String> validateWorkflowConfigs() {
+    return WorkflowEngineConfigParser.validateConfigs(workflowConfigs);
   }
 }

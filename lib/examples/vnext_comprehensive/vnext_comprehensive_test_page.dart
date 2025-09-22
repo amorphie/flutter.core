@@ -62,7 +62,6 @@ class _VNextComprehensiveTestPageState extends State<VNextComprehensiveTestPage>
   _SimpleLogger? _logger;
 
   final List<String> _logs = [];
-  bool _v2Enabled = true;
   
   // Workflow instances management - grouped by workflow type
   final Map<String, List<WorkflowInstance>> _workflowInstances = {};
@@ -619,25 +618,14 @@ class _VNextComprehensiveTestPageState extends State<VNextComprehensiveTestPage>
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Row(
+            const Row(
               children: [
-                const Icon(Icons.settings, color: Colors.blue),
-                const SizedBox(width: 8),
-                const Text(
+                Icon(Icons.settings, color: Colors.blue),
+                SizedBox(width: 8),
+                Text(
                   'Configuration',
                   style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
                 ),
-                const Spacer(),
-                Switch(
-                  value: _v2Enabled,
-                  onChanged: (value) {
-                    setState(() {
-                      _v2Enabled = value;
-                    });
-                    _updateServices();
-                  },
-                ),
-                const Text('V2 Enabled'),
               ],
             ),
             const SizedBox(height: 16),
@@ -722,9 +710,7 @@ class _VNextComprehensiveTestPageState extends State<VNextComprehensiveTestPage>
             
             Expanded(
               child: ListView(
-                children: _availableWorkflows.map((workflowName) {
-                  return _buildWorkflowGroup(workflowName);
-                }).toList(),
+                children: _availableWorkflows.map(_buildWorkflowGroup).toList(),
               ),
             ),
           ],
