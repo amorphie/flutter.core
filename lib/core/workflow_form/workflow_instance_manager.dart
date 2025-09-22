@@ -13,12 +13,33 @@
 import 'dart:async';
 import 'package:neo_core/core/analytics/neo_logger.dart';
 
+/// Workflow engine types
+enum WorkflowEngine {
+  amorphie,
+  vnext;
+
+  @override
+  String toString() => name;
+}
+
+/// Workflow instance status
+enum WorkflowInstanceStatus {
+  active,
+  completed,
+  terminated,
+  failed,
+  pending;
+
+  @override
+  String toString() => name;
+}
+
 /// Represents a workflow instance entity for tracking and management
 class WorkflowInstanceEntity {
   final String instanceId;
   final String workflowName;
-  final String engine; // "amorphie" or "vnext"
-  final String status;
+  final WorkflowEngine engine;
+  final WorkflowInstanceStatus status;
   final String? currentState;
   final Map<String, dynamic> attributes;
   final DateTime createdAt;
@@ -42,8 +63,8 @@ class WorkflowInstanceEntity {
   WorkflowInstanceEntity copyWith({
     String? instanceId,
     String? workflowName,
-    String? engine,
-    String? status,
+    WorkflowEngine? engine,
+    WorkflowInstanceStatus? status,
     String? currentState,
     Map<String, dynamic>? attributes,
     DateTime? createdAt,
@@ -155,7 +176,7 @@ class WorkflowInstanceManager {
 
   /// Update instance when workflow events occur
   void updateInstanceOnEvent(String instanceId, {
-    String? newStatus,
+    WorkflowInstanceStatus? newStatus,
     String? newState,
     Map<String, dynamic>? additionalAttributes,
     Map<String, dynamic>? additionalMetadata,
@@ -206,7 +227,7 @@ class WorkflowInstanceManager {
     }
 
     final terminatedInstance = instance.copyWith(
-      status: 'terminated',
+      status: WorkflowInstanceStatus.terminated,
       updatedAt: DateTime.now(),
       metadata: {
         ...instance.metadata,
@@ -237,8 +258,8 @@ class WorkflowInstanceManager {
   /// Search instances by various criteria
   List<WorkflowInstanceEntity> searchInstances({
     String? workflowName,
-    String? status,
-    String? engine,
+    WorkflowInstanceStatus? status,
+    WorkflowEngine? engine,
     String? vNextDomain,
     Map<String, dynamic>? attributeFilters,
   }) {
@@ -279,11 +300,11 @@ class WorkflowInstanceManager {
 
   /// Get all active workflows across engines
   List<WorkflowInstanceEntity> getActiveWorkflows() {
-    return searchInstances(status: 'active');
+    return searchInstances(status: WorkflowInstanceStatus.active);
   }
 
   /// Get all workflows for a specific engine
-  List<WorkflowInstanceEntity> getWorkflowsByEngine(String engine) {
+  List<WorkflowInstanceEntity> getWorkflowsByEngine(WorkflowEngine engine) {
     return searchInstances(engine: engine);
   }
 
@@ -311,14 +332,27 @@ class WorkflowInstanceManager {
 
     for (final instance in _instances.values) {
       // Count by status
-      if (instance.status == 'active') stats['active'] = stats['active']! + 1;
-      else if (instance.status == 'completed') stats['completed'] = stats['completed']! + 1;
-      else if (instance.status == 'terminated') stats['terminated'] = stats['terminated']! + 1;
-      else if (instance.status == 'failed') stats['failed'] = stats['failed']! + 1;
+      switch (instance.status) {
+        case WorkflowInstanceStatus.active:
+          stats['active'] = stats['active']! + 1;
+        case WorkflowInstanceStatus.completed:
+          stats['completed'] = stats['completed']! + 1;
+        case WorkflowInstanceStatus.terminated:
+          stats['terminated'] = stats['terminated']! + 1;
+        case WorkflowInstanceStatus.failed:
+          stats['failed'] = stats['failed']! + 1;
+        case WorkflowInstanceStatus.pending:
+          // Add pending to stats if needed
+          break;
+      }
 
       // Count by engine
-      if (instance.engine == 'amorphie') stats['amorphie'] = stats['amorphie']! + 1;
-      else if (instance.engine == 'vnext') stats['vnext'] = stats['vnext']! + 1;
+      switch (instance.engine) {
+        case WorkflowEngine.amorphie:
+          stats['amorphie'] = stats['amorphie']! + 1;
+        case WorkflowEngine.vnext:
+          stats['vnext'] = stats['vnext']! + 1;
+      }
     }
 
     return stats;
@@ -352,7 +386,7 @@ class WorkflowInstanceManager {
   /// Clear all terminated instances (cleanup)
   void clearTerminatedInstances() {
     final terminatedIds = _instances.entries
-        .where((entry) => entry.value.status == 'terminated')
+        .where((entry) => entry.value.status == WorkflowInstanceStatus.terminated)
         .map((entry) => entry.key)
         .toList();
     

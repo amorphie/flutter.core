@@ -320,7 +320,7 @@ class _MultiEngineWorkflowExampleState extends State<MultiEngineWorkflowExample>
                         return Card(
                           margin: const EdgeInsets.only(bottom: 8),
                           child: ListTile(
-                            title: Text('${instance.workflowName} (${instance.engine})'),
+                            title: Text('${instance.workflowName} (${instance.engine.name})'),
                             subtitle: Text(
                               'ID: ${instance.instanceId.substring(0, 16)}...\n'
                               'Status: ${instance.status} | State: ${instance.currentState ?? 'N/A'}\n'
@@ -349,9 +349,9 @@ class _MultiEngineWorkflowExampleState extends State<MultiEngineWorkflowExample>
                               ],
                             ),
                             leading: CircleAvatar(
-                              backgroundColor: instance.engine == 'vnext' ? Colors.purple : Colors.green,
+                              backgroundColor: instance.engine == WorkflowEngine.vnext ? Colors.purple : Colors.green,
                               child: Text(
-                                instance.engine == 'vnext' ? 'V2' : 'V1',
+                                instance.engine == WorkflowEngine.vnext ? 'V2' : 'V1',
                                 style: const TextStyle(color: Colors.white, fontSize: 12),
                               ),
                             ),

@@ -191,21 +191,12 @@ class HttpClientConfig {
     );
   }
 
-  /// Get vNext host URL for vNext workflows
-  String? getVNextHostUrl({bool enableMtls = false}) {
-    final vNextHost = vNextHosts.firstOrNull;
-    if (vNextHost == null) return null;
-
-    final activeHost = vNextHost.activeHosts.firstOrNull;
-    if (activeHost == null) return null;
-
-    final host = enableMtls ? activeHost.mtlsHost : activeHost.host;
-    return host != null && host.isNotEmpty ? 'https://$host' : null;
-  }
 
   /// Check if any workflow is configured to use vNext
   bool get hasVNextWorkflows {
-    if (defaultWorkflowConfig.isVNext) return true;
+    if (defaultWorkflowConfig.isVNext) {
+      return true;
+    }
     return workflowConfigs.values.any((config) => config.isVNext);
   }
 

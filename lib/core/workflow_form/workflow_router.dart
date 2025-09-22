@@ -105,8 +105,8 @@ class EnhancedWorkflowRouter {
           instanceManager.trackInstance(WorkflowInstanceEntity(
             instanceId: instanceId,
             workflowName: workflowName,
-            engine: 'vnext',
-            status: 'active',
+            engine: WorkflowEngine.vnext,
+            status: WorkflowInstanceStatus.active,
             currentState: v2Response.data['currentState'] as String?,
             attributes: queryParameters ?? {},
             createdAt: DateTime.now(),
@@ -166,8 +166,8 @@ class EnhancedWorkflowRouter {
         instanceManager.trackInstance(WorkflowInstanceEntity(
           instanceId: instanceId,
           workflowName: workflowName,
-          engine: 'amorphie',
-          status: 'active',
+          engine: WorkflowEngine.amorphie,
+          status: WorkflowInstanceStatus.active,
           currentState: response.data['state'] as String?,
           attributes: queryParameters ?? {},
           createdAt: DateTime.now(),
@@ -208,9 +208,8 @@ class EnhancedWorkflowRouter {
     
     if (instanceId == null || instanceId.isEmpty) {
       logger.logConsole('[EnhancedWorkflowRouter] ERROR: No instanceId available for transition');
-      return NeoErrorResponse(
-        const NeoError(
-          responseCode: 400,
+      return const NeoErrorResponse(
+        NeoError(
           error: NeoErrorDetail(description: 'No instanceId available for transition'),
         ),
         statusCode: 400,
@@ -227,7 +226,7 @@ class EnhancedWorkflowRouter {
     }
 
     // Route based on instance engine
-    if (instance.engine == 'vnext') {
+    if (instance.engine == WorkflowEngine.vnext) {
       return _postTransitionV2(transitionName, body, headerParameters, instance);
     } else {
       return _postTransitionV1(transitionName, body, headerParameters, isSubFlow);
@@ -257,7 +256,7 @@ class EnhancedWorkflowRouter {
       if (v2Response is NeoSuccessResponse) {
         instanceManager.updateInstanceOnEvent(
           instance.instanceId,
-          newStatus: v2Response.data['status'] as String?,
+          newStatus: _parseWorkflowStatus(v2Response.data['status'] as String?),
           newState: v2Response.data['currentState'] as String?,
           additionalAttributes: body,
           additionalMetadata: {
@@ -303,7 +302,7 @@ class EnhancedWorkflowRouter {
         final instanceId = isSubFlow ? v1Manager.subFlowInstanceId : v1Manager.instanceId;
         instanceManager.updateInstanceOnEvent(
           instanceId,
-          newStatus: response.data['status'] as String?,
+          newStatus: _parseWorkflowStatus(response.data['status'] as String?),
           newState: response.data['state'] as String?,
           additionalAttributes: body,
           additionalMetadata: {
@@ -347,7 +346,7 @@ class EnhancedWorkflowRouter {
     // Get instance information to determine engine
     final instance = instanceManager.getInstance(targetInstanceId);
     
-    if (instance?.engine == 'vnext' && instance?.vNextDomain != null) {
+    if (instance?.engine == WorkflowEngine.vnext && instance?.vNextDomain != null) {
       logger.logConsole('[EnhancedWorkflowRouter] Routing getAvailableTransitions to V2 (vNext)');
       
       final v2Response = await v2Client.getAvailableTransitions(
@@ -467,15 +466,15 @@ class EnhancedWorkflowRouter {
   }
 
   /// Get instances by engine type
-  List<WorkflowInstanceEntity> getInstancesByEngine(String engine) {
+  List<WorkflowInstanceEntity> getInstancesByEngine(WorkflowEngine engine) {
     return instanceManager.getWorkflowsByEngine(engine);
   }
 
   /// Search instances with filters
   List<WorkflowInstanceEntity> searchInstances({
     String? workflowName,
-    String? status,
-    String? engine,
+    WorkflowInstanceStatus? status,
+    WorkflowEngine? engine,
     String? vNextDomain,
     Map<String, dynamic>? attributeFilters,
   }) {
@@ -524,5 +523,27 @@ class EnhancedWorkflowRouter {
   /// Get workflow configuration for a specific workflow
   WorkflowEngineConfig getWorkflowConfig(String workflowName) {
     return _getConfigForWorkflow(workflowName);
+  }
+
+  // Helper methods
+
+  /// Parse string status to WorkflowInstanceStatus enum
+  WorkflowInstanceStatus? _parseWorkflowStatus(String? statusString) {
+    if (statusString == null) return null;
+    
+    switch (statusString.toLowerCase()) {
+      case 'active':
+        return WorkflowInstanceStatus.active;
+      case 'completed':
+        return WorkflowInstanceStatus.completed;
+      case 'terminated':
+        return WorkflowInstanceStatus.terminated;
+      case 'failed':
+        return WorkflowInstanceStatus.failed;
+      case 'pending':
+        return WorkflowInstanceStatus.pending;
+      default:
+        return WorkflowInstanceStatus.active; // Default fallback
+    }
   }
 }
