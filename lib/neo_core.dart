@@ -15,12 +15,19 @@ import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:neo_core/core/util/device_util/device_util.dart';
 import 'package:universal_io/io.dart';
 
+export 'core/analytics/neo_logger.dart';
 export 'core/bus/neo_bus.dart';
 export 'core/network/neo_network.dart';
 export 'core/storage/neo_storage.dart';
 export 'core/util/device_util/device_util.dart';
 export 'core/util/package_util.dart';
 export 'core/widgets/neo_widgets.dart';
+export 'core/workflow_form/neo_workflow_manager.dart';
+export 'core/workflow_form/workflow_router.dart';
+export 'core/workflow_form/vnext/vnext_workflow_client.dart';
+export 'core/workflow_form/vnext/vnext_config.dart';
+export 'core/di/application_module.dart';
+export 'examples/vnext_comprehensive/vnext_comprehensive_test_page.dart';
 
 class NeoCore {
   NeoCore._();

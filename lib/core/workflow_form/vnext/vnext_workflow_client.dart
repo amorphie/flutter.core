@@ -284,11 +284,94 @@ class VNextWorkflowClient {
     }
   }
 
+  /// List all instances for a specific workflow
+  /// Endpoint: GET /api/v1/{domain}/workflows/{workflowName}/instances
+  Future<NeoResponse> listWorkflowInstances({
+    required String domain,
+    required String workflowName,
+    String? filter,
+    int? page,
+    int? pageSize,
+    Map<String, String>? headers,
+  }) async {
+    logger.logConsole('[VNextWorkflowClient] Listing instances for workflow: $workflowName in domain: $domain');
+
+    final queryParams = <String, String>{};
+    if (filter != null) queryParams['filter'] = filter;
+    if (page != null) queryParams['page'] = page.toString();
+    if (pageSize != null) queryParams['pageSize'] = pageSize.toString();
+
+    final uri = Uri.parse('$baseUrl/api/v1/$domain/workflows/$workflowName/instances')
+        .replace(queryParameters: queryParams.isNotEmpty ? queryParams : null);
+
+    try {
+      final response = await httpClient.get(
+        uri,
+        headers: {
+          'Accept': 'application/json',
+          'Accept-Language': 'tr-TR',
+          'X-Request-Id': _generateUUID(),
+          'X-Device-Id': _generateUUID(),
+          'X-Token-Id': _generateUUID(),
+          'X-Device-Info': 'Flutter Client',
+          ...?headers,
+        },
+      );
+
+      if (response.statusCode == 200) {
+        try {
+          final responseData = jsonDecode(response.body) as Map<String, dynamic>;
+          logger.logConsole('[VNextWorkflowClient] Successfully listed workflow instances');
+          
+          return NeoSuccessResponse(
+            responseData,
+            statusCode: response.statusCode,
+            headers: {},
+          );
+        } catch (e) {
+          final errorMessage = 'Failed to parse response JSON: $e';
+          logger.logError('[VNextWorkflowClient] $errorMessage');
+          
+          return NeoErrorResponse(
+            NeoError(
+              responseCode: response.statusCode,
+              error: NeoErrorDetail(description: errorMessage),
+            ),
+            statusCode: response.statusCode,
+            headers: {},
+          );
+        }
+      } else {
+        final errorMessage = 'List instances failed with status ${response.statusCode}: ${response.body}';
+        logger.logError('[VNextWorkflowClient] $errorMessage');
+        
+        return NeoErrorResponse(
+          NeoError(
+            responseCode: response.statusCode,
+            error: NeoErrorDetail(description: errorMessage),
+          ),
+          statusCode: response.statusCode,
+          headers: {},
+        );
+      }
+    } catch (e, stackTrace) {
+      final errorMessage = 'Exception during list instances: $e';
+      logger.logError('[VNextWorkflowClient] $errorMessage', error: e, stackTrace: stackTrace);
+      
+      return NeoErrorResponse(
+        NeoError(
+          responseCode: 500,
+          error: NeoErrorDetail(description: errorMessage),
+        ),
+        statusCode: 500,
+        headers: {},
+      );
+    }
+  }
+
   /// Generate a UUID for request headers
   String _generateUUID() {
     // Simple UUID generation for headers
-    return DateTime.now().millisecondsSinceEpoch.toString() + 
-           '-' + 
-           (1000 + (999 * (DateTime.now().microsecond / 1000000)).round()).toString();
+    return '${DateTime.now().millisecondsSinceEpoch}-${1000 + (999 * (DateTime.now().microsecond / 1000000)).round()}';
   }
 }

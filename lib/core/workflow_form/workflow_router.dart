@@ -11,8 +11,8 @@
  */
 
 import 'package:neo_core/core/analytics/neo_logger.dart';
-import 'package:neo_core/core/network/models/neo_response.dart';
 import 'package:neo_core/core/network/models/neo_error.dart';
+import 'package:neo_core/core/network/models/neo_response.dart';
 import 'package:neo_core/core/workflow_form/neo_workflow_manager.dart';
 import 'package:neo_core/core/workflow_form/vnext/vnext_workflow_client.dart';
 
@@ -140,8 +140,8 @@ class WorkflowRouter {
       final targetInstanceId = instanceId ?? _getCurrentInstanceId();
       if (targetInstanceId == null) {
         logger.logError('[WorkflowRouter] No instanceId available for V2 transitions');
-        return NeoErrorResponse(
-          const NeoError(
+        return const NeoErrorResponse(
+          NeoError(
             responseCode: 400,
             error: NeoErrorDetail(description: 'No instanceId available for vNext transitions'),
           ),
