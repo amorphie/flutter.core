@@ -58,7 +58,7 @@ class _MultiEngineWorkflowExampleState extends State<MultiEngineWorkflowExample>
     // Create enhanced workflow router
     workflowRouter = EnhancedWorkflowRouter(
       v1Manager: v1Manager,
-      v2Client: vNextClient,
+      vNextClient: vNextClient,
       logger: SimpleNeoLogger(),
       httpClientConfig: httpClientConfig,
       instanceManager: instanceManager,
@@ -324,7 +324,7 @@ class _MultiEngineWorkflowExampleState extends State<MultiEngineWorkflowExample>
                             subtitle: Text(
                               'ID: ${instance.instanceId.substring(0, 16)}...\n'
                               'Status: ${instance.status} | State: ${instance.currentState ?? 'N/A'}\n'
-                              'Domain: ${instance.vNextDomain ?? 'N/A'}',
+                              'Domain: ${instance.domain ?? 'N/A'}',
                             ),
                             trailing: PopupMenuButton<String>(
                               onSelected: (action) {

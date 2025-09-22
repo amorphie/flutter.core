@@ -21,36 +21,33 @@ import 'package:neo_core/core/workflow_form/workflow_instance_manager.dart';
 
 /// Configuration for workflow routing decisions
 class WorkflowRouterConfig {
-  final bool enableV2Workflows;
   final String? vNextBaseUrl;
-  final String? vNextDomain;
+  final String? domain;
 
   WorkflowRouterConfig({
-    this.enableV2Workflows = false,
     this.vNextBaseUrl,
-    this.vNextDomain,
+    this.domain,
   });
 
   bool get canUseV2 => 
-      enableV2Workflows && 
       vNextBaseUrl != null && 
       vNextBaseUrl!.isNotEmpty &&
-      vNextDomain != null && 
-      vNextDomain!.isNotEmpty;
+      domain != null && 
+      domain!.isNotEmpty;
 }
 
 /// Enhanced router that directs workflow operations to V1 or V2 implementations
 /// with configuration-driven engine selection and multi-instance support
 class EnhancedWorkflowRouter {
   final NeoWorkflowManager v1Manager;
-  final VNextWorkflowClient v2Client;
+  final VNextWorkflowClient vNextClient;
   final NeoLogger logger;
   final HttpClientConfig httpClientConfig;
   final WorkflowInstanceManager instanceManager;
 
   EnhancedWorkflowRouter({
     required this.v1Manager,
-    required this.v2Client,
+    required this.vNextClient,
     required this.logger,
     required this.httpClientConfig,
     required this.instanceManager,
@@ -90,7 +87,7 @@ class EnhancedWorkflowRouter {
     logger.logConsole('[EnhancedWorkflowRouter] Routing initWorkflow to V2 (vNext)');
     
     try {
-      final v2Response = await v2Client.initWorkflow(
+      final v2Response = await vNextClient.initWorkflow(
         domain: engineConfig.vNextDomain!,
         workflowName: workflowName,
         key: _generateKey(),
@@ -111,7 +108,7 @@ class EnhancedWorkflowRouter {
             attributes: queryParameters ?? {},
             createdAt: DateTime.now(),
             updatedAt: DateTime.now(),
-            vNextDomain: engineConfig.vNextDomain,
+            domain: engineConfig.vNextDomain,
             metadata: {
               'engineConfig': engineConfig.toJson(),
               'isSubFlow': isSubFlow,
@@ -206,7 +203,7 @@ class EnhancedWorkflowRouter {
     final instanceId = body['instanceId'] as String? ?? 
                       (isSubFlow ? v1Manager.subFlowInstanceId : v1Manager.instanceId);
     
-    if (instanceId == null || instanceId.isEmpty) {
+    if (instanceId.isEmpty) {
       logger.logConsole('[EnhancedWorkflowRouter] ERROR: No instanceId available for transition');
       return const NeoErrorResponse(
         NeoError(
@@ -243,8 +240,8 @@ class EnhancedWorkflowRouter {
     logger.logConsole('[EnhancedWorkflowRouter] Routing postTransition to V2 (vNext)');
     
     try {
-      final v2Response = await v2Client.postTransition(
-        domain: instance.vNextDomain!,
+      final v2Response = await vNextClient.postTransition(
+        domain: instance.domain!,
         workflowName: instance.workflowName,
         instanceId: instance.instanceId,
         transitionKey: transitionName,
@@ -346,11 +343,11 @@ class EnhancedWorkflowRouter {
     // Get instance information to determine engine
     final instance = instanceManager.getInstance(targetInstanceId);
     
-    if (instance?.engine == WorkflowEngine.vnext && instance?.vNextDomain != null) {
+    if (instance?.engine == WorkflowEngine.vnext && instance?.domain != null) {
       logger.logConsole('[EnhancedWorkflowRouter] Routing getAvailableTransitions to V2 (vNext)');
       
-      final v2Response = await v2Client.getAvailableTransitions(
-        domain: instance!.vNextDomain!,
+      final v2Response = await vNextClient.getAvailableTransitions(
+        domain: instance!.domain!,
         workflowName: instance.workflowName,
         instanceId: targetInstanceId,
       );
@@ -475,14 +472,14 @@ class EnhancedWorkflowRouter {
     String? workflowName,
     WorkflowInstanceStatus? status,
     WorkflowEngine? engine,
-    String? vNextDomain,
+    String? domain,
     Map<String, dynamic>? attributeFilters,
   }) {
     return instanceManager.searchInstances(
       workflowName: workflowName,
       status: status,
       engine: engine,
-      vNextDomain: vNextDomain,
+      domain: domain,
       attributeFilters: attributeFilters,
     );
   }

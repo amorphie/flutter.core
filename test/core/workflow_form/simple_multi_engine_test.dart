@@ -11,10 +11,27 @@
  */
 
 import 'package:flutter_test/flutter_test.dart';
+import 'package:neo_core/core/analytics/neo_logger.dart';
 import 'package:neo_core/core/workflow_form/workflow_engine_config.dart';
 import 'package:neo_core/core/workflow_form/workflow_instance_manager.dart';
 
-import 'mock_neo_logger.dart';
+// Simple mock logger
+class MockNeoLogger implements NeoLogger {
+  final List<String> logs = [];
+  
+  @override
+  void logConsole(dynamic message, {dynamic logLevel}) {
+    logs.add('$message');
+  }
+
+  @override
+  void logError(String message, {Map<String, dynamic>? properties}) {
+    logs.add('ERROR: $message');
+  }
+
+  @override
+  dynamic noSuchMethod(Invocation invocation) => null;
+}
 
 void main() {
   group('Simple Multi-Engine Workflow Tests', () {
@@ -38,7 +55,7 @@ void main() {
         engine: WorkflowEngine.vnext,
         status: WorkflowInstanceStatus.active,
         currentState: 'product-selection',
-        vNextDomain: 'core',
+        domain: 'core',
         createdAt: DateTime.now(),
         updatedAt: DateTime.now(),
         attributes: {
@@ -99,7 +116,7 @@ void main() {
         workflowName: 'ecommerce',
         engine: WorkflowEngine.vnext,
         status: WorkflowInstanceStatus.active,
-        vNextDomain: 'core',
+        domain: 'core',
         createdAt: DateTime.now(),
         updatedAt: DateTime.now(),
       );
@@ -206,7 +223,7 @@ void main() {
           workflowName: 'ecommerce',
           engine: WorkflowEngine.vnext,
           status: WorkflowInstanceStatus.active,
-          vNextDomain: 'shopping',
+          domain: 'shopping',
           createdAt: DateTime.now(),
           updatedAt: DateTime.now(),
         ),
@@ -215,7 +232,7 @@ void main() {
           workflowName: 'payment',
           engine: WorkflowEngine.vnext,
           status: WorkflowInstanceStatus.active,
-          vNextDomain: 'payments',
+          domain: 'payments',
           createdAt: DateTime.now(),
           updatedAt: DateTime.now(),
         ),
@@ -265,7 +282,7 @@ void main() {
             'message': message,
             'routedTo': targetInstance.engine.name,
             'workflowName': targetInstance.workflowName,
-            'domain': targetInstance.vNextDomain,
+            'domain': targetInstance.domain,
           };
           
           processedMessages.add(routingDecision);

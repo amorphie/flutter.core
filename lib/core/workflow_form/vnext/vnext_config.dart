@@ -12,9 +12,6 @@
 
 /// Configuration for vNext workflow integration
 class VNextConfig {
-  /// Enable V2 workflows (default: false)
-  final bool enableV2Workflows;
-  
   /// Base URL for vNext backend service
   final String? vNextBaseUrl;
   
@@ -22,18 +19,15 @@ class VNextConfig {
   final String? vNextDomain;
 
   const VNextConfig({
-    this.enableV2Workflows = false,
     this.vNextBaseUrl,
     this.vNextDomain,
   });
 
+  // TODO: this should be handled in an other entity
+  // pass as paramaters, not configuration from env.
   /// Create configuration from environment variables
   factory VNextConfig.fromEnvironment() {
     return VNextConfig(
-      enableV2Workflows: const bool.fromEnvironment(
-        'ENABLE_V2_WORKFLOWS',
-        defaultValue: false,
-      ),
       vNextBaseUrl: const String.fromEnvironment(
         'VNEXT_BASE_URL',
         defaultValue: '',
@@ -47,12 +41,10 @@ class VNextConfig {
 
   /// Create configuration with specific values
   factory VNextConfig.create({
-    bool enableV2Workflows = false,
     String? vNextBaseUrl,
     String? vNextDomain,
   }) {
     return VNextConfig(
-      enableV2Workflows: enableV2Workflows,
       vNextBaseUrl: vNextBaseUrl,
       vNextDomain: vNextDomain,
     );
@@ -60,7 +52,6 @@ class VNextConfig {
 
   /// Check if vNext is properly configured and can be used
   bool get isConfigured => 
-      enableV2Workflows && 
       vNextBaseUrl != null && 
       vNextBaseUrl!.isNotEmpty &&
       vNextDomain != null && 
@@ -68,20 +59,16 @@ class VNextConfig {
 
   /// Default configuration for development (pointing to local vNext runtime)
   static VNextConfig get development => VNextConfig.create(
-    enableV2Workflows: true,
     vNextBaseUrl: 'http://localhost:4201',
     vNextDomain: 'core',
   );
 
-  /// Default configuration with V2 disabled
-  static VNextConfig get disabled => const VNextConfig(
-    enableV2Workflows: false,
-  );
+  /// Default configuration (empty, should be set via environment or config)
+  static VNextConfig get empty => const VNextConfig();
 
   @override
   String toString() {
     return 'VNextConfig('
-        'enableV2Workflows: $enableV2Workflows, '
         'vNextBaseUrl: $vNextBaseUrl, '
         'vNextDomain: $vNextDomain, '
         'isConfigured: $isConfigured'
@@ -90,12 +77,10 @@ class VNextConfig {
 
   /// Copy configuration with overrides
   VNextConfig copyWith({
-    bool? enableV2Workflows,
     String? vNextBaseUrl,
     String? vNextDomain,
   }) {
     return VNextConfig(
-      enableV2Workflows: enableV2Workflows ?? this.enableV2Workflows,
       vNextBaseUrl: vNextBaseUrl ?? this.vNextBaseUrl,
       vNextDomain: vNextDomain ?? this.vNextDomain,
     );

@@ -44,7 +44,7 @@ class WorkflowInstanceEntity {
   final Map<String, dynamic> attributes;
   final DateTime createdAt;
   final DateTime updatedAt;
-  final String? vNextDomain;
+  final String? domain;
   final Map<String, dynamic> metadata;
 
   WorkflowInstanceEntity({
@@ -56,7 +56,7 @@ class WorkflowInstanceEntity {
     this.attributes = const {},
     required this.createdAt,
     required this.updatedAt,
-    this.vNextDomain,
+    this.domain,
     this.metadata = const {},
   });
 
@@ -69,7 +69,7 @@ class WorkflowInstanceEntity {
     Map<String, dynamic>? attributes,
     DateTime? createdAt,
     DateTime? updatedAt,
-    String? vNextDomain,
+    String? domain,
     Map<String, dynamic>? metadata,
   }) {
     return WorkflowInstanceEntity(
@@ -81,7 +81,7 @@ class WorkflowInstanceEntity {
       attributes: attributes ?? this.attributes,
       createdAt: createdAt ?? this.createdAt,
       updatedAt: updatedAt ?? this.updatedAt,
-      vNextDomain: vNextDomain ?? this.vNextDomain,
+      domain: domain ?? this.domain,
       metadata: metadata ?? this.metadata,
     );
   }
@@ -260,7 +260,7 @@ class WorkflowInstanceManager {
     String? workflowName,
     WorkflowInstanceStatus? status,
     WorkflowEngine? engine,
-    String? vNextDomain,
+    String? domain,
     Map<String, dynamic>? attributeFilters,
   }) {
     return _instances.values.where((instance) {
@@ -279,8 +279,8 @@ class WorkflowInstanceManager {
         return false;
       }
 
-      // Filter by vNext domain
-      if (vNextDomain != null && instance.vNextDomain != vNextDomain) {
+      // Filter by domain
+      if (domain != null && instance.domain != domain) {
         return false;
       }
 

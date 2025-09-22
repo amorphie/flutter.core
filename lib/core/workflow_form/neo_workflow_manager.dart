@@ -1,5 +1,4 @@
 import 'package:get_it/get_it.dart';
-import 'package:neo_core/core/analytics/neo_logger.dart';
 import 'package:neo_core/core/network/models/neo_http_call.dart';
 import 'package:neo_core/core/util/extensions/get_it_extensions.dart';
 import 'package:neo_core/core/util/uuid_util.dart';
