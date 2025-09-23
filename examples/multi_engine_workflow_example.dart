@@ -23,7 +23,7 @@ class MultiEngineWorkflowExample extends StatefulWidget {
 }
 
 class _MultiEngineWorkflowExampleState extends State<MultiEngineWorkflowExample> {
-  late EnhancedWorkflowRouter workflowRouter;
+  late WorkflowRouter workflowRouter;
   late WorkflowInstanceManager instanceManager;
   List<WorkflowInstanceEntity> instances = [];
   List<String> logs = [];
@@ -56,7 +56,7 @@ class _MultiEngineWorkflowExampleState extends State<MultiEngineWorkflowExample>
     final v1Manager = NeoWorkflowManager(null); // Using null for network manager in this example
 
     // Create enhanced workflow router
-    workflowRouter = EnhancedWorkflowRouter(
+    workflowRouter = WorkflowRouter(
       v1Manager: v1Manager,
       vNextClient: vNextClient,
       logger: SimpleNeoLogger(),

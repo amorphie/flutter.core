@@ -29,6 +29,9 @@ export 'core/workflow_form/vnext/vnext_workflow_client.dart';
 export 'core/workflow_form/workflow_engine_config.dart';
 export 'core/workflow_form/workflow_instance_manager.dart';
 export 'core/workflow_form/workflow_router.dart';
+export 'core/workflow_form/workflow_service.dart';
+export 'core/workflow_form/workflow_ui_events.dart';
+export 'core/workflow_form/workflow_flutter_bridge.dart';
 export 'examples/vnext_comprehensive/vnext_comprehensive_test_page.dart';
 
 class NeoCore {

@@ -36,16 +36,16 @@ class WorkflowRouterConfig {
       domain!.isNotEmpty;
 }
 
-/// Enhanced router that directs workflow operations to V1 or V2 implementations
+/// Router that directs workflow operations to V1 or V2 implementations
 /// with configuration-driven engine selection and multi-instance support
-class EnhancedWorkflowRouter {
+class WorkflowRouter {
   final NeoWorkflowManager v1Manager;
   final VNextWorkflowClient vNextClient;
   final NeoLogger logger;
   final HttpClientConfig httpClientConfig;
   final WorkflowInstanceManager instanceManager;
 
-  EnhancedWorkflowRouter({
+  WorkflowRouter({
     required this.v1Manager,
     required this.vNextClient,
     required this.logger,
@@ -67,7 +67,7 @@ class EnhancedWorkflowRouter {
   }) async {
     final engineConfig = _getConfigForWorkflow(workflowName);
     
-    logger.logConsole('[EnhancedWorkflowRouter] initWorkflow called for: $workflowName, engine: ${engineConfig.engine}, valid: ${engineConfig.isValid}');
+    logger.logConsole('[WorkflowRouter] initWorkflow called for: $workflowName, engine: ${engineConfig.engine}, valid: ${engineConfig.isValid}');
 
     if (engineConfig.isVNext && engineConfig.isValid) {
       return _initvNextWorkflow(workflowName, engineConfig, queryParameters, headerParameters, isSubFlow);
@@ -84,7 +84,7 @@ class EnhancedWorkflowRouter {
     Map<String, String>? headerParameters,
     bool isSubFlow,
   ) async {
-    logger.logConsole('[EnhancedWorkflowRouter] Routing initWorkflow to V2 (vNext)');
+    logger.logConsole('[WorkflowRouter] Routing initWorkflow to V2 (vNext)');
     
     try {
       final v2Response = await vNextClient.initWorkflow(
@@ -119,11 +119,11 @@ class EnhancedWorkflowRouter {
       
       return _convertV2ToV1Response(v2Response, isInit: true, workflowName: workflowName);
     } catch (e, stackTrace) {
-      logger.logConsole('[EnhancedWorkflowRouter] ERROR: V2 initWorkflow failed: $e\nStackTrace: $stackTrace');
+      logger.logConsole('[WorkflowRouter] ERROR: V2 initWorkflow failed: $e\nStackTrace: $stackTrace');
       
       // Fallback to V1 if V2 fails and fallback is enabled
       if (engineConfig.config['fallbackToV1'] == true) {
-        logger.logConsole('[EnhancedWorkflowRouter] Falling back to V1 due to V2 failure');
+        logger.logConsole('[WorkflowRouter] Falling back to V1 due to V2 failure');
         return _initAmorphieWorkflow(workflowName, engineConfig, queryParameters, headerParameters, isSubFlow);
       }
       
@@ -146,7 +146,7 @@ class EnhancedWorkflowRouter {
     Map<String, String>? headerParameters,
     bool isSubFlow,
   ) async {
-    logger.logConsole('[EnhancedWorkflowRouter] Routing initWorkflow to V1 (amorphie)');
+    logger.logConsole('[WorkflowRouter] Routing initWorkflow to V1 (amorphie)');
     
     try {
       final response = await v1Manager.initWorkflow(
@@ -178,7 +178,7 @@ class EnhancedWorkflowRouter {
       
       return response;
     } catch (e, stackTrace) {
-      logger.logConsole('[EnhancedWorkflowRouter] ERROR: V1 initWorkflow failed: $e\nStackTrace: $stackTrace');
+      logger.logConsole('[WorkflowRouter] ERROR: V1 initWorkflow failed: $e\nStackTrace: $stackTrace');
       return NeoErrorResponse(
         NeoError(
           responseCode: 500,
@@ -197,14 +197,14 @@ class EnhancedWorkflowRouter {
     Map<String, String>? headerParameters,
     bool isSubFlow = false,
   }) async {
-    logger.logConsole('[EnhancedWorkflowRouter] postTransition called for: $transitionName');
+    logger.logConsole('[WorkflowRouter] postTransition called for: $transitionName');
 
     // Try to get instanceId from body or current managers
     final instanceId = body['instanceId'] as String? ?? 
                       (isSubFlow ? v1Manager.subFlowInstanceId : v1Manager.instanceId);
     
     if (instanceId.isEmpty) {
-      logger.logConsole('[EnhancedWorkflowRouter] ERROR: No instanceId available for transition');
+      logger.logConsole('[WorkflowRouter] ERROR: No instanceId available for transition');
       return const NeoErrorResponse(
         NeoError(
           error: NeoErrorDetail(description: 'No instanceId available for transition'),
@@ -217,7 +217,7 @@ class EnhancedWorkflowRouter {
     // Get instance information from instance manager
     final instance = instanceManager.getInstance(instanceId);
     if (instance == null) {
-      logger.logConsole('[EnhancedWorkflowRouter] WARNING: Instance not found in manager, determining engine from managers');
+      logger.logConsole('[WorkflowRouter] WARNING: Instance not found in manager, determining engine from managers');
       // Fallback to V1 if instance not tracked
       return _postTransitionV1(transitionName, body, headerParameters, isSubFlow);
     }
@@ -237,7 +237,7 @@ class EnhancedWorkflowRouter {
     Map<String, String>? headerParameters,
     WorkflowInstanceEntity instance,
   ) async {
-    logger.logConsole('[EnhancedWorkflowRouter] Routing postTransition to V2 (vNext)');
+    logger.logConsole('[WorkflowRouter] Routing postTransition to V2 (vNext)');
     
     try {
       final v2Response = await vNextClient.postTransition(
@@ -265,7 +265,7 @@ class EnhancedWorkflowRouter {
       
       return _convertV2ToV1Response(v2Response, transitionName: transitionName);
     } catch (e, stackTrace) {
-      logger.logConsole('[EnhancedWorkflowRouter] ERROR: V2 postTransition failed: $e\nStackTrace: $stackTrace');
+      logger.logConsole('[WorkflowRouter] ERROR: V2 postTransition failed: $e\nStackTrace: $stackTrace');
       return NeoErrorResponse(
         NeoError(
           responseCode: 500,
@@ -284,7 +284,7 @@ class EnhancedWorkflowRouter {
     Map<String, String>? headerParameters,
     bool isSubFlow,
   ) async {
-    logger.logConsole('[EnhancedWorkflowRouter] Routing postTransition to V1 (amorphie)');
+    logger.logConsole('[WorkflowRouter] Routing postTransition to V1 (amorphie)');
     
     try {
       final response = await v1Manager.postTransition(
@@ -311,7 +311,7 @@ class EnhancedWorkflowRouter {
       
       return response;
     } catch (e, stackTrace) {
-      logger.logConsole('[EnhancedWorkflowRouter] ERROR: V1 postTransition failed: $e\nStackTrace: $stackTrace');
+      logger.logConsole('[WorkflowRouter] ERROR: V1 postTransition failed: $e\nStackTrace: $stackTrace');
       return NeoErrorResponse(
         NeoError(
           responseCode: 500,
@@ -325,11 +325,11 @@ class EnhancedWorkflowRouter {
 
   /// Get available transitions - routes to V1 or V2 based on instance
   Future<NeoResponse> getAvailableTransitions({String? instanceId}) async {
-    logger.logConsole('[EnhancedWorkflowRouter] getAvailableTransitions called');
+    logger.logConsole('[WorkflowRouter] getAvailableTransitions called');
 
     final targetInstanceId = instanceId ?? v1Manager.instanceId;
     if (targetInstanceId == null || targetInstanceId.isEmpty) {
-      logger.logConsole('[EnhancedWorkflowRouter] ERROR: No instanceId available for transitions');
+      logger.logConsole('[WorkflowRouter] ERROR: No instanceId available for transitions');
       return const NeoErrorResponse(
         NeoError(
           responseCode: 400,
@@ -344,7 +344,7 @@ class EnhancedWorkflowRouter {
     final instance = instanceManager.getInstance(targetInstanceId);
     
     if (instance?.engine == WorkflowEngine.vnext && instance?.domain != null) {
-      logger.logConsole('[EnhancedWorkflowRouter] Routing getAvailableTransitions to V2 (vNext)');
+      logger.logConsole('[WorkflowRouter] Routing getAvailableTransitions to V2 (vNext)');
       
       final v2Response = await vNextClient.getAvailableTransitions(
         domain: instance!.domain!,
@@ -353,7 +353,7 @@ class EnhancedWorkflowRouter {
       );
       return _convertV2ToV1Response(v2Response);
     } else {
-      logger.logConsole('[EnhancedWorkflowRouter] Routing getAvailableTransitions to V1 (amorphie)');
+      logger.logConsole('[WorkflowRouter] Routing getAvailableTransitions to V1 (amorphie)');
       return v1Manager.getAvailableTransitions(instanceId: instanceId);
     }
   }
