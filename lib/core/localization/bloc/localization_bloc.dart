@@ -47,8 +47,10 @@ class LocalizationBloc extends Bloc<LocalizationEvent, LocalizationState> {
   final bool isOnApp;
   final _neoSharedPrefs = getIt.get<NeoSharedPrefs>();
   final _neoNetworkManager = getIt.get<NeoNetworkManager>();
+  final bool fetchLocalizationFromApi;
 
-  LocalizationBloc({required this.isOnApp}) : super(LocalizationState(Language.defaultLanguage)) {
+  LocalizationBloc({required this.isOnApp, this.fetchLocalizationFromApi = true})
+      : super(LocalizationState(Language.defaultLanguage)) {
     on<LocalizationEventChangeLanguage>(_onLanguageChangedToState);
     on<LocalizationEventSwitchLanguage>(
       _onSwitchLanguage,
@@ -67,7 +69,9 @@ class LocalizationBloc extends Bloc<LocalizationEvent, LocalizationState> {
     final language = _getStoredLanguage();
     _currentLanguage = language;
     add(LocalizationEventChangeLanguage(language));
-    add(LocalizationEventFetchLocalizationFromAPI());
+    if (fetchLocalizationFromApi) {
+      add(LocalizationEventFetchLocalizationFromAPI());
+    }
   }
 
   _onLanguageChangedToState(LocalizationEventChangeLanguage event, Emitter<LocalizationState> emit) async {
