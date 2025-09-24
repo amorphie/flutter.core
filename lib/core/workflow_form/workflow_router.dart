@@ -197,11 +197,13 @@ class WorkflowRouter {
     Map<String, String>? headerParameters,
     bool isSubFlow = false,
   }) async {
-    logger.logConsole('[WorkflowRouter] postTransition called for: $transitionName');
+    logger.logConsole('[WorkflowRouter] postTransition called for: $transitionName with body: $body');
 
     // Try to get instanceId from body or current managers
     final instanceId = body['instanceId'] as String? ?? 
                       (isSubFlow ? v1Manager.subFlowInstanceId : v1Manager.instanceId);
+    
+    logger.logConsole('[WorkflowRouter] Using instanceId: $instanceId (isSubFlow: $isSubFlow)');
     
     if (instanceId.isEmpty) {
       logger.logConsole('[WorkflowRouter] ERROR: No instanceId available for transition');
@@ -217,15 +219,19 @@ class WorkflowRouter {
     // Get instance information from instance manager
     final instance = instanceManager.getInstance(instanceId);
     if (instance == null) {
-      logger.logConsole('[WorkflowRouter] WARNING: Instance not found in manager, determining engine from managers');
+      logger.logConsole('[WorkflowRouter] WARNING: Instance not found in manager, using V1 fallback');
       // Fallback to V1 if instance not tracked
       return _postTransitionV1(transitionName, body, headerParameters, isSubFlow);
     }
 
+    logger.logConsole('[WorkflowRouter] Found instance - Engine: ${instance.engine}, Domain: ${instance.domain}');
+
     // Route based on instance engine
     if (instance.engine == WorkflowEngine.vnext) {
+      logger.logConsole('[WorkflowRouter] Routing to V2 (vNext) engine');
       return _postTransitionV2(transitionName, body, headerParameters, instance);
     } else {
+      logger.logConsole('[WorkflowRouter] Routing to V1 (amorphie) engine');
       return _postTransitionV1(transitionName, body, headerParameters, isSubFlow);
     }
   }

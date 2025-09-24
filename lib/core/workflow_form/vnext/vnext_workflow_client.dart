@@ -111,6 +111,11 @@ class VNextWorkflowClient {
       logger.logConsole('[VNextWorkflowClient] Making transition: $transitionKey for instance: $instanceId');
       
       final uri = Uri.parse('$baseUrl/api/v1/$domain/workflows/$workflowName/instances/$instanceId/transitions/$transitionKey');
+      final requestBody = data.isNotEmpty ? jsonEncode(data) : null;
+
+      logger.logConsole('[VNextWorkflowClient] HTTP PATCH to: $uri');
+      logger.logConsole('[VNextWorkflowClient] Request body: $requestBody');
+      logger.logConsole('[VNextWorkflowClient] Request headers: ${headers.toString()}');
 
       final response = await httpClient.patch(
         uri,
@@ -124,10 +129,12 @@ class VNextWorkflowClient {
           'X-Device-Info': 'Flutter Client',
           ...?headers,
         },
-        body: data.isNotEmpty ? jsonEncode(data) : null,
+        body: requestBody,
       );
 
-      logger.logConsole('[VNextWorkflowClient] Transition response status: ${response.statusCode}');
+      logger.logConsole('[VNextWorkflowClient] HTTP Response status: ${response.statusCode}');
+      logger.logConsole('[VNextWorkflowClient] HTTP Response headers: ${response.headers}');
+      logger.logConsole('[VNextWorkflowClient] HTTP Response body: ${response.body}');
 
       if (response.statusCode >= 200 && response.statusCode < 300) {
         final responseData = jsonDecode(response.body);

@@ -45,13 +45,22 @@ class WorkflowFlutterBridge {
   }) async {
     final config = uiConfig ?? const WorkflowUIConfig();
     
+    _logger.logConsole('[WorkflowFlutterBridge] ========== INIT WORKFLOW START ==========');
+    _logger.logConsole('[WorkflowFlutterBridge] Workflow: $workflowName');
+    _logger.logConsole('[WorkflowFlutterBridge] Parameters: $parameters');
+    _logger.logConsole('[WorkflowFlutterBridge] Headers: $headers');
+    _logger.logConsole('[WorkflowFlutterBridge] IsSubFlow: $isSubFlow');
+    _logger.logConsole('[WorkflowFlutterBridge] InitialData: $initialData');
+    _logger.logConsole('[WorkflowFlutterBridge] UIConfig: displayLoading=${config.displayLoading}, navigationType=${config.navigationType}');
+    
     try {
       // Emit loading event if requested
       if (config.displayLoading) {
+        _logger.logConsole('[WorkflowFlutterBridge] Emitting loading event: true');
         _emitLoadingEvent(true, instanceId: null);
       }
 
-      _logger.logConsole('[WorkflowFlutterBridge] Starting workflow: $workflowName');
+      _logger.logConsole('[WorkflowFlutterBridge] Calling WorkflowService.initWorkflow...');
 
       // Call pure business logic
       final result = await _workflowService.initWorkflow(
@@ -61,13 +70,25 @@ class WorkflowFlutterBridge {
         isSubFlow: isSubFlow,
       );
 
+      _logger.logConsole('[WorkflowFlutterBridge] WorkflowService.initWorkflow completed');
+      _logger.logConsole('[WorkflowFlutterBridge] Result.isSuccess: ${result.isSuccess}');
+      _logger.logConsole('[WorkflowFlutterBridge] Result.instanceId: ${result.instanceId}');
+      _logger.logConsole('[WorkflowFlutterBridge] Result.data: ${result.data}');
+      _logger.logConsole('[WorkflowFlutterBridge] Result.error: ${result.error}');
+
       if (result.isSuccess) {
+        _logger.logConsole('[WorkflowFlutterBridge] Processing successful result...');
+        
         // Extract navigation information from result
         final data = result.data ?? {};
         final pageId = data['page']?['pageId'] as String? ?? 
                       data['init-page-name'] as String?;
         
+        _logger.logConsole('[WorkflowFlutterBridge] Extracted pageId: $pageId');
+        
         if (pageId != null) {
+          _logger.logConsole('[WorkflowFlutterBridge] Emitting navigation event to pageId: $pageId');
+          
           // Emit navigation event
           _uiEventController.add(WorkflowUIEvent.navigate(
             pageId: pageId,
@@ -78,6 +99,8 @@ class WorkflowFlutterBridge {
             queryParameters: parameters,
           ));
         } else {
+          _logger.logConsole('[WorkflowFlutterBridge] No pageId found, emitting silent event');
+          
           // Silent success - no navigation needed
           _uiEventController.add(WorkflowUIEvent.silent(
             instanceId: result.instanceId,
@@ -87,17 +110,22 @@ class WorkflowFlutterBridge {
 
         _logger.logConsole('[WorkflowFlutterBridge] Workflow started successfully: ${result.instanceId}');
       } else {
+        _logger.logError('[WorkflowFlutterBridge] Workflow failed with error: ${result.error}');
+        
         // Emit error event
         _emitErrorEvent(result.error ?? 'Unknown workflow error');
       }
-    } catch (e) {
-      _logger.logError('[WorkflowFlutterBridge] Workflow init failed: $e');
+    } catch (e, stackTrace) {
+      _logger.logError('[WorkflowFlutterBridge] Exception during workflow init: $e');
+      _logger.logError('[WorkflowFlutterBridge] Stack trace: $stackTrace');
       _emitErrorEvent('Workflow initialization failed: $e');
     } finally {
       // Always hide loading
       if (config.displayLoading) {
+        _logger.logConsole('[WorkflowFlutterBridge] Emitting loading event: false');
         _emitLoadingEvent(false, instanceId: null);
       }
+      _logger.logConsole('[WorkflowFlutterBridge] ========== INIT WORKFLOW END ==========');
     }
   }
 
@@ -113,13 +141,22 @@ class WorkflowFlutterBridge {
     final config = uiConfig ?? const WorkflowUIConfig();
     final instanceId = body['instanceId'] as String?;
     
+    _logger.logConsole('[WorkflowFlutterBridge] ========== POST TRANSITION START ==========');
+    _logger.logConsole('[WorkflowFlutterBridge] Transition: $transitionName');
+    _logger.logConsole('[WorkflowFlutterBridge] Body: $body');
+    _logger.logConsole('[WorkflowFlutterBridge] Headers: $headers');
+    _logger.logConsole('[WorkflowFlutterBridge] InstanceId: $instanceId');
+    _logger.logConsole('[WorkflowFlutterBridge] IsSubFlow: $isSubFlow');
+    _logger.logConsole('[WorkflowFlutterBridge] UIConfig: displayLoading=${config.displayLoading}');
+    
     try {
       // Emit loading event if requested
       if (config.displayLoading) {
+        _logger.logConsole('[WorkflowFlutterBridge] Emitting loading event: true');
         _emitLoadingEvent(true, instanceId: instanceId);
       }
 
-      _logger.logConsole('[WorkflowFlutterBridge] Posting transition: $transitionName for instance: $instanceId');
+      _logger.logConsole('[WorkflowFlutterBridge] Calling WorkflowService.postTransition...');
 
       // Call pure business logic
       final result = await _workflowService.postTransition(
@@ -129,14 +166,26 @@ class WorkflowFlutterBridge {
         isSubFlow: isSubFlow,
       );
 
+      _logger.logConsole('[WorkflowFlutterBridge] WorkflowService.postTransition completed');
+      _logger.logConsole('[WorkflowFlutterBridge] Result.isSuccess: ${result.isSuccess}');
+      _logger.logConsole('[WorkflowFlutterBridge] Result.instanceId: ${result.instanceId}');
+      _logger.logConsole('[WorkflowFlutterBridge] Result.data: ${result.data}');
+      _logger.logConsole('[WorkflowFlutterBridge] Result.error: ${result.error}');
+
       if (result.isSuccess) {
+        _logger.logConsole('[WorkflowFlutterBridge] Processing successful result...');
+        
         // Extract navigation information from result
         final data = result.data ?? {};
         final navigation = data['navigation'] as String?;
         final pageId = data['page']?['pageId'] as String?;
 
+        _logger.logConsole('[WorkflowFlutterBridge] Extracted navigation: $navigation, pageId: $pageId');
+
         if (navigation != null && pageId != null) {
           final navigationType = _parseNavigationType(navigation);
+          
+          _logger.logConsole('[WorkflowFlutterBridge] Emitting navigation event to pageId: $pageId, navigationType: $navigationType');
           
           // Emit navigation event
           _uiEventController.add(WorkflowUIEvent.navigate(
@@ -147,6 +196,8 @@ class WorkflowFlutterBridge {
             pageData: _buildPageData(data, null),
           ));
         } else {
+          _logger.logConsole('[WorkflowFlutterBridge] No navigation/pageId found, emitting update data event');
+          
           // Silent success - update data only
           _uiEventController.add(WorkflowUIEvent.updateData(
             pageData: data,
@@ -156,17 +207,22 @@ class WorkflowFlutterBridge {
 
         _logger.logConsole('[WorkflowFlutterBridge] Transition posted successfully: ${result.instanceId ?? instanceId}');
       } else {
+        _logger.logError('[WorkflowFlutterBridge] Transition failed with error: ${result.error}');
+        
         // Emit error event
         _emitErrorEvent(result.error ?? 'Unknown transition error', instanceId: instanceId);
       }
-    } catch (e) {
-      _logger.logError('[WorkflowFlutterBridge] Transition failed: $e');
+    } catch (e, stackTrace) {
+      _logger.logError('[WorkflowFlutterBridge] Exception during transition: $e');
+      _logger.logError('[WorkflowFlutterBridge] Stack trace: $stackTrace');
       _emitErrorEvent('Transition failed: $e', instanceId: instanceId);
     } finally {
       // Always hide loading
       if (config.displayLoading) {
+        _logger.logConsole('[WorkflowFlutterBridge] Emitting loading event: false');
         _emitLoadingEvent(false, instanceId: instanceId);
       }
+      _logger.logConsole('[WorkflowFlutterBridge] ========== POST TRANSITION END ==========');
     }
   }
 

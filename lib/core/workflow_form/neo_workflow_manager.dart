@@ -114,7 +114,9 @@ class NeoWorkflowManager {
     Map<String, String>? headerParameters,
     bool isSubFlow = false,
   }) async {
-    return neoNetworkManager.call(
+    _neoLogger?.logConsole('[NeoWorkflowManager] Post Transition: $transitionName, Body: $body, isSubFlow: $isSubFlow');
+    
+    final response = await neoNetworkManager.call(
       NeoHttpCall(
         endpoint: endpointPostTransition,
         pathParameters: {
@@ -125,6 +127,9 @@ class NeoWorkflowManager {
         body: body,
       ),
     );
+    
+    _neoLogger?.logConsole('[NeoWorkflowManager] Post Transition Response: $response');
+    return response;
   }
 
   Future<NeoResponse> getLastTransitionByLongPolling({bool isSubFlow = false}) async {
