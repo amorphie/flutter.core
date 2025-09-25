@@ -58,6 +58,7 @@ class NeoUserInternetUsageStorage {
       final updatedUsage = currentUsage.addUsage(
         bytesUsed: bytesUsed,
         isSuccess: isSuccess,
+        endpoint: endpoint,
       );
       await _saveUsage(updatedUsage);
 

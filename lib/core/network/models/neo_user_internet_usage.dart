@@ -16,7 +16,7 @@ class NeoUserInternetUsage {
   final int successfulRequests;
   final int failedRequests;
   final DateTime lastUpdated;
-  //List<uri: time,kb>
+  final List<Map<String, dynamic>> usageHistory;
 
   const NeoUserInternetUsage({
     required this.totalBytesUsed,
@@ -24,6 +24,7 @@ class NeoUserInternetUsage {
     required this.successfulRequests,
     required this.failedRequests,
     required this.lastUpdated,
+    this.usageHistory = const [],
   });
 
   factory NeoUserInternetUsage.empty() {
@@ -43,6 +44,9 @@ class NeoUserInternetUsage {
       successfulRequests: json['successfulRequests'] as int? ?? 0,
       failedRequests: json['failedRequests'] as int? ?? 0,
       lastUpdated: DateTime.tryParse(json['lastUpdated'] as String? ?? '') ?? DateTime.now(),
+      usageHistory:
+          (json['usageHistory'] as List<dynamic>?)?.map((item) => Map<String, dynamic>.from(item as Map)).toList() ??
+              [],
     );
   }
 
@@ -53,6 +57,7 @@ class NeoUserInternetUsage {
       'successfulRequests': successfulRequests,
       'failedRequests': failedRequests,
       'lastUpdated': lastUpdated.toIso8601String(),
+      'usageHistory': usageHistory,
     };
   }
 
@@ -62,6 +67,7 @@ class NeoUserInternetUsage {
     int? successfulRequests,
     int? failedRequests,
     DateTime? lastUpdated,
+    List<Map<String, dynamic>>? usageHistory,
   }) {
     return NeoUserInternetUsage(
       totalBytesUsed: totalBytesUsed ?? this.totalBytesUsed,
@@ -69,6 +75,7 @@ class NeoUserInternetUsage {
       successfulRequests: successfulRequests ?? this.successfulRequests,
       failedRequests: failedRequests ?? this.failedRequests,
       lastUpdated: lastUpdated ?? this.lastUpdated,
+      usageHistory: usageHistory ?? this.usageHistory,
     );
   }
 
@@ -76,25 +83,40 @@ class NeoUserInternetUsage {
   NeoUserInternetUsage addUsage({
     required int bytesUsed,
     required bool isSuccess,
+    required String endpoint,
   }) {
+    final Map<String, dynamic> historyEntry = {
+      'endpoint': endpoint,
+      'bytesUsed': bytesUsed,
+      'isSuccess': isSuccess,
+      'timestamp': DateTime.now().toIso8601String(),
+    };
+
     return copyWith(
       totalBytesUsed: totalBytesUsed + bytesUsed,
       totalRequests: totalRequests + 1,
       successfulRequests: successfulRequests + (isSuccess ? 1 : 0),
       failedRequests: failedRequests + (isSuccess ? 0 : 1),
       lastUpdated: DateTime.now(),
+      usageHistory: [...usageHistory, historyEntry],
     );
   }
 
   /// Get success rate as percentage
   double get successRate {
-    if (totalRequests == 0) return 0.0;
+    if (totalRequests == 0) {
+      return 0.0;
+    }
+
     return (successfulRequests / totalRequests) * 100;
   }
 
   /// Get average bytes per request
   double get averageBytesPerRequest {
-    if (totalRequests == 0) return 0.0;
+    if (totalRequests == 0) {
+      return 0.0;
+    }
+
     return totalBytesUsed / totalRequests;
   }
 
