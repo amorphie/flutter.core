@@ -28,6 +28,7 @@ import 'package:neo_core/core/network/headers/neo_constant_headers.dart';
 import 'package:neo_core/core/network/headers/neo_dynamic_headers.dart';
 import 'package:neo_core/core/network/helpers/mtls_helper.dart';
 import 'package:neo_core/core/network/interceptors/neo_response_interceptor.dart';
+import 'package:neo_core/core/network/interceptors/neo_user_internet_usage_interceptor.dart';
 import 'package:neo_core/core/network/models/http_auth_response.dart';
 import 'package:neo_core/core/network/models/http_method.dart';
 import 'package:neo_core/core/network/models/neo_http_call.dart';
@@ -90,6 +91,7 @@ class NeoNetworkManager {
 
   late final MtlsHelper _mtlsHelper = MtlsHelper();
   late final MtlsHeaders _mtlsHeaders = MtlsHeaders(secureStorage: secureStorage);
+  late final NeoUserInternetUsageInterceptor _usageInterceptor = NeoUserInternetUsageInterceptor();
 
   NeoNetworkManager({
     required this.httpClientConfig,
@@ -190,23 +192,26 @@ class NeoNetworkManager {
     if (fullPath == null || method == null) {
       return NeoResponse.error(const NeoError(), responseHeaders: {});
     }
-
+    // Internet usage tracking will be handled in response/error interceptors
     NeoResponse response;
     try {
       switch (method) {
         case HttpMethod.get:
-          response = await _requestGet(fullPath, neoCall);
+          response = await _requestGet(fullPath, neoCall, fullPath);
         case HttpMethod.post:
-          response = await _requestPost(fullPath, neoCall);
+          response = await _requestPost(fullPath, neoCall, fullPath);
         case HttpMethod.delete:
-          response = await _requestDelete(fullPath, neoCall);
+          response = await _requestDelete(fullPath, neoCall, fullPath);
         case HttpMethod.put:
-          response = await _requestPut(fullPath, neoCall);
+          response = await _requestPut(fullPath, neoCall, fullPath);
         case HttpMethod.patch:
-          response = await _requestPatch(fullPath, neoCall);
+          response = await _requestPatch(fullPath, neoCall, fullPath);
       }
+
       return response;
     } catch (e) {
+      await _usageInterceptor.interceptError(neoCall, e, fullPath);
+
       if (e is TimeoutException) {
         _neoLogger?.logError("[NeoNetworkManager]: Service call timeout! Endpoint: ${neoCall.endpoint}");
         return NeoResponse.error(const NeoError(responseCode: HttpStatus.requestTimeout), responseHeaders: {});
@@ -226,7 +231,7 @@ class NeoNetworkManager {
     }
   }
 
-  Future<NeoResponse> _requestGet(String fullPath, NeoHttpCall neoCall) async {
+  Future<NeoResponse> _requestGet(String fullPath, NeoHttpCall neoCall, String endpoint) async {
     final fullPathWithQueries = _getFullPathWithQueries(fullPath, neoCall.queryProviders);
     final response = await httpClient!
         .get(
@@ -234,10 +239,10 @@ class NeoNetworkManager {
           headers: (await _getDefaultHeaders(neoCall))..addAll(neoCall.headerParameters),
         )
         .timeout(timeoutDuration);
-    return _createResponse(response, neoCall);
+    return _createResponse(response, neoCall, endpoint);
   }
 
-  Future<NeoResponse> _requestPost(String fullPath, NeoHttpCall neoCall) async {
+  Future<NeoResponse> _requestPost(String fullPath, NeoHttpCall neoCall, String endpoint) async {
     final fullPathWithQueries = _getFullPathWithQueries(fullPath, neoCall.queryProviders);
     final response = await httpClient!
         .post(
@@ -246,10 +251,10 @@ class NeoNetworkManager {
           body: json.encode(neoCall.body),
         )
         .timeout(timeoutDuration);
-    return _createResponse(response, neoCall);
+    return _createResponse(response, neoCall, endpoint);
   }
 
-  Future<NeoResponse> _requestDelete(String fullPath, NeoHttpCall neoCall) async {
+  Future<NeoResponse> _requestDelete(String fullPath, NeoHttpCall neoCall, String endpoint) async {
     final fullPathWithQueries = _getFullPathWithQueries(fullPath, neoCall.queryProviders);
     final response = await httpClient!
         .delete(
@@ -258,10 +263,10 @@ class NeoNetworkManager {
           body: json.encode(neoCall.body),
         )
         .timeout(timeoutDuration);
-    return _createResponse(response, neoCall);
+    return _createResponse(response, neoCall, endpoint);
   }
 
-  Future<NeoResponse> _requestPut(String fullPath, NeoHttpCall neoCall) async {
+  Future<NeoResponse> _requestPut(String fullPath, NeoHttpCall neoCall, String endpoint) async {
     final fullPathWithQueries = _getFullPathWithQueries(fullPath, neoCall.queryProviders);
     final response = await httpClient!
         .put(
@@ -270,10 +275,10 @@ class NeoNetworkManager {
           body: json.encode(neoCall.body),
         )
         .timeout(timeoutDuration);
-    return _createResponse(response, neoCall);
+    return _createResponse(response, neoCall, endpoint);
   }
 
-  Future<NeoResponse> _requestPatch(String fullPath, NeoHttpCall neoCall) async {
+  Future<NeoResponse> _requestPatch(String fullPath, NeoHttpCall neoCall, String endpoint) async {
     final fullPathWithQueries = _getFullPathWithQueries(fullPath, neoCall.queryProviders);
     final response = await httpClient!
         .patch(
@@ -282,7 +287,7 @@ class NeoNetworkManager {
           body: json.encode(neoCall.body),
         )
         .timeout(timeoutDuration);
-    return _createResponse(response, neoCall);
+    return _createResponse(response, neoCall, endpoint);
   }
 
   String _getFullPathWithQueries(String fullPath, List<HttpQueryProvider> queryProviders) {
@@ -298,7 +303,7 @@ class NeoNetworkManager {
     return uri.replace(queryParameters: queryParameters).toString();
   }
 
-  Future<NeoResponse> _createResponse(http.Response response, NeoHttpCall call) async {
+  Future<NeoResponse> _createResponse(http.Response response, NeoHttpCall call, String endpoint) async {
     Map<String, dynamic>? responseJSON;
     try {
       const utf8Decoder = Utf8Decoder();
@@ -320,6 +325,8 @@ class NeoNetworkManager {
     }
 
     _logResponse(response);
+
+    await _usageInterceptor.interceptResponse(call, response, endpoint);
 
     if (response.statusCode >= 200 && response.statusCode < 300) {
       onRequestSucceed?.call(call.endpoint, call.requestId);

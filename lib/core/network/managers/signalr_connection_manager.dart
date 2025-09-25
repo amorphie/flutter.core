@@ -17,6 +17,7 @@ import 'package:flutter/foundation.dart' show kDebugMode;
 import 'package:get_it/get_it.dart';
 import 'package:neo_core/core/analytics/neo_logger.dart';
 import 'package:neo_core/core/analytics/neo_logger_type.dart';
+import 'package:neo_core/core/network/interceptors/neo_user_internet_usage_interceptor.dart';
 import 'package:neo_core/core/network/models/neo_signalr_event.dart';
 import 'package:neo_core/core/network/models/neo_signalr_event_base_state.dart';
 import 'package:signalr_netcore/iretry_policy.dart';
@@ -43,6 +44,8 @@ class SignalrConnectionManager {
   SignalrConnectionManager();
 
   NeoLogger get _neoLogger => GetIt.I.get();
+
+  late final NeoUserInternetUsageInterceptor _usageInterceptor = NeoUserInternetUsageInterceptor();
 
   Future init({
     required String serverUrl,
@@ -95,6 +98,9 @@ class SignalrConnectionManager {
       if (transitions == null) {
         return;
       }
+
+      _usageInterceptor.interceptTransitions(transitions, _hubConnection?.baseUrl ?? "unknown");
+
       final NeoSignalREvent? ongoingEvent = _parseOngoingEvent(transitions);
       if (ongoingEvent == null) {
         return;
