@@ -10,6 +10,7 @@
  * Any reproduction of this material must contain this notice.
  */
 
+import 'dart:async';
 import 'dart:convert';
 
 import 'package:get_it/get_it.dart';
@@ -28,11 +29,11 @@ class NeoUserInternetUsageInterceptor {
   NeoLogger? get _neoLogger => GetIt.I.getIfReady<NeoLogger>();
 
   /// Intercept response and add usage data
-  Future<void> interceptResponse(
+  void interceptResponse(
     NeoHttpCall neoCall,
     Response response,
     String endpoint,
-  ) async {
+  ) {
     if (_usageStorage == null) {
       return;
     }
@@ -40,10 +41,12 @@ class NeoUserInternetUsageInterceptor {
     try {
       final totalBytes = _calculateTotalBytes(neoCall, response);
       final isSuccess = response.statusCode >= 200 && response.statusCode < 300;
-      await _usageStorage.addUsage(
-        bytesUsed: totalBytes,
-        isSuccess: isSuccess,
-        endpoint: neoCall.endpoint,
+      unawaited(
+        _usageStorage.addUsage(
+          bytesUsed: totalBytes,
+          isSuccess: isSuccess,
+          endpoint: neoCall.endpoint,
+        ),
       );
     } catch (e) {
       _neoLogger?.logError("[UserInternetUsageInterceptor]: Failed to intercept response: $e");
@@ -51,21 +54,23 @@ class NeoUserInternetUsageInterceptor {
   }
 
   /// Intercept error and add usage data for failed requests
-  Future<void> interceptError(
+  void interceptError(
     NeoHttpCall neoCall,
     Object error,
     String httpMethod,
-  ) async {
+  ) {
     if (_usageStorage == null) {
       return;
     }
     try {
       final requestBytes = _calculateRequestBytes(neoCall);
 
-      await _usageStorage.addUsage(
-        bytesUsed: requestBytes,
-        isSuccess: false,
-        endpoint: neoCall.endpoint,
+      unawaited(
+        _usageStorage.addUsage(
+          bytesUsed: requestBytes,
+          isSuccess: false,
+          endpoint: neoCall.endpoint,
+        ),
       );
     } catch (e) {
       _neoLogger?.logError("[UserInternetUsageInterceptor]: Failed to intercept error: $e");
@@ -73,20 +78,22 @@ class NeoUserInternetUsageInterceptor {
   }
 
   /// Intercept hub transitions and add usage data
-  Future<void> interceptTransitions(
+  void interceptTransitions(
     List<Object?> transitions,
     String endpoint,
-  ) async {
+  ) {
     if (_usageStorage == null) {
       return;
     }
     try {
       final int totalTransitionBytes = _calculateTransitionsBytes(transitions);
 
-      await _usageStorage.addUsage(
-        bytesUsed: totalTransitionBytes,
-        isSuccess: true,
-        endpoint: endpoint,
+      unawaited(
+        _usageStorage.addUsage(
+          bytesUsed: totalTransitionBytes,
+          isSuccess: true,
+          endpoint: endpoint,
+        ),
       );
     } catch (e) {
       _neoLogger?.logError("[UserInternetUsageInterceptor]: Failed to intercept transitions: $e");

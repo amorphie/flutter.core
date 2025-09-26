@@ -210,7 +210,7 @@ class NeoNetworkManager {
 
       return response;
     } catch (e) {
-      await _usageInterceptor.interceptError(neoCall, e, fullPath);
+      _usageInterceptor.interceptError(neoCall, e, fullPath);
 
       if (e is TimeoutException) {
         _neoLogger?.logError("[NeoNetworkManager]: Service call timeout! Endpoint: ${neoCall.endpoint}");
@@ -326,7 +326,7 @@ class NeoNetworkManager {
 
     _logResponse(response);
 
-    await _usageInterceptor.interceptResponse(call, response, endpoint);
+    _usageInterceptor.interceptResponse(call, response, endpoint);
 
     if (response.statusCode >= 200 && response.statusCode < 300) {
       onRequestSucceed?.call(call.endpoint, call.requestId);
