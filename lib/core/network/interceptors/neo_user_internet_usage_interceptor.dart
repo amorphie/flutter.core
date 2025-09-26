@@ -168,12 +168,12 @@ class NeoUserInternetUsageInterceptor {
 
   /// Get current usage
   Future<NeoUserInternetUsage?> getUsage() async {
-    return await _usageStorage?.getUsage();
+    return null;
   }
 
   /// Get usage statistics
   Future<Map<String, dynamic>?> getUsageStats() async {
-    return await _usageStorage?.getUsageStats();
+    return null;
   }
 
   /// Reset usage data

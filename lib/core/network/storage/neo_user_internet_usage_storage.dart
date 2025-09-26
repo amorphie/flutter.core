@@ -10,6 +10,7 @@
  * Any reproduction of this material must contain this notice.
  */
 
+import 'dart:async';
 import 'dart:convert';
 
 import 'package:get_it/get_it.dart';
@@ -27,27 +28,30 @@ class NeoUserInternetUsageStorage {
 
   NeoLogger? get _neoLogger => GetIt.I.getIfReady<NeoLogger>();
 
-  bool enableLog = true;
-  int logRequestLimit = 0;
+  bool _enableLog = false;
+  int _logRequestLimit = 0;
+
+  NeoUserInternetUsage _internetUsage = NeoUserInternetUsage.empty();
 
   void init({required bool? isEnabled, required int? loggerRequestLimit}) {
-    enableLog = isEnabled ?? enableLog;
-    logRequestLimit = loggerRequestLimit ?? logRequestLimit;
+    _enableLog = isEnabled ?? _enableLog;
+    _logRequestLimit = loggerRequestLimit ?? _logRequestLimit;
+    unawaited(getUsage());
   }
 
   /// Get current user internet usage
-  Future<NeoUserInternetUsage> getUsage() async {
+  Future<void> getUsage() async {
     try {
       final usageJson = neoSharedPrefs.read(_usageKey);
       if (usageJson == null) {
-        return NeoUserInternetUsage.empty();
+        return;
       }
 
       final usageMap = jsonDecode(usageJson as String) as Map<String, dynamic>;
-      return NeoUserInternetUsage.fromJson(usageMap);
+      _internetUsage = NeoUserInternetUsage.fromJson(usageMap);
     } catch (e) {
       _neoLogger?.logError("[UserInternetUsageStorage]: Failed to get usage: $e");
-      return NeoUserInternetUsage.empty();
+      return;
     }
   }
 
@@ -57,25 +61,33 @@ class NeoUserInternetUsageStorage {
     required bool isSuccess,
     required String endpoint,
   }) async {
-    if (!enableLog) {
+    if (!_enableLog) {
       return;
     }
 
     try {
-      final currentUsage = await getUsage();
-      final updatedUsage = currentUsage.addUsage(
+      final updatedUsage = _internetUsage.addUsage(
         bytesUsed: bytesUsed,
         isSuccess: isSuccess,
         endpoint: endpoint,
       );
       await _saveUsage(updatedUsage);
+      _internetUsage = updatedUsage;
 
       _neoLogger?.logConsole(
         "[UserInternetUsageStorage]: Added $bytesUsed bytes (${isSuccess ? 'SUCCESS' : 'FAILED'}) - Total: ${updatedUsage.formattedBytesUsed}",
       );
+      if (_logRequestLimit > 0 && _internetUsage.totalRequests >= _logRequestLimit) {
+        await _logUsage(_internetUsage);
+        await resetUsage();
+        _internetUsage = NeoUserInternetUsage.empty();
+      }
     } catch (e) {
-      _neoLogger?.logError("[UserInternetUsageStorage]: Failed to add usage: $e");
+      _neoLogger?.logError("[UserInternetUsageStorage]: Failed to add internet usage: $e");
     }
+  }
+
+  Future<void> _logUsage(NeoUserInternetUsage usage) async {
   }
 
   /// Save usage data
@@ -83,6 +95,7 @@ class NeoUserInternetUsageStorage {
     try {
       final usageJson = jsonEncode(usage.toJson());
       await neoSharedPrefs.write(_usageKey, usageJson);
+      print("lasttt savedddd:  ${usageJson}");
     } catch (e) {
       _neoLogger?.logError("[UserInternetUsageStorage]: Failed to save usage: $e");
     }
