@@ -20,12 +20,20 @@ import 'package:neo_core/core/util/extensions/get_it_extensions.dart';
 
 class NeoUserInternetUsageStorage {
   final NeoSharedPrefs neoSharedPrefs;
-  final bool enableLogging;
+
   static const String _usageKey = "user_internet_usage";
 
-  NeoUserInternetUsageStorage({required this.neoSharedPrefs, this.enableLogging = false});
+  NeoUserInternetUsageStorage({required this.neoSharedPrefs});
 
   NeoLogger? get _neoLogger => GetIt.I.getIfReady<NeoLogger>();
+
+  bool enableLog = true;
+  int logRequestLimit = 0;
+
+  void init({required bool? isEnabled, required int? loggerRequestLimit}) {
+    enableLog = isEnabled ?? enableLog;
+    logRequestLimit = loggerRequestLimit ?? logRequestLimit;
+  }
 
   /// Get current user internet usage
   Future<NeoUserInternetUsage> getUsage() async {
@@ -49,7 +57,7 @@ class NeoUserInternetUsageStorage {
     required bool isSuccess,
     required String endpoint,
   }) async {
-    if (!enableLogging) {
+    if (!enableLog) {
       return;
     }
 
