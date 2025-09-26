@@ -14,6 +14,7 @@ import 'dart:async';
 import 'dart:convert';
 
 import 'package:get_it/get_it.dart';
+import 'package:logger/logger.dart';
 import 'package:neo_core/core/analytics/neo_logger.dart';
 import 'package:neo_core/core/network/models/neo_user_internet_usage.dart';
 import 'package:neo_core/core/storage/neo_shared_prefs.dart';
@@ -88,6 +89,7 @@ class NeoUserInternetUsageStorage {
   }
 
   Future<void> _logUsage(NeoUserInternetUsage usage) async {
+    _neoLogger?.logCustom("Internet Usage Tracker", logLevel: Level.fatal, properties: usage.toJson());
   }
 
   /// Save usage data

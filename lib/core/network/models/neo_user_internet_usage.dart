@@ -56,7 +56,7 @@ class NeoUserInternetUsage {
       'totalRequests': totalRequests,
       'successfulRequests': successfulRequests,
       'failedRequests': failedRequests,
-      'lastUpdated': lastUpdated.toIso8601String(),
+      'lastUpdated': lastUpdated.toString(),
       'usageHistory': usageHistory,
     };
   }
@@ -85,11 +85,15 @@ class NeoUserInternetUsage {
     required bool isSuccess,
     required String endpoint,
   }) {
+    // final Map<String, dynamic> historyEntry = {
+    //   'endpoint': endpoint,
+    //   'bytesUsed': bytesUsed,
+    //   'isSuccess': isSuccess,
+    //   'timestamp': DateTime.now().toIso8601String(),
+    // };
+
     final Map<String, dynamic> historyEntry = {
-      'endpoint': endpoint,
-      'bytesUsed': bytesUsed,
-      'isSuccess': isSuccess,
-      'timestamp': DateTime.now().toIso8601String(),
+      endpoint: "Date:${DateTime.now().toIso8601String()} - Usage:$bytesUsed",
     };
 
     return copyWith(

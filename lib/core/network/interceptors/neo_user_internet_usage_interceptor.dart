@@ -17,7 +17,6 @@ import 'package:get_it/get_it.dart';
 import 'package:http/http.dart';
 import 'package:neo_core/core/analytics/neo_logger.dart';
 import 'package:neo_core/core/network/models/neo_http_call.dart';
-import 'package:neo_core/core/network/models/neo_user_internet_usage.dart';
 import 'package:neo_core/core/network/storage/neo_user_internet_usage_storage.dart';
 import 'package:neo_core/core/util/extensions/get_it_extensions.dart';
 
@@ -103,10 +102,7 @@ class NeoUserInternetUsageInterceptor {
   int _calculateTotalBytes(NeoHttpCall neoCall, Response response) {
     int totalBytes = 0;
 
-    // Add request bytes
     totalBytes += _calculateRequestBytes(neoCall);
-
-    // Add response bytes
     totalBytes += _calculateResponseBytes(response);
 
     return totalBytes;
@@ -166,17 +162,6 @@ class NeoUserInternetUsageInterceptor {
     return transitionsSize;
   }
 
-  /// Get current usage
-  Future<NeoUserInternetUsage?> getUsage() async {
-    return null;
-  }
-
-  /// Get usage statistics
-  Future<Map<String, dynamic>?> getUsageStats() async {
-    return null;
-  }
-
-  /// Reset usage data
   Future<void> resetUsage() async {
     await _usageStorage?.resetUsage();
   }
