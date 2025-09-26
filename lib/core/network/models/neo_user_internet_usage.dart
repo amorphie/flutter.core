@@ -1,15 +1,3 @@
-/*
- * neo_core
- *
- * Created on 19/10/2023.
- * Copyright (c) 2023 Commencis. All rights reserved.
- *
- * Save to the extent permitted by law, you may not use, copy, modify,
- * distribute or create derivative works of this material or any part
- * of it without the prior written consent of Commencis.
- * Any reproduction of this material must contain this notice.
- */
-
 class NeoUserInternetUsage {
   final int totalBytesUsed;
   final int totalRequests;
@@ -85,13 +73,6 @@ class NeoUserInternetUsage {
     required bool isSuccess,
     required String endpoint,
   }) {
-    // final Map<String, dynamic> historyEntry = {
-    //   'endpoint': endpoint,
-    //   'bytesUsed': bytesUsed,
-    //   'isSuccess': isSuccess,
-    //   'timestamp': DateTime.now().toIso8601String(),
-    // };
-
     final Map<String, dynamic> historyEntry = {
       endpoint: "Date:${DateTime.now().toIso8601String()} - Usage:$bytesUsed",
     };
@@ -104,24 +85,6 @@ class NeoUserInternetUsage {
       lastUpdated: DateTime.now(),
       usageHistory: [...usageHistory, historyEntry],
     );
-  }
-
-  /// Get success rate as percentage
-  double get successRate {
-    if (totalRequests == 0) {
-      return 0.0;
-    }
-
-    return (successfulRequests / totalRequests) * 100;
-  }
-
-  /// Get average bytes per request
-  double get averageBytesPerRequest {
-    if (totalRequests == 0) {
-      return 0.0;
-    }
-
-    return totalBytesUsed / totalRequests;
   }
 
   /// Format bytes in human readable format

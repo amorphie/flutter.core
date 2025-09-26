@@ -1,15 +1,3 @@
-/*
- * neo_core
- *
- * Created on 19/10/2023.
- * Copyright (c) 2023 Commencis. All rights reserved.
- *
- * Save to the extent permitted by law, you may not use, copy, modify,
- * distribute or create derivative works of this material or any part
- * of it without the prior written consent of Commencis.
- * Any reproduction of this material must contain this notice.
- */
-
 import 'dart:async';
 import 'dart:convert';
 
@@ -40,6 +28,7 @@ class NeoUserInternetUsageInterceptor {
     try {
       final totalBytes = _calculateTotalBytes(neoCall, response);
       final isSuccess = response.statusCode >= 200 && response.statusCode < 300;
+
       unawaited(
         _usageStorage.addUsage(
           bytesUsed: totalBytes,
@@ -61,6 +50,7 @@ class NeoUserInternetUsageInterceptor {
     if (_usageStorage == null) {
       return;
     }
+
     try {
       final requestBytes = _calculateRequestBytes(neoCall);
 
@@ -84,6 +74,7 @@ class NeoUserInternetUsageInterceptor {
     if (_usageStorage == null) {
       return;
     }
+
     try {
       final int totalTransitionBytes = _calculateTransitionsBytes(transitions);
 
