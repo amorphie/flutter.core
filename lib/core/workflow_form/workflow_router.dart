@@ -523,6 +523,13 @@ class WorkflowRouter {
   /// Check if router has vNext capabilities
   bool get hasVNextCapabilities => httpClientConfig.hasVNextWorkflows;
 
+  /// Get the current instanceId for the specified flow type
+  /// This handles both vNext (server-provided) and amorphie (client-generated) instanceIds
+  String? getInstanceId({bool isSubFlow = false}) {
+    // For amorphie workflows, return the locally generated instanceId
+    return isSubFlow ? v1Manager.subFlowInstanceId : v1Manager.instanceId;
+  }
+
   /// Get workflow configuration for a specific workflow
   WorkflowEngineConfig getWorkflowConfig(String workflowName) {
     return _getConfigForWorkflow(workflowName);

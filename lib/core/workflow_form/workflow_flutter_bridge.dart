@@ -78,7 +78,7 @@ class WorkflowFlutterBridge {
 
       if (result.isSuccess) {
         _logger.logConsole('[WorkflowFlutterBridge] Processing successful result...');
-        
+
         // Extract navigation information from result
         final data = result.data ?? {};
         final pageId = data['page']?['pageId'] as String? ?? 

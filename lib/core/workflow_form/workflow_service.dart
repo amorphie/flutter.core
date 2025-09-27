@@ -82,9 +82,11 @@ class WorkflowService {
 
       if (response.isSuccess) {
         final data = response.asSuccess.data;
-        final instanceId = data['instanceId'] as String?;
+        
+        final instanceId = _router.getInstanceId(isSubFlow: isSubFlow);
         
         _logger.logConsole('[WorkflowService] Workflow initialized successfully: $instanceId');
+        _logger.logConsole('[WorkflowService] InstanceId source: ${instanceId != null ? (data.containsKey('instanceId') ? 'server (vNext)' : 'client-generated (amorphie)') : 'unknown'}');
         
         return WorkflowResult.success(
           instanceId: instanceId,
