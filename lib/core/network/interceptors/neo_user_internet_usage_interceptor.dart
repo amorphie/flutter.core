@@ -33,7 +33,7 @@ class NeoUserInternetUsageInterceptor {
         _usageStorage.addUsage(
           bytesUsed: totalBytes,
           isSuccess: isSuccess,
-          endpoint: neoCall.endpoint,
+          endpoint: endpoint,
         ),
       );
     } catch (e) {
@@ -45,7 +45,7 @@ class NeoUserInternetUsageInterceptor {
   void interceptError(
     NeoHttpCall neoCall,
     Object error,
-    String httpMethod,
+    String endpoint,
   ) {
     if (_usageStorage == null) {
       return;
@@ -58,7 +58,7 @@ class NeoUserInternetUsageInterceptor {
         _usageStorage.addUsage(
           bytesUsed: requestBytes,
           isSuccess: false,
-          endpoint: neoCall.endpoint,
+          endpoint: endpoint,
         ),
       );
     } catch (e) {
