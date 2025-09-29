@@ -90,6 +90,31 @@ class NeoUserInternetUsageInterceptor {
     }
   }
 
+  /// Intercept network image and add usage data
+  void interceptNetworkImage(
+    Response response,
+    String endpoint,
+  ) {
+    if (_usageStorage == null) {
+      return;
+    }
+
+    try {
+      final isSuccess = response.statusCode >= 200 && response.statusCode < 300;
+      final int totalImageBytes = _calculateResponseBytes(response);
+
+      unawaited(
+        _usageStorage.addUsage(
+          bytesUsed: totalImageBytes,
+          isSuccess: isSuccess,
+          endpoint: endpoint,
+        ),
+      );
+    } catch (e) {
+      _neoLogger?.logError("[UserInternetUsageInterceptor]: Failed to intercept network image: $e");
+    }
+  }
+
   int _calculateTotalBytes(NeoHttpCall neoCall, Response response) {
     int totalBytes = 0;
 

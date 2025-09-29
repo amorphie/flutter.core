@@ -197,15 +197,15 @@ class NeoNetworkManager {
     try {
       switch (method) {
         case HttpMethod.get:
-          response = await _requestGet(fullPath, neoCall, fullPath);
+          response = await _requestGet(fullPath, neoCall);
         case HttpMethod.post:
-          response = await _requestPost(fullPath, neoCall, fullPath);
+          response = await _requestPost(fullPath, neoCall);
         case HttpMethod.delete:
-          response = await _requestDelete(fullPath, neoCall, fullPath);
+          response = await _requestDelete(fullPath, neoCall);
         case HttpMethod.put:
-          response = await _requestPut(fullPath, neoCall, fullPath);
+          response = await _requestPut(fullPath, neoCall);
         case HttpMethod.patch:
-          response = await _requestPatch(fullPath, neoCall, fullPath);
+          response = await _requestPatch(fullPath, neoCall);
       }
 
       return response;
@@ -231,7 +231,7 @@ class NeoNetworkManager {
     }
   }
 
-  Future<NeoResponse> _requestGet(String fullPath, NeoHttpCall neoCall, String endpoint) async {
+  Future<NeoResponse> _requestGet(String fullPath, NeoHttpCall neoCall) async {
     final fullPathWithQueries = _getFullPathWithQueries(fullPath, neoCall.queryProviders);
     final response = await httpClient!
         .get(
@@ -239,10 +239,10 @@ class NeoNetworkManager {
           headers: (await _getDefaultHeaders(neoCall))..addAll(neoCall.headerParameters),
         )
         .timeout(timeoutDuration);
-    return _createResponse(response, neoCall, endpoint);
+    return _createResponse(response, neoCall, fullPath);
   }
 
-  Future<NeoResponse> _requestPost(String fullPath, NeoHttpCall neoCall, String endpoint) async {
+  Future<NeoResponse> _requestPost(String fullPath, NeoHttpCall neoCall) async {
     final fullPathWithQueries = _getFullPathWithQueries(fullPath, neoCall.queryProviders);
     final response = await httpClient!
         .post(
@@ -251,10 +251,10 @@ class NeoNetworkManager {
           body: json.encode(neoCall.body),
         )
         .timeout(timeoutDuration);
-    return _createResponse(response, neoCall, endpoint);
+    return _createResponse(response, neoCall, fullPath);
   }
 
-  Future<NeoResponse> _requestDelete(String fullPath, NeoHttpCall neoCall, String endpoint) async {
+  Future<NeoResponse> _requestDelete(String fullPath, NeoHttpCall neoCall) async {
     final fullPathWithQueries = _getFullPathWithQueries(fullPath, neoCall.queryProviders);
     final response = await httpClient!
         .delete(
@@ -263,10 +263,10 @@ class NeoNetworkManager {
           body: json.encode(neoCall.body),
         )
         .timeout(timeoutDuration);
-    return _createResponse(response, neoCall, endpoint);
+    return _createResponse(response, neoCall, fullPath);
   }
 
-  Future<NeoResponse> _requestPut(String fullPath, NeoHttpCall neoCall, String endpoint) async {
+  Future<NeoResponse> _requestPut(String fullPath, NeoHttpCall neoCall) async {
     final fullPathWithQueries = _getFullPathWithQueries(fullPath, neoCall.queryProviders);
     final response = await httpClient!
         .put(
@@ -275,10 +275,10 @@ class NeoNetworkManager {
           body: json.encode(neoCall.body),
         )
         .timeout(timeoutDuration);
-    return _createResponse(response, neoCall, endpoint);
+    return _createResponse(response, neoCall, fullPath);
   }
 
-  Future<NeoResponse> _requestPatch(String fullPath, NeoHttpCall neoCall, String endpoint) async {
+  Future<NeoResponse> _requestPatch(String fullPath, NeoHttpCall neoCall) async {
     final fullPathWithQueries = _getFullPathWithQueries(fullPath, neoCall.queryProviders);
     final response = await httpClient!
         .patch(
@@ -287,7 +287,7 @@ class NeoNetworkManager {
           body: json.encode(neoCall.body),
         )
         .timeout(timeoutDuration);
-    return _createResponse(response, neoCall, endpoint);
+    return _createResponse(response, neoCall, fullPath);
   }
 
   String _getFullPathWithQueries(String fullPath, List<HttpQueryProvider> queryProviders) {
@@ -303,7 +303,7 @@ class NeoNetworkManager {
     return uri.replace(queryParameters: queryParameters).toString();
   }
 
-  Future<NeoResponse> _createResponse(http.Response response, NeoHttpCall call, String endpoint) async {
+  Future<NeoResponse> _createResponse(http.Response response, NeoHttpCall call, String fullPath) async {
     Map<String, dynamic>? responseJSON;
     try {
       const utf8Decoder = Utf8Decoder();
@@ -326,7 +326,7 @@ class NeoNetworkManager {
 
     _logResponse(response);
 
-    _usageInterceptor.interceptResponse(call, response, endpoint);
+    _usageInterceptor.interceptResponse(call, response, fullPath);
 
     if (response.statusCode >= 200 && response.statusCode < 300) {
       onRequestSucceed?.call(call.endpoint, call.requestId);
