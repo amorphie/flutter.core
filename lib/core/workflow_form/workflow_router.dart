@@ -334,7 +334,7 @@ class WorkflowRouter {
     logger.logConsole('[WorkflowRouter] getAvailableTransitions called');
 
     final targetInstanceId = instanceId ?? v1Manager.instanceId;
-    if (targetInstanceId == null || targetInstanceId.isEmpty) {
+    if (targetInstanceId.isEmpty) {
       logger.logConsole('[WorkflowRouter] ERROR: No instanceId available for transitions');
       return const NeoErrorResponse(
         NeoError(
@@ -554,6 +554,360 @@ class WorkflowRouter {
         return WorkflowInstanceStatus.pending;
       default:
         return WorkflowInstanceStatus.active; // Default fallback
+    }
+  }
+
+  /// Query workflow instances with enhanced filtering - routes to appropriate engine
+  Future<NeoResponse> queryWorkflowInstances({
+    required String workflowName,
+    String? domain,
+    Map<String, String>? attributeFilters,
+    int? page,
+    int? pageSize,
+    String? sortBy,
+    String? sortOrder,
+  }) async {
+    final engineConfig = _getConfigForWorkflow(workflowName);
+    
+    logger.logConsole('[WorkflowRouter] queryWorkflowInstances called for: $workflowName, engine: ${engineConfig.engine}');
+
+    if (engineConfig.isVNext && engineConfig.isValid) {
+      return _queryVNextInstances(workflowName, engineConfig, domain, attributeFilters, page, pageSize, sortBy, sortOrder);
+    } else {
+      // For amorphie, we'll fallback to basic instance search
+      return _queryAmorphieInstances(workflowName, attributeFilters);
+    }
+  }
+
+  /// Query instances using vNext engine with advanced filtering
+  Future<NeoResponse> _queryVNextInstances(
+    String workflowName,
+    WorkflowEngineConfig engineConfig,
+    String? domain,
+    Map<String, String>? attributeFilters,
+    int? page,
+    int? pageSize,
+    String? sortBy,
+    String? sortOrder,
+  ) async {
+    logger.logConsole('[WorkflowRouter] Routing queryInstances to V2 (vNext)');
+    
+    try {
+      final effectiveDomain = domain ?? engineConfig.vNextDomain!;
+      
+      return await vNextClient.listWorkflowInstances(
+        domain: effectiveDomain,
+        workflowName: workflowName,
+        attributeFilters: attributeFilters,
+        page: page,
+        pageSize: pageSize,
+        sortBy: sortBy,
+        sortOrder: sortOrder,
+      );
+    } catch (e, stackTrace) {
+      logger.logConsole('[WorkflowRouter] ERROR: V2 queryInstances failed: $e\nStackTrace: $stackTrace');
+      
+      return NeoErrorResponse(
+        NeoError(
+          responseCode: 500,
+          error: NeoErrorDetail(description: 'vNext query instances failed: $e'),
+        ),
+        statusCode: 500,
+        headers: {},
+      );
+    }
+  }
+
+  /// Query instances using amorphie engine (limited functionality)
+  Future<NeoResponse> _queryAmorphieInstances(
+    String workflowName,
+    Map<String, String>? attributeFilters,
+  ) async {
+    logger.logConsole('[WorkflowRouter] Routing queryInstances to V1 (amorphie) - limited filtering');
+    
+    try {
+      // For amorphie, we'll use the existing instance manager to return tracked instances
+      final instances = instanceManager.searchInstances(workflowName: workflowName);
+      
+      // Convert to API response format
+      final responseData = {
+        'data': instances.map((instance) => {
+          'instanceId': instance.instanceId,
+          'workflowName': instance.workflowName,
+          'status': instance.status.toString(),
+          'currentState': instance.currentState,
+          'attributes': instance.attributes,
+          'createdAt': instance.createdAt.toIso8601String(),
+          'updatedAt': instance.updatedAt.toIso8601String(),
+          'engine': instance.engine.toString(),
+        }).toList(),
+        'pagination': {
+          'totalCount': instances.length,
+          'page': 1,
+          'pageSize': instances.length,
+        }
+      };
+      
+      return NeoSuccessResponse(responseData, statusCode: 200, headers: {});
+    } catch (e, stackTrace) {
+      logger.logConsole('[WorkflowRouter] ERROR: V1 queryInstances failed: $e\nStackTrace: $stackTrace');
+      
+      return NeoErrorResponse(
+        NeoError(
+          responseCode: 500,
+          error: NeoErrorDetail(description: 'amorphie query instances failed: $e'),
+        ),
+        statusCode: 500,
+        headers: {},
+      );
+    }
+  }
+
+  /// Get workflow instance history - routes to appropriate engine
+  Future<NeoResponse> getInstanceHistory({
+    required String instanceId,
+    required String workflowName,
+    required String domain,
+  }) async {
+    final engineConfig = _getConfigForWorkflow(workflowName);
+    
+    logger.logConsole('[WorkflowRouter] getInstanceHistory called for: $instanceId, engine: ${engineConfig.engine}');
+
+    if (engineConfig.isVNext && engineConfig.isValid) {
+      return _getVNextInstanceHistory(instanceId, workflowName, domain, engineConfig);
+    } else {
+      return _getAmorphieInstanceHistory(instanceId);
+    }
+  }
+
+  /// Get instance history using vNext engine
+  Future<NeoResponse> _getVNextInstanceHistory(
+    String instanceId,
+    String workflowName,
+    String domain,
+    WorkflowEngineConfig engineConfig,
+  ) async {
+    logger.logConsole('[WorkflowRouter] Routing getInstanceHistory to V2 (vNext)');
+    
+    try {
+      return await vNextClient.getInstanceHistory(
+        domain: domain,
+        workflowName: workflowName,
+        instanceId: instanceId,
+      );
+    } catch (e, stackTrace) {
+      logger.logConsole('[WorkflowRouter] ERROR: V2 getInstanceHistory failed: $e\nStackTrace: $stackTrace');
+      
+      return NeoErrorResponse(
+        NeoError(
+          responseCode: 500,
+          error: NeoErrorDetail(description: 'vNext get instance history failed: $e'),
+        ),
+        statusCode: 500,
+        headers: {},
+      );
+    }
+  }
+
+  /// Get instance history using amorphie engine (limited functionality)
+  Future<NeoResponse> _getAmorphieInstanceHistory(String instanceId) async {
+    logger.logConsole('[WorkflowRouter] Routing getInstanceHistory to V1 (amorphie) - limited functionality');
+    
+    try {
+      // For amorphie, return basic instance information as "history"
+      final instances = instanceManager.getActiveWorkflows();
+      final instance = instances.where((i) => i.instanceId == instanceId).firstOrNull;
+      
+      if (instance != null) {
+        final historyData = [
+          {
+            'timestamp': instance.createdAt.toIso8601String(),
+            'event': 'instance_created',
+            'state': 'initial',
+            'data': instance.attributes,
+          },
+          if (instance.updatedAt != instance.createdAt) {
+            'timestamp': instance.updatedAt.toIso8601String(),
+            'event': 'instance_updated',
+            'state': instance.currentState,
+            'data': {'status': instance.status.toString()},
+          },
+        ];
+        
+        final responseData = {
+          'data': historyData,
+          'instanceId': instanceId,
+        };
+        
+        return NeoSuccessResponse(responseData, statusCode: 200, headers: {});
+      } else {
+        return NeoErrorResponse(
+          NeoError(
+            responseCode: 404,
+            error: NeoErrorDetail(description: 'Instance not found: $instanceId'),
+          ),
+          statusCode: 404,
+          headers: {},
+        );
+      }
+    } catch (e, stackTrace) {
+      logger.logConsole('[WorkflowRouter] ERROR: V1 getInstanceHistory failed: $e\nStackTrace: $stackTrace');
+      
+      return NeoErrorResponse(
+        NeoError(
+          responseCode: 500,
+          error: NeoErrorDetail(description: 'amorphie get instance history failed: $e'),
+        ),
+        statusCode: 500,
+        headers: {},
+      );
+    }
+  }
+
+  /// Get system health - routes to appropriate engine
+  Future<NeoResponse> getSystemHealth() async {
+    logger.logConsole('[WorkflowRouter] getSystemHealth called');
+
+    // Try to get health from vNext first (if configured), fallback to generic health
+    final configs = httpClientConfig.workflowConfigs;
+    final vNextConfig = configs.values.where((config) => config.isVNext && config.isValid).firstOrNull;
+    
+    if (vNextConfig != null) {
+      return _getVNextSystemHealth();
+    } else {
+      return _getGenericSystemHealth();
+    }
+  }
+
+  /// Get system health from vNext engine
+  Future<NeoResponse> _getVNextSystemHealth() async {
+    logger.logConsole('[WorkflowRouter] Routing getSystemHealth to V2 (vNext)');
+    
+    try {
+      return await vNextClient.getSystemHealth();
+    } catch (e, stackTrace) {
+      logger.logConsole('[WorkflowRouter] ERROR: V2 getSystemHealth failed: $e\nStackTrace: $stackTrace');
+      
+      return NeoErrorResponse(
+        NeoError(
+          responseCode: 500,
+          error: NeoErrorDetail(description: 'vNext system health check failed: $e'),
+        ),
+        statusCode: 500,
+        headers: {},
+      );
+    }
+  }
+
+  /// Get generic system health (when vNext is not available)
+  Future<NeoResponse> _getGenericSystemHealth() async {
+    logger.logConsole('[WorkflowRouter] Providing generic system health');
+    
+    try {
+      final activeInstances = instanceManager.getActiveWorkflows();
+      final healthData = {
+        'status': 'healthy',
+        'timestamp': DateTime.now().toIso8601String(),
+        'system': 'flutter-workflow-core',
+        'metrics': {
+          'activeInstances': activeInstances.length,
+          'engines': {
+            'amorphie': activeInstances.where((i) => i.engine == WorkflowEngine.amorphie).length,
+            'vnext': activeInstances.where((i) => i.engine == WorkflowEngine.vnext).length,
+          }
+        }
+      };
+      
+      return NeoSuccessResponse(healthData, statusCode: 200, headers: {});
+    } catch (e, stackTrace) {
+      logger.logConsole('[WorkflowRouter] ERROR: Generic getSystemHealth failed: $e\nStackTrace: $stackTrace');
+      
+      return NeoErrorResponse(
+        NeoError(
+          responseCode: 500,
+          error: NeoErrorDetail(description: 'System health check failed: $e'),
+        ),
+        statusCode: 500,
+        headers: {},
+      );
+    }
+  }
+
+  /// Get system metrics - routes to appropriate engine
+  Future<NeoResponse> getSystemMetrics() async {
+    logger.logConsole('[WorkflowRouter] getSystemMetrics called');
+
+    // Try to get metrics from vNext first (if configured), fallback to generic metrics
+    final configs = httpClientConfig.workflowConfigs;
+    final vNextConfig = configs.values.where((config) => config.isVNext && config.isValid).firstOrNull;
+    
+    if (vNextConfig != null) {
+      return _getVNextSystemMetrics();
+    } else {
+      return _getGenericSystemMetrics();
+    }
+  }
+
+  /// Get system metrics from vNext engine
+  Future<NeoResponse> _getVNextSystemMetrics() async {
+    logger.logConsole('[WorkflowRouter] Routing getSystemMetrics to V2 (vNext)');
+    
+    try {
+      return await vNextClient.getSystemMetrics();
+    } catch (e, stackTrace) {
+      logger.logConsole('[WorkflowRouter] ERROR: V2 getSystemMetrics failed: $e\nStackTrace: $stackTrace');
+      
+      return NeoErrorResponse(
+        NeoError(
+          responseCode: 500,
+          error: NeoErrorDetail(description: 'vNext system metrics failed: $e'),
+        ),
+        statusCode: 500,
+        headers: {},
+      );
+    }
+  }
+
+  /// Get generic system metrics (when vNext is not available)
+  Future<NeoResponse> _getGenericSystemMetrics() async {
+    logger.logConsole('[WorkflowRouter] Providing generic system metrics');
+    
+    try {
+      final activeInstances = instanceManager.getActiveWorkflows();
+      final now = DateTime.now();
+      
+      // Calculate basic metrics
+      final instancesByEngine = <WorkflowEngine, int>{};
+      final instancesByStatus = <WorkflowInstanceStatus, int>{};
+      
+      for (final instance in activeInstances) {
+        instancesByEngine[instance.engine] = (instancesByEngine[instance.engine] ?? 0) + 1;
+        instancesByStatus[instance.status] = (instancesByStatus[instance.status] ?? 0) + 1;
+      }
+      
+      final metricsData = {
+        'timestamp': now.toIso8601String(),
+        'system': 'flutter-workflow-core',
+        'metrics': {
+          'workflow_instances_total': activeInstances.length,
+          'workflow_instances_by_engine': instancesByEngine.map((k, v) => MapEntry(k.toString(), v)),
+          'workflow_instances_by_status': instancesByStatus.map((k, v) => MapEntry(k.toString(), v)),
+          'uptime_seconds': now.millisecondsSinceEpoch ~/ 1000, // Approximate uptime
+        }
+      };
+      
+      return NeoSuccessResponse(metricsData, statusCode: 200, headers: {});
+    } catch (e, stackTrace) {
+      logger.logConsole('[WorkflowRouter] ERROR: Generic getSystemMetrics failed: $e\nStackTrace: $stackTrace');
+      
+      return NeoErrorResponse(
+        NeoError(
+          responseCode: 500,
+          error: NeoErrorDetail(description: 'System metrics failed: $e'),
+        ),
+        statusCode: 500,
+        headers: {},
+      );
     }
   }
 }

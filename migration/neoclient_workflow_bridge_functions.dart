@@ -14,6 +14,7 @@ import 'package:get_it/get_it.dart';
 import 'package:neo_core/core/analytics/neo_logger.dart';
 import 'package:neo_core/core/navigation/models/neo_navigation_type.dart';
 import 'package:neo_core/core/workflow_form/workflow_flutter_bridge.dart';
+import 'package:neo_core/core/workflow_form/workflow_service.dart';
 import 'package:neo_core/core/workflow_form/workflow_ui_events.dart';
 
 /// Workflow bridge functions that connect to the new architecture
@@ -97,6 +98,133 @@ class WorkflowBridgeFunctions {
     // For now, delegate to the standard postTransition
     // Can be enhanced later for specific V2 features
     return postTransition(registry: registry, args: args);
+  }
+
+  /// Query workflow instances with enhanced filtering
+  /// This provides access to vNext's powerful filtering capabilities
+  static Future<void> queryWorkflowInstances({required registry, args}) async {
+    try {
+      // Parse args for query parameters
+      args as List;
+      final String workflowName = args[0] as String;
+      final Map? params = args.length > 1 ? args[1] as Map : null;
+      
+      final String? domain = params?["domain"] as String?;
+      final Map<String, String>? attributeFilters = params?["attributeFilters"] != null 
+        ? Map<String, String>.from(params!["attributeFilters"]) : null;
+      final int? page = params?["page"] as int?;
+      final int? pageSize = params?["pageSize"] as int?;
+      final String? sortBy = params?["sortBy"] as String?;
+      final String? sortOrder = params?["sortOrder"] as String?;
+
+      _logger.logConsole('[WorkflowBridgeFunctions] Querying workflow instances for: $workflowName');
+
+      // Get workflow service and make the query
+      final workflowService = GetIt.I.get<WorkflowService>();
+      final result = await workflowService.queryWorkflowInstances(
+        workflowName: workflowName,
+        domain: domain,
+        attributeFilters: attributeFilters,
+        page: page,
+        pageSize: pageSize,
+        sortBy: sortBy,
+        sortOrder: sortOrder,
+      );
+
+      if (result.isSuccess) {
+        _logger.logConsole('[WorkflowBridgeFunctions] Query successful: ${result.data?['totalCount'] ?? 'unknown'} instances');
+      } else {
+        _logger.logError('[WorkflowBridgeFunctions] Query failed: ${result.error}');
+        _bridge.handleError(result.error ?? 'Query failed');
+      }
+    } catch (e) {
+      _logger.logError('[WorkflowBridgeFunctions] queryWorkflowInstances failed: $e');
+      _bridge.handleError(e);
+    }
+  }
+
+  /// Get workflow instance history
+  /// This provides access to instance state transitions and history
+  static Future<void> getWorkflowInstanceHistory({required registry, args}) async {
+    try {
+      // Parse args for history request
+      args as List;
+      final String instanceId = args[0] as String;
+      final Map? params = args.length > 1 ? args[1] as Map : null;
+      
+      final String? workflowName = params?["workflowName"] as String?;
+      final String? domain = params?["domain"] as String?;
+
+      _logger.logConsole('[WorkflowBridgeFunctions] Getting history for instance: $instanceId');
+
+      if (workflowName == null || domain == null) {
+        throw ArgumentError('workflowName and domain are required for history retrieval');
+      }
+
+      // Get workflow service and retrieve history
+      final workflowService = GetIt.I.get<WorkflowService>();
+      final result = await workflowService.getInstanceHistory(
+        instanceId: instanceId,
+        workflowName: workflowName,
+        domain: domain,
+      );
+
+      if (result.isSuccess) {
+        _logger.logConsole('[WorkflowBridgeFunctions] History retrieved successfully');
+      } else {
+        _logger.logError('[WorkflowBridgeFunctions] History retrieval failed: ${result.error}');
+        _bridge.handleError(result.error ?? 'History retrieval failed');
+      }
+    } catch (e) {
+      _logger.logError('[WorkflowBridgeFunctions] getWorkflowInstanceHistory failed: $e');
+      _bridge.handleError(e);
+    }
+  }
+
+  /// Get system health status
+  /// This provides access to vNext system health monitoring
+  static Future<void> getSystemHealth({required registry, args}) async {
+    try {
+      _logger.logConsole('[WorkflowBridgeFunctions] Getting system health');
+
+      // Get workflow service and check health
+      final workflowService = GetIt.I.get<WorkflowService>();
+      final result = await workflowService.getSystemHealth();
+
+      if (result.isSuccess) {
+        final healthData = result.data;
+        final status = healthData?['status'] ?? 'unknown';
+        _logger.logConsole('[WorkflowBridgeFunctions] System health: $status');
+      } else {
+        _logger.logError('[WorkflowBridgeFunctions] Health check failed: ${result.error}');
+        _bridge.handleError(result.error ?? 'Health check failed');
+      }
+    } catch (e) {
+      _logger.logError('[WorkflowBridgeFunctions] getSystemHealth failed: $e');
+      _bridge.handleError(e);
+    }
+  }
+
+  /// Get system metrics
+  /// This provides access to vNext system metrics for monitoring
+  static Future<void> getSystemMetrics({required registry, args}) async {
+    try {
+      _logger.logConsole('[WorkflowBridgeFunctions] Getting system metrics');
+
+      // Get workflow service and retrieve metrics
+      final workflowService = GetIt.I.get<WorkflowService>();
+      final result = await workflowService.getSystemMetrics();
+
+      if (result.isSuccess) {
+        _logger.logConsole('[WorkflowBridgeFunctions] Metrics retrieved successfully');
+      } else {
+        _logger.logError('[WorkflowBridgeFunctions] Metrics retrieval failed: ${result.error}');
+        _bridge.handleError(result.error ?? 'Metrics retrieval failed');
+      }
+    } catch (e) {
+      _logger.logError('[WorkflowBridgeFunctions] getSystemMetrics failed: $e');
+      _bridge.handleError(e);
+    }
   }
 
   // Note: Original implementation used specific parameter parsing.

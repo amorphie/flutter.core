@@ -11,9 +11,10 @@
  */
 
 import 'dart:convert';
+
 import 'package:http/http.dart' as http;
-import 'package:neo_core/core/network/models/neo_response.dart';
 import 'package:neo_core/core/network/models/neo_error.dart';
+import 'package:neo_core/core/network/models/neo_response.dart';
 
 /// Client for communicating with vNext backend workflow services
 class VNextWorkflowClient {
@@ -291,22 +292,63 @@ class VNextWorkflowClient {
     }
   }
 
-  /// List all instances for a specific workflow
+  /// List all instances for a specific workflow with enhanced filtering support
   /// Endpoint: GET /api/v1/{domain}/workflows/{workflowName}/instances
+  /// 
+  /// Enhanced filtering supports vNext query operators:
+  /// - eq (equal): attributes=status=eq:active
+  /// - ne (not equal): attributes=status=ne:inactive  
+  /// - gt (greater than): attributes=amount=gt:100
+  /// - ge (greater equal): attributes=score=ge:80
+  /// - lt (less than): attributes=count=lt:10
+  /// - le (less equal): attributes=age=le:65
+  /// - between: attributes=amount=between:50,200
+  /// - like (contains): attributes=name=like:john
+  /// - startswith: attributes=email=startswith:test
+  /// - endswith: attributes=email=endswith:.com
+  /// - in (value in list): attributes=status=in:active,pending
+  /// - nin (not in list): attributes=type=nin:test,debug
   Future<NeoResponse> listWorkflowInstances({
     required String domain,
     required String workflowName,
-    String? filter,
+    Map<String, String>? attributeFilters,
+    String? filter, // Legacy filter support
     int? page,
     int? pageSize,
+    String? sortBy,
+    String? sortOrder, // 'asc' or 'desc'
     Map<String, String>? headers,
   }) async {
     logger.logConsole('[VNextWorkflowClient] Listing instances for workflow: $workflowName in domain: $domain');
+    
+    if (attributeFilters != null && attributeFilters.isNotEmpty) {
+      logger.logConsole('[VNextWorkflowClient] Using enhanced attribute filters: $attributeFilters');
+    }
 
     final queryParams = <String, String>{};
-    if (filter != null) queryParams['filter'] = filter;
+    
+    // Enhanced attribute filtering
+    if (attributeFilters != null && attributeFilters.isNotEmpty) {
+      for (final entry in attributeFilters.entries) {
+        queryParams['filter'] = 'attributes=${entry.key}=${entry.value}';
+        // Note: vNext supports multiple filters, but we'll add one at a time for now
+        // Future enhancement could support multiple concurrent filters
+        break; // For now, take the first filter
+      }
+    }
+    
+    // Legacy filter support (backward compatibility)
+    if (filter != null && !queryParams.containsKey('filter')) {
+      queryParams['filter'] = filter;
+    }
+    
+    // Pagination
     if (page != null) queryParams['page'] = page.toString();
     if (pageSize != null) queryParams['pageSize'] = pageSize.toString();
+    
+    // Sorting support
+    if (sortBy != null) queryParams['sortBy'] = sortBy;
+    if (sortOrder != null) queryParams['sortOrder'] = sortOrder;
 
     final uri = Uri.parse('$baseUrl/api/v1/$domain/workflows/$workflowName/instances')
         .replace(queryParameters: queryParams.isNotEmpty ? queryParams : null);
@@ -364,6 +406,179 @@ class VNextWorkflowClient {
     } catch (e, stackTrace) {
       final errorMessage = 'Exception during list instances: $e';
       logger.logError('[VNextWorkflowClient] $errorMessage', error: e, stackTrace: stackTrace);
+      
+      return NeoErrorResponse(
+        NeoError(
+          responseCode: 500,
+          error: NeoErrorDetail(description: errorMessage),
+        ),
+        statusCode: 500,
+        headers: {},
+      );
+    }
+  }
+
+  /// Get workflow instance history and state transitions
+  /// Endpoint: GET /api/v1/{domain}/workflows/{workflowName}/instances/{instanceId}/history
+  Future<NeoResponse> getInstanceHistory({
+    required String domain,
+    required String workflowName,
+    required String instanceId,
+    Map<String, String>? headers,
+  }) async {
+    try {
+      logger.logConsole('[VNextWorkflowClient] Getting instance history for: $instanceId');
+      
+      final uri = Uri.parse('$baseUrl/api/v1/$domain/workflows/$workflowName/instances/$instanceId/history');
+
+      final response = await httpClient.get(
+        uri,
+        headers: {
+          'Accept': 'application/json',
+          'Accept-Language': 'tr-TR',
+          'X-Request-Id': _generateUUID(),
+          'X-Device-Id': _generateUUID(),
+          'X-Token-Id': _generateUUID(),
+          'X-Device-Info': 'Flutter Client',
+          ...?headers,
+        },
+      );
+
+      logger.logConsole('[VNextWorkflowClient] Get history response status: ${response.statusCode}');
+
+      if (response.statusCode >= 200 && response.statusCode < 300) {
+        final responseData = jsonDecode(response.body);
+        logger.logConsole('[VNextWorkflowClient] Get history successful: ${responseData.length} history entries');
+        
+        return NeoSuccessResponse(responseData, statusCode: response.statusCode, headers: {});
+      } else {
+        final errorMessage = 'Failed to get instance history: ${response.statusCode} - ${response.body}';
+        logger.logError('[VNextWorkflowClient] Get history failed: $errorMessage');
+        
+        return NeoErrorResponse(
+          NeoError(
+            responseCode: response.statusCode,
+            error: NeoErrorDetail(description: errorMessage),
+          ),
+          statusCode: response.statusCode,
+          headers: {},
+        );
+      }
+    } catch (e, stackTrace) {
+      final errorMessage = 'Exception during get history: $e';
+      logger.logError('[VNextWorkflowClient] Exception: $errorMessage', error: e, stackTrace: stackTrace);
+      
+      return NeoErrorResponse(
+        NeoError(
+          responseCode: 500,
+          error: NeoErrorDetail(description: errorMessage),
+        ),
+        statusCode: 500,
+        headers: {},
+      );
+    }
+  }
+
+  /// Get system health status
+  /// Endpoint: GET /health
+  Future<NeoResponse> getSystemHealth({
+    Map<String, String>? headers,
+  }) async {
+    try {
+      logger.logConsole('[VNextWorkflowClient] Getting system health');
+      
+      final uri = Uri.parse('$baseUrl/health');
+
+      final response = await httpClient.get(
+        uri,
+        headers: {
+          'Accept': 'application/json',
+          'X-Request-Id': _generateUUID(),
+          'X-Device-Id': _generateUUID(),
+          'X-Device-Info': 'Flutter Client',
+          ...?headers,
+        },
+      );
+
+      logger.logConsole('[VNextWorkflowClient] Health check response status: ${response.statusCode}');
+
+      if (response.statusCode >= 200 && response.statusCode < 300) {
+        final responseData = jsonDecode(response.body);
+        logger.logConsole('[VNextWorkflowClient] Health check successful');
+        
+        return NeoSuccessResponse(responseData, statusCode: response.statusCode, headers: {});
+      } else {
+        final errorMessage = 'Health check failed: ${response.statusCode} - ${response.body}';
+        logger.logError('[VNextWorkflowClient] Health check failed: $errorMessage');
+        
+        return NeoErrorResponse(
+          NeoError(
+            responseCode: response.statusCode,
+            error: NeoErrorDetail(description: errorMessage),
+          ),
+          statusCode: response.statusCode,
+          headers: {},
+        );
+      }
+    } catch (e, stackTrace) {
+      final errorMessage = 'Exception during health check: $e';
+      logger.logError('[VNextWorkflowClient] Exception: $errorMessage', error: e, stackTrace: stackTrace);
+      
+      return NeoErrorResponse(
+        NeoError(
+          responseCode: 500,
+          error: NeoErrorDetail(description: errorMessage),
+        ),
+        statusCode: 500,
+        headers: {},
+      );
+    }
+  }
+
+  /// Get system metrics
+  /// Endpoint: GET /metrics  
+  Future<NeoResponse> getSystemMetrics({
+    Map<String, String>? headers,
+  }) async {
+    try {
+      logger.logConsole('[VNextWorkflowClient] Getting system metrics');
+      
+      final uri = Uri.parse('$baseUrl/metrics');
+
+      final response = await httpClient.get(
+        uri,
+        headers: {
+          'Accept': 'application/json',
+          'X-Request-Id': _generateUUID(),
+          'X-Device-Id': _generateUUID(),
+          'X-Device-Info': 'Flutter Client',
+          ...?headers,
+        },
+      );
+
+      logger.logConsole('[VNextWorkflowClient] Metrics response status: ${response.statusCode}');
+
+      if (response.statusCode >= 200 && response.statusCode < 300) {
+        final responseData = jsonDecode(response.body);
+        logger.logConsole('[VNextWorkflowClient] Metrics retrieved successfully');
+        
+        return NeoSuccessResponse(responseData, statusCode: response.statusCode, headers: {});
+      } else {
+        final errorMessage = 'Failed to get metrics: ${response.statusCode} - ${response.body}';
+        logger.logError('[VNextWorkflowClient] Get metrics failed: $errorMessage');
+        
+        return NeoErrorResponse(
+          NeoError(
+            responseCode: response.statusCode,
+            error: NeoErrorDetail(description: errorMessage),
+          ),
+          statusCode: response.statusCode,
+          headers: {},
+        );
+      }
+    } catch (e, stackTrace) {
+      final errorMessage = 'Exception during get metrics: $e';
+      logger.logError('[VNextWorkflowClient] Exception: $errorMessage', error: e, stackTrace: stackTrace);
       
       return NeoErrorResponse(
         NeoError(

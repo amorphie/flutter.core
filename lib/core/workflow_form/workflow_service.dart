@@ -180,4 +180,136 @@ class WorkflowService {
     _instanceManager.terminateInstance(instanceId, reason: reason);
     return true;
   }
+
+  /// Query workflow instances with enhanced filtering
+  /// Provides access to vNext's powerful filtering capabilities
+  Future<WorkflowResult> queryWorkflowInstances({
+    required String workflowName,
+    String? domain,
+    Map<String, String>? attributeFilters,
+    int? page,
+    int? pageSize,
+    String? sortBy,
+    String? sortOrder,
+  }) async {
+    try {
+      _logger.logConsole('[WorkflowService] Querying instances for workflow: $workflowName');
+
+      final response = await _router.queryWorkflowInstances(
+        workflowName: workflowName,
+        domain: domain,
+        attributeFilters: attributeFilters,
+        page: page,
+        pageSize: pageSize,
+        sortBy: sortBy,
+        sortOrder: sortOrder,
+      );
+
+      if (response.isSuccess) {
+        final data = response.asSuccess.data;
+        _logger.logConsole('[WorkflowService] Query successful');
+        
+        return WorkflowResult.success(data: data);
+      } else {
+        final error = response.asError.error.error.description;
+        _logger.logError('[WorkflowService] Query failed: $error');
+        
+        return WorkflowResult.error(error);
+      }
+    } catch (e) {
+      final errorMessage = 'Query instances exception: $e';
+      _logger.logError('[WorkflowService] $errorMessage');
+      
+      return WorkflowResult.error(errorMessage);
+    }
+  }
+
+  /// Get workflow instance history
+  /// Provides access to instance state transitions and history
+  Future<WorkflowResult> getInstanceHistory({
+    required String instanceId,
+    required String workflowName,
+    required String domain,
+  }) async {
+    try {
+      _logger.logConsole('[WorkflowService] Getting history for instance: $instanceId');
+
+      final response = await _router.getInstanceHistory(
+        instanceId: instanceId,
+        workflowName: workflowName,
+        domain: domain,
+      );
+
+      if (response.isSuccess) {
+        final data = response.asSuccess.data;
+        _logger.logConsole('[WorkflowService] History retrieved successfully');
+        
+        return WorkflowResult.success(data: data);
+      } else {
+        final error = response.asError.error.error.description;
+        _logger.logError('[WorkflowService] History retrieval failed: $error');
+        
+        return WorkflowResult.error(error);
+      }
+    } catch (e) {
+      final errorMessage = 'Get instance history exception: $e';
+      _logger.logError('[WorkflowService] $errorMessage');
+      
+      return WorkflowResult.error(errorMessage);
+    }
+  }
+
+  /// Get system health status
+  /// Provides access to workflow system health monitoring
+  Future<WorkflowResult> getSystemHealth() async {
+    try {
+      _logger.logConsole('[WorkflowService] Getting system health');
+
+      final response = await _router.getSystemHealth();
+
+      if (response.isSuccess) {
+        final data = response.asSuccess.data;
+        _logger.logConsole('[WorkflowService] Health check successful');
+        
+        return WorkflowResult.success(data: data);
+      } else {
+        final error = response.asError.error.error.description;
+        _logger.logError('[WorkflowService] Health check failed: $error');
+        
+        return WorkflowResult.error(error);
+      }
+    } catch (e) {
+      final errorMessage = 'Get system health exception: $e';
+      _logger.logError('[WorkflowService] $errorMessage');
+      
+      return WorkflowResult.error(errorMessage);
+    }
+  }
+
+  /// Get system metrics
+  /// Provides access to workflow system metrics for monitoring
+  Future<WorkflowResult> getSystemMetrics() async {
+    try {
+      _logger.logConsole('[WorkflowService] Getting system metrics');
+
+      final response = await _router.getSystemMetrics();
+
+      if (response.isSuccess) {
+        final data = response.asSuccess.data;
+        _logger.logConsole('[WorkflowService] Metrics retrieved successfully');
+        
+        return WorkflowResult.success(data: data);
+      } else {
+        final error = response.asError.error.error.description;
+        _logger.logError('[WorkflowService] Metrics retrieval failed: $error');
+        
+        return WorkflowResult.error(error);
+      }
+    } catch (e) {
+      final errorMessage = 'Get system metrics exception: $e';
+      _logger.logError('[WorkflowService] $errorMessage');
+      
+      return WorkflowResult.error(errorMessage);
+    }
+  }
 }
