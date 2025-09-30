@@ -498,37 +498,20 @@ class _VNextComprehensiveTestPageState extends State<VNextComprehensiveTestPage>
       final id = instanceData['id'] as String?;
       final attributes = instanceData['attributes'] as Map<String, dynamic>? ?? {};
       
-      // Try to determine current state from attributes or extensions
+      // Only use explicit state if provided by the API
       String? currentState;
-      
-      // Look for state information in various places
       if (attributes.containsKey('currentState')) {
         currentState = attributes['currentState'] as String?;
       } else if (attributes.containsKey('state')) {
         currentState = attributes['state'] as String?;
-      } else {
-        // Infer state based on attributes content
-        if (attributes.containsKey('login')) {
-          final loginData = attributes['login'] as Map<String, dynamic>?;
-          if (loginData?['success'] == true) {
-            if (attributes.containsKey('card') || attributes.containsKey('order')) {
-              currentState = 'cart-management';
-            } else {
-              currentState = 'product-browsing';
-            }
-          } else {
-            currentState = 'authentication';
-          }
-        } else {
-          currentState = 'unknown';
-        }
       }
+      // No state inference - let the workflow engine handle state management
 
       // For existing instances, we consider them initialized
       return WorkflowInstance(
         id: id,
         workflowName: workflowName,
-        state: currentState,
+        state: currentState, // Will be null if not explicitly provided
         isInitialized: true,
         attributes: attributes,
         availableTransitions: [], // We'll need to fetch these separately if needed
@@ -541,37 +524,24 @@ class _VNextComprehensiveTestPageState extends State<VNextComprehensiveTestPage>
   }
 
   Map<String, dynamic> _getDefaultAttributesForWorkflow(String workflowName) {
-    switch (workflowName) {
-      case 'ecommerce':
-        // Based on actual AuthLoginMapping.csx requirements
-        return {
-          'username': 'emilys',
-          'password': 'emilyspass',
-          'expiresInMins': 30,
-        };
-      default:
-        return {};
-    }
+    // Generic approach - no workflow-specific assumptions
+    // Each workflow should define its own required attributes
+    return {
+      'workflowName': workflowName,
+      'createdBy': 'flutter-client',
+      'createdAt': DateTime.now().toIso8601String(),
+    };
   }
 
   Map<String, dynamic> _getTransitionDataForWorkflow(String workflowName, String transitionKey) {
-    switch (workflowName) {
-      case 'ecommerce':
-        // Based on actual transition requirements from example-flows.json
-        if (transitionKey == 'select-product') {
-          return {
-            'id': 1, // Product ID for AddToCartMapping.csx
-          };
-        } else if (transitionKey == 'proceed-to-checkout') {
-          return {
-            'userId': 5, // User ID for ProcessOrderMapping.csx
-          };
-        }
-        // Most transitions don't require additional data
-        return {};
-      default:
-        return {};
-    }
+    // Generic approach - no workflow-specific assumptions
+    // Each workflow should define its own transition data requirements
+    return {
+      'transitionKey': transitionKey,
+      'workflowName': workflowName,
+      'executedBy': 'flutter-client',
+      'executedAt': DateTime.now().toIso8601String(),
+    };
   }
 
   @override
@@ -891,15 +861,18 @@ class _VNextComprehensiveTestPageState extends State<VNextComprehensiveTestPage>
             
             // Instance Details
             if (instance.isInitialized) ...[
-              Text(
-                'State: ${instance.state ?? 'Unknown'}',
-                style: TextStyle(
-                  fontSize: 14,
-                  color: Colors.grey.shade700,
-                  fontWeight: FontWeight.w500,
+              // Only show state if explicitly provided by the API
+              if (instance.state != null) ...[
+                Text(
+                  'State: ${instance.state}',
+                  style: TextStyle(
+                    fontSize: 14,
+                    color: Colors.grey.shade700,
+                    fontWeight: FontWeight.w500,
+                  ),
                 ),
-              ),
-              const SizedBox(height: 4),
+                const SizedBox(height: 4),
+              ],
               Text(
                 'ID: ${instance.id}',
                 style: TextStyle(
@@ -911,7 +884,7 @@ class _VNextComprehensiveTestPageState extends State<VNextComprehensiveTestPage>
                 overflow: TextOverflow.ellipsis,
               ),
               const SizedBox(height: 4),
-              // Show additional metadata for loaded instances
+              // Show raw attributes count without interpretation
               if (instance.attributes != null && instance.attributes!.isNotEmpty) ...[
                 Text(
                   'Attributes: ${instance.attributes!.length} fields',
@@ -921,19 +894,6 @@ class _VNextComprehensiveTestPageState extends State<VNextComprehensiveTestPage>
                     fontWeight: FontWeight.w500,
                   ),
                 ),
-                if (instance.attributes!.containsKey('login')) ...[
-                  const SizedBox(height: 2),
-                  Text(
-                    'Auth: ${instance.attributes!['login']?['success'] == true ? 'Success' : 'Failed'}',
-                    style: TextStyle(
-                      fontSize: 10,
-                      color: instance.attributes!['login']?['success'] == true 
-                          ? Colors.green.shade600 
-                          : Colors.red.shade600,
-                      fontWeight: FontWeight.w500,
-                    ),
-                  ),
-                ],
               ],
               const SizedBox(height: 12),
               
