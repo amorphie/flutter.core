@@ -9,28 +9,25 @@ import 'package:neo_core/core/storage/neo_shared_prefs.dart';
 import 'package:neo_core/core/util/extensions/get_it_extensions.dart';
 
 class NeoUserInternetUsageStorage {
-  final NeoSharedPrefs neoSharedPrefs;
-
   static const String _usageKey = "user_internet_usage";
 
-  NeoUserInternetUsageStorage({required this.neoSharedPrefs});
+  NeoUserInternetUsageStorage();
 
   NeoLogger? get _neoLogger => GetIt.I.getIfReady<NeoLogger>();
+  NeoSharedPrefs? get _neoSharedPrefs => GetIt.I.getIfReady<NeoSharedPrefs>();
 
-  bool _enableLog = false;
   int _logRequestLimit = 0;
 
   NeoUserInternetUsage _internetUsage = NeoUserInternetUsage.empty();
 
-  void init({required bool? isEnabled, required int? loggerRequestLimit}) {
-    _enableLog = isEnabled ?? _enableLog;
+  void init({required int? loggerRequestLimit}) {
     _logRequestLimit = loggerRequestLimit ?? _logRequestLimit;
     unawaited(getUsage());
   }
 
   Future<void> getUsage() async {
     try {
-      final usageJson = neoSharedPrefs.read(_usageKey);
+      final usageJson = _neoSharedPrefs?.read(_usageKey);
       if (usageJson == null) {
         return;
       }
@@ -49,10 +46,6 @@ class NeoUserInternetUsageStorage {
     required bool isSuccess,
     required String endpoint,
   }) async {
-    if (!_enableLog) {
-      return;
-    }
-
     try {
       final updatedUsage = _internetUsage.addUsage(
         bytesUsed: bytesUsed,
@@ -80,7 +73,7 @@ class NeoUserInternetUsageStorage {
   Future<void> _saveUsage(NeoUserInternetUsage usage) async {
     try {
       final usageJson = jsonEncode(usage.toJson());
-      await neoSharedPrefs.write(_usageKey, usageJson);
+      await _neoSharedPrefs?.write(_usageKey, usageJson);
     } catch (e) {
       _neoLogger?.logError("[UserInternetUsageStorage]: Failed to save usage: $e");
     }
@@ -88,7 +81,7 @@ class NeoUserInternetUsageStorage {
 
   Future<void> resetUsage() async {
     try {
-      await neoSharedPrefs.delete(_usageKey);
+      await _neoSharedPrefs?.delete(_usageKey);
       _neoLogger?.logConsole("[UserInternetUsageStorage]: Usage data reset");
     } catch (e) {
       _neoLogger?.logError("[UserInternetUsageStorage]: Failed to reset usage: $e");

@@ -20,6 +20,7 @@ import 'package:neo_core/core/analytics/neo_logger_type.dart';
 import 'package:neo_core/core/network/interceptors/neo_user_internet_usage_interceptor.dart';
 import 'package:neo_core/core/network/models/neo_signalr_event.dart';
 import 'package:neo_core/core/network/models/neo_signalr_event_base_state.dart';
+import 'package:neo_core/core/util/extensions/get_it_extensions.dart';
 import 'package:signalr_netcore/iretry_policy.dart';
 import 'package:signalr_netcore/signalr_client.dart';
 
@@ -45,7 +46,8 @@ class SignalrConnectionManager {
 
   NeoLogger get _neoLogger => GetIt.I.get();
 
-  late final NeoUserInternetUsageInterceptor _usageInterceptor = NeoUserInternetUsageInterceptor();
+  NeoUserInternetUsageInterceptor? get _internetUsageInterceptor =>
+      GetIt.I.getIfReady<NeoUserInternetUsageInterceptor>();
 
   Future init({
     required String serverUrl,
@@ -99,7 +101,7 @@ class SignalrConnectionManager {
         return;
       }
 
-      _usageInterceptor.interceptTransitions(transitions, _hubConnection?.baseUrl ?? "unknown");
+      _internetUsageInterceptor?.interceptTransitions(transitions, _hubConnection?.baseUrl ?? "unknown");
 
       final NeoSignalREvent? ongoingEvent = _parseOngoingEvent(transitions);
       if (ongoingEvent == null) {
@@ -132,6 +134,7 @@ class SignalrConnectionManager {
   Future<void> stop() async {
     try {
       await _hubConnection?.stop();
+      _internetUsageInterceptor?.dispose();
     } catch (_) {
       // No-op
     }

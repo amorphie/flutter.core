@@ -91,7 +91,9 @@ class NeoNetworkManager {
 
   late final MtlsHelper _mtlsHelper = MtlsHelper();
   late final MtlsHeaders _mtlsHeaders = MtlsHeaders(secureStorage: secureStorage);
-  late final NeoUserInternetUsageInterceptor _usageInterceptor = NeoUserInternetUsageInterceptor();
+
+  NeoUserInternetUsageInterceptor? get _internetUsageInterceptor =>
+      GetIt.I.getIfReady<NeoUserInternetUsageInterceptor>();
 
   NeoNetworkManager({
     required this.httpClientConfig,
@@ -210,7 +212,7 @@ class NeoNetworkManager {
 
       return response;
     } catch (e) {
-      _usageInterceptor.interceptError(neoCall, e, fullPath);
+      _internetUsageInterceptor?.interceptError(neoCall, e, fullPath);
 
       if (e is TimeoutException) {
         _neoLogger?.logError("[NeoNetworkManager]: Service call timeout! Endpoint: ${neoCall.endpoint}");
@@ -326,7 +328,7 @@ class NeoNetworkManager {
 
     _logResponse(response);
 
-    _usageInterceptor.interceptResponse(call, response, fullPath);
+    _internetUsageInterceptor?.interceptResponse(call, response, fullPath);
 
     if (response.statusCode >= 200 && response.statusCode < 300) {
       onRequestSucceed?.call(call.endpoint, call.requestId);
