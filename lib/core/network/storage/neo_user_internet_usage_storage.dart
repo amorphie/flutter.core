@@ -59,6 +59,7 @@ class NeoUserInternetUsageStorage {
         isSuccess: isSuccess,
         endpoint: endpoint,
       );
+
       await _saveUsage(updatedUsage);
       _internetUsage = updatedUsage;
 
