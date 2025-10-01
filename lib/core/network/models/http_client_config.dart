@@ -51,6 +51,33 @@ class HttpClientConfig {
          config: {},
        );
 
+  /// Factory constructor that handles raw JSON workflow configurations
+  factory HttpClientConfig.fromJson({
+    required List<HttpHostDetails> hosts,
+    required HttpClientConfigParameters config,
+    required List<HttpService> services,
+    List<MtlsEnabledTransition>? mtlsEnabledTransitions,
+    Map<String, dynamic>? rawWorkflowConfigs,
+    List<HttpHostDetails>? vNextHosts,
+  }) {
+    Map<String, WorkflowEngineConfig> parsedWorkflowConfigs = {};
+    
+    if (rawWorkflowConfigs != null) {
+      // Create a temporary JSON structure for parsing
+      final tempJson = {'workflows': rawWorkflowConfigs};
+      parsedWorkflowConfigs = WorkflowEngineConfigParser.parseWorkflowConfigs(tempJson);
+    }
+
+    return HttpClientConfig(
+      hosts: hosts,
+      config: config,
+      services: services,
+      mtlsEnabledTransitions: mtlsEnabledTransitions,
+      workflowConfigs: parsedWorkflowConfigs,
+      vNextHosts: vNextHosts,
+    );
+  }
+
   HttpClientConfigParameters get config => _config;
 
   HttpClientConfig copyWith({

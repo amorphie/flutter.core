@@ -298,27 +298,27 @@ class WorkflowInstanceManager {
     }).toList();
   }
 
-  /// Get all active workflows across engines
-  List<WorkflowInstanceEntity> getActiveWorkflows() {
-    return searchInstances(status: WorkflowInstanceStatus.active);
-  }
-
-  /// Get all workflows for a specific engine
-  List<WorkflowInstanceEntity> getWorkflowsByEngine(WorkflowEngine engine) {
-    return searchInstances(engine: engine);
-  }
-
-  /// Get workflow by instance ID
+  /// Get workflow by instance ID - Core business functionality
   WorkflowInstanceEntity? getInstance(String instanceId) {
     return _instances[instanceId];
   }
 
-  /// Get all instances for a specific workflow name
+  /// Get all active workflows - Business functionality for client
+  List<WorkflowInstanceEntity> getActiveWorkflows() {
+    return searchInstances(status: WorkflowInstanceStatus.active);
+  }
+
+  /// Get workflows by engine - Business functionality for client
+  List<WorkflowInstanceEntity> getWorkflowsByEngine(WorkflowEngine engine) {
+    return searchInstances(engine: engine);
+  }
+
+  /// Get instances by workflow name - Business functionality for client
   List<WorkflowInstanceEntity> getInstancesByWorkflow(String workflowName) {
     return searchInstances(workflowName: workflowName);
   }
 
-  /// Get instance count statistics
+  /// Get instance statistics - Business functionality for client
   Map<String, int> getInstanceStats() {
     final stats = <String, int>{
       'total': _instances.length,
@@ -342,7 +342,6 @@ class WorkflowInstanceManager {
         case WorkflowInstanceStatus.failed:
           stats['failed'] = stats['failed']! + 1;
         case WorkflowInstanceStatus.pending:
-          // Add pending to stats if needed
           break;
       }
 
@@ -358,28 +357,27 @@ class WorkflowInstanceManager {
     return stats;
   }
 
+  /// Get total instance count - Internal helper
+  int getTotalInstanceCount() {
+    return _instances.length;
+  }
+
+  /// Get all instances - Internal helper for diagnostics
+  List<WorkflowInstanceEntity> getAllInstances() {
+    return _instances.values.toList();
+  }
+
   /// Get comprehensive manager statistics
   Map<String, dynamic> getManagerStats() {
     final uptime = DateTime.now().difference(_managerStartTime);
-    final stats = getInstanceStats();
+    final totalInstances = _instances.length;
     
     return {
       'totalInstancesCreated': _totalInstancesCreated,
       'totalTransitionsExecuted': _totalTransitionsExecuted,
-      'currentInstances': _instances.length,
-      'activeInstances': stats['active'],
+      'currentInstances': totalInstances,
       'uptimeMinutes': uptime.inMinutes,
       'averageInstancesPerHour': uptime.inHours > 0 ? _totalInstancesCreated / uptime.inHours : 0,
-      'engineDistribution': {
-        'amorphie': stats['amorphie'],
-        'vnext': stats['vnext'],
-      },
-      'statusDistribution': {
-        'active': stats['active'],
-        'completed': stats['completed'],
-        'terminated': stats['terminated'],
-        'failed': stats['failed'],
-      },
     };
   }
 

@@ -15,23 +15,7 @@ import 'package:neo_core/core/analytics/neo_logger.dart';
 import 'package:neo_core/core/workflow_form/workflow_engine_config.dart';
 import 'package:neo_core/core/workflow_form/workflow_instance_manager.dart';
 
-// Simple mock logger
-class MockNeoLogger implements NeoLogger {
-  final List<String> logs = [];
-  
-  @override
-  void logConsole(dynamic message, {dynamic logLevel}) {
-    logs.add('$message');
-  }
-
-  @override
-  void logError(String message, {Map<String, dynamic>? properties}) {
-    logs.add('ERROR: $message');
-  }
-
-  @override
-  dynamic noSuchMethod(Invocation invocation) => null;
-}
+import 'mock_neo_logger.dart';
 
 void main() {
   group('Simple Multi-Engine Workflow Tests', () {

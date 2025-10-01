@@ -135,27 +135,12 @@ class WorkflowEngineConfigParser {
     Map<String, WorkflowEngineConfig> workflowConfigs,
     WorkflowEngineConfig defaultConfig,
   ) {
-    // Check for exact workflow name match
+    // Check for exact workflow name match only
     if (workflowConfigs.containsKey(workflowName)) {
       return workflowConfigs[workflowName]!;
     }
 
-    // Check for pattern matches (e.g., workflow names containing certain keywords)
-    for (final entry in workflowConfigs.entries) {
-      final configWorkflowName = entry.key;
-      
-      // Check if workflow name starts with config name (e.g., "ecommerce" matches "ecommerce-checkout")
-      if (workflowName.startsWith(configWorkflowName)) {
-        return entry.value;
-      }
-      
-      // Check if workflow name contains config name (e.g., "payment" matches "user-payment-flow")
-      if (workflowName.contains(configWorkflowName)) {
-        return entry.value;
-      }
-    }
-
-    // Return default configuration if no match found
+    // Return default configuration if no exact match found
     return defaultConfig;
   }
 

@@ -14,24 +14,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:neo_core/core/analytics/neo_logger.dart';
 import 'package:neo_core/core/workflow_form/workflow_instance_manager.dart';
 
-// Simple mock logger for testing
-class MockNeoLogger implements NeoLogger {
-  final List<String> logs = [];
-  
-  @override
-  void logConsole(dynamic message, {dynamic logLevel}) {
-    logs.add('CONSOLE: $message');
-  }
-
-  @override
-  void logError(String message, {Map<String, dynamic>? properties}) {
-    logs.add('ERROR: $message');
-  }
-
-  // Use noSuchMethod to handle all other methods
-  @override
-  dynamic noSuchMethod(Invocation invocation) => null;
-}
+import 'mock_neo_logger.dart';
 
 void main() {
   group('WorkflowInstanceManager Basic Tests', () {
@@ -251,7 +234,7 @@ void main() {
       expect(activeInstances, hasLength(1));
       expect(activeInstances.first.instanceId, equals('multi-1'));
 
-      final vNextInstances = manager.searchInstances(engine: WorkflowEngine.vnext);
+      final vNextInstances = manager.getWorkflowsByEngine(WorkflowEngine.vnext);
       expect(vNextInstances, hasLength(2));
     });
   });
