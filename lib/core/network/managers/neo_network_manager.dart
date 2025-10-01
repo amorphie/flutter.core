@@ -14,12 +14,13 @@ import 'dart:async';
 import 'dart:convert';
 import 'dart:math';
 
+import 'package:crypto/crypto.dart';
+
 import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
 import 'package:get_it/get_it.dart';
 import 'package:http/http.dart' as http;
 import 'package:http/io_client.dart';
-import 'package:jose/jose.dart';
 import 'package:json_annotation/json_annotation.dart';
 import 'package:logger/logger.dart';
 import 'package:mutex/mutex.dart';
@@ -35,7 +36,6 @@ import 'package:neo_core/core/network/models/neo_http_call.dart';
 import 'package:neo_core/core/network/models/neo_network_header_key.dart';
 import 'package:neo_core/core/storage/neo_core_parameter_key.dart';
 import 'package:neo_core/core/storage/neo_shared_prefs.dart';
-import 'package:neo_core/core/storage/neo_core_secure_storage.dart';
 import 'package:neo_core/core/util/extensions/get_it_extensions.dart';
 import 'package:neo_core/core/util/token_util.dart';
 import 'package:neo_core/core/util/uuid_util.dart';
@@ -46,14 +46,31 @@ abstract class _Constants {
   static const int responseCodeUnauthorized = 401;
   static const String wrapperResponseKey = "data";
   static const String endpointGetToken = "get-token";
-  static const String requestKeyClientId = "client_id";
-  static const String requestKeyClientSecret = "client_secret";
+  // static const String requestKeyClientId = "client_id";
+  // static const String requestKeyClientSecret = "client_secret";
   static const String requestKeyGrantType = "grant_type";
   static const String requestValueGrantTypeRefreshToken = "refresh_token";
-  static const String requestValueGrantTypeClientCredentials = "client_credentials";
+  static const String requestValueGrantTypeClientCredentials = "urn:ietf:params:oauth:grant-type:burgan-credential";
   static const String requestKeyRefreshToken = "refresh_token";
   static const String requestKeyScopes = "scopes";
   static const List<String> requestValueScopes = ["retail-customer"];
+  static const String requestValueGrantTypeRefreshTokenLiteral = "refresh_token";
+  static const String requestValueGrantTypeCertificateAssertion =
+      "urn:ietf:params:oauth:grant-type:burgan-certificate-assertion";
+  static const String requestKeyClientAssertion = "client_assertion";
+  static const List<String> requestValueScopesOpenId = ["openid"];
+  static const String responseKeyErrorCode = "errorCode";
+  static const String authStatus1FA = "1FA";
+  static const String jwtClaimIss = "iss";
+  static const String jwtClaimSub = "sub";
+  static const String jwtClaimAud = "aud";
+  static const String jwtClaimJti = "jti";
+  static const String jwtClaimNbf = "nbf";
+  static const String jwtClaimExp = "exp";
+  static const String jwtClaimDeviceId = "device_id";
+  static const String jwtClaimInstallationId = "installation_id";
+  static const String jwtClaimRefreshToken = "refresh_token";
+  static const String jwtAudience = "BurganIam";
 }
 
 enum NeoNetworkManagerLogScale { none, simplified, all }
@@ -338,9 +355,9 @@ class NeoNetworkManager {
     } else {
       try {
         responseJSON.addAll({'body': response.body});
-        final hasErrorCode = responseJSON.containsKey("errorCode");
+        final hasErrorCode = responseJSON.containsKey(_Constants.responseKeyErrorCode);
         if (!hasErrorCode) {
-          responseJSON.addAll({'errorCode': response.statusCode});
+          responseJSON.addAll({_Constants.responseKeyErrorCode: response.statusCode});
         }
         return _handleErrorResponse(NeoError.fromJson(responseJSON), call, response);
       } on MissingRequiredKeysException {
@@ -399,9 +416,9 @@ class NeoNetworkManager {
         endpoint: _Constants.endpointGetToken,
         body: await _isExistUser
             ? {
-                "grant_type": "refresh_token",
-                "client_assertion": await createJwtTokenForAccessRequest(true),
-                "scopes": ["openid"],
+                _Constants.requestKeyGrantType: _Constants.requestValueGrantTypeRefreshTokenLiteral,
+                _Constants.requestKeyClientAssertion: await _createJwtTokenForAccessRequest(isRefreshToken: true),
+                _Constants.requestKeyScopes: _Constants.requestValueScopesOpenId,
               }
             : {
                 _Constants.requestKeyGrantType: _Constants.requestValueGrantTypeRefreshToken,
@@ -438,21 +455,26 @@ class NeoNetworkManager {
       return true;
     }
     _tokenLockCompleter = Completer<void>();
-    //TODO: Get Token URL from config
     final response = await call(
       NeoHttpCall(
         endpoint: _Constants.endpointGetToken,
         body: await _isExistUser
             ? {
-                "grant_type": "urn:ietf:params:oauth:grant-type:burgan-certificate-assertion",
-                "client_assertion": await createJwtTokenForAccessRequest(false),
-                "scopes": ["openid"],
+                _Constants.requestKeyGrantType: _Constants.requestValueGrantTypeCertificateAssertion,
+                _Constants.requestKeyClientAssertion: await _createJwtTokenForAccessRequest(),
+                _Constants.requestKeyScopes: _Constants.requestValueScopesOpenId,
               }
             : {
-                _Constants.requestKeyClientId: workflowClientId,
-                _Constants.requestKeyClientSecret: workflowClientSecret,
+                _Constants.jwtClaimInstallationId:
+                    await secureStorage.read(NeoCoreParameterKey.secureStorageInstallationId),
+                _Constants.jwtClaimDeviceId: await secureStorage.read(NeoCoreParameterKey.secureStorageDeviceId),
                 _Constants.requestKeyGrantType: _Constants.requestValueGrantTypeClientCredentials,
                 _Constants.requestKeyScopes: _Constants.requestValueScopes,
+              },
+        headerParameters: await _isExistUser
+            ? {}
+            : {
+                NeoNetworkHeaderKey.fingerprint: (await getFingerPrintAlgorithm()) ?? "",
               },
       ),
     );
@@ -557,12 +579,13 @@ class NeoNetworkManager {
 
   Future<bool> get _isExistUser async {
     final customerId = await secureStorage.read(NeoCoreParameterKey.secureStorageCustomerId);
-    final authStatus = await neoSharedPrefs.read(NeoCoreParameterKey.sharedPrefsAuthStatus);
+    final authStatus = neoSharedPrefs.read(NeoCoreParameterKey.sharedPrefsAuthStatus);
 
-    return (customerId != null && customerId.isNotEmpty) || (authStatus != null && authStatus == "1FA");
+    return (customerId != null && customerId.isNotEmpty) ||
+        (authStatus != null && authStatus == _Constants.authStatus1FA);
   }
 
-  Future<String> createJwtTokenForAccessRequest(bool isRefreshToken) async {
+  Future<String> _createJwtTokenForAccessRequest({bool isRefreshToken = false}) async {
     final customerId = await secureStorage.read(NeoCoreParameterKey.secureStorageCustomerId);
     final installationId = await secureStorage.read(NeoCoreParameterKey.secureStorageInstallationId);
     final deviceId = await secureStorage.read(NeoCoreParameterKey.secureStorageDeviceId);
@@ -571,39 +594,50 @@ class NeoNetworkManager {
     final now = DateTime.now().toUtc();
 
     // Claims (RFC 7523 uyumlu)
-
     final claims = {
-      "iss": workflowClientId,
-      "sub": customerId,
-      "aud": "BurganIam",
-      "jti": UuidUtil.generateUUID(),
-      "nbf": now.millisecondsSinceEpoch ~/ 1000,
-      "exp": now.add(const Duration(minutes: 2)).millisecondsSinceEpoch ~/ 1000,
-      "device_id": deviceId,
-      "installation_id": installationId,
+      _Constants.jwtClaimIss: workflowClientId,
+      _Constants.jwtClaimSub: customerId,
+      _Constants.jwtClaimAud: _Constants.jwtAudience,
+      _Constants.jwtClaimJti: UuidUtil.generateUUID(),
+      _Constants.jwtClaimNbf: now.millisecondsSinceEpoch ~/ 1000,
+      _Constants.jwtClaimExp: now.add(const Duration(minutes: 2)).millisecondsSinceEpoch ~/ 1000,
+      _Constants.jwtClaimDeviceId: deviceId,
+      _Constants.jwtClaimInstallationId: installationId,
     };
 
     if (isRefreshToken) {
-      claims["refresh_token"] = await _getRefreshToken();
+      claims[_Constants.jwtClaimRefreshToken] = await _getRefreshToken();
     }
-    // RSA key yükle
 
-    final keyStore = JsonWebKeyStore();
+    final key = utf8.encode(serverPrivateKey!); // secret string → bytes
+    final data = utf8.encode(json.encode(claims));
 
-    final jwk = JsonWebKey.fromPem(serverPrivateKey!);
+    final hmacSha256 = Hmac(sha256, key); // HMAC-SHA256 objesi
+    final digest = hmacSha256.convert(data);
 
-    keyStore.addKey(jwk);
+    return base64.encode(digest.bytes); // imza (Base64)
+  }
 
-    // JWT oluştur
+  Future<String?> getFingerPrintAlgorithm() async {
+    final deviceId = await secureStorage.read(NeoCoreParameterKey.secureStorageDeviceId);
+    final installationId = await secureStorage.read(NeoCoreParameterKey.secureStorageInstallationId);
+    if (deviceId == null || installationId == null) {
+      return null;
+    }
 
-    final builder = JsonWebSignatureBuilder()
-      ..jsonContent = claims
-      ..addRecipient(jwk, algorithm: "RS256");
+    // Generate JTI (JSON Web Token ID)
+    final jti = UuidUtil.generateUUID();
 
-    final jws = builder.build();
+    // Combine JTI + ClientId + DeviceId + InstallationId
+    final combinedString = jti + workflowClientId + deviceId + installationId;
 
-    // İmzalı JWT string
+    // Convert to bytes and calculate SHA-256 hash
+    final bytes = utf8.encode(combinedString);
+    final digest = sha256.convert(bytes);
 
-    return jws.toCompactSerialization();
+    // Convert to Base64URL encoding
+    final base64UrlEncoded = base64Url.encode(digest.bytes);
+
+    return base64UrlEncoded;
   }
 }
