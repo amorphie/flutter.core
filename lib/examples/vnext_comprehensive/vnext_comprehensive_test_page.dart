@@ -1,8 +1,140 @@
 import 'dart:convert';
 
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:http/http.dart' as http;
+import 'package:neo_core/core/analytics/neo_logger.dart';
+import 'package:neo_core/core/network/managers/neo_network_manager.dart';
+import 'package:neo_core/core/network/models/neo_error.dart';
+import 'package:neo_core/core/network/models/neo_http_call.dart';
+import 'package:neo_core/core/network/models/neo_response.dart';
 import 'package:neo_core/core/workflow_form/vnext/vnext_workflow_client.dart';
+
+/// Simple logger implementation for example purposes
+class _SimpleLogger implements NeoLogger {
+  @override
+  void logConsole(dynamic message, {dynamic logLevel}) {
+    print('[LOG] $message');
+  }
+
+  @override
+  void logError(String message, {Map<String, dynamic>? properties}) {
+    print('[ERROR] $message');
+    if (properties != null) print('Properties: $properties');
+  }
+
+  @override
+  dynamic noSuchMethod(Invocation invocation) => null;
+}
+
+/// Mock NeoNetworkManager for example purposes
+/// In real usage, this would be provided by dependency injection
+class _MockNeoNetworkManager implements NeoNetworkManager {
+  final String baseUrl;
+  final http.Client httpClient;
+
+  _MockNeoNetworkManager({
+    required this.baseUrl,
+    required this.httpClient,
+  });
+
+  @override
+  Future<NeoResponse> call(NeoHttpCall neoCall) async {
+    // Simple mock implementation that converts NeoHttpCall back to direct HTTP
+    // This is just for example purposes - real implementation uses service discovery
+    
+    String url = baseUrl;
+    
+    // Mock service key to URL mapping
+    switch (neoCall.endpoint) {
+      case 'vnext-init-workflow':
+        final domain = neoCall.pathParameters?['DOMAIN'] ?? 'core';
+        final workflowName = neoCall.pathParameters?['WORKFLOW_NAME'] ?? 'test';
+        url += '/api/v1/$domain/workflows/$workflowName/instances/start';
+        break;
+      case 'vnext-post-transition':
+        final domain = neoCall.pathParameters?['DOMAIN'] ?? 'core';
+        final workflowName = neoCall.pathParameters?['WORKFLOW_NAME'] ?? 'test';
+        final instanceId = neoCall.pathParameters?['INSTANCE_ID'] ?? 'test';
+        final transitionKey = neoCall.pathParameters?['TRANSITION_KEY'] ?? 'test';
+        url += '/api/v1/$domain/workflows/$workflowName/instances/$instanceId/transitions/$transitionKey';
+        break;
+      case 'vnext-get-available-transitions':
+        final domain = neoCall.pathParameters?['DOMAIN'] ?? 'core';
+        final workflowName = neoCall.pathParameters?['WORKFLOW_NAME'] ?? 'test';
+        final instanceId = neoCall.pathParameters?['INSTANCE_ID'] ?? 'test';
+        url += '/api/v1/$domain/workflows/$workflowName/instances/$instanceId/transitions';
+        break;
+      case 'vnext-get-workflow-instance':
+        final domain = neoCall.pathParameters?['DOMAIN'] ?? 'core';
+        final workflowName = neoCall.pathParameters?['WORKFLOW_NAME'] ?? 'test';
+        final instanceId = neoCall.pathParameters?['INSTANCE_ID'] ?? 'test';
+        url += '/api/v1/$domain/workflows/$workflowName/instances/$instanceId';
+        break;
+      case 'vnext-list-workflow-instances':
+        final domain = neoCall.pathParameters?['DOMAIN'] ?? 'core';
+        final workflowName = neoCall.pathParameters?['WORKFLOW_NAME'] ?? 'test';
+        url += '/api/v1/$domain/workflows/$workflowName/instances';
+        break;
+      case 'vnext-get-instance-history':
+        final domain = neoCall.pathParameters?['DOMAIN'] ?? 'core';
+        final workflowName = neoCall.pathParameters?['WORKFLOW_NAME'] ?? 'test';
+        final instanceId = neoCall.pathParameters?['INSTANCE_ID'] ?? 'test';
+        url += '/api/v1/$domain/workflows/$workflowName/instances/$instanceId/history';
+        break;
+      case 'vnext-get-system-health':
+        url += '/health';
+        break;
+      case 'vnext-get-system-metrics':
+        url += '/metrics';
+        break;
+      default:
+        return NeoResponse.error(const NeoError(responseCode: 404), responseHeaders: {});
+    }
+
+    try {
+      http.Response response;
+      Uri uri = Uri.parse(url);
+      
+      // Add query parameters if any
+      if (neoCall.queryProviders.isNotEmpty) {
+        final queryParams = <String, String>{};
+        for (final provider in neoCall.queryProviders) {
+          queryParams.addAll(provider.queryParameters.map((k, v) => MapEntry(k, v.toString())));
+        }
+        uri = uri.replace(queryParameters: queryParams);
+      }
+
+      final headers = {
+        'Content-Type': 'application/json',
+        'Accept': 'application/json',
+        ...neoCall.headerParameters,
+      };
+
+      if (neoCall.body.isNotEmpty) {
+        response = await httpClient.post(uri, headers: headers, body: jsonEncode(neoCall.body));
+      } else {
+        response = await httpClient.get(uri, headers: headers);
+      }
+
+      if (response.statusCode >= 200 && response.statusCode < 300) {
+        final data = response.body.isNotEmpty ? jsonDecode(response.body) : {};
+        return NeoResponse.success(data, statusCode: response.statusCode, responseHeaders: response.headers);
+      } else {
+        return NeoResponse.error(
+          NeoError(responseCode: response.statusCode),
+          responseHeaders: response.headers,
+        );
+      }
+    } catch (e) {
+      return NeoResponse.error(const NeoError(responseCode: 500), responseHeaders: {});
+    }
+  }
+
+  // Add required overrides for NeoNetworkManager interface
+  @override
+  dynamic noSuchMethod(Invocation invocation) => super.noSuchMethod(invocation);
+}
 
 /// Model for workflow instance management
 class WorkflowInstance {
@@ -93,10 +225,15 @@ class _VNextComprehensiveTestPageState extends State<VNextComprehensiveTestPage>
     // Initialize simple logger
     _logger = _SimpleLogger();
     
-    // Initialize vNext client
-    _vNextClient = VNextWorkflowClient(
+    // Initialize mock network manager
+    final mockNetworkManager = _MockNeoNetworkManager(
       baseUrl: _baseUrlController.text,
       httpClient: http.Client(),
+    );
+    
+    // Initialize vNext client
+    _vNextClient = VNextWorkflowClient(
+      networkManager: mockNetworkManager,
       logger: _logger!,
     );
     
@@ -114,10 +251,15 @@ class _VNextComprehensiveTestPageState extends State<VNextComprehensiveTestPage>
   }
 
   void _updateServices() {
-    // Update vNext client
-    _vNextClient = VNextWorkflowClient(
+    // Initialize mock network manager
+    final mockNetworkManager = _MockNeoNetworkManager(
       baseUrl: _baseUrlController.text,
       httpClient: http.Client(),
+    );
+    
+    // Update vNext client
+    _vNextClient = VNextWorkflowClient(
+      networkManager: mockNetworkManager,
       logger: _logger!,
     );
     _addLog('Services updated with new configuration');
@@ -873,26 +1015,92 @@ class _VNextComprehensiveTestPageState extends State<VNextComprehensiveTestPage>
                 ),
                 const SizedBox(height: 4),
               ],
-              Text(
-                'ID: ${instance.id}',
-                style: TextStyle(
-                  fontSize: 11,
-                  color: Colors.grey.shade500,
-                  fontFamily: 'monospace',
-                ),
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
+              Row(
+                children: [
+                  Expanded(
+                    child: Text(
+                      'ID: ${instance.id}',
+                      style: TextStyle(
+                        fontSize: 11,
+                        color: Colors.grey.shade500,
+                        fontFamily: 'monospace',
+                      ),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ),
+                  IconButton(
+                    icon: const Icon(Icons.copy, size: 14),
+                    onPressed: () => _copyToClipboard(instance.id ?? '', 'Instance ID'),
+                    tooltip: 'Copy Instance ID',
+                    padding: EdgeInsets.zero,
+                    constraints: const BoxConstraints(minWidth: 20, minHeight: 20),
+                  ),
+                ],
               ),
               const SizedBox(height: 4),
-              // Show raw attributes count without interpretation
+              // Show expandable attributes
               if (instance.attributes != null && instance.attributes!.isNotEmpty) ...[
-                Text(
-                  'Attributes: ${instance.attributes!.length} fields',
-                  style: TextStyle(
-                    fontSize: 10,
-                    color: Colors.grey.shade600,
-                    fontWeight: FontWeight.w500,
+                ExpansionTile(
+                  title: Text(
+                    'Attributes (${instance.attributes!.length})',
+                    style: TextStyle(
+                      fontSize: 12,
+                      color: Colors.grey.shade700,
+                      fontWeight: FontWeight.w500,
+                    ),
                   ),
+                  tilePadding: EdgeInsets.zero,
+                  childrenPadding: const EdgeInsets.only(left: 8, bottom: 8),
+                  children: [
+                    Container(
+                      width: double.infinity,
+                      padding: const EdgeInsets.all(8),
+                      decoration: BoxDecoration(
+                        color: Colors.grey.shade50,
+                        borderRadius: BorderRadius.circular(4),
+                        border: Border.all(color: Colors.grey.shade200),
+                      ),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Row(
+                            children: [
+                              Expanded(
+                                child: Text(
+                                  'Attributes JSON',
+                                  style: TextStyle(
+                                    fontSize: 10,
+                                    fontWeight: FontWeight.bold,
+                                    color: Colors.grey.shade600,
+                                  ),
+                                ),
+                              ),
+                              IconButton(
+                                icon: const Icon(Icons.copy, size: 12),
+                                onPressed: () => _copyToClipboard(
+                                  const JsonEncoder.withIndent('  ').convert(instance.attributes),
+                                  'Attributes JSON',
+                                ),
+                                tooltip: 'Copy Attributes JSON',
+                                padding: EdgeInsets.zero,
+                                constraints: const BoxConstraints(minWidth: 16, minHeight: 16),
+                              ),
+                            ],
+                          ),
+                          const SizedBox(height: 4),
+                          Text(
+                            const JsonEncoder.withIndent('  ').convert(instance.attributes),
+                            style: TextStyle(
+                              fontSize: 9,
+                              fontFamily: 'monospace',
+                              color: Colors.grey.shade700,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
                 ),
               ],
               const SizedBox(height: 12),
@@ -988,6 +1196,18 @@ class _VNextComprehensiveTestPageState extends State<VNextComprehensiveTestPage>
     );
   }
 
+  void _copyToClipboard(String text, String label) {
+    Clipboard.setData(ClipboardData(text: text));
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text('$label copied to clipboard'),
+        duration: const Duration(seconds: 2),
+        behavior: SnackBarBehavior.floating,
+        margin: const EdgeInsets.all(16),
+      ),
+    );
+  }
+
   Widget _buildLogsSection() {
     return Card(
       margin: const EdgeInsets.all(16),
@@ -1049,14 +1269,3 @@ class _VNextComprehensiveTestPageState extends State<VNextComprehensiveTestPage>
 }
 
 /// Simple logger implementation for testing
-class _SimpleLogger {
-  void logConsole(String message) {
-    print('[VNext Test] $message');
-  }
-
-  void logError(String message, {Object? error, StackTrace? stackTrace}) {
-    print('[VNext Test ERROR] $message');
-    if (error != null) print('[VNext Test ERROR] Error: $error');
-    if (stackTrace != null) print('[VNext Test ERROR] StackTrace: $stackTrace');
-  }
-}
