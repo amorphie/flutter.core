@@ -2,6 +2,7 @@ import 'dart:async';
 import 'dart:convert';
 import 'dart:isolate';
 
+import 'package:flutter/services.dart';
 import 'package:get_it/get_it.dart';
 import 'package:http/http.dart';
 import 'package:neo_core/core/analytics/neo_logger.dart';
@@ -198,6 +199,54 @@ class NeoUserInternetUsageInterceptor {
       });
     } catch (e) {
       _neoLogger?.logError("[NeoUserInternetUsageInterceptor]: Failed to intercept network image: $e");
+    }
+  }
+
+  /// Intercept webview network resources as byte (like images, CSS, JS files, etc.)
+  void interceptWebviewDataAsByte(
+    Uint8List byte,
+    String endpoint, {
+    required bool isSuccess,
+  }) {
+    if (!_enableLog) {
+      return;
+    }
+
+    try {
+      final int totalBytes = byte.lengthInBytes;
+
+      _sendToIsolate({
+        _Constants.isolateFunctionTypeFieldName: _Constants.isolateAddUsageFunctionName,
+        _Constants.totalBytesUsedFieldName: totalBytes,
+        _Constants.isSuccessFieldName: isSuccess,
+        _Constants.endpointFieldName: endpoint,
+      });
+    } catch (e) {
+      _neoLogger?.logError("[NeoUserInternetUsageInterceptor]: Failed to intercept webview network data as byte: $e");
+    }
+  }
+
+  /// Intercept webview network data as string (for URLs or text content)
+  void interceptWebviewDataAsString(
+    String data,
+    String endpoint, {
+    required bool isSuccess,
+  }) {
+    if (!_enableLog) {
+      return;
+    }
+
+    try {
+      final int totalBytes = utf8.encode(data).length;
+
+      _sendToIsolate({
+        _Constants.isolateFunctionTypeFieldName: _Constants.isolateAddUsageFunctionName,
+        _Constants.totalBytesUsedFieldName: totalBytes,
+        _Constants.isSuccessFieldName: true,
+        _Constants.endpointFieldName: endpoint,
+      });
+    } catch (e) {
+      _neoLogger?.logError("[NeoUserInternetUsageInterceptor]: Failed to intercept webview network data as string: $e");
     }
   }
 
