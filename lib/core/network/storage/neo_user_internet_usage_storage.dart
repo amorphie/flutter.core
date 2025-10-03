@@ -5,11 +5,12 @@ import 'package:get_it/get_it.dart';
 import 'package:logger/logger.dart';
 import 'package:neo_core/core/analytics/neo_logger.dart';
 import 'package:neo_core/core/network/models/neo_user_internet_usage.dart';
+import 'package:neo_core/core/storage/neo_core_parameter_key.dart';
 import 'package:neo_core/core/storage/neo_shared_prefs.dart';
 import 'package:neo_core/core/util/extensions/get_it_extensions.dart';
 
 class NeoUserInternetUsageStorage {
-  static const String _usageKey = "user_internet_usage";
+  static const String _usageKey = NeoCoreParameterKey.sharedPrefsInternetUsage;
 
   NeoUserInternetUsageStorage();
 
