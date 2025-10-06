@@ -202,7 +202,7 @@ class _VNextComprehensiveTestPageState extends State<VNextComprehensiveTestPage>
 
   // Real workflow configurations from vNext setup
   final List<String> _availableWorkflows = [
-    'ecommerce', // Only real workflow defined in example-flows.json
+    'oauth-authentication', // OAuth2.0 authentication workflow
   ];
 
   @override
@@ -461,54 +461,21 @@ class _VNextComprehensiveTestPageState extends State<VNextComprehensiveTestPage>
     _addLog('🔄 Refreshing $workflowName instance #${instanceIndex + 1}: ${instance.id}');
     
     try {
-      // Get instance details
+      // Get instance details - this is the main refresh call
       final instanceResponse = await _vNextClient!.getWorkflowInstance(
         domain: _domainController.text,
         workflowName: instance.workflowName,
         instanceId: instance.id!,
       );
       
-      // Get available transitions
-      final transitionsResponse = await _vNextClient!.getAvailableTransitions(
-        domain: _domainController.text,
-        workflowName: instance.workflowName,
-        instanceId: instance.id!,
-      );
+      // Note: Not calling getAvailableTransitions here to keep refresh focused on instance data
+      // Transitions will be loaded when needed during transition execution
       
       if (instanceResponse.isSuccess) {
         final instanceData = instanceResponse.asSuccess.data;
         
-        List<String>? transitions;
-        if (transitionsResponse.isSuccess) {
-          try {
-            final responseData = transitionsResponse.asSuccess.data;
-            _addLog('📄 Transitions response type: ${responseData.runtimeType}');
-            
-            // Handle the actual API response structure: {"transitions": [...]}
-            if (responseData.containsKey('transitions')) {
-              final transitionsArray = responseData['transitions'] as List<dynamic>;
-              // Extract available transitions from the extensions field of the latest version
-              if (transitionsArray.isNotEmpty) {
-                final latestTransition = transitionsArray.last as Map<String, dynamic>;
-                final extensions = latestTransition['extensions'] as Map<String, dynamic>?;
-                final availableTransitions = extensions?['availableTransitions'] as Map<String, dynamic>?;
-                final items = availableTransitions?['items'] as List<dynamic>?;
-                
-                if (items != null && items.isNotEmpty) {
-                  transitions = items.map((t) => t.toString()).toList();
-                } else {
-                  transitions = []; // No available transitions yet
-                }
-              }
-            } else {
-              _addLog('❌ Unexpected transitions response structure');
-              transitions = [];
-            }
-          } catch (e) {
-            _addLog('❌ Error parsing transitions: $e');
-            transitions = [];
-          }
-        }
+        // Keep existing transitions from the instance (don't refresh them during basic refresh)
+        List<String>? transitions = instance.availableTransitions;
         
         setState(() {
           _workflowInstances[workflowName]![instanceIndex] = instance.copyWith(
@@ -666,24 +633,130 @@ class _VNextComprehensiveTestPageState extends State<VNextComprehensiveTestPage>
   }
 
   Map<String, dynamic> _getDefaultAttributesForWorkflow(String workflowName) {
-    // Generic approach - no workflow-specific assumptions
-    // Each workflow should define its own required attributes
-    return {
-      'workflowName': workflowName,
-      'createdBy': 'flutter-client',
-      'createdAt': DateTime.now().toIso8601String(),
-    };
+    // Workflow-specific attributes based on vNext sample definitions
+    switch (workflowName) {
+      case 'oauth-authentication':
+        return {
+          'username': '34987491778',
+          'password': '112233',
+          'grant_type': 'password',
+          'client_id': 'acme',
+          'client_secret': '1q2w3e*',
+          'scope': 'openid profile product-api',
+          'workflowName': workflowName,
+          'createdBy': 'flutter-client',
+          'createdAt': DateTime.now().toIso8601String(),
+        };
+      default:
+        // Generic approach for unknown workflows
+        return {
+          'workflowName': workflowName,
+          'createdBy': 'flutter-client',
+          'createdAt': DateTime.now().toIso8601String(),
+        };
+    }
   }
 
   Map<String, dynamic> _getTransitionDataForWorkflow(String workflowName, String transitionKey) {
-    // Generic approach - no workflow-specific assumptions
-    // Each workflow should define its own transition data requirements
-    return {
-      'transitionKey': transitionKey,
-      'workflowName': workflowName,
-      'executedBy': 'flutter-client',
-      'executedAt': DateTime.now().toIso8601String(),
-    };
+    // Workflow-specific transition data based on vNext sample definitions
+    switch (workflowName) {
+      case 'oauth-authentication':
+        switch (transitionKey) {
+          case 'authorization-code-flow':
+            return {
+              'authorization_code': 'AUTH_CODE_12345',
+              'redirect_uri': 'https://example.com/callback',
+              'code_verifier': 'dBjftJeZ4CVP-mB92K27uhbUJU1p1r_wW1gFWFOEjXk',
+              'transitionKey': transitionKey,
+              'executedBy': 'flutter-client',
+              'executedAt': DateTime.now().toIso8601String(),
+            };
+          case 'client-credentials-flow':
+            return {
+              'client_id': 'acme-service',
+              'client_secret': 'service-secret-key',
+              'scope': 'service-api',
+              'transitionKey': transitionKey,
+              'executedBy': 'flutter-client',
+              'executedAt': DateTime.now().toIso8601String(),
+            };
+          case 'password-flow':
+            return {
+              'username': 'user@example.com',
+              'password': 'user-password',
+              'scope': 'read write',
+              'transitionKey': transitionKey,
+              'executedBy': 'flutter-client',
+              'executedAt': DateTime.now().toIso8601String(),
+            };
+          case 'otp-verified':
+            return {
+              'otp_code': '123456',
+              'device_id': 'device-${DateTime.now().millisecondsSinceEpoch}',
+              'transitionKey': transitionKey,
+              'executedBy': 'flutter-client',
+              'executedAt': DateTime.now().toIso8601String(),
+            };
+          case 'mfa-failed':
+            return {
+              'failure_reason': 'invalid_otp',
+              'retry_available': true,
+              'transitionKey': transitionKey,
+              'executedBy': 'flutter-client',
+              'executedAt': DateTime.now().toIso8601String(),
+            };
+          case 'generate-tokens':
+            return {
+              'token_type': 'Bearer',
+              'expires_in': 3600,
+              'refresh_token_expires_in': 86400,
+              'transitionKey': transitionKey,
+              'executedBy': 'flutter-client',
+              'executedAt': DateTime.now().toIso8601String(),
+            };
+          default:
+            return {
+              'transitionKey': transitionKey,
+              'workflowName': workflowName,
+              'executedBy': 'flutter-client',
+              'executedAt': DateTime.now().toIso8601String(),
+            };
+        }
+      default:
+        // Generic approach for unknown workflows
+        return {
+          'transitionKey': transitionKey,
+          'workflowName': workflowName,
+          'executedBy': 'flutter-client',
+          'executedAt': DateTime.now().toIso8601String(),
+        };
+    }
+  }
+
+  String _getWorkflowDescription(String workflowName) {
+    switch (workflowName) {
+      case 'oauth-authentication':
+        return 'OAuth2.0 Authentication Workflow with MFA support. Supports multiple grant types: password, client_credentials, and authorization_code flows with push notifications and OTP verification.';
+      default:
+        return 'Generic workflow - no specific description available.';
+    }
+  }
+
+  List<String> _getWorkflowFeatures(String workflowName) {
+    switch (workflowName) {
+      case 'oauth-authentication':
+        return [
+          '🔐 Client Validation',
+          '🔑 Multiple Grant Types (password, client_credentials, authorization_code)',
+          '📱 Multi-Factor Authentication (MFA)',
+          '🔔 Push Notification Support',
+          '📧 OTP Verification',
+          '📱 Device Registration',
+          '🎫 Token Generation',
+        ];
+      default:
+        return ['Generic workflow features'];
+    }
   }
 
   @override
@@ -845,59 +918,98 @@ class _VNextComprehensiveTestPageState extends State<VNextComprehensiveTestPage>
             borderRadius: BorderRadius.circular(8),
             border: Border.all(color: Colors.blue.shade200),
           ),
-          child: Row(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Icon(Icons.folder_outlined, color: Colors.blue.shade700),
-              const SizedBox(width: 8),
-              Text(
-                workflowName,
-                style: TextStyle(
-                  fontSize: 18,
-                  fontWeight: FontWeight.bold,
-                  color: Colors.blue.shade700,
-                ),
-              ),
-              const SizedBox(width: 8),
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                decoration: BoxDecoration(
-                  color: Colors.blue.shade100,
-                  borderRadius: BorderRadius.circular(12),
-                ),
-                child: Text(
-                  '${instances.length} instances',
-                  style: TextStyle(
-                    fontSize: 12,
-                    color: Colors.blue.shade700,
-                    fontWeight: FontWeight.w500,
-                  ),
-                ),
-              ),
-              const Spacer(),
+              // Header Row
               Row(
                 children: [
-                  ElevatedButton.icon(
-                    onPressed: _loadExistingInstances,
-                    icon: const Icon(Icons.download, size: 16),
-                    label: const Text('Load Existing'),
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: Colors.blue,
-                      foregroundColor: Colors.white,
-                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                  Icon(Icons.folder_outlined, color: Colors.blue.shade700),
+                  const SizedBox(width: 8),
+                  Text(
+                    workflowName,
+                    style: TextStyle(
+                      fontSize: 18,
+                      fontWeight: FontWeight.bold,
+                      color: Colors.blue.shade700,
                     ),
                   ),
                   const SizedBox(width: 8),
-                  ElevatedButton.icon(
-                    onPressed: () => _initializeWorkflow(workflowName),
-                    icon: const Icon(Icons.add, size: 16),
-                    label: const Text('New Instance'),
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: Colors.green,
-                      foregroundColor: Colors.white,
-                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                    decoration: BoxDecoration(
+                      color: Colors.blue.shade100,
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: Text(
+                      '${instances.length} instances',
+                      style: TextStyle(
+                        fontSize: 12,
+                        color: Colors.blue.shade700,
+                        fontWeight: FontWeight.w500,
+                      ),
                     ),
                   ),
+                  const Spacer(),
+                  Row(
+                    children: [
+                      ElevatedButton.icon(
+                        onPressed: _loadExistingInstances,
+                        icon: const Icon(Icons.download, size: 16),
+                        label: const Text('Load Existing'),
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: Colors.blue,
+                          foregroundColor: Colors.white,
+                          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                        ),
+                      ),
+                      const SizedBox(width: 8),
+                      ElevatedButton.icon(
+                        onPressed: () => _initializeWorkflow(workflowName),
+                        icon: const Icon(Icons.add, size: 16),
+                        label: const Text('New Instance'),
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: Colors.green,
+                          foregroundColor: Colors.white,
+                          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                        ),
+                      ),
+                    ],
+                  ),
                 ],
+              ),
+              
+              // Description
+              const SizedBox(height: 12),
+              Text(
+                _getWorkflowDescription(workflowName),
+                style: TextStyle(
+                  fontSize: 14,
+                  color: Colors.blue.shade600,
+                  height: 1.4,
+                ),
+              ),
+              
+              // Features
+              const SizedBox(height: 12),
+              Wrap(
+                spacing: 8,
+                runSpacing: 4,
+                children: _getWorkflowFeatures(workflowName).map((feature) => Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                  decoration: BoxDecoration(
+                    color: Colors.blue.shade100,
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  child: Text(
+                    feature,
+                    style: TextStyle(
+                      fontSize: 12,
+                      color: Colors.blue.shade700,
+                      fontWeight: FontWeight.w500,
+                    ),
+                  ),
+                )).toList(),
               ),
             ],
           ),

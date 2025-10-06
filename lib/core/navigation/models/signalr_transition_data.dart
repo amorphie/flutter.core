@@ -13,6 +13,13 @@
 import 'dart:convert';
 
 import 'package:neo_core/core/navigation/models/neo_navigation_type.dart';
+import 'package:neo_core/core/workflow_form/vnext/models/vnext_extensions.dart';
+
+/// Workflow engine types for explicit engine identification
+enum WorkflowEngine {
+  amorphie,
+  vnext,
+}
 
 abstract class _Constant {
   static const keyNavigationPath = "navigationPath";
@@ -28,6 +35,8 @@ abstract class _Constant {
   static const keyUseSubNavigator = "useSubNavigator";
   static const keyUseRootNavigator = "useRootNavigator";
   static const keyIsInitialPage = "isInitialPage";
+  static const keyWorkflowEngine = "workflowEngine";
+  static const keyVNextExtensions = "vNextExtensions";
   static const statusCodeRedirectToLogin = "302";
 }
 
@@ -45,6 +54,10 @@ class SignalrTransitionData {
   final bool useSubNavigator;
   final bool useRootNavigator;
   final bool isInitialPage;
+  
+  // vNext support - optional fields for backward compatibility
+  final WorkflowEngine? workflowEngine;
+  final VNextExtensions? vNextExtensions;
 
   SignalrTransitionData({
     this.transitionId,
@@ -60,6 +73,10 @@ class SignalrTransitionData {
     this.useSubNavigator = false,
     this.useRootNavigator = false,
     this.isInitialPage = false,
+    
+    // vNext support - optional parameters
+    this.workflowEngine,
+    this.vNextExtensions,
   });
 
   String encode() {
@@ -77,6 +94,10 @@ class SignalrTransitionData {
       _Constant.keyUseSubNavigator: useSubNavigator,
       _Constant.keyUseRootNavigator: useRootNavigator,
       _Constant.keyIsInitialPage: isInitialPage,
+      
+      // vNext support - only include if present
+      if (workflowEngine != null) _Constant.keyWorkflowEngine: workflowEngine!.name,
+      if (vNextExtensions != null) _Constant.keyVNextExtensions: vNextExtensions!.toJson(),
     });
   }
 
@@ -93,13 +114,46 @@ class SignalrTransitionData {
       statusMessage: jsonMap[_Constant.keyStatusMessage],
       statusCode: jsonMap[_Constant.keyStatusCode],
       queryParameters: jsonMap[_Constant.keyWorkflowSuffix],
-      useSubNavigator: jsonMap[_Constant.keyUseSubNavigator],
-      useRootNavigator: jsonMap[_Constant.keyUseRootNavigator],
-      isInitialPage: jsonMap[_Constant.keyIsInitialPage],
+      useSubNavigator: jsonMap[_Constant.keyUseSubNavigator] ?? false,
+      useRootNavigator: jsonMap[_Constant.keyUseRootNavigator] ?? false,
+      isInitialPage: jsonMap[_Constant.keyIsInitialPage] ?? false,
+      
+      // vNext support - decode if present
+      workflowEngine: jsonMap[_Constant.keyWorkflowEngine] != null
+          ? WorkflowEngine.values.firstWhere(
+              (e) => e.name == jsonMap[_Constant.keyWorkflowEngine],
+              orElse: () => WorkflowEngine.amorphie,
+            )
+          : null,
+      vNextExtensions: jsonMap[_Constant.keyVNextExtensions] != null
+          ? VNextExtensions.fromJson(jsonMap[_Constant.keyVNextExtensions] as Map<String, dynamic>)
+          : null,
     );
   }
 }
 
 extension NeoSignalRTransitionExtension on SignalrTransitionData {
   bool get shouldRedirectToLogin => statusCode == _Constant.statusCodeRedirectToLogin;
+  
+  // vNext support methods
+  bool get isVNextWorkflow => workflowEngine == WorkflowEngine.vnext;
+  bool get isAmorphieWorkflow => workflowEngine == WorkflowEngine.amorphie || workflowEngine == null;
+  
+  /// Get the appropriate page ID based on the workflow engine
+  String getPageIdForEngine() {
+    if (isVNextWorkflow) {
+      // For vNext, use currentState from extensions, fallback to pageId
+      return vNextExtensions?.currentState ?? pageId ?? 'unknown-state';
+    } else {
+      // For Amorphie, use existing logic
+      switch (viewSource) {
+        case "page":
+          return navigationPath ?? pageId ?? '';
+        case "transition":
+          return transitionId ?? pageId ?? '';
+        default:
+          return pageId ?? '';
+      }
+    }
+  }
 }
