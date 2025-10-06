@@ -134,7 +134,6 @@ class SignalrConnectionManager {
   Future<void> stop() async {
     try {
       await _hubConnection?.stop();
-      _internetUsageInterceptor?.dispose();
     } catch (_) {
       // No-op
     }

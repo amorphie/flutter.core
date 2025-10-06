@@ -1,8 +1,8 @@
 import 'dart:async';
 import 'dart:convert';
 import 'dart:isolate';
+import 'dart:typed_data';
 
-import 'package:flutter/services.dart';
 import 'package:get_it/get_it.dart';
 import 'package:http/http.dart';
 import 'package:neo_core/core/analytics/neo_logger.dart';
@@ -20,9 +20,7 @@ abstract class _Constants {
 }
 
 class NeoUserInternetUsageInterceptor {
-  final NeoUserInternetUsageStorage? _usageStorage;
-
-  NeoUserInternetUsageInterceptor() : _usageStorage = GetIt.I.getIfReady<NeoUserInternetUsageStorage>();
+  static NeoUserInternetUsageStorage? get _usageStorage => GetIt.I.getIfReady<NeoUserInternetUsageStorage>();
 
   bool _enableLog = false;
   NeoLogger? get _neoLogger => GetIt.I.getIfReady<NeoLogger>();
@@ -110,7 +108,6 @@ class NeoUserInternetUsageInterceptor {
   void interceptResponse(
     NeoHttpCall neoCall,
     Response response,
-    String endpoint,
   ) {
     if (!_enableLog) {
       return;
@@ -124,7 +121,7 @@ class NeoUserInternetUsageInterceptor {
         _Constants.isolateFunctionTypeFieldName: _Constants.isolateAddUsageFunctionName,
         _Constants.totalBytesUsedFieldName: totalBytes,
         _Constants.isSuccessFieldName: isSuccess,
-        _Constants.endpointFieldName: endpoint,
+        _Constants.endpointFieldName: neoCall.endpoint,
       });
     } catch (e) {
       _neoLogger?.logError("[NeoUserInternetUsageInterceptor]: Failed to intercept response: $e");
@@ -242,7 +239,7 @@ class NeoUserInternetUsageInterceptor {
       _sendToIsolate({
         _Constants.isolateFunctionTypeFieldName: _Constants.isolateAddUsageFunctionName,
         _Constants.totalBytesUsedFieldName: totalBytes,
-        _Constants.isSuccessFieldName: true,
+        _Constants.isSuccessFieldName: isSuccess,
         _Constants.endpointFieldName: endpoint,
       });
     } catch (e) {

@@ -1,3 +1,5 @@
+import 'package:neo_core/core/util/extensions/internet_usage_format_extension.dart';
+
 class NeoUserInternetUsage {
   final int totalBytesUsed;
   final int totalRequests;
@@ -40,7 +42,7 @@ class NeoUserInternetUsage {
 
   Map<String, dynamic> toJson() {
     return {
-      'totalBytesUsed': totalBytesUsed,
+      'totalBytesUsed': totalBytesUsed.formattedBytesUsed,
       'totalRequests': totalRequests,
       'successfulRequests': successfulRequests,
       'failedRequests': failedRequests,
@@ -74,7 +76,7 @@ class NeoUserInternetUsage {
     required String endpoint,
   }) {
     final Map<String, dynamic> historyEntry = {
-      endpoint: "Date:${DateTime.now().toIso8601String()} - Usage:$bytesUsed",
+      endpoint: "Date:${DateTime.now().toIso8601String()} - Usage:${bytesUsed.formattedBytesUsed}",
     };
 
     return copyWith(
@@ -85,18 +87,5 @@ class NeoUserInternetUsage {
       lastUpdated: DateTime.now(),
       usageHistory: [...usageHistory, historyEntry],
     );
-  }
-
-  /// Format bytes in human readable format
-  String get formattedBytesUsed {
-    if (totalBytesUsed < 1024) {
-      return '${totalBytesUsed}B';
-    } else if (totalBytesUsed < 1024 * 1024) {
-      return '${(totalBytesUsed / 1024).toStringAsFixed(1)}KB';
-    } else if (totalBytesUsed < 1024 * 1024 * 1024) {
-      return '${(totalBytesUsed / (1024 * 1024)).toStringAsFixed(1)}MB';
-    } else {
-      return '${(totalBytesUsed / (1024 * 1024 * 1024)).toStringAsFixed(1)}GB';
-    }
   }
 }
