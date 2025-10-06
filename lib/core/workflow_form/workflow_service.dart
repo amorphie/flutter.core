@@ -181,6 +181,16 @@ class WorkflowService {
     return true;
   }
 
+  /// Check if long polling is active for a specific instance
+  bool isPollingActive(String instanceId) {
+    return _router.isPollingActive(instanceId);
+  }
+
+  /// Get all active polling instance IDs
+  List<String> getActivePollingInstances() {
+    return _router.getActivePollingInstances();
+  }
+
   /// Query workflow instances with enhanced filtering
   /// Provides access to vNext's powerful filtering capabilities
   Future<WorkflowResult> queryWorkflowInstances({

@@ -8,12 +8,12 @@
  */
 
 import 'dart:async';
+
 import 'package:neo_core/core/analytics/neo_logger.dart';
 import 'package:neo_core/core/network/managers/neo_network_manager.dart';
 import 'package:neo_core/core/network/models/neo_http_call.dart';
-import 'package:neo_core/core/network/query_providers/http_query_provider.dart';
-import 'package:neo_core/core/workflow_form/vnext/models/vnext_workflow_message.dart';
 import 'package:neo_core/core/workflow_form/vnext/models/vnext_polling_config.dart';
+import 'package:neo_core/core/workflow_form/vnext/models/vnext_workflow_message.dart';
 
 /// Long polling manager for vNext workflow real-time updates
 /// 
@@ -63,10 +63,26 @@ class VNextLongPollingManager {
       logger: _logger,
       onMessage: _handleMessage,
       onError: _handleError,
+      onStop: _handleStop,
     );
 
     _activeSessions[instanceId] = session;
     await session.start();
+  }
+  
+  void _handleStop(String instanceId, String reason) {
+    _logger.logConsole('[VNextLongPollingManager] Polling stopped for instance: $instanceId (reason: $reason)');
+    
+    // Remove from active sessions
+    _activeSessions.remove(instanceId);
+    
+    // Emit a completion message to notify listeners
+    _messageController.add(VNextWorkflowMessage.completion(
+      instanceId: instanceId,
+      state: 'polling-stopped',
+      data: {'reason': reason},
+      timestamp: DateTime.now(),
+    ));
   }
 
   /// Stop long polling for a specific workflow instance
@@ -75,6 +91,14 @@ class VNextLongPollingManager {
     if (session != null) {
       _logger.logConsole('[VNextLongPollingManager] Stopping polling for instance: $instanceId');
       await session.stop();
+      
+      // Emit a completion message to notify listeners that polling has stopped
+      _messageController.add(VNextWorkflowMessage.completion(
+        instanceId: instanceId,
+        state: 'polling-stopped',
+        data: {'reason': 'manual-stop'},
+        timestamp: DateTime.now(),
+      ));
     }
   }
 
@@ -82,9 +106,12 @@ class VNextLongPollingManager {
   Future<void> stopAllPolling() async {
     _logger.logConsole('[VNextLongPollingManager] Stopping all polling sessions');
     
-    final futures = _activeSessions.values.map((session) => session.stop());
-    await Future.wait(futures);
+    // Create a copy of the sessions to avoid concurrent modification
+    final sessions = Map<String, _PollingSession>.from(_activeSessions);
     _activeSessions.clear();
+    
+    final futures = sessions.values.map((session) => session.stop());
+    await Future.wait(futures);
   }
 
   /// Get active polling sessions
@@ -138,6 +165,7 @@ class _PollingSession {
   final NeoLogger logger;
   final Function(VNextWorkflowMessage) onMessage;
   final Function(String, String) onError;
+  final Function(String, String)? onStop; // Callback when polling stops
 
   Timer? _pollingTimer;
   bool _isActive = false;
@@ -154,6 +182,7 @@ class _PollingSession {
     required this.logger,
     required this.onMessage,
     required this.onError,
+    this.onStop,
   });
 
   Future<void> start() async {
@@ -165,37 +194,57 @@ class _PollingSession {
     _messageCount = 0;
     _errorCount = 0;
 
-    logger.logConsole('[PollingSession] Starting session for instance: $instanceId');
+    logger.logConsole('┌─────────────────────────────────────────────────────────');
+    logger.logConsole('│ [PollingSession] 🚀 Starting long polling');
+    logger.logConsole('├─────────────────────────────────────────────────────────');
+    logger.logConsole('│ Instance: $instanceId');
+    logger.logConsole('│ Workflow: $workflowName');
+    logger.logConsole('│ Interval: ${config.interval.inSeconds}s');
+    logger.logConsole('│ Duration: ${config.duration.inSeconds}s');
+    logger.logConsole('│ Max Consecutive Errors: ${config.maxConsecutiveErrors}');
+    logger.logConsole('└─────────────────────────────────────────────────────────\n');
     
     // Start immediate poll, then schedule regular polling
     await _poll();
     _scheduleNextPoll();
   }
 
-  Future<void> stop() async {
+  Future<void> stop({String reason = 'manual'}) async {
     if (!_isActive) return;
 
     _isActive = false;
     _pollingTimer?.cancel();
     _pollingTimer = null;
 
-    logger.logConsole('[PollingSession] Stopped session for instance: $instanceId');
+    logger.logConsole('[PollingSession] Stopped session for instance: $instanceId (reason: $reason)');
+    
+    // Notify parent that polling has stopped
+    onStop?.call(instanceId, reason);
   }
 
   void _scheduleNextPoll() {
     if (!_isActive) return;
 
     final elapsed = DateTime.now().difference(_startTime!);
-    final interval = config.getIntervalForElapsed(elapsed);
-
-    if (interval == null) {
-      // Polling duration exceeded, stop session
-      logger.logConsole('[PollingSession] Polling duration exceeded for instance: $instanceId');
-      stop();
+    
+    // Check if polling duration exceeded
+    if (!config.shouldContinuePolling(elapsed)) {
+      logger.logConsole('┌─────────────────────────────────────────────────────────');
+      logger.logConsole('│ [PollingSession] ⏱️ Duration limit reached');
+      logger.logConsole('├─────────────────────────────────────────────────────────');
+      logger.logConsole('│ Instance: $instanceId');
+      logger.logConsole('│ Elapsed: ${elapsed.inSeconds}s / ${config.duration.inSeconds}s');
+      logger.logConsole('│ Total polls: $_pollCount');
+      logger.logConsole('│ Total messages: $_messageCount');
+      logger.logConsole('│ 🛑 Stopping polling');
+      logger.logConsole('└─────────────────────────────────────────────────────────\n');
+      stop(reason: 'duration-exceeded');
       return;
     }
 
-    _pollingTimer = Timer(interval, () {
+    // Schedule next poll using configured interval
+    logger.logConsole('[PollingSession] ⏰ Scheduling next poll in ${config.interval.inSeconds}s (elapsed: ${elapsed.inSeconds}s / ${config.duration.inSeconds}s)');
+    _pollingTimer = Timer(config.interval, () {
       if (_isActive) {
         _poll().then((_) => _scheduleNextPoll());
       }
@@ -205,24 +254,31 @@ class _PollingSession {
   Future<void> _poll() async {
     if (!_isActive) return;
 
+    // Check if duration exceeded before polling
+    final elapsed = DateTime.now().difference(_startTime!);
+    if (!config.shouldContinuePolling(elapsed)) {
+      logger.logConsole('[PollingSession] Polling duration exceeded, stopping before poll #${_pollCount + 1}');
+      stop(reason: 'duration-exceeded');
+      return;
+    }
+
     _pollCount++;
     
     try {
-      logger.logConsole('[PollingSession] Polling instance: $instanceId (poll #$_pollCount)');
+      logger.logConsole('[PollingSession] 🔍 Poll #$_pollCount - Checking instance state...');
+      logger.logConsole('[PollingSession] Endpoint: vnext-get-workflow-instance');
+      logger.logConsole('[PollingSession] Path: /core/workflows/$workflowName/instances/$instanceId');
 
+      // Poll the instance endpoint to check for state changes
+      // vNext doesn't have a separate /messages endpoint - we poll the instance itself
       final response = await networkManager.call(
         NeoHttpCall(
-          endpoint: 'vnext-poll-messages',
+          endpoint: 'vnext-get-workflow-instance',
           pathParameters: {
+            'DOMAIN': 'core', // TODO: Get from config
             'WORKFLOW_NAME': workflowName,
+            'INSTANCE_ID': instanceId,
           },
-          queryProviders: [
-            HttpQueryProvider({
-              'InstanceId': instanceId, // Match existing Amorphie pattern
-              'timeout': config.requestTimeout.inSeconds.toString(),
-              'engine': 'vnext', // Distinguish from Amorphie requests
-            }),
-          ],
         ),
       );
 
@@ -253,16 +309,26 @@ class _PollingSession {
     final messages = <VNextWorkflowMessage>[];
     
     try {
-      final messageList = data['messages'] as List<dynamic>? ?? [];
+      // For vNext, we poll the instance endpoint directly
+      // Convert the instance response to a state change message
+      final instanceId = data['id'] as String? ?? data['instanceId'] as String?;
+      final extensions = data['extensions'] as Map<String, dynamic>?;
+      final status = extensions?['status'] as String?;
+      final currentState = extensions?['currentState'] as String?;
       
-      for (final messageData in messageList) {
-        if (messageData is Map<String, dynamic>) {
-          final message = VNextWorkflowMessage.fromJson(messageData);
-          messages.add(message);
-        }
+      if (instanceId != null && status != null) {
+        // Create a synthetic message representing the state change
+        final message = VNextWorkflowMessage(
+          instanceId: instanceId,
+          type: VNextWorkflowMessageType.stateChange,
+          timestamp: DateTime.now(),
+          data: data,
+        );
+        messages.add(message);
+        logger.logConsole('[PollingSession] State: $currentState, Status: $status');
       }
     } catch (e) {
-      logger.logError('[PollingSession] Failed to parse messages: $e');
+      logger.logError('[PollingSession] Failed to parse instance data: $e');
     }
 
     return messages;

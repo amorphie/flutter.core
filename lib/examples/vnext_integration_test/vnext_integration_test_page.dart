@@ -1,14 +1,24 @@
+import 'dart:async';
 import 'dart:convert';
 
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'package:neo_core/core/analytics/neo_logger.dart';
 import 'package:neo_core/core/network/managers/neo_network_manager.dart';
+import 'package:neo_core/core/network/models/http_client_config.dart';
 import 'package:neo_core/core/network/models/neo_error.dart';
 import 'package:neo_core/core/network/models/neo_http_call.dart';
 import 'package:neo_core/core/network/models/neo_response.dart';
+import 'package:neo_core/core/workflow_form/neo_workflow_manager.dart';
 import 'package:neo_core/core/workflow_form/vnext/models/vnext_extensions.dart';
 import 'package:neo_core/core/workflow_form/vnext/vnext_workflow_client.dart';
+import 'package:neo_core/core/workflow_form/workflow_engine_config.dart';
+import 'package:neo_core/core/workflow_form/workflow_instance_manager.dart';
+import 'package:neo_core/core/workflow_form/workflow_router.dart';
+import 'package:neo_core/core/workflow_form/workflow_service.dart';
+import 'package:neo_core/core/workflow_form/workflow_flutter_bridge.dart';
+import 'package:neo_core/core/workflow_form/workflow_ui_events.dart';
+import 'package:uuid/uuid.dart';
 
 /// Simple vNext Integration Test Page
 /// Demonstrates: Init workflow -> Display view/data info -> Load actions
@@ -23,23 +33,45 @@ class _VNextIntegrationTestPageState extends State<VNextIntegrationTestPage> {
   final TextEditingController _baseUrlController = TextEditingController(text: 'http://localhost:4201');
   final TextEditingController _domainController = TextEditingController(text: 'core');
   
+  WorkflowFlutterBridge? _bridge;
+  WorkflowRouter? _workflowRouter;
+  WorkflowService? _workflowService;
   VNextWorkflowClient? _vNextClient;
+  WorkflowInstanceManager? _instanceManager;
+  String? _currentInstanceId;
   bool _isLoading = false;
-  String _status = 'Ready to initialize vNext OAuth workflow';
+  bool _isPollingActive = false;
+  String _status = 'Ready to initialize vNext OAuth workflow with automatic updates (using Bridge pattern)';
   
   // Workflow state
   Map<String, dynamic>? _workflowInstance;
   VNextExtensions? _extensions;
   Map<String, dynamic>? _viewData;
   Map<String, dynamic>? _instanceData;
+  
+  // UI event subscription (replaces manual timer)
+  StreamSubscription<WorkflowUIEvent>? _uiEventSubscription;
+  
+  // Polling state check timer
+  Timer? _pollingStateCheckTimer;
 
   @override
   void initState() {
     super.initState();
     _initializeClient();
   }
+  
+  @override
+  void dispose() {
+    _uiEventSubscription?.cancel();
+    _pollingStateCheckTimer?.cancel();
+    _bridge?.dispose();
+    _workflowRouter?.dispose();
+    super.dispose();
+  }
 
   void _initializeClient() {
+    final logger = _SimpleLogger();
     final mockNetworkManager = _MockNeoNetworkManager(
       baseUrl: _baseUrlController.text,
       httpClient: http.Client(),
@@ -47,8 +79,165 @@ class _VNextIntegrationTestPageState extends State<VNextIntegrationTestPage> {
     
     _vNextClient = VNextWorkflowClient(
       networkManager: mockNetworkManager,
-      logger: _SimpleLogger(),
+      logger: logger,
     );
+    
+    // Create instance manager (shared across router/bridge)
+    _instanceManager = WorkflowInstanceManager(logger: logger);
+    
+    // Create WorkflowRouter with automatic polling support
+    final mockHttpClientConfig = _MockHttpClientConfig();
+    final mockV1Manager = _MockNeoWorkflowManager();
+    
+    _workflowRouter = WorkflowRouter(
+      v1Manager: mockV1Manager,
+      vNextClient: _vNextClient!,
+      logger: logger,
+      httpClientConfig: mockHttpClientConfig,
+      instanceManager: _instanceManager!,
+      networkManager: mockNetworkManager,
+    );
+    
+    // Create WorkflowService (pure business logic layer)
+    _workflowService = WorkflowService(
+      router: _workflowRouter!,
+      instanceManager: _instanceManager!,
+      logger: logger,
+    );
+    
+    // Create WorkflowFlutterBridge (UI abstraction layer)
+    _bridge = WorkflowFlutterBridge(
+      workflowService: _workflowService!,
+      logger: logger,
+    );
+    
+    // ✅ CRITICAL: Subscribe to bridge UI events
+    // This is how NeoClient receives automatic updates!
+    _uiEventSubscription = _bridge!.uiEvents.listen(
+      _handleUIEvent,
+      onError: (error) {
+        print('[UI_EVENT] ❌ Stream error: $error');
+        _updateStatus('❌ Event stream error: $error');
+      },
+    );
+    
+    // Log polling configuration for debugging
+    final pollingConfig = mockHttpClientConfig.getWorkflowConfig('oauth-authentication').config;
+    print('┌─────────────────────────────────────────────────────────');
+    print('│ [POLLING_CONFIG] Configuration loaded');
+    print('├─────────────────────────────────────────────────────────');
+    print('│ Interval: ${pollingConfig['pollingIntervalSeconds']}s');
+    print('│ Duration: ${pollingConfig['pollingDurationSeconds']}s');
+    print('│ Max Errors: ${pollingConfig['maxConsecutiveErrors']}');
+    print('│ Request Timeout: ${pollingConfig['requestTimeoutSeconds']}s');
+    print('└─────────────────────────────────────────────────────────\n');
+    
+    print('[INIT] ✅ Bridge pattern initialized - listening for UI events');
+    
+    // Start polling state checker (updates UI to show when polling stops)
+    _startPollingStateChecker();
+  }
+  
+  void _startPollingStateChecker() {
+    // Cancel existing timer if any
+    _pollingStateCheckTimer?.cancel();
+    
+    print('[POLLING_STATE_CHECK] ▶️ Starting state checker timer');
+    _pollingStateCheckTimer = Timer.periodic(const Duration(seconds: 1), (_) {
+      _checkPollingState();
+    });
+  }
+  
+  void _checkPollingState() {
+    if (_currentInstanceId == null || _workflowService == null) {
+      print('[POLLING_STATE_CHECK] Skipped - instanceId: $_currentInstanceId, service: ${_workflowService != null}');
+      return;
+    }
+    
+    final isActive = _workflowService!.isPollingActive(_currentInstanceId!);
+    print('[POLLING_STATE_CHECK] Instance: $_currentInstanceId, IsActive: $isActive, Previous: $_isPollingActive');
+    
+    if (isActive != _isPollingActive) {
+      setState(() {
+        _isPollingActive = isActive;
+      });
+      print('[POLLING_STATE] ⚡ Polling state changed: ${isActive ? "ACTIVE ✅" : "STOPPED 🛑"}');
+      
+      // Stop the timer when polling becomes inactive to save resources
+      if (!isActive) {
+        _stopPollingStateChecker();
+      }
+    }
+  }
+  
+  void _stopPollingStateChecker() {
+    print('[POLLING_STATE_CHECK] ⏹️ Stopping state checker timer (no active polling)');
+    _pollingStateCheckTimer?.cancel();
+    _pollingStateCheckTimer = null;
+  }
+  
+  void _handleUIEvent(WorkflowUIEvent event) {
+    print('┌─────────────────────────────────────────────────────────');
+    print('│ [UI_EVENT] Received event from bridge');
+    print('├─────────────────────────────────────────────────────────');
+    print('│ Type: ${event.type}');
+    print('│ Instance ID: ${event.instanceId}');
+    print('│ Page ID: ${event.pageId}');
+    print('│ Has Page Data: ${event.pageData != null}');
+    print('└─────────────────────────────────────────────────────────\n');
+    
+    switch (event.type) {
+      case WorkflowUIEventType.navigate:
+        // Extract instance ID from event
+        if (event.instanceId != null) {
+          setState(() {
+            _currentInstanceId = event.instanceId!;
+            _isPollingActive = true; // Polling starts on workflow init
+          });
+          _updateStatus('🎯 Navigation event received - refreshing workflow...');
+          _startPollingStateChecker(); // Restart checker for new workflow
+          _refreshWorkflow();
+        }
+        break;
+        
+      case WorkflowUIEventType.updateData:
+        // Automatic data update from long polling
+        _updateStatus('🔄 Auto-update from long polling - refreshing...');
+        if (_currentInstanceId != null) {
+          _refreshWorkflow();
+        }
+        break;
+        
+      case WorkflowUIEventType.error:
+        _updateStatus('❌ Error: ${event.error}');
+        break;
+        
+      case WorkflowUIEventType.loading:
+        // Handle loading state if needed
+        setState(() {
+          _isLoading = event.isLoading;
+        });
+        break;
+        
+      case WorkflowUIEventType.silent:
+        // Silent event - workflow initialized but no page navigation
+        print('[UI_EVENT] Silent event received - workflow initialized');
+        if (event.instanceId != null) {
+          setState(() {
+            _currentInstanceId = event.instanceId!;
+            _isPollingActive = true; // Polling starts on workflow init
+          });
+          _updateStatus('✅ Workflow initialized via silent event - fetching details...');
+          _startPollingStateChecker(); // Restart checker for new workflow
+          _refreshWorkflow();
+        }
+        break;
+        
+      case WorkflowUIEventType.showDialog:
+        // Handle dialog if needed
+        print('[UI_EVENT] Dialog event received');
+        break;
+    }
   }
 
   void _updateStatus(String status) {
@@ -57,24 +246,38 @@ class _VNextIntegrationTestPageState extends State<VNextIntegrationTestPage> {
     });
   }
 
+  /// Generate required vNext headers as per Postman collection
+  Map<String, String> _generateVNextHeaders() {
+    const uuid = Uuid();
+    return {
+      'Accept-Language': 'tr-TR',
+      'X-Request-Id': uuid.v4(),
+      'X-Device-Id': uuid.v4(),
+      'X-Token-Id': uuid.v4(),
+      'X-Device-Info': 'Flutter Test Client',
+      'X-Forwarded-For': '127.0.0.1',
+    };
+  }
+
   /// Step 1: Initialize vNext OAuth workflow
   Future<void> _initializeWorkflow() async {
+    print('\n========== INIT WORKFLOW CALLED ==========');
     setState(() {
       _isLoading = true;
       _workflowInstance = null;
       _extensions = null;
-      _viewData = null;
-      _instanceData = null;
+      _currentInstanceId = null;
     });
 
-    _updateStatus('Initializing OAuth workflow...');
+    _updateStatus('Initializing workflow via WorkflowFlutterBridge (NeoClient pattern)...');
 
     try {
-      final response = await _vNextClient!.initWorkflow(
-        domain: _domainController.text,
+      print('[INIT] Calling _bridge.initWorkflow()...');
+      
+      // ✅ Use bridge instead of direct router call (matches NeoClient)
+      await _bridge!.initWorkflow(
         workflowName: 'oauth-authentication',
-        key: 'test-oauth-${DateTime.now().millisecondsSinceEpoch}',
-        attributes: {
+        parameters: {
           'username': '34987491778',
           'password': '112233',
           'grant_type': 'password',
@@ -82,47 +285,29 @@ class _VNextIntegrationTestPageState extends State<VNextIntegrationTestPage> {
           'client_secret': '1q2w3e*',
           'scope': 'openid profile product-api',
         },
+        headers: _generateVNextHeaders(),
+        uiConfig: const WorkflowUIConfig(
+          displayLoading: false, // We manage loading ourselves for demo purposes
+        ),
       );
-
-      if (response.isSuccess) {
-        final initResponse = response.asSuccess.data;
-        final instanceId = initResponse['id'] as String?;
-        
-        if (instanceId != null) {
-          _updateStatus('✅ Workflow initialized, fetching details...');
-          
-          // Fetch full workflow instance details
-          final instanceResponse = await _vNextClient!.getWorkflowInstance(
-            domain: _domainController.text,
-            workflowName: 'oauth-authentication',
-            instanceId: instanceId,
-          );
-          
-          if (instanceResponse.isSuccess) {
-            _workflowInstance = instanceResponse.asSuccess.data;
-            
-            // Parse extensions if they exist
-            final extensionsData = _workflowInstance!['extensions'] as Map<String, dynamic>?;
-            if (extensionsData != null) {
-              _extensions = VNextExtensions.fromJson(extensionsData);
-            }
-            
-            _updateStatus('✅ Workflow initialized and details loaded successfully');
-          } else {
-            _updateStatus('❌ Failed to fetch workflow details');
-          }
-        } else {
-          _updateStatus('❌ No instance ID returned from initialization');
-        }
-      } else {
-        _updateStatus('❌ Failed to initialize workflow: ${response.asError.error.error.description}');
-      }
-    } catch (e) {
-      _updateStatus('💥 Error: $e');
+      
+      print('[INIT] Bridge.initWorkflow() completed');
+      print('[INIT] Current instance ID: $_currentInstanceId');
+      
+      // Bridge will emit a navigate or silent event
+      // _handleUIEvent will be called automatically
+      // Long polling starts automatically in WorkflowRouter
+      _updateStatus('✅ Workflow initialized - waiting for UI events from bridge...');
+      
+    } catch (e, stackTrace) {
+      _updateStatus('💥 Error during initialization: $e');
+      print('[INIT] ❌ Exception: $e');
+      print('[INIT] ❌ Stack trace: $stackTrace');
     } finally {
       setState(() {
         _isLoading = false;
       });
+      print('========== INIT WORKFLOW END ==========\n');
     }
   }
 
@@ -200,8 +385,13 @@ class _VNextIntegrationTestPageState extends State<VNextIntegrationTestPage> {
 
   /// Step 4: Refresh workflow instance
   Future<void> _refreshWorkflow() async {
-    if (_workflowInstance == null) {
-      _updateStatus('⚠️ No workflow to refresh');
+    print('[REFRESH] _refreshWorkflow called');
+    print('[REFRESH] _currentInstanceId: $_currentInstanceId');
+    print('[REFRESH] _workflowInstance: ${_workflowInstance != null ? "exists" : "null"}');
+    
+    if (_currentInstanceId == null) {
+      print('[REFRESH] ❌ No instance ID available');
+      _updateStatus('⚠️ No workflow instance to refresh');
       return;
     }
 
@@ -212,19 +402,38 @@ class _VNextIntegrationTestPageState extends State<VNextIntegrationTestPage> {
     _updateStatus('Refreshing workflow...');
 
     try {
-      final instanceId = _workflowInstance!['id'] as String;
+      print('[REFRESH] Fetching workflow instance: $_currentInstanceId');
       final response = await _vNextClient!.getWorkflowInstance(
         domain: _domainController.text,
         workflowName: 'oauth-authentication',
-        instanceId: instanceId,
+        instanceId: _currentInstanceId!,
+        headers: _generateVNextHeaders(),
       );
+      
+      print('[REFRESH] Response received: ${response.isSuccess ? "success" : "error"}');
 
       if (response.isSuccess) {
+        final previousStatus = _extensions?.status;
+        
         _workflowInstance = response.asSuccess.data;
         _extensions = VNextExtensions.fromJson(
           _workflowInstance!['extensions'] as Map<String, dynamic>
         );
-        _updateStatus('✅ Workflow refreshed successfully');
+        
+        final newStatus = _extensions?.status;
+        
+        // Log status change if it happened
+        if (previousStatus != null && previousStatus != newStatus) {
+          print('[POLLING] 🔄 Status changed: $previousStatus → $newStatus');
+        }
+        
+        // Status display - show actual polling state
+        if (newStatus == 'B') {
+          final pollingStatus = _isPollingActive ? 'long polling active' : 'long polling stopped';
+          _updateStatus('🔄 Workflow refreshed - BLOCKED ($pollingStatus)');
+        } else {
+          _updateStatus('✅ Workflow refreshed - Status: $newStatus');
+        }
       } else {
         _updateStatus('❌ Failed to refresh workflow');
       }
@@ -235,6 +444,131 @@ class _VNextIntegrationTestPageState extends State<VNextIntegrationTestPage> {
         _isLoading = false;
       });
     }
+  }
+
+  /// Approve Push Notification MFA
+  Future<void> _approvePushMfa() async {
+    final subflowInfo = _getActiveSubflowInfo();
+    if (subflowInfo == null) {
+      _updateStatus('⚠️ No active MFA subflow found');
+      return;
+    }
+
+    setState(() {
+      _isLoading = true;
+    });
+
+    print('[DEBUG] Approving MFA for subflow:');
+    print('  Domain: ${subflowInfo['domain']}');
+    print('  Workflow: ${subflowInfo['workflowName']}');
+    print('  Instance ID: ${subflowInfo['instanceId']}');
+    print('  Transition: push-approved');
+
+    _updateStatus('Approving push notification MFA...');
+
+    try {
+      final response = await _vNextClient!.postTransition(
+        domain: subflowInfo['domain'] as String,
+        workflowName: subflowInfo['workflowName'] as String,
+        instanceId: subflowInfo['instanceId'] as String,
+        transitionKey: 'push-approved',
+        data: {},
+        headers: _generateVNextHeaders(),
+      );
+      
+      print('[DEBUG] MFA approval response status: ${response.isSuccess ? "SUCCESS" : "ERROR"}');
+
+      if (response.isSuccess) {
+        _updateStatus('✅ Push MFA approved! Refreshing workflow...');
+        
+        // Wait a bit for the backend to process
+        await Future.delayed(const Duration(milliseconds: 500));
+        
+        // Refresh to get updated state
+        await _refreshWorkflow();
+      } else {
+        _updateStatus('❌ Failed to approve MFA: ${response.asError.error.error.description}');
+      }
+    } catch (e) {
+      _updateStatus('💥 Error approving MFA: $e');
+    } finally {
+      setState(() {
+        _isLoading = false;
+      });
+    }
+  }
+
+  /// Deny Push Notification MFA
+  Future<void> _denyPushMfa() async {
+    final subflowInfo = _getActiveSubflowInfo();
+    if (subflowInfo == null) {
+      _updateStatus('⚠️ No active MFA subflow found');
+      return;
+    }
+
+    setState(() {
+      _isLoading = true;
+    });
+
+    _updateStatus('Denying push notification MFA...');
+
+    try {
+      final response = await _vNextClient!.postTransition(
+        domain: subflowInfo['domain'] as String,
+        workflowName: subflowInfo['workflowName'] as String,
+        instanceId: subflowInfo['instanceId'] as String,
+        transitionKey: 'push-denied',
+        data: {},
+        headers: _generateVNextHeaders(),
+      );
+
+      if (response.isSuccess) {
+        _updateStatus('❌ Push MFA denied. Authentication will fail.');
+        
+        // Wait a bit for the backend to process
+        await Future.delayed(const Duration(milliseconds: 500));
+        
+        // Refresh to get updated state
+        await _refreshWorkflow();
+      } else {
+        _updateStatus('❌ Failed to deny MFA: ${response.asError.error.error.description}');
+      }
+    } catch (e) {
+      _updateStatus('💥 Error denying MFA: $e');
+    } finally {
+      setState(() {
+        _isLoading = false;
+      });
+    }
+  }
+
+  /// Get active subflow information for MFA
+  Map<String, dynamic>? _getActiveSubflowInfo() {
+    if (_workflowInstance == null) return null;
+    
+    final extensions = _workflowInstance!['extensions'] as Map<String, dynamic>?;
+    if (extensions == null) return null;
+    
+    final activeCorrelations = extensions['activeCorrelations'] as List<dynamic>?;
+    if (activeCorrelations == null || activeCorrelations.isEmpty) return null;
+    
+    final correlation = activeCorrelations.first as Map<String, dynamic>;
+    
+    return {
+      'instanceId': correlation['subFlowInstanceId'],
+      'workflowName': correlation['subFlowName'],
+      'domain': correlation['subFlowDomain'],
+      'parentState': correlation['parentState'],
+      'isCompleted': correlation['isCompleted'] ?? false,
+    };
+  }
+
+  /// Check if workflow is in Push MFA state
+  bool _isInPushMfaState() {
+    if (_extensions == null) return false;
+    
+    final currentState = _extensions!.currentState;
+    return currentState == 'push-notification-mfa';
   }
 
   @override
@@ -317,6 +651,28 @@ class _VNextIntegrationTestPageState extends State<VNextIntegrationTestPage> {
                           icon: const Icon(Icons.refresh),
                           label: const Text('Refresh Workflow'),
                         ),
+                        // MFA Approve Button (shown only in push MFA state)
+                        if (_isInPushMfaState())
+                          ElevatedButton.icon(
+                            onPressed: _isLoading ? null : _approvePushMfa,
+                            icon: const Icon(Icons.check_circle),
+                            label: const Text('Approve MFA'),
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: Colors.green,
+                              foregroundColor: Colors.white,
+                            ),
+                          ),
+                        // MFA Deny Button (shown only in push MFA state)
+                        if (_isInPushMfaState())
+                          ElevatedButton.icon(
+                            onPressed: _isLoading ? null : _denyPushMfa,
+                            icon: const Icon(Icons.cancel),
+                            label: const Text('Deny MFA'),
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: Colors.red,
+                              foregroundColor: Colors.white,
+                            ),
+                          ),
                       ],
                     ),
                   ],
@@ -331,30 +687,57 @@ class _VNextIntegrationTestPageState extends State<VNextIntegrationTestPage> {
               color: Colors.grey.shade100,
               child: Padding(
                 padding: const EdgeInsets.all(16),
-                child: Row(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    if (_isLoading) 
-                      const SizedBox(
-                        width: 20,
-                        height: 20,
-                        child: CircularProgressIndicator(strokeWidth: 2),
-                      )
-                    else
-                      Icon(
-                        _status.startsWith('✅') ? Icons.check_circle : 
-                        _status.startsWith('❌') || _status.startsWith('💥') ? Icons.error :
-                        Icons.info,
-                        color: _status.startsWith('✅') ? Colors.green :
-                               _status.startsWith('❌') || _status.startsWith('💥') ? Colors.red :
-                               Colors.blue,
-                      ),
-                    const SizedBox(width: 8),
-                    Expanded(
-                      child: Text(
-                        _status,
-                        style: const TextStyle(fontSize: 16),
-                      ),
+                    Row(
+                      children: [
+                        if (_isLoading) 
+                          const SizedBox(
+                            width: 20,
+                            height: 20,
+                            child: CircularProgressIndicator(strokeWidth: 2),
+                          )
+                        else
+                          Icon(
+                            _status.startsWith('✅') ? Icons.check_circle : 
+                            _status.startsWith('❌') || _status.startsWith('💥') ? Icons.error :
+                            Icons.info,
+                            color: _status.startsWith('✅') ? Colors.green :
+                                   _status.startsWith('❌') || _status.startsWith('💥') ? Colors.red :
+                                   Colors.blue,
+                          ),
+                        const SizedBox(width: 8),
+                        Expanded(
+                          child: Text(
+                            _status,
+                            style: const TextStyle(fontSize: 16),
+                          ),
+                        ),
+                      ],
                     ),
+                    // Polling status indicator
+                    if (_currentInstanceId != null) ...[
+                      const SizedBox(height: 8),
+                      Row(
+                        children: [
+                          Icon(
+                            _isPollingActive ? Icons.sync : Icons.sync_disabled,
+                            size: 16,
+                            color: _isPollingActive ? Colors.green : Colors.grey,
+                          ),
+                          const SizedBox(width: 4),
+                          Text(
+                            _isPollingActive ? 'Long polling active' : 'Long polling stopped',
+                            style: TextStyle(
+                              fontSize: 12,
+                              color: _isPollingActive ? Colors.green.shade700 : Colors.grey.shade600,
+                              fontWeight: FontWeight.w500,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ],
                   ],
                 ),
               ),
@@ -379,6 +762,88 @@ class _VNextIntegrationTestPageState extends State<VNextIntegrationTestPage> {
                           'Current State': _extensions?.currentState ?? 'Unknown',
                           'Status': _extensions?.status ?? 'Unknown',
                         },
+                      ),
+                      const SizedBox(height: 16),
+                    ],
+
+                    // MFA State Alert Card
+                    if (_isInPushMfaState()) ...[
+                      Card(
+                        color: Colors.blue.shade50,
+                        child: Padding(
+                          padding: const EdgeInsets.all(16),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Row(
+                                children: [
+                                  Icon(Icons.security, color: Colors.blue.shade700, size: 32),
+                                  const SizedBox(width: 12),
+                                  Expanded(
+                                    child: Column(
+                                      crossAxisAlignment: CrossAxisAlignment.start,
+                                      children: [
+                                        Text(
+                                          'Multi-Factor Authentication Required',
+                                          style: TextStyle(
+                                            fontSize: 18,
+                                            fontWeight: FontWeight.bold,
+                                            color: Colors.blue.shade700,
+                                          ),
+                                        ),
+                                        const SizedBox(height: 4),
+                                        Text(
+                                          'Subflow: ${_getActiveSubflowInfo()?['workflowName'] ?? 'Unknown'}',
+                                          style: TextStyle(
+                                            fontSize: 12,
+                                            color: Colors.blue.shade600,
+                                            fontFamily: 'monospace',
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+                                ],
+                              ),
+                              const SizedBox(height: 12),
+                              const Text(
+                                'A push notification has been sent to the registered device. '
+                                'Please approve or deny the authentication request using the buttons above.',
+                                style: TextStyle(fontSize: 14),
+                              ),
+                              const SizedBox(height: 12),
+                              Container(
+                                padding: const EdgeInsets.all(8),
+                                decoration: BoxDecoration(
+                                  color: Colors.white,
+                                  borderRadius: BorderRadius.circular(4),
+                                  border: Border.all(color: Colors.blue.shade200),
+                                ),
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Text(
+                                      'Subflow Instance ID:',
+                                      style: TextStyle(
+                                        fontSize: 12,
+                                        fontWeight: FontWeight.bold,
+                                        color: Colors.grey.shade700,
+                                      ),
+                                    ),
+                                    const SizedBox(height: 4),
+                                    SelectableText(
+                                      _getActiveSubflowInfo()?['instanceId'] ?? 'Unknown',
+                                      style: const TextStyle(
+                                        fontSize: 11,
+                                        fontFamily: 'monospace',
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
                       ),
                       const SizedBox(height: 16),
                     ],
@@ -545,6 +1010,8 @@ class _MockNeoNetworkManager implements NeoNetworkManager {
   Future<NeoResponse> call(NeoHttpCall neoCall) async {
     String url;
     
+    print('[NETWORK] Endpoint: ${neoCall.endpoint}');
+    
     switch (neoCall.endpoint) {
       case 'vnext-init-workflow':
         final domain = neoCall.pathParameters?['DOMAIN'] ?? 'core';
@@ -556,6 +1023,16 @@ class _MockNeoNetworkManager implements NeoNetworkManager {
         final workflowName = neoCall.pathParameters?['WORKFLOW_NAME'] ?? 'test';
         final instanceId = neoCall.pathParameters?['INSTANCE_ID'] ?? 'test';
         url = '$apiBasePath/$domain/workflows/$workflowName/instances/$instanceId';
+        break;
+      case 'vnext-post-transition':
+        final domain = neoCall.pathParameters?['DOMAIN'] ?? 'core';
+        final workflowName = neoCall.pathParameters?['WORKFLOW_NAME'] ?? 'test';
+        final instanceId = neoCall.pathParameters?['INSTANCE_ID'] ?? 'test';
+        final transitionKey = neoCall.pathParameters?['TRANSITION_KEY'] ?? 'transition';
+        url = '$apiBasePath/$domain/workflows/$workflowName/instances/$instanceId/transitions/$transitionKey';
+        print('[NETWORK] POST Transition URL: $url');
+        print('[NETWORK] Transition Key: $transitionKey');
+        print('[NETWORK] Body: ${jsonEncode(neoCall.body)}');
         break;
       case 'vnext-direct-href':
         final href = neoCall.pathParameters?['HREF'] ?? '';
@@ -577,7 +1054,26 @@ class _MockNeoNetworkManager implements NeoNetworkManager {
       http.Response response;
       Uri uri = Uri.parse(url);
       
-      if (neoCall.body != null && neoCall.body.isNotEmpty) {
+      // Determine HTTP method based on endpoint type
+      String method;
+      if (neoCall.endpoint == 'vnext-post-transition') {
+        method = 'PATCH';
+      } else if (neoCall.endpoint == 'vnext-init-workflow') {
+        method = 'POST';
+      } else {
+        method = 'GET';
+      }
+      
+      print('[NETWORK] Making request to: $url');
+      print('[NETWORK] Method: $method');
+      
+      if (method == 'PATCH') {
+        response = await httpClient.patch(
+          uri,
+          headers: {'Content-Type': 'application/json', ...neoCall.headerParameters},
+          body: jsonEncode(neoCall.body),
+        );
+      } else if (method == 'POST') {
         response = await httpClient.post(
           uri,
           headers: {'Content-Type': 'application/json', ...neoCall.headerParameters},
@@ -590,16 +1086,21 @@ class _MockNeoNetworkManager implements NeoNetworkManager {
         );
       }
       
+      print('[NETWORK] Response status: ${response.statusCode}');
+      print('[NETWORK] Response body length: ${response.body.length}');
+      
       if (response.statusCode >= 200 && response.statusCode < 300) {
         final data = response.body.isNotEmpty ? jsonDecode(response.body) : {};
         return NeoResponse.success(data, responseHeaders: {}, statusCode: response.statusCode);
       } else {
+        print('[NETWORK] Error response: ${response.body}');
         return NeoResponse.error(
           NeoError(responseCode: response.statusCode),
           responseHeaders: {},
         );
       }
     } catch (e) {
+      print('[NETWORK] Exception: $e');
       return NeoResponse.error(const NeoError(responseCode: 500), responseHeaders: {});
     }
   }
@@ -619,6 +1120,46 @@ class _MockNeoNetworkManager implements NeoNetworkManager {
   
   @override
   bool get isTokenExpired => false;
+  
+  @override
+  dynamic noSuchMethod(Invocation invocation) => null;
+}
+
+/// Mock HTTP Client Config for WorkflowRouter
+class _MockHttpClientConfig implements HttpClientConfig {
+  @override
+  WorkflowEngineConfig getWorkflowConfig(String workflowName) {
+    return WorkflowEngineConfig(
+      workflowName: workflowName,
+      engine: 'vnext',
+      config: {
+        'domain': 'core',
+        'baseUrl': 'http://localhost:4201',
+        'pollingIntervalSeconds': 5, // Poll every 5 seconds
+        'pollingDurationSeconds': 20, // Stop polling after 20 seconds
+        'maxConsecutiveErrors': 10,
+        'requestTimeoutSeconds': 30,
+      },
+    );
+  }
+  
+  @override
+  dynamic noSuchMethod(Invocation invocation) => null;
+}
+
+/// Mock V1 Workflow Manager for WorkflowRouter
+class _MockNeoWorkflowManager implements NeoWorkflowManager {
+  @override
+  String get instanceId => 'mock-instance-id';
+  
+  @override
+  String get subFlowInstanceId => 'mock-subflow-instance-id';
+  
+  @override
+  void setInstanceId(String? id, {bool isSubFlow = false}) {}
+  
+  @override
+  void setWorkflowName(String name, {bool isSubFlow = false}) {}
   
   @override
   dynamic noSuchMethod(Invocation invocation) => null;

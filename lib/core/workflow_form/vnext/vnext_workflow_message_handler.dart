@@ -13,8 +13,8 @@ import 'package:neo_core/core/network/managers/vnext_long_polling_manager.dart';
 import 'package:neo_core/core/workflow_form/vnext/models/vnext_polling_config.dart';
 import 'package:neo_core/core/workflow_form/vnext/models/vnext_workflow_message.dart';
 import 'package:neo_core/core/workflow_form/vnext/vnext_message_command_factory.dart';
-import 'package:neo_core/core/workflow_form/workflow_flutter_bridge.dart';
 import 'package:neo_core/core/workflow_form/workflow_instance_manager.dart';
+import 'package:neo_core/core/workflow_form/workflow_ui_events.dart';
 
 /// Handles vNext workflow messages and integrates with existing workflow system
 /// 

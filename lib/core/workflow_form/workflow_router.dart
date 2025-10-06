@@ -11,13 +11,18 @@
  */
 
 import 'package:neo_core/core/analytics/neo_logger.dart';
+import 'package:neo_core/core/network/managers/neo_network_manager.dart';
 import 'package:neo_core/core/network/models/http_client_config.dart';
 import 'package:neo_core/core/network/models/neo_error.dart';
 import 'package:neo_core/core/network/models/neo_response.dart';
 import 'package:neo_core/core/workflow_form/neo_workflow_manager.dart';
+import 'package:neo_core/core/workflow_form/vnext/models/vnext_polling_config.dart';
 import 'package:neo_core/core/workflow_form/vnext/vnext_workflow_client.dart';
+import 'package:neo_core/core/workflow_form/vnext/vnext_workflow_message_handler.dart';
+import 'package:neo_core/core/workflow_form/vnext/vnext_workflow_message_handler_factory.dart';
 import 'package:neo_core/core/workflow_form/workflow_engine_config.dart';
 import 'package:neo_core/core/workflow_form/workflow_instance_manager.dart';
+import 'package:neo_core/core/workflow_form/workflow_ui_events.dart';
 
 /// Configuration for workflow routing decisions
 class WorkflowRouterConfig {
@@ -44,6 +49,11 @@ class WorkflowRouter {
   final NeoLogger logger;
   final HttpClientConfig httpClientConfig;
   final WorkflowInstanceManager instanceManager;
+  final NeoNetworkManager networkManager;
+  
+  // vNext message handler factory for automatic updates
+  late final VNextWorkflowMessageHandlerFactory _messageHandlerFactory;
+  VNextWorkflowMessageHandler? _messageHandler;
 
   WorkflowRouter({
     required this.v1Manager,
@@ -51,7 +61,17 @@ class WorkflowRouter {
     required this.logger,
     required this.httpClientConfig,
     required this.instanceManager,
-  });
+    required this.networkManager,
+  }) {
+    // Initialize the message handler factory
+    _messageHandlerFactory = VNextWorkflowMessageHandlerFactory(
+      networkManager: networkManager,
+      instanceManager: instanceManager,
+      logger: logger,
+    );
+    
+    logger.logConsole('[WorkflowRouter] Router initialized with vNext message handler support');
+  }
 
   /// Get workflow engine configuration for a workflow name
   WorkflowEngineConfig _getConfigForWorkflow(String workflowName) {
@@ -97,7 +117,9 @@ class WorkflowRouter {
       
       // Track the instance in instance manager
       if (v2Response is NeoSuccessResponse) {
-        final instanceId = v2Response.data['instanceId'] as String?;
+        // vNext can return either 'id' or 'instanceId'
+        final instanceId = v2Response.data['instanceId'] as String? ?? v2Response.data['id'] as String?;
+        logger.logConsole('[WorkflowRouter] Extracted instanceId for tracking: $instanceId');
         if (instanceId != null) {
           instanceManager.trackInstance(WorkflowInstanceEntity(
             instanceId: instanceId,
@@ -114,6 +136,9 @@ class WorkflowRouter {
               'isSubFlow': isSubFlow,
             },
           ));
+          
+          // Start automatic polling for this instance
+          await _startPollingForInstance(instanceId, workflowName, engineConfig);
         }
       }
       
@@ -267,6 +292,10 @@ class WorkflowRouter {
             'lastTransitionAt': DateTime.now().toIso8601String(),
           },
         );
+        
+        // Ensure polling is active after transition (resume if stopped)
+        final engineConfig = _getConfigForWorkflow(instance.workflowName);
+        await _ensurePollingActive(instance.instanceId, instance.workflowName, engineConfig);
       }
       
       return _convertV2ToV1Response(v2Response, transitionName: transitionName);
@@ -389,19 +418,23 @@ class WorkflowRouter {
       final v1Data = <String, dynamic>{};
 
       // Core V1 fields from V2 response
-      if (v2Data.containsKey('instanceId')) {
-        v1Data['instanceId'] = v2Data['instanceId'];
+      // vNext can return either 'id' or 'instanceId'
+      final instanceId = v2Data['instanceId'] as String? ?? v2Data['id'] as String?;
+      if (instanceId != null) {
+        v1Data['instanceId'] = instanceId;
         // Store for future use
-        _storeInstanceId(v2Data['instanceId'] as String);
+        _storeInstanceId(instanceId);
       }
 
-      if (v2Data.containsKey('currentState')) {
-        v1Data['state'] = v2Data['currentState'];
+      // vNext can return 'currentState' or 'state'
+      final state = v2Data['currentState'] as String? ?? v2Data['state'] as String?;
+      if (state != null) {
+        v1Data['state'] = state;
       }
 
       // Add V1-specific fields for compatibility
       if (isInit && workflowName != null) {
-        v1Data['init-page-name'] = v2Data['currentState'] ?? workflowName;
+        v1Data['init-page-name'] = state ?? workflowName;
       }
 
       v1Data['navigation'] = 'push';
@@ -492,7 +525,18 @@ class WorkflowRouter {
 
   /// Terminate a specific workflow instance
   void terminateInstance(String instanceId, {String? reason}) {
+    logger.logConsole('[WorkflowRouter] Terminating instance: $instanceId (reason: ${reason ?? "not specified"})');
+    
+    // Get instance to check engine type
+    final instance = instanceManager.getInstance(instanceId);
+    
+    // Terminate in instance manager
     instanceManager.terminateInstance(instanceId, reason: reason);
+    
+    // Stop polling if vNext instance
+    if (instance?.engine == WorkflowEngine.vnext) {
+      _stopPollingForInstance(instanceId);
+    }
   }
 
   /// Get workflow instance statistics
@@ -535,7 +579,122 @@ class WorkflowRouter {
     return _getConfigForWorkflow(workflowName);
   }
 
+  /// Get the message handler's UI event stream (for bridge integration)
+  Stream<WorkflowUIEvent>? get vNextUIEventStream => _messageHandler?.uiEvents;
+
+  /// Dispose router and cleanup resources
+  Future<void> dispose() async {
+    logger.logConsole('[WorkflowRouter] Disposing router and cleaning up resources');
+    
+    // Stop all polling and cleanup message handler
+    await _messageHandlerFactory.dispose();
+    _messageHandler = null;
+    
+    // Cleanup instance manager
+    instanceManager.dispose();
+    
+    logger.logConsole('[WorkflowRouter] Router disposed successfully');
+  }
+
   // Helper methods
+  
+  /// Start polling for a vNext workflow instance
+  Future<void> _startPollingForInstance(
+    String instanceId,
+    String workflowName,
+    WorkflowEngineConfig engineConfig,
+  ) async {
+    try {
+      logger.logConsole('[WorkflowRouter] Starting polling for instance: $instanceId');
+      
+      // Get or create message handler
+      _messageHandler ??= _messageHandlerFactory.getOrCreateHandler();
+      
+      // Extract polling config from engine config
+      final pollingConfig = _extractPollingConfig(engineConfig);
+      
+      // Start handling messages for this instance
+      await _messageHandler!.startHandling(
+        instanceId,
+        workflowName: workflowName,
+        config: pollingConfig,
+      );
+      
+      logger.logConsole('[WorkflowRouter] Polling started successfully for instance: $instanceId');
+    } catch (e, stackTrace) {
+      logger.logError('[WorkflowRouter] Failed to start polling for instance $instanceId: $e\nStackTrace: $stackTrace');
+      // Don't rethrow - polling failure shouldn't break the workflow initialization
+    }
+  }
+
+  /// Ensure polling is active for an instance (resume if needed)
+  Future<void> _ensurePollingActive(
+    String instanceId,
+    String workflowName,
+    WorkflowEngineConfig engineConfig,
+  ) async {
+    try {
+      if (_messageHandler == null) {
+        // Handler not initialized, start polling
+        await _startPollingForInstance(instanceId, workflowName, engineConfig);
+        return;
+      }
+      
+      // Check if instance is already being polled
+      final activeInstances = _messageHandler!.getActiveInstances();
+      if (!activeInstances.contains(instanceId)) {
+        logger.logConsole('[WorkflowRouter] Instance $instanceId not being polled, starting polling');
+        await _startPollingForInstance(instanceId, workflowName, engineConfig);
+      } else {
+        logger.logConsole('[WorkflowRouter] Instance $instanceId already being polled');
+      }
+    } catch (e, stackTrace) {
+      logger.logError('[WorkflowRouter] Failed to ensure polling for instance $instanceId: $e\nStackTrace: $stackTrace');
+    }
+  }
+
+  /// Stop polling for a specific instance
+  Future<void> _stopPollingForInstance(String instanceId) async {
+    try {
+      if (_messageHandler != null) {
+        logger.logConsole('[WorkflowRouter] Stopping polling for instance: $instanceId');
+        await _messageHandler!.stopHandling(instanceId);
+        logger.logConsole('[WorkflowRouter] Polling stopped for instance: $instanceId');
+      }
+    } catch (e, stackTrace) {
+      logger.logError('[WorkflowRouter] Failed to stop polling for instance $instanceId: $e\nStackTrace: $stackTrace');
+    }
+  }
+
+  /// Extract polling configuration from workflow engine config
+  VNextPollingConfig _extractPollingConfig(WorkflowEngineConfig engineConfig) {
+    final config = engineConfig.config;
+    
+    // Extract polling parameters from config or use defaults
+    final pollingIntervalSeconds = config['pollingIntervalSeconds'] as int? ?? 5;
+    final pollingDurationSeconds = config['pollingDurationSeconds'] as int? ?? 60;
+    final maxConsecutiveErrors = config['maxConsecutiveErrors'] as int? ?? 5;
+    final requestTimeoutSeconds = config['requestTimeoutSeconds'] as int? ?? 30;
+    
+    return VNextPollingConfig(
+      interval: Duration(seconds: pollingIntervalSeconds),
+      duration: Duration(seconds: pollingDurationSeconds),
+      maxConsecutiveErrors: maxConsecutiveErrors,
+      requestTimeout: Duration(seconds: requestTimeoutSeconds),
+    );
+  }
+
+  /// Check if polling is active for a specific instance
+  bool isPollingActive(String instanceId) {
+    if (_messageHandler == null) return false;
+    return _messageHandler!.getActiveInstances().contains(instanceId);
+  }
+
+  /// Get all active polling instance IDs
+  List<String> getActivePollingInstances() {
+    if (_messageHandler == null) return [];
+    return _messageHandler!.getActiveInstances();
+  }
 
   /// Parse string status to WorkflowInstanceStatus enum
   WorkflowInstanceStatus? _parseWorkflowStatus(String? statusString) {

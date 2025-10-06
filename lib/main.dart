@@ -15,6 +15,7 @@ import 'package:neo_core/neo_core.dart';
 
 // Example/Demo imports - only the working vNext comprehensive test
 import 'package:neo_core/examples/vnext_comprehensive/vnext_comprehensive_test_page.dart';
+import 'package:neo_core/examples/vnext_integration_test/vnext_integration_test_page.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -78,6 +79,23 @@ class MainNavigationPage extends StatelessWidget {
                 );
               },
               color: Colors.deepOrange,
+            ),
+
+            const SizedBox(height: 20),
+
+            // vNext Integration Test Page - New architecture testing
+            _buildDemoCard(
+              context: context,
+              title: '🔧 vNext Integration Test',
+              subtitle: 'Test vNext integration architecture',
+              description: 'Test the new engine switching approach, component fetching from vNext extensions, and minimal client change integration patterns.',
+              onPressed: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (context) => const VNextIntegrationTestPage()),
+                );
+              },
+              color: Colors.teal,
             ),
 
             const SizedBox(height: 40),

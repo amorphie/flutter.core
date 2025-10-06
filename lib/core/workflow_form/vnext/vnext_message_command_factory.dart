@@ -8,11 +8,11 @@
  */
 
 import 'package:neo_core/core/analytics/neo_logger.dart';
+import 'package:neo_core/core/navigation/models/neo_navigation_type.dart';
 import 'package:neo_core/core/network/models/neo_signalr_transition.dart';
 import 'package:neo_core/core/network/models/neo_signalr_transition_state_type.dart';
 import 'package:neo_core/core/workflow_form/vnext/models/vnext_workflow_message.dart';
-import 'package:neo_core/core/workflow_form/workflow_flutter_bridge.dart';
-import 'package:neo_core/core/navigation/models/neo_navigation_type.dart';
+import 'package:neo_core/core/workflow_form/workflow_ui_events.dart';
 
 /// Factory for converting vNext workflow messages to domain objects
 /// 
@@ -68,11 +68,10 @@ class VNextMessageCommandFactory {
       switch (message.type) {
         case VNextWorkflowMessageType.transition:
         case VNextWorkflowMessageType.stateChange:
-          if (message.requiresNavigation) {
-            return WorkflowUIEvent(
-              type: WorkflowUIEventType.navigate,
+          if (message.requiresNavigation && message.pageId != null) {
+            return WorkflowUIEvent.navigate(
+              pageId: message.pageId!,
               instanceId: message.instanceId,
-              pageId: message.pageId,
               pageData: message.data,
               navigationType: _determineNavigationType(message),
             );
@@ -80,10 +79,9 @@ class VNextMessageCommandFactory {
           break;
 
         case VNextWorkflowMessageType.completion:
-          return WorkflowUIEvent(
-            type: WorkflowUIEventType.navigate,
+          return WorkflowUIEvent.navigate(
+            pageId: message.state ?? 'completion',
             instanceId: message.instanceId,
-            pageId: message.state, // Use state as pageId for completion
             pageData: {
               ...message.data,
               'workflowCompleted': true,
@@ -92,21 +90,15 @@ class VNextMessageCommandFactory {
           );
 
         case VNextWorkflowMessageType.data:
-          return WorkflowUIEvent(
-            type: WorkflowUIEventType.updateData,
-            instanceId: message.instanceId,
-            pageId: message.pageId,
+          return WorkflowUIEvent.updateData(
             pageData: message.data,
+            instanceId: message.instanceId,
           );
 
         case VNextWorkflowMessageType.error:
-          return WorkflowUIEvent(
-            type: WorkflowUIEventType.error,
+          return WorkflowUIEvent.error(
+            error: message.error ?? 'Unknown workflow error',
             instanceId: message.instanceId,
-            data: {
-              'error': message.error,
-              'timestamp': message.timestamp.toIso8601String(),
-            },
           );
       }
 
