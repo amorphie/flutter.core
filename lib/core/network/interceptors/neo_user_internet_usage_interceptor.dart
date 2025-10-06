@@ -237,7 +237,7 @@ class NeoUserInternetUsageInterceptor {
     }
 
     try {
-      final int totalBytes = utf8.encode(data).length;
+      final int totalBytes = _calculateStringBytes(data);
 
       _sendToIsolate({
         _Constants.isolateFunctionTypeFieldName: _Constants.isolateAddUsageFunctionName,
@@ -263,28 +263,28 @@ class NeoUserInternetUsageInterceptor {
     int size = 0;
 
     // Calculate URL size
-    size += neoCall.endpoint.length;
+    size += _calculateStringBytes(neoCall.endpoint);
 
     // Calculate headers size
     for (final entry in neoCall.headerParameters.entries) {
-      size += entry.key.length + entry.value.length + 4; // +4 for ": " and "\r\n"
+      size += _calculateStringBytes(entry.key) + _calculateStringBytes(entry.value) + 4; // +4 for ": " and "\r\n"
     }
 
     // Calculate body size
     if (neoCall.body.isNotEmpty) {
       try {
         final bodyJson = jsonEncode(neoCall.body);
-        size += bodyJson.length;
+        size += _calculateStringBytes(bodyJson);
       } catch (e) {
         // If JSON encoding fails, estimate based on object
-        size += neoCall.body.toString().length;
+        size += _calculateStringBytes(neoCall.body.toString());
       }
     }
 
     // Calculate query parameters size
     for (final queryProvider in neoCall.queryProviders) {
       for (final entry in queryProvider.queryParameters.entries) {
-        size += entry.key.length + entry.value.toString().length + 1; // +1 for "="
+        size += _calculateStringBytes(entry.key) + _calculateStringBytes(entry.value.toString()) + 1; // +1 for "="
       }
     }
 
@@ -295,11 +295,11 @@ class NeoUserInternetUsageInterceptor {
     int size = 0;
 
     // Calculate response body size
-    size += response.bodyBytes.length;
+    size += response.bodyBytes.lengthInBytes;
 
     // Calculate headers size
     for (final entry in response.headers.entries) {
-      size += entry.key.length + entry.value.length + 4; // +4 for ": " and "\r\n"
+      size += _calculateStringBytes(entry.key) + _calculateStringBytes(entry.value) + 4; // +4 for ": " and "\r\n"
     }
 
     // Add status line size (approximate)
@@ -308,10 +308,12 @@ class NeoUserInternetUsageInterceptor {
 
   int _calculateTransitionsBytes(List<Object?> transitions) {
     final fullJsonString = jsonEncode(transitions);
-    final transitionsSize = utf8.encode(fullJsonString).length;
+    final transitionsSize = _calculateStringBytes(fullJsonString);
 
     return transitionsSize;
   }
+
+  int _calculateStringBytes(String data) => utf8.encode(data).length;
 
   Future<void> resetUsage() async {
     await _usageStorage?.resetUsage();
