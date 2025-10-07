@@ -12,31 +12,25 @@
 
 import 'package:get_it/get_it.dart';
 import 'package:http/http.dart' as http;
-import 'package:neo_core/core/workflow_form/vnext/vnext_config.dart';
 
 /// Minimal application module for vNext dependency injection
 /// This follows the minimal changes approach - no architectural refactoring
+/// vNext configuration is now handled through HttpClientConfig
 class ApplicationModule {
   /// Configure minimal dependencies for vNext integration only
   /// Logger should be registered by client before calling this method
+  /// vNext configuration is extracted from HttpClientConfig
   static Future<GetIt> configureDependencies(
     GetIt getIt, {
-    VNextConfig? vNextConfig,
     bool isDevelopment = false,
   }) async {
-    // Use provided config or create from environment
-    final config = vNextConfig ?? VNextConfig.fromEnvironment();
-
     // Register HTTP client
     if (!getIt.isRegistered<http.Client>()) {
       getIt.registerSingleton<http.Client>(http.Client());
     }
 
-    // Register vNext configuration
-    getIt.registerSingleton<VNextConfig>(config);
-
     // Note: VNextWorkflowClient registration should be handled by the client application
-    // since it needs access to the proper logger implementation
+    // since it needs access to the proper logger implementation and HttpClientConfig
 
     return getIt;
   }
@@ -45,7 +39,6 @@ class ApplicationModule {
   static Future<GetIt> configureDevelopmentDependencies(GetIt getIt) {
     return configureDependencies(
       getIt,
-      vNextConfig: VNextConfig.development,
       isDevelopment: true,
     );
   }
@@ -54,7 +47,6 @@ class ApplicationModule {
   static Future<GetIt> configureProductionDependencies(GetIt getIt) {
     return configureDependencies(
       getIt,
-      vNextConfig: VNextConfig.fromEnvironment(),
     );
   }
 }

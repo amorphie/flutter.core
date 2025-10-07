@@ -11,11 +11,8 @@
  */
 
 import 'package:flutter/material.dart';
-import 'package:neo_core/neo_core.dart';
-
-// Example/Demo imports - only the working vNext comprehensive test
-import 'package:neo_core/examples/vnext_comprehensive/vnext_comprehensive_test_page.dart';
 import 'package:neo_core/examples/vnext_integration_test/vnext_integration_test_page.dart';
+import 'package:neo_core/neo_core.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -83,12 +80,12 @@ class MainNavigationPage extends StatelessWidget {
 
             const SizedBox(height: 20),
 
-            // vNext Integration Test Page - New architecture testing
+            // vNext Integration Test Page - OAuth workflow testing
             _buildDemoCard(
               context: context,
-              title: '🔧 vNext Integration Test',
-              subtitle: 'Test vNext integration architecture',
-              description: 'Test the new engine switching approach, component fetching from vNext extensions, and minimal client change integration patterns.',
+              title: '🔧 vNext OAuth Integration',
+              subtitle: 'Test OAuth authentication workflow',
+              description: 'Test OAuth2 authentication flow with client validation, MFA (push notification), and automatic polling for workflow state updates.',
               onPressed: () {
                 Navigator.push(
                   context,
@@ -97,6 +94,8 @@ class MainNavigationPage extends StatelessWidget {
               },
               color: Colors.teal,
             ),
+
+            const SizedBox(height: 20),
 
             const SizedBox(height: 40),
 

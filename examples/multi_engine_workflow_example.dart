@@ -49,7 +49,7 @@ class _MultiEngineWorkflowExampleState extends State<MultiEngineWorkflowExample>
     final vNextClient = VNextWorkflowClient(
       baseUrl: 'http://localhost:4201',
       httpClient: http.Client(),
-      logger: SimpleNeoLogger(),
+      logger: SimpleNeoLogger()
     );
 
     // Create V1 workflow manager

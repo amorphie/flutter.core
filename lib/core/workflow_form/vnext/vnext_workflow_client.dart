@@ -46,7 +46,7 @@ class VNextWorkflowClient {
       'tags': tags,
     };
 
-    return await networkManager.call(
+    return networkManager.call(
       NeoHttpCall(
         endpoint: 'vnext-init-workflow',
         pathParameters: {
@@ -70,7 +70,7 @@ class VNextWorkflowClient {
   }) async {
     logger.logConsole('[VNextWorkflowClient] Making transition: $transitionKey for instance: $instanceId');
 
-    return await networkManager.call(
+    return networkManager.call(
       NeoHttpCall(
         endpoint: 'vnext-post-transition',
         pathParameters: {
@@ -94,7 +94,7 @@ class VNextWorkflowClient {
   }) async {
     logger.logConsole('[VNextWorkflowClient] Getting available transitions for instance: $instanceId');
 
-    return await networkManager.call(
+    return networkManager.call(
       NeoHttpCall(
         endpoint: 'vnext-get-available-transitions',
         pathParameters: {
@@ -116,7 +116,7 @@ class VNextWorkflowClient {
   }) async {
     logger.logConsole('[VNextWorkflowClient] Getting workflow instance: $instanceId');
 
-    return await networkManager.call(
+    return networkManager.call(
       NeoHttpCall(
         endpoint: 'vnext-get-workflow-instance',
         pathParameters: {

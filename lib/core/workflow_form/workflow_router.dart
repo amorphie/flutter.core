@@ -24,22 +24,8 @@ import 'package:neo_core/core/workflow_form/workflow_engine_config.dart';
 import 'package:neo_core/core/workflow_form/workflow_instance_manager.dart';
 import 'package:neo_core/core/workflow_form/workflow_ui_events.dart';
 
-/// Configuration for workflow routing decisions
-class WorkflowRouterConfig {
-  final String? vNextBaseUrl;
-  final String? domain;
-
-  WorkflowRouterConfig({
-    this.vNextBaseUrl,
-    this.domain,
-  });
-
-  bool get canUseV2 => 
-      vNextBaseUrl != null && 
-      vNextBaseUrl!.isNotEmpty &&
-      domain != null && 
-      domain!.isNotEmpty;
-}
+// WorkflowRouterConfig removed - configuration is now handled through HttpClientConfig
+// and WorkflowEngineConfig for individual workflows
 
 /// Router that directs workflow operations to V1 or V2 implementations
 /// with configuration-driven engine selection and multi-instance support
