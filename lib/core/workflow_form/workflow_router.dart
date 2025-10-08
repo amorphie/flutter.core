@@ -257,12 +257,19 @@ class WorkflowRouter {
     logger.logConsole('[WorkflowRouter] Routing postTransition to V2 (vNext)');
     
     try {
+      // Remove instanceId from body for vNext client (it goes in URL path)
+      final cleanBody = Map<String, dynamic>.from(body);
+      final removedInstanceId = cleanBody.remove('instanceId');
+      
+      logger.logConsole('[WorkflowRouter] Removed instanceId from body: $removedInstanceId');
+      logger.logConsole('[WorkflowRouter] Clean body for HTTP request: $cleanBody');
+      
       final v2Response = await vNextClient.postTransition(
         domain: instance.domain!,
         workflowName: instance.workflowName,
         instanceId: instance.instanceId,
         transitionKey: transitionName,
-        data: body,
+        data: cleanBody,
         headers: headerParameters,
       );
       

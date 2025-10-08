@@ -315,6 +315,7 @@ class _PollingSession {
       final extensions = data['extensions'] as Map<String, dynamic>?;
       final status = extensions?['status'] as String?;
       final currentState = extensions?['currentState'] as String?;
+      final transitions = extensions?['transitions'] as List<dynamic>?;
       
       if (instanceId != null && status != null) {
         // Create a synthetic message representing the state change
@@ -326,12 +327,62 @@ class _PollingSession {
         );
         messages.add(message);
         logger.logConsole('[PollingSession] State: $currentState, Status: $status');
+        
+        // Check if polling should stop based on workflow status
+        if (_shouldStopPolling(status, transitions)) {
+          logger.logConsole('┌─────────────────────────────────────────────────────────');
+          logger.logConsole('│ [PollingSession] 🛑 Stopping polling - User interaction required');
+          logger.logConsole('├─────────────────────────────────────────────────────────');
+          logger.logConsole('│ Instance: $instanceId');
+          logger.logConsole('│ Status: $status (${_getStatusDescription(status)})');
+          logger.logConsole('│ Current State: $currentState');
+          logger.logConsole('│ Available Transitions: ${transitions?.length ?? 0}');
+          logger.logConsole('│ Reason: Workflow is waiting for user input');
+          logger.logConsole('└─────────────────────────────────────────────────────────\n');
+          
+          // Stop polling for this instance
+          stop(reason: 'user-interaction-required');
+        }
       }
     } catch (e) {
       logger.logError('[PollingSession] Failed to parse instance data: $e');
     }
 
     return messages;
+  }
+  
+  /// Determine if polling should stop based on workflow status
+  bool _shouldStopPolling(String? status, List<dynamic>? transitions) {
+    if (status == null) return false;
+    
+    switch (status.toUpperCase()) {
+      case 'A': // Active - stop if user interaction is required
+        return transitions != null && transitions.isNotEmpty;
+      case 'C': // Completed - always stop
+        return true;
+      case 'E': // Error - always stop
+        return true;
+      case 'B': // Busy/Processing - continue polling
+        return false;
+      case 'S': // Suspended - continue polling (might resume)
+        return false;
+      default:
+        return false; // Unknown status - continue polling to be safe
+    }
+  }
+  
+  /// Get human-readable description of status code
+  String _getStatusDescription(String? status) {
+    if (status == null) return 'Unknown';
+    
+    switch (status.toUpperCase()) {
+      case 'A': return 'Active (waiting for user input)';
+      case 'B': return 'Busy (processing)';
+      case 'C': return 'Completed';
+      case 'E': return 'Error';
+      case 'S': return 'Suspended';
+      default: return 'Unknown ($status)';
+    }
   }
 
   Map<String, dynamic> getStats() {

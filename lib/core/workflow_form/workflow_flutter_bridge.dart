@@ -135,17 +135,18 @@ class WorkflowFlutterBridge {
     required String transitionName,
     required Map<String, dynamic> body,
     Map<String, String>? headers,
+    String? instanceId,
     bool isSubFlow = false,
     WorkflowUIConfig? uiConfig,
   }) async {
     final config = uiConfig ?? const WorkflowUIConfig();
-    final instanceId = body['instanceId'] as String?;
+    final workflowInstanceId = instanceId ?? body['instanceId'] as String?;
     
     _logger.logConsole('[WorkflowFlutterBridge] ========== POST TRANSITION START ==========');
     _logger.logConsole('[WorkflowFlutterBridge] Transition: $transitionName');
     _logger.logConsole('[WorkflowFlutterBridge] Body: $body');
     _logger.logConsole('[WorkflowFlutterBridge] Headers: $headers');
-    _logger.logConsole('[WorkflowFlutterBridge] InstanceId: $instanceId');
+    _logger.logConsole('[WorkflowFlutterBridge] InstanceId: $workflowInstanceId');
     _logger.logConsole('[WorkflowFlutterBridge] IsSubFlow: $isSubFlow');
     _logger.logConsole('[WorkflowFlutterBridge] UIConfig: displayLoading=${config.displayLoading}');
     
@@ -153,7 +154,7 @@ class WorkflowFlutterBridge {
       // Emit loading event if requested
       if (config.displayLoading) {
         _logger.logConsole('[WorkflowFlutterBridge] Emitting loading event: true');
-        _emitLoadingEvent(true, instanceId: instanceId);
+        _emitLoadingEvent(true, instanceId: workflowInstanceId);
       }
 
       _logger.logConsole('[WorkflowFlutterBridge] Calling WorkflowService.postTransition...');
@@ -163,6 +164,7 @@ class WorkflowFlutterBridge {
         transitionName: transitionName,
         body: body,
         headers: headers,
+        instanceId: workflowInstanceId,
         isSubFlow: isSubFlow,
       );
 
@@ -190,7 +192,7 @@ class WorkflowFlutterBridge {
           // Emit navigation event
           _uiEventController.add(WorkflowUIEvent.navigate(
             pageId: pageId,
-            instanceId: result.instanceId ?? instanceId,
+            instanceId: result.instanceId ?? workflowInstanceId,
             navigationType: navigationType,
             useSubNavigator: config.useSubNavigator,
             pageData: _buildPageData(data, null),
@@ -201,26 +203,26 @@ class WorkflowFlutterBridge {
           // Silent success - update data only
           _uiEventController.add(WorkflowUIEvent.updateData(
             pageData: data,
-            instanceId: result.instanceId ?? instanceId,
+            instanceId: result.instanceId ?? workflowInstanceId,
           ));
         }
 
-        _logger.logConsole('[WorkflowFlutterBridge] Transition posted successfully: ${result.instanceId ?? instanceId}');
+        _logger.logConsole('[WorkflowFlutterBridge] Transition posted successfully: ${result.instanceId ?? workflowInstanceId}');
       } else {
         _logger.logError('[WorkflowFlutterBridge] Transition failed with error: ${result.error}');
         
         // Emit error event
-        _emitErrorEvent(result.error ?? 'Unknown transition error', instanceId: instanceId);
+        _emitErrorEvent(result.error ?? 'Unknown transition error', instanceId: workflowInstanceId);
       }
     } catch (e, stackTrace) {
       _logger.logError('[WorkflowFlutterBridge] Exception during transition: $e');
       _logger.logError('[WorkflowFlutterBridge] Stack trace: $stackTrace');
-      _emitErrorEvent('Transition failed: $e', instanceId: instanceId);
+      _emitErrorEvent('Transition failed: $e', instanceId: workflowInstanceId);
     } finally {
       // Always hide loading
       if (config.displayLoading) {
         _logger.logConsole('[WorkflowFlutterBridge] Emitting loading event: false');
-        _emitLoadingEvent(false, instanceId: instanceId);
+        _emitLoadingEvent(false, instanceId: workflowInstanceId);
       }
       _logger.logConsole('[WorkflowFlutterBridge] ========== POST TRANSITION END ==========');
     }

@@ -112,6 +112,7 @@ class WorkflowService {
     required String transitionName,
     required Map<String, dynamic> body,
     Map<String, String>? headers,
+    String? instanceId,
     bool isSubFlow = false,
   }) async {
     try {
@@ -119,19 +120,19 @@ class WorkflowService {
 
       final response = await _router.postTransition(
         transitionName: transitionName,
-        body: body,
+        body: {...body, if (instanceId != null) 'instanceId': instanceId},
         headerParameters: headers,
         isSubFlow: isSubFlow,
       );
 
       if (response.isSuccess) {
         final data = response.asSuccess.data;
-        final instanceId = body['instanceId'] as String? ?? data['instanceId'] as String?;
+        final resultInstanceId = instanceId ?? body['instanceId'] as String? ?? data['instanceId'] as String?;
         
-        _logger.logConsole('[WorkflowService] Transition posted successfully: $instanceId');
+        _logger.logConsole('[WorkflowService] Transition posted successfully: $resultInstanceId');
         
         return WorkflowResult.success(
-          instanceId: instanceId,
+          instanceId: resultInstanceId,
           data: data,
         );
       } else {

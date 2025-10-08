@@ -12,6 +12,7 @@
 
 import 'package:flutter/material.dart';
 import 'package:neo_core/examples/vnext_integration_test/vnext_integration_test_page.dart';
+import 'package:neo_core/examples/vnext_account_opening_test/vnext_account_opening_test_page.dart';
 import 'package:neo_core/neo_core.dart';
 
 Future<void> main() async {
@@ -96,6 +97,21 @@ class MainNavigationPage extends StatelessWidget {
             ),
 
             const SizedBox(height: 20),
+
+            // vNext Account Opening Test Page - Account opening workflow testing
+            _buildDemoCard(
+              context: context,
+              title: '🏦 vNext Account Opening',
+              subtitle: 'Test account opening workflow',
+              description: 'Test complete account opening flow with account type selection, details input, confirmation, and automatic state transitions.',
+              onPressed: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (context) => const VNextAccountOpeningTestPage()),
+                );
+              },
+              color: Colors.green,
+            ),
 
             const SizedBox(height: 40),
 
