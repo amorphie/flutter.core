@@ -13,10 +13,10 @@ import 'package:neo_core/core/workflow_form/neo_workflow_manager.dart';
 import 'package:neo_core/core/workflow_form/vnext/models/vnext_extensions.dart';
 import 'package:neo_core/core/workflow_form/vnext/vnext_workflow_client.dart';
 import 'package:neo_core/core/workflow_form/workflow_engine_config.dart';
+import 'package:neo_core/core/workflow_form/workflow_flutter_bridge.dart';
 import 'package:neo_core/core/workflow_form/workflow_instance_manager.dart';
 import 'package:neo_core/core/workflow_form/workflow_router.dart';
 import 'package:neo_core/core/workflow_form/workflow_service.dart';
-import 'package:neo_core/core/workflow_form/workflow_flutter_bridge.dart';
 import 'package:neo_core/core/workflow_form/workflow_ui_events.dart';
 import 'package:uuid/uuid.dart';
 
@@ -46,6 +46,12 @@ class _VNextAccountOpeningTestPageState extends State<VNextAccountOpeningTestPag
   // Workflow state
   Map<String, dynamic>? _workflowInstance;
   VNextExtensions? _extensions;
+  
+  // Legacy page content loading (REMOVED - use _viewData instead)
+  
+  // Workflow view and instance data (similar to OAuth sample)
+  Map<String, dynamic>? _viewData;
+  Map<String, dynamic>? _instanceData;
   
   // UI event subscription (replaces manual timer)
   StreamSubscription<WorkflowUIEvent>? _uiEventSubscription;
@@ -429,6 +435,177 @@ class _VNextAccountOpeningTestPageState extends State<VNextAccountOpeningTestPag
     return currentState == 'account-opening-success';
   }
 
+  /// Get view key for current state
+  String? _getViewKeyForCurrentState() {
+    final currentState = _extensions?.currentState;
+    if (currentState == null) return null;
+    
+    // Map workflow states to view keys based on our workflow definition
+    switch (currentState) {
+      case 'account-type-selection':
+        return 'account-type-selection-view';
+      case 'account-details-input':
+        return 'account-details-input-view';
+      case 'account-confirmation':
+        return 'account-confirmation-view';
+      case 'account-opening-success':
+        return 'account-opening-success-view';
+      default:
+        return null;
+    }
+  }
+
+  /// REMOVED: Load page content for current state (REDUNDANT - use _loadViewData instead)
+  /*
+  Future<void> _loadPageContent() async {
+    final viewKey = _getViewKeyForCurrentState();
+    if (viewKey == null) {
+      _updateStatus('❌ No view key available for current state: ${_extensions?.currentState}');
+      return;
+    }
+
+    setState(() {
+      _isLoading = true;
+      _pageContent = null;
+      _loadedViewKey = null;
+    });
+
+    try {
+      _updateStatus('🔄 Loading page content for view: $viewKey...');
+
+      // Construct the view fetch URL
+      // Based on vNext API structure: /api/v1/{domain}/views/{viewKey}
+      final viewUrl = '${_baseUrlController.text}/api/v1/${_domainController.text}/views/$viewKey';
+      
+      print('[PAGE_CONTENT] Fetching view from: $viewUrl');
+      
+      final response = await http.get(
+        Uri.parse(viewUrl),
+        headers: {
+          'Content-Type': 'application/json',
+          ..._generateVNextHeaders(),
+        },
+      );
+
+      print('[PAGE_CONTENT] Response status: ${response.statusCode}');
+      print('[PAGE_CONTENT] Response body length: ${response.body.length}');
+
+      if (response.statusCode >= 200 && response.statusCode < 300) {
+        final data = response.body.isNotEmpty ? jsonDecode(response.body) : {};
+        
+        setState(() {
+          _pageContent = data;
+          _loadedViewKey = viewKey;
+        });
+        
+        _updateStatus('✅ Page content loaded for view: $viewKey');
+        print('[PAGE_CONTENT] ✅ Successfully loaded content for: $viewKey');
+      } else {
+        print('[PAGE_CONTENT] ❌ Error response: ${response.body}');
+        _updateStatus('❌ Error loading page content: HTTP ${response.statusCode}');
+      }
+    } catch (e, stackTrace) {
+      print('[PAGE_CONTENT] ❌ Exception loading page content: $e');
+      print('[PAGE_CONTENT] Stack trace: $stackTrace');
+      _updateStatus('❌ Exception loading page content: $e');
+    } finally {
+      setState(() {
+        _isLoading = false;
+      });
+    }
+  }
+  */
+
+  /// Load view data from vNext extensions (similar to OAuth sample)
+  Future<void> _loadViewData() async {
+    if (_extensions?.view?.href == null) {
+      _updateStatus('⚠️ No view endpoint available');
+      return;
+    }
+
+    setState(() {
+      _isLoading = true;
+    });
+
+    _updateStatus('Loading view data...');
+
+    try {
+      final response = await _vNextClient!.networkManager.call(
+        NeoHttpCall(
+          endpoint: 'vnext-direct-href',
+          pathParameters: {'HREF': _extensions!.view!.href},
+        ),
+      );
+
+      if (response.isSuccess) {
+        _viewData = response.asSuccess.data;
+        _updateStatus('✅ View data loaded successfully');
+      } else {
+        _updateStatus('❌ Failed to load view data');
+      }
+    } catch (e) {
+      _updateStatus('💥 Error loading view: $e');
+    } finally {
+      setState(() {
+        _isLoading = false;
+      });
+    }
+  }
+
+  /// Load instance data from vNext extensions (similar to OAuth sample)
+  Future<void> _loadInstanceData() async {
+    if (_extensions?.data?.href == null) {
+      _updateStatus('⚠️ No data endpoint available');
+      return;
+    }
+
+    setState(() {
+      _isLoading = true;
+    });
+
+    _updateStatus('Loading instance data...');
+
+    try {
+      final response = await _vNextClient!.networkManager.call(
+        NeoHttpCall(
+          endpoint: 'vnext-direct-href',
+          pathParameters: {'HREF': _extensions!.data!.href},
+        ),
+      );
+
+      if (response.isSuccess) {
+        _instanceData = response.asSuccess.data;
+        _updateStatus('✅ Instance data loaded successfully');
+      } else {
+        _updateStatus('❌ Failed to load instance data');
+      }
+    } catch (e) {
+      _updateStatus('💥 Error loading data: $e');
+    } finally {
+      setState(() {
+        _isLoading = false;
+      });
+    }
+  }
+
+  /// REMOVED: Get content from loaded page data (REDUNDANT - use _viewData instead)
+  /*
+  String? _getPageContentString() {
+    if (_pageContent == null) return null;
+    
+    // Try to extract content from the attributes.content field
+    final attributes = _pageContent!['attributes'] as Map<String, dynamic>?;
+    final content = attributes?['content'] as String?;
+    
+    if (content != null && content.isNotEmpty && content != '{}') {
+      return content;
+    }
+    
+    // Fallback to showing the entire page content
+    return jsonEncode(_pageContent);
+  }
+  */
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -497,6 +674,40 @@ class _VNextAccountOpeningTestPageState extends State<VNextAccountOpeningTestPag
                     ),
                     
                     const SizedBox(height: 8),
+                    
+                    // Removed redundant "Load Page Content" - use "Load View Data" instead
+                    
+                    // OAuth-style View and Instance Data Buttons
+                    if (_currentInstanceId != null) ...[
+                      Row(
+                        children: [
+                          Expanded(
+                            child: ElevatedButton.icon(
+                              onPressed: _isLoading || _extensions?.view?.href == null ? null : _loadViewData,
+                              icon: const Icon(Icons.visibility),
+                              label: const Text('Load View Data'),
+                              style: ElevatedButton.styleFrom(
+                                backgroundColor: Colors.teal,
+                                foregroundColor: Colors.white,
+                              ),
+                            ),
+                          ),
+                          const SizedBox(width: 8),
+                          Expanded(
+                            child: ElevatedButton.icon(
+                              onPressed: _isLoading || _extensions?.data?.href == null ? null : _loadInstanceData,
+                              icon: const Icon(Icons.data_object),
+                              label: const Text('Load Instance Data'),
+                              style: ElevatedButton.styleFrom(
+                                backgroundColor: Colors.indigo,
+                                foregroundColor: Colors.white,
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 8),
+                    ],
                     
                     // Account Type Selection
                     if (_canSelectAccountType()) ...[
@@ -661,6 +872,84 @@ class _VNextAccountOpeningTestPageState extends State<VNextAccountOpeningTestPag
 
             const SizedBox(height: 16),
 
+            // Removed redundant Page Content section - use View Data section instead
+
+            const SizedBox(height: 16),
+
+            // Workflow Instance Info (enhanced from OAuth sample)
+            if (_workflowInstance != null) ...[
+              _buildInfoCard(
+                'Workflow Instance',
+                {
+                  'Instance ID': _workflowInstance!['id']?.toString() ?? 'Unknown',
+                  'Flow': _workflowInstance!['flow']?.toString() ?? 'Unknown',
+                  'Domain': _workflowInstance!['domain']?.toString() ?? 'Unknown',
+                  'Version': _workflowInstance!['flowVersion']?.toString() ?? 'Unknown',
+                  'Current State': _extensions?.currentState ?? 'Unknown',
+                  'Status': _extensions?.status ?? 'Unknown',
+                },
+              ),
+              const SizedBox(height: 16),
+            ],
+
+            // Extensions Info (enhanced from OAuth sample)
+            if (_extensions != null) ...[
+              _buildInfoCard(
+                'vNext Extensions',
+                {
+                  'View Endpoint': _extensions!.view?.href ?? 'None',
+                  'Load Data': (_extensions!.view?.loadData ?? false).toString(),
+                  'Data Endpoint': _extensions!.data?.href ?? 'None',
+                  'Available Transitions': _extensions!.transitions.isEmpty ? 'None' : _extensions!.transitions.join(', '),
+                },
+              ),
+              const SizedBox(height: 16),
+            ] else if (_workflowInstance != null) ...[
+              Card(
+                color: Colors.orange.shade50,
+                child: Padding(
+                  padding: const EdgeInsets.all(16),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Row(
+                        children: [
+                          Icon(Icons.info_outline, color: Colors.orange.shade700),
+                          const SizedBox(width: 8),
+                          Text(
+                            'Extensions Not Available',
+                            style: TextStyle(
+                              fontSize: 18,
+                              fontWeight: FontWeight.bold,
+                              color: Colors.orange.shade700,
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 8),
+                      const Text(
+                        'This workflow instance does not have vNext extensions (view/data endpoints). '
+                        'This might be normal depending on the workflow state or configuration.',
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+              const SizedBox(height: 16),
+            ],
+
+            // View Data (from OAuth sample)
+            if (_viewData != null) ...[
+              _buildDataCard('View Data', _viewData!),
+              const SizedBox(height: 16),
+            ],
+
+            // Instance Data (from OAuth sample)
+            if (_instanceData != null) ...[
+              _buildDataCard('Instance Data', _instanceData!),
+              const SizedBox(height: 16),
+            ],
+
             // Workflow Data (Debug)
             if (_workflowInstance != null)
               Expanded(
@@ -685,6 +974,69 @@ class _VNextAccountOpeningTestPageState extends State<VNextAccountOpeningTestPag
                   ),
                 ),
               ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  /// Build info card for displaying key-value pairs (from OAuth sample)
+  Widget _buildInfoCard(String title, Map<String, String> info) {
+    return Card(
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(title, style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+            const SizedBox(height: 8),
+            ...info.entries.map((entry) => Padding(
+              padding: const EdgeInsets.symmetric(vertical: 2),
+              child: Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  SizedBox(
+                    width: 120,
+                    child: Text('${entry.key}:', style: const TextStyle(fontWeight: FontWeight.w500)),
+                  ),
+                  Expanded(
+                    child: Text(entry.value, style: const TextStyle(fontFamily: 'monospace')),
+                  ),
+                ],
+              ),
+            )),
+          ],
+        ),
+      ),
+    );
+  }
+
+  /// Build data card for displaying JSON data (from OAuth sample)
+  Widget _buildDataCard(String title, Map<String, dynamic> data) {
+    return Card(
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(title, style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+            const SizedBox(height: 8),
+            Container(
+              width: double.infinity,
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                color: Colors.grey.shade100,
+                borderRadius: BorderRadius.circular(4),
+                border: Border.all(color: Colors.grey.shade300),
+              ),
+              child: Text(
+                const JsonEncoder.withIndent('  ').convert(data),
+                style: const TextStyle(
+                  fontFamily: 'monospace',
+                  fontSize: 12,
+                ),
+              ),
+            ),
           ],
         ),
       ),
