@@ -616,364 +616,483 @@ class _VNextAccountOpeningTestPageState extends State<VNextAccountOpeningTestPag
       ),
       body: Padding(
         padding: const EdgeInsets.all(16),
-        child: Column(
+        child: Row(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // Configuration
-            Card(
-              child: Padding(
-                padding: const EdgeInsets.all(16),
+            // Left Panel - Main Controls and Info
+            Expanded(
+              flex: 2,
+              child: SingleChildScrollView(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    const Text('Configuration', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
-                    const SizedBox(height: 8),
-                    Row(
-                      children: [
-                        Expanded(
-                          child: TextField(
-                            controller: _baseUrlController,
-                            decoration: const InputDecoration(labelText: 'vNext Base URL'),
-                            onChanged: (_) => _initializeClient(),
-                          ),
-                        ),
-                        const SizedBox(width: 16),
-                        Expanded(
-                          child: TextField(
-                            controller: _domainController,
-                            decoration: const InputDecoration(labelText: 'Domain'),
-                          ),
-                        ),
-                      ],
-                    ),
-                  ],
-                ),
-              ),
-            ),
-
-            const SizedBox(height: 16),
-
-            // Actions
-            Card(
-              child: Padding(
-                padding: const EdgeInsets.all(16),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    const Text('Actions', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
-                    const SizedBox(height: 8),
-                    
-                    // Initialize Workflow
-                    SizedBox(
-                      width: double.infinity,
-                      child: ElevatedButton(
-                        onPressed: _isLoading ? null : _initializeWorkflow,
-                        style: ElevatedButton.styleFrom(backgroundColor: Colors.green),
-                        child: const Text('Initialize Account Opening Workflow', style: TextStyle(color: Colors.white)),
-                      ),
-                    ),
-                    
-                    const SizedBox(height: 8),
-                    
-                    // Removed redundant "Load Page Content" - use "Load View Data" instead
-                    
-                    // OAuth-style View and Instance Data Buttons
-                    if (_currentInstanceId != null) ...[
-                      Row(
-                        children: [
-                          Expanded(
-                            child: ElevatedButton.icon(
-                              onPressed: _isLoading || _extensions?.view?.href == null ? null : _loadViewData,
-                              icon: const Icon(Icons.visibility),
-                              label: const Text('Load View Data'),
-                              style: ElevatedButton.styleFrom(
-                                backgroundColor: Colors.teal,
-                                foregroundColor: Colors.white,
-                              ),
-                            ),
-                          ),
-                          const SizedBox(width: 8),
-                          Expanded(
-                            child: ElevatedButton.icon(
-                              onPressed: _isLoading || _extensions?.data?.href == null ? null : _loadInstanceData,
-                              icon: const Icon(Icons.data_object),
-                              label: const Text('Load Instance Data'),
-                              style: ElevatedButton.styleFrom(
-                                backgroundColor: Colors.indigo,
-                                foregroundColor: Colors.white,
-                              ),
-                            ),
-                          ),
-                        ],
-                      ),
-                      const SizedBox(height: 8),
-                    ],
-                    
-                    // Account Type Selection
-                    if (_canSelectAccountType()) ...[
-                      const Text('Account Type Selection:', style: TextStyle(fontWeight: FontWeight.bold)),
-                      DropdownButton<String>(
-                        value: _selectedAccountType,
-                        onChanged: (value) => setState(() => _selectedAccountType = value!),
-                        items: const [
-                          DropdownMenuItem(value: 'demand-deposit', child: Text('Demand Deposit Account')),
-                          DropdownMenuItem(value: 'time-deposit', child: Text('Time Deposit Account')),
-                          DropdownMenuItem(value: 'investment-account', child: Text('Investment Account')),
-                          DropdownMenuItem(value: 'savings-account', child: Text('Savings Account')),
-                        ],
-                      ),
-                      SizedBox(
-                        width: double.infinity,
-                        child: ElevatedButton(
-                          onPressed: _isLoading ? null : _submitAccountTypeSelection,
-                          style: ElevatedButton.styleFrom(backgroundColor: Colors.blue),
-                          child: const Text('Select Account Type', style: TextStyle(color: Colors.white)),
-                        ),
-                      ),
-                      const SizedBox(height: 8),
-                    ],
-                    
-                    // Account Details Input
-                    if (_canInputAccountDetails()) ...[
-                      const Text('Account Details:', style: TextStyle(fontWeight: FontWeight.bold)),
-                      TextField(
-                        controller: _accountNameController,
-                        decoration: const InputDecoration(labelText: 'Account Name'),
-                      ),
-                      Row(
-                        children: [
-                          Expanded(
-                            child: DropdownButton<String>(
-                              value: _selectedCurrency,
-                              onChanged: (value) => setState(() => _selectedCurrency = value!),
-                              items: const [
-                                DropdownMenuItem(value: 'TRY', child: Text('Turkish Lira (TRY)')),
-                                DropdownMenuItem(value: 'USD', child: Text('US Dollar (USD)')),
-                                DropdownMenuItem(value: 'EUR', child: Text('Euro (EUR)')),
-                                DropdownMenuItem(value: 'GBP', child: Text('British Pound (GBP)')),
+                    // Configuration
+                    Card(
+                      child: Padding(
+                        padding: const EdgeInsets.all(16),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            const Text('Configuration', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+                            const SizedBox(height: 8),
+                            Row(
+                              children: [
+                                Expanded(
+                                  child: TextField(
+                                    controller: _baseUrlController,
+                                    decoration: const InputDecoration(labelText: 'vNext Base URL'),
+                                    onChanged: (_) => _initializeClient(),
+                                  ),
+                                ),
+                                const SizedBox(width: 16),
+                                Expanded(
+                                  child: TextField(
+                                    controller: _domainController,
+                                    decoration: const InputDecoration(labelText: 'Domain'),
+                                  ),
+                                ),
                               ],
                             ),
-                          ),
-                          const SizedBox(width: 16),
-                          Expanded(
-                            child: TextField(
-                              controller: _initialDepositController,
-                              decoration: const InputDecoration(labelText: 'Initial Deposit'),
-                              keyboardType: TextInputType.number,
-                            ),
-                          ),
-                        ],
-                      ),
-                      const SizedBox(height: 8),
-                      SizedBox(
-                        width: double.infinity,
-                        child: ElevatedButton(
-                          onPressed: _isLoading ? null : _submitAccountDetails,
-                          style: ElevatedButton.styleFrom(backgroundColor: Colors.orange),
-                          child: const Text('Submit Account Details', style: TextStyle(color: Colors.white)),
-                        ),
-                      ),
-                      const SizedBox(height: 8),
-                    ],
-                    
-                    // Account Confirmation
-                    if (_canConfirmAccount()) ...[
-                      const Text('Confirm Account Opening:', style: TextStyle(fontWeight: FontWeight.bold)),
-                      const Text('Please review your account details and confirm to proceed.'),
-                      const SizedBox(height: 8),
-                      SizedBox(
-                        width: double.infinity,
-                        child: ElevatedButton(
-                          onPressed: _isLoading ? null : _confirmAccountOpening,
-                          style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
-                          child: const Text('Confirm Account Opening', style: TextStyle(color: Colors.white)),
-                        ),
-                      ),
-                      const SizedBox(height: 8),
-                    ],
-                    
-                    // Success Message
-                    if (_isAccountOpeningCompleted()) ...[
-                      Container(
-                        padding: const EdgeInsets.all(16),
-                        decoration: BoxDecoration(
-                          color: Colors.green.shade100,
-                          borderRadius: BorderRadius.circular(8),
-                        ),
-                        child: const Row(
-                          children: [
-                            Icon(Icons.check_circle, color: Colors.green),
-                            SizedBox(width: 8),
-                            Text('🎉 Account Opening Completed Successfully!', 
-                                 style: TextStyle(fontWeight: FontWeight.bold, color: Colors.green)),
                           ],
                         ),
                       ),
-                    ],
-                  ],
-                ),
-              ),
-            ),
+                    ),
 
-            const SizedBox(height: 16),
+                    const SizedBox(height: 16),
 
-            // Status
-            Card(
-              child: Padding(
-                padding: const EdgeInsets.all(16),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Row(
-                      children: [
-                        const Text('Status', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
-                        const Spacer(),
-                        if (_isPollingActive)
-                          Container(
-                            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                            decoration: BoxDecoration(
-                              color: Colors.green.shade100,
-                              borderRadius: BorderRadius.circular(12),
+                    // Actions
+                    Card(
+                      child: Padding(
+                        padding: const EdgeInsets.all(16),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            const Text('Actions', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+                            const SizedBox(height: 8),
+                            
+                            // Initialize Workflow
+                            SizedBox(
+                              width: double.infinity,
+                              child: ElevatedButton(
+                                onPressed: _isLoading ? null : _initializeWorkflow,
+                                style: ElevatedButton.styleFrom(backgroundColor: Colors.green),
+                                child: const Text('Initialize Account Opening Workflow', style: TextStyle(color: Colors.white)),
+                              ),
                             ),
-                            child: const Row(
-                              mainAxisSize: MainAxisSize.min,
-                              children: [
-                                SizedBox(
-                                  width: 12,
-                                  height: 12,
-                                  child: CircularProgressIndicator(strokeWidth: 2),
+                            
+                            const SizedBox(height: 8),
+                            
+                            // Account Type Selection
+                            if (_canSelectAccountType()) ...[
+                              const Text('Account Type Selection:', style: TextStyle(fontWeight: FontWeight.bold)),
+                              DropdownButton<String>(
+                                value: _selectedAccountType,
+                                onChanged: (value) => setState(() => _selectedAccountType = value!),
+                                items: const [
+                                  DropdownMenuItem(value: 'demand-deposit', child: Text('Demand Deposit Account')),
+                                  DropdownMenuItem(value: 'time-deposit', child: Text('Time Deposit Account')),
+                                  DropdownMenuItem(value: 'investment-account', child: Text('Investment Account')),
+                                  DropdownMenuItem(value: 'savings-account', child: Text('Savings Account')),
+                                ],
+                              ),
+                              SizedBox(
+                                width: double.infinity,
+                                child: ElevatedButton(
+                                  onPressed: _isLoading ? null : _submitAccountTypeSelection,
+                                  style: ElevatedButton.styleFrom(backgroundColor: Colors.blue),
+                                  child: const Text('Select Account Type', style: TextStyle(color: Colors.white)),
                                 ),
-                                SizedBox(width: 4),
-                                Text('Long Polling Active', style: TextStyle(fontSize: 12, color: Colors.green)),
+                              ),
+                              const SizedBox(height: 8),
+                            ],
+                            
+                            // Account Details Input
+                            if (_canInputAccountDetails()) ...[
+                              const Text('Account Details:', style: TextStyle(fontWeight: FontWeight.bold)),
+                              TextField(
+                                controller: _accountNameController,
+                                decoration: const InputDecoration(labelText: 'Account Name'),
+                              ),
+                              Row(
+                                children: [
+                                  Expanded(
+                                    child: DropdownButton<String>(
+                                      value: _selectedCurrency,
+                                      onChanged: (value) => setState(() => _selectedCurrency = value!),
+                                      items: const [
+                                        DropdownMenuItem(value: 'TRY', child: Text('Turkish Lira (TRY)')),
+                                        DropdownMenuItem(value: 'USD', child: Text('US Dollar (USD)')),
+                                        DropdownMenuItem(value: 'EUR', child: Text('Euro (EUR)')),
+                                        DropdownMenuItem(value: 'GBP', child: Text('British Pound (GBP)')),
+                                      ],
+                                    ),
+                                  ),
+                                  const SizedBox(width: 16),
+                                  Expanded(
+                                    child: TextField(
+                                      controller: _initialDepositController,
+                                      decoration: const InputDecoration(labelText: 'Initial Deposit'),
+                                      keyboardType: TextInputType.number,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                              const SizedBox(height: 8),
+                              SizedBox(
+                                width: double.infinity,
+                                child: ElevatedButton(
+                                  onPressed: _isLoading ? null : _submitAccountDetails,
+                                  style: ElevatedButton.styleFrom(backgroundColor: Colors.orange),
+                                  child: const Text('Submit Account Details', style: TextStyle(color: Colors.white)),
+                                ),
+                              ),
+                              const SizedBox(height: 8),
+                            ],
+                            
+                            // Account Confirmation
+                            if (_canConfirmAccount()) ...[
+                              const Text('Confirm Account Opening:', style: TextStyle(fontWeight: FontWeight.bold)),
+                              const Text('Please review your account details and confirm to proceed.'),
+                              const SizedBox(height: 8),
+                              SizedBox(
+                                width: double.infinity,
+                                child: ElevatedButton(
+                                  onPressed: _isLoading ? null : _confirmAccountOpening,
+                                  style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
+                                  child: const Text('Confirm Account Opening', style: TextStyle(color: Colors.white)),
+                                ),
+                              ),
+                              const SizedBox(height: 8),
+                            ],
+                            
+                            // Success Message
+                            if (_isAccountOpeningCompleted()) ...[
+                              Container(
+                                padding: const EdgeInsets.all(16),
+                                decoration: BoxDecoration(
+                                  color: Colors.green.shade100,
+                                  borderRadius: BorderRadius.circular(8),
+                                ),
+                                child: const Row(
+                                  children: [
+                                    Icon(Icons.check_circle, color: Colors.green),
+                                    SizedBox(width: 8),
+                                    Text('🎉 Account Opening Completed Successfully!', 
+                                         style: TextStyle(fontWeight: FontWeight.bold, color: Colors.green)),
+                                  ],
+                                ),
+                              ),
+                            ],
+                          ],
+                        ),
+                      ),
+                    ),
+
+                    const SizedBox(height: 16),
+
+                    // Status
+                    Card(
+                      child: Padding(
+                        padding: const EdgeInsets.all(16),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Row(
+                              children: [
+                                const Text('Status', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+                                const Spacer(),
+                                if (_isPollingActive)
+                                  Container(
+                                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                                    decoration: BoxDecoration(
+                                      color: Colors.green.shade100,
+                                      borderRadius: BorderRadius.circular(12),
+                                    ),
+                                    child: const Row(
+                                      mainAxisSize: MainAxisSize.min,
+                                      children: [
+                                        SizedBox(
+                                          width: 12,
+                                          height: 12,
+                                          child: CircularProgressIndicator(strokeWidth: 2),
+                                        ),
+                                        SizedBox(width: 4),
+                                        Text('Long Polling Active', style: TextStyle(fontSize: 12, color: Colors.green)),
+                                      ],
+                                    ),
+                                  ),
                               ],
                             ),
-                          ),
-                      ],
+                            const SizedBox(height: 8),
+                            Text(_status),
+                            if (_currentInstanceId != null) ...[
+                              const SizedBox(height: 8),
+                              Text('Instance ID: $_currentInstanceId', style: const TextStyle(fontFamily: 'monospace')),
+                            ],
+                            if (_extensions != null) ...[
+                              const SizedBox(height: 8),
+                              Text('Current State: ${_extensions!.currentState ?? 'unknown'}'),
+                              Text('Status: ${_extensions!.status ?? 'unknown'}'),
+                              if (_extensions!.transitions.isNotEmpty) ...[
+                                const SizedBox(height: 4),
+                                Text('Available Transitions: ${_extensions!.transitions.join(', ')}'),
+                              ],
+                            ],
+                          ],
+                        ),
+                      ),
                     ),
-                    const SizedBox(height: 8),
-                    Text(_status),
-                    if (_currentInstanceId != null) ...[
-                      const SizedBox(height: 8),
-                      Text('Instance ID: $_currentInstanceId', style: const TextStyle(fontFamily: 'monospace')),
+
+                    const SizedBox(height: 16),
+
+                    // Workflow Instance Info (enhanced from OAuth sample)
+                    if (_workflowInstance != null) ...[
+                      _buildInfoCard(
+                        'Workflow Instance',
+                        {
+                          'Instance ID': _workflowInstance!['id']?.toString() ?? 'Unknown',
+                          'Flow': _workflowInstance!['flow']?.toString() ?? 'Unknown',
+                          'Domain': _workflowInstance!['domain']?.toString() ?? 'Unknown',
+                          'Version': _workflowInstance!['flowVersion']?.toString() ?? 'Unknown',
+                          'Current State': _extensions?.currentState ?? 'Unknown',
+                          'Status': _extensions?.status ?? 'Unknown',
+                        },
+                      ),
+                      const SizedBox(height: 16),
                     ],
+
+                    // Extensions Info (enhanced from OAuth sample)
                     if (_extensions != null) ...[
-                      const SizedBox(height: 8),
-                      Text('Current State: ${_extensions!.currentState ?? 'unknown'}'),
-                      Text('Status: ${_extensions!.status ?? 'unknown'}'),
-                      if (_extensions!.transitions.isNotEmpty) ...[
-                        const SizedBox(height: 4),
-                        Text('Available Transitions: ${_extensions!.transitions.join(', ')}'),
-                      ],
+                      _buildInfoCard(
+                        'vNext Extensions',
+                        {
+                          'View Endpoint': _extensions!.view?.href ?? 'None',
+                          'Load Data': (_extensions!.view?.loadData ?? false).toString(),
+                          'Data Endpoint': _extensions!.data?.href ?? 'None',
+                          'Available Transitions': _extensions!.transitions.isEmpty ? 'None' : _extensions!.transitions.join(', '),
+                        },
+                      ),
+                      const SizedBox(height: 16),
+                    ] else if (_workflowInstance != null) ...[
+                      Card(
+                        color: Colors.orange.shade50,
+                        child: Padding(
+                          padding: const EdgeInsets.all(16),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Row(
+                                children: [
+                                  Icon(Icons.info_outline, color: Colors.orange.shade700),
+                                  const SizedBox(width: 8),
+                                  Text(
+                                    'Extensions Not Available',
+                                    style: TextStyle(
+                                      fontSize: 18,
+                                      fontWeight: FontWeight.bold,
+                                      color: Colors.orange.shade700,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                              const SizedBox(height: 8),
+                              const Text(
+                                'This workflow instance does not have vNext extensions (view/data endpoints). '
+                                'This might be normal depending on the workflow state or configuration.',
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
+                      const SizedBox(height: 16),
                     ],
+
+                    // Workflow Data (Debug)
+                    if (_workflowInstance != null)
+                      Card(
+                        child: Padding(
+                          padding: const EdgeInsets.all(16),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              const Text('Workflow Data (Debug)', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+                              const SizedBox(height: 8),
+                              SizedBox(
+                                height: 300, // Fixed height instead of Expanded
+                                child: SingleChildScrollView(
+                                  child: Text(
+                                    const JsonEncoder.withIndent('  ').convert(_workflowInstance),
+                                    style: const TextStyle(fontFamily: 'monospace', fontSize: 12),
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
                   ],
                 ),
               ),
             ),
 
-            const SizedBox(height: 16),
+            const SizedBox(width: 16),
 
-            // Removed redundant Page Content section - use View Data section instead
-
-            const SizedBox(height: 16),
-
-            // Workflow Instance Info (enhanced from OAuth sample)
-            if (_workflowInstance != null) ...[
-              _buildInfoCard(
-                'Workflow Instance',
-                {
-                  'Instance ID': _workflowInstance!['id']?.toString() ?? 'Unknown',
-                  'Flow': _workflowInstance!['flow']?.toString() ?? 'Unknown',
-                  'Domain': _workflowInstance!['domain']?.toString() ?? 'Unknown',
-                  'Version': _workflowInstance!['flowVersion']?.toString() ?? 'Unknown',
-                  'Current State': _extensions?.currentState ?? 'Unknown',
-                  'Status': _extensions?.status ?? 'Unknown',
-                },
-              ),
-              const SizedBox(height: 16),
-            ],
-
-            // Extensions Info (enhanced from OAuth sample)
-            if (_extensions != null) ...[
-              _buildInfoCard(
-                'vNext Extensions',
-                {
-                  'View Endpoint': _extensions!.view?.href ?? 'None',
-                  'Load Data': (_extensions!.view?.loadData ?? false).toString(),
-                  'Data Endpoint': _extensions!.data?.href ?? 'None',
-                  'Available Transitions': _extensions!.transitions.isEmpty ? 'None' : _extensions!.transitions.join(', '),
-                },
-              ),
-              const SizedBox(height: 16),
-            ] else if (_workflowInstance != null) ...[
-              Card(
-                color: Colors.orange.shade50,
-                child: Padding(
-                  padding: const EdgeInsets.all(16),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Row(
+            // Right Panel - Data Views
+            Expanded(
+              flex: 1,
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  // Current State Title
+                  Card(
+                    color: _extensions?.currentState != null ? Colors.green.shade50 : Colors.grey.shade50,
+                    child: Padding(
+                      padding: const EdgeInsets.all(16),
+                      child: Row(
                         children: [
-                          Icon(Icons.info_outline, color: Colors.orange.shade700),
+                          Icon(
+                            _extensions?.currentState != null ? Icons.play_circle_filled : Icons.help_outline,
+                            color: _extensions?.currentState != null ? Colors.green : Colors.grey,
+                          ),
                           const SizedBox(width: 8),
-                          Text(
-                            'Extensions Not Available',
-                            style: TextStyle(
-                              fontSize: 18,
-                              fontWeight: FontWeight.bold,
-                              color: Colors.orange.shade700,
+                          Expanded(
+                            child: Text(
+                              _extensions?.currentState?.replaceAll('-', ' ').toUpperCase() ?? 'NO ACTIVE STATE',
+                              style: TextStyle(
+                                fontSize: 16,
+                                fontWeight: FontWeight.bold,
+                                color: _extensions?.currentState != null ? Colors.green.shade700 : Colors.grey.shade600,
+                              ),
                             ),
                           ),
                         ],
                       ),
-                      const SizedBox(height: 8),
-                      const Text(
-                        'This workflow instance does not have vNext extensions (view/data endpoints). '
-                        'This might be normal depending on the workflow state or configuration.',
-                      ),
-                    ],
+                    ),
                   ),
-                ),
-              ),
-              const SizedBox(height: 16),
-            ],
 
-            // View Data (from OAuth sample)
-            if (_viewData != null) ...[
-              _buildDataCard('View Data', _viewData!),
-              const SizedBox(height: 16),
-            ],
+                  const SizedBox(height: 16),
 
-            // Instance Data (from OAuth sample)
-            if (_instanceData != null) ...[
-              _buildDataCard('Instance Data', _instanceData!),
-              const SizedBox(height: 16),
-            ],
-
-            // Workflow Data (Debug)
-            if (_workflowInstance != null)
-              Expanded(
-                child: Card(
-                  child: Padding(
-                    padding: const EdgeInsets.all(16),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
+                  // Data Fetch Buttons
+                  if (_currentInstanceId != null) ...[
+                    Row(
                       children: [
-                        const Text('Workflow Data (Debug)', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
-                        const SizedBox(height: 8),
                         Expanded(
-                          child: SingleChildScrollView(
-                            child: Text(
-                              const JsonEncoder.withIndent('  ').convert(_workflowInstance),
-                              style: const TextStyle(fontFamily: 'monospace', fontSize: 12),
+                          child: ElevatedButton.icon(
+                            onPressed: _isLoading || _extensions?.view?.href == null ? null : _loadViewData,
+                            icon: const Icon(Icons.visibility),
+                            label: const Text('Fetch View'),
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: Colors.teal,
+                              foregroundColor: Colors.white,
+                            ),
+                          ),
+                        ),
+                        const SizedBox(width: 8),
+                        Expanded(
+                          child: ElevatedButton.icon(
+                            onPressed: _isLoading || _extensions?.data?.href == null ? null : _loadInstanceData,
+                            icon: const Icon(Icons.data_object),
+                            label: const Text('Fetch Data'),
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: Colors.indigo,
+                              foregroundColor: Colors.white,
                             ),
                           ),
                         ),
                       ],
                     ),
+                    const SizedBox(height: 16),
+                  ],
+
+                  // Data content
+                  Expanded(
+                    child: SingleChildScrollView(
+                      child: Column(
+                        children: [
+                          // View Data (from OAuth sample)
+                          if (_viewData != null) ...[
+                            _buildDataCard('View Data', _viewData!),
+                            const SizedBox(height: 16),
+                          ],
+
+                          // Instance Data (from OAuth sample)
+                          if (_instanceData != null) ...[
+                            _buildDataCard('Instance Data', _instanceData!),
+                            const SizedBox(height: 16),
+                          ],
+
+                          // Placeholder when no data is available
+                          if (_viewData == null && _instanceData == null) ...[
+                            if (_currentInstanceId == null)
+                              Card(
+                                color: Colors.grey.shade50,
+                                child: const Padding(
+                                  padding: EdgeInsets.all(24),
+                                  child: Column(
+                                    children: [
+                                      Icon(
+                                        Icons.launch,
+                                        size: 48,
+                                        color: Colors.grey,
+                                      ),
+                                      SizedBox(height: 16),
+                                      Text(
+                                        'Initialize Workflow',
+                                        style: TextStyle(
+                                          fontSize: 16,
+                                          fontWeight: FontWeight.bold,
+                                          color: Colors.grey,
+                                        ),
+                                      ),
+                                      SizedBox(height: 8),
+                                      Text(
+                                        'Start by initializing the account opening workflow to enable data fetching.',
+                                        style: TextStyle(color: Colors.grey),
+                                        textAlign: TextAlign.center,
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                              )
+                            else
+                              Card(
+                                color: Colors.blue.shade50,
+                                child: const Padding(
+                                  padding: EdgeInsets.all(24),
+                                  child: Column(
+                                    children: [
+                                      Icon(
+                                        Icons.download,
+                                        size: 48,
+                                        color: Colors.blue,
+                                      ),
+                                      SizedBox(height: 16),
+                                      Text(
+                                        'Ready to Fetch',
+                                        style: TextStyle(
+                                          fontSize: 16,
+                                          fontWeight: FontWeight.bold,
+                                          color: Colors.blue,
+                                        ),
+                                      ),
+                                      SizedBox(height: 8),
+                                      Text(
+                                        'Use the buttons above to fetch view or instance data from the workflow.',
+                                        style: TextStyle(color: Colors.blue),
+                                        textAlign: TextAlign.center,
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                              ),
+                          ],
+                        ],
+                      ),
+                    ),
                   ),
-                ),
+                ],
               ),
+            ),
           ],
         ),
       ),

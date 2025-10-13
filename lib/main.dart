@@ -11,8 +11,8 @@
  */
 
 import 'package:flutter/material.dart';
-import 'package:neo_core/examples/vnext_integration_test/vnext_integration_test_page.dart';
 import 'package:neo_core/examples/vnext_account_opening_test/vnext_account_opening_test_page.dart';
+import 'package:neo_core/examples/vnext_integration_test/vnext_integration_test_page.dart';
 import 'package:neo_core/neo_core.dart';
 
 Future<void> main() async {
