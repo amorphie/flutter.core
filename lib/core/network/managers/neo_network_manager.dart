@@ -47,10 +47,11 @@ abstract class _Constants {
   static const String wrapperResponseKey = "data";
   static const String endpointGetToken = "get-token";
   static const String requestKeyClientId = "client_id";
-  // static const String requestKeyClientSecret = "client_secret";
+  static const String requestKeyClientSecret = "client_secret";
   static const String requestKeyGrantType = "grant_type";
   static const String requestValueGrantTypeRefreshToken = "refresh_token";
-  static const String requestValueGrantTypeClientCredentials = "urn:ietf:params:oauth:grant-type:burgan-credential";
+  static const String requestValueGrantTypeBurganCredential = "urn:ietf:params:oauth:grant-type:burgan-credential";
+  static const String requestValueGrantTypeClientCredential = "client_credential";
   static const String requestKeyRefreshToken = "refresh_token";
   static const String requestKeyScopes = "scopes";
   static const List<String> requestValueScopes = ["retail-customer"];
@@ -446,7 +447,7 @@ class NeoNetworkManager {
     return isTwoFactorAuth;
   }
 
-  Future<bool> getTemporaryTokenForNotLoggedInUser({NeoHttpCall? currentCall}) async {
+  Future<bool> getTemporaryTokenForNotLoggedInUser({NeoHttpCall? currentCall, bool error = false}) async {
     // Prevent infinite call loop
     if (currentCall?.endpoint == _Constants.endpointGetToken || await _isTwoFactorAuthenticated) {
       return false;
@@ -456,32 +457,13 @@ class NeoNetworkManager {
       return true;
     }
     _tokenLockCompleter = Completer<void>();
-    final jti = UuidUtil.generateUUID();
 
     final response = await call(
-      NeoHttpCall(
-        endpoint: _Constants.endpointGetToken,
-        body: await _isExistUser
-            ? {
-                _Constants.requestKeyGrantType: _Constants.requestValueGrantTypeCertificateAssertion,
-                _Constants.requestKeyClientAssertion: await _createJwtTokenForAccessRequest(jti: jti),
-                _Constants.requestKeyScopes: _Constants.requestValueScopesOpenId,
-              }
-            : {
-                _Constants.jwtClaimJti: jti,
-                _Constants.requestKeyClientId: workflowClientId,
-                _Constants.jwtClaimInstallationId:
-                    await secureStorage.read(NeoCoreParameterKey.secureStorageInstallationId),
-                _Constants.jwtClaimDeviceId: await secureStorage.read(NeoCoreParameterKey.secureStorageDeviceId),
-                _Constants.requestKeyGrantType: _Constants.requestValueGrantTypeClientCredentials,
-                _Constants.requestKeyScopes: _Constants.requestValueScopes,
-              },
-        headerParameters: await _isExistUser
-            ? {}
-            : {
-                NeoNetworkHeaderKey.fingerprint: (await getFingerPrintAlgorithm(jti)) ?? "",
-              },
-      ),
+      await _isExistUser
+          ? error
+              ? _clientCredentialHttpCall()
+              : await _onefaCredentialHttpCall()
+          : await _notLoggedInUserCredentialHttpCall(),
     );
     if (response.isSuccess) {
       final authResponse = HttpAuthResponse.fromJson(response.asSuccess.data);
@@ -490,6 +472,9 @@ class NeoNetworkManager {
       _tokenLockCompleter = null;
       return true;
     } else {
+      if (!error && await _isExistUser) {
+        await getTemporaryTokenForNotLoggedInUser(currentCall: currentCall, error: true);
+      }
       _tokenLockCompleter?.complete();
       _tokenLockCompleter = null;
       return false;
@@ -613,6 +598,7 @@ class NeoNetworkManager {
     if (isRefreshToken) {
       claims[_Constants.jwtClaimRefreshToken] = await _getRefreshToken();
     }
+
     // RSA key yükle
     final keyStore = JsonWebKeyStore();
 
@@ -633,7 +619,7 @@ class NeoNetworkManager {
     return jws.toCompactSerialization();
   }
 
-  Future<String?> getFingerPrintAlgorithm(String jti) async {
+  Future<String?> _fingerPrintAlgorithm(String jti) async {
     final deviceId = await secureStorage.read(NeoCoreParameterKey.secureStorageDeviceId);
     final installationId = await secureStorage.read(NeoCoreParameterKey.secureStorageInstallationId);
     if (deviceId == null || installationId == null) {
@@ -651,5 +637,49 @@ class NeoNetworkManager {
     final base64Encoded = base64.encode(digest.bytes);
 
     return base64Encoded;
+  }
+
+  Future<NeoHttpCall> _notLoggedInUserCredentialHttpCall() async {
+    final jti = UuidUtil.generateUUID();
+
+    return NeoHttpCall(
+      endpoint: _Constants.endpointGetToken,
+      body: {
+        _Constants.jwtClaimJti: jti,
+        _Constants.requestKeyClientId: workflowClientId,
+        _Constants.jwtClaimInstallationId: await secureStorage.read(NeoCoreParameterKey.secureStorageInstallationId),
+        _Constants.jwtClaimDeviceId: await secureStorage.read(NeoCoreParameterKey.secureStorageDeviceId),
+        _Constants.requestKeyGrantType: _Constants.requestValueGrantTypeBurganCredential,
+        _Constants.requestKeyScopes: _Constants.requestValueScopes,
+      },
+      headerParameters: {
+        NeoNetworkHeaderKey.fingerprint: (await _fingerPrintAlgorithm(jti)) ?? "",
+      },
+    );
+  }
+
+  Future<NeoHttpCall> _onefaCredentialHttpCall() async {
+    final jti = UuidUtil.generateUUID();
+
+    return NeoHttpCall(
+      endpoint: _Constants.endpointGetToken,
+      body: {
+        _Constants.requestKeyGrantType: _Constants.requestValueGrantTypeCertificateAssertion,
+        _Constants.requestKeyClientAssertion: await _createJwtTokenForAccessRequest(jti: jti),
+        _Constants.requestKeyScopes: _Constants.requestValueScopesOpenId,
+      },
+    );
+  }
+
+  NeoHttpCall _clientCredentialHttpCall() {
+    return NeoHttpCall(
+      endpoint: _Constants.endpointGetToken,
+      body: {
+        _Constants.requestKeyClientId: workflowClientId,
+        _Constants.requestKeyClientSecret: workflowClientSecret,
+        _Constants.requestKeyGrantType: _Constants.requestValueGrantTypeClientCredential,
+        _Constants.requestKeyScopes: _Constants.requestValueScopes,
+      },
+    );
   }
 }
