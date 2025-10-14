@@ -15,19 +15,40 @@ class WorkflowEngineConfig {
   final String workflowName;
   final String engine; // "vnext" or "amorphie"
   final Map<String, dynamic> config;
+  final String? version; // Workflow version (e.g., "1.0.0")
 
   WorkflowEngineConfig({
     required this.workflowName,
     required this.engine,
     required this.config,
+    this.version,
   });
 
-  /// Create configuration from JSON
+  /// Create configuration from JSON (map format - legacy)
   factory WorkflowEngineConfig.fromJson(String workflowName, Map<String, dynamic> json) {
     return WorkflowEngineConfig(
       workflowName: workflowName,
       engine: json['engine'] as String? ?? 'amorphie',
       config: json['config'] as Map<String, dynamic>? ?? {},
+      version: json['version'] as String?,
+    );
+  }
+
+  /// Create configuration from list item (new format)
+  /// Expected format: { "name": "account-opening", "type": "vNext", "version": "1.0.0", "domain": "core" }
+  factory WorkflowEngineConfig.fromListItem(Map<String, dynamic> item) {
+    final name = item['name'] as String;
+    final type = item['type'] as String? ?? 'amorphie';
+    final version = item['version'] as String?;
+    final domain = item['domain'] as String?;
+
+    return WorkflowEngineConfig(
+      workflowName: name,
+      engine: type,
+      version: version,
+      config: {
+        if (domain != null) 'domain': domain,
+      },
     );
   }
 
@@ -36,6 +57,7 @@ class WorkflowEngineConfig {
     return {
       'engine': engine,
       'config': config,
+      if (version != null) 'version': version,
     };
   }
 
@@ -74,11 +96,13 @@ class WorkflowEngineConfig {
     String? workflowName,
     String? engine,
     Map<String, dynamic>? config,
+    String? version,
   }) {
     return WorkflowEngineConfig(
       workflowName: workflowName ?? this.workflowName,
       engine: engine ?? this.engine,
       config: config ?? this.config,
+      version: version ?? this.version,
     );
   }
 }
@@ -86,27 +110,48 @@ class WorkflowEngineConfig {
 /// Parser for workflow engine configurations from HTTP client config
 class WorkflowEngineConfigParser {
   /// Parse workflow configurations from http_client_config
+  /// Supports list format: [{ "name": "account-opening", "type": "vNext", "version": "1.0.0", "domain": "core" }]
   static Map<String, WorkflowEngineConfig> parseWorkflowConfigs(
     Map<String, dynamic> httpClientConfig,
   ) {
-    final workflowsConfig = httpClientConfig['workflows'] as Map<String, dynamic>?;
-    if (workflowsConfig == null) {
+    final workflowsConfigRaw = httpClientConfig['workflows'];
+    
+    if (workflowsConfigRaw == null) {
       return {};
     }
 
     final configs = <String, WorkflowEngineConfig>{};
 
-    workflowsConfig.forEach((workflowName, config) {
-      if (workflowName != 'default' && config is Map<String, dynamic>) {
-        try {
-          configs[workflowName] = WorkflowEngineConfig.fromJson(workflowName, config);
-        } catch (e) {
-          // Skip invalid configurations
-          print('[WorkflowEngineConfigParser] Invalid config for $workflowName: $e');
+    // Handle list format (new)
+    if (workflowsConfigRaw is List) {
+      for (final item in workflowsConfigRaw) {
+        if (item is Map<String, dynamic>) {
+          try {
+            final config = WorkflowEngineConfig.fromListItem(item);
+            configs[config.workflowName] = config;
+          } catch (e) {
+            print('[WorkflowEngineConfigParser] Invalid list item config: $e');
+          }
         }
       }
-    });
+      return configs;
+    }
 
+    // Handle map format (legacy - for backward compatibility if needed)
+    if (workflowsConfigRaw is Map<String, dynamic>) {
+      workflowsConfigRaw.forEach((workflowName, config) {
+        if (workflowName != 'default' && config is Map<String, dynamic>) {
+          try {
+            configs[workflowName] = WorkflowEngineConfig.fromJson(workflowName, config);
+          } catch (e) {
+            print('[WorkflowEngineConfigParser] Invalid config for $workflowName: $e');
+          }
+        }
+      });
+      return configs;
+    }
+
+    print('[WorkflowEngineConfigParser] Unsupported workflows config format');
     return configs;
   }
 

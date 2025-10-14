@@ -36,9 +36,10 @@ class VNextWorkflowClient {
     required String key,
     Map<String, dynamic> attributes = const {},
     List<String> tags = const [],
+    String? version, // Workflow version (e.g., "1.0.0")
     Map<String, String>? headers,
   }) async {
-    logger.logConsole('[VNextWorkflowClient] Starting workflow: $workflowName in domain: $domain');
+    logger.logConsole('[VNextWorkflowClient] Starting workflow: $workflowName in domain: $domain${version != null ? " version: $version" : ""}');
     
     final requestBody = {
       'key': key,
@@ -46,17 +47,41 @@ class VNextWorkflowClient {
       'tags': tags,
     };
 
-    return networkManager.call(
+    logger.logConsole('[VNextWorkflowClient] Request body: $requestBody');
+    logger.logConsole('[VNextWorkflowClient] Request headers: $headers');
+
+    final queryParams = <String, dynamic>{};
+    if (version != null) {
+      queryParams['version'] = version;
+    }
+
+    logger.logConsole('[VNextWorkflowClient] Calling endpoint: vnext-init-workflow');
+    logger.logConsole('[VNextWorkflowClient] Path params: {DOMAIN: $domain, WORKFLOW_NAME: $workflowName}');
+    logger.logConsole('[VNextWorkflowClient] Query params: $queryParams');
+
+    final response = await networkManager.call(
       NeoHttpCall(
         endpoint: 'vnext-init-workflow',
         pathParameters: {
           'DOMAIN': domain,
           'WORKFLOW_NAME': workflowName,
         },
+        queryProviders: queryParams.isNotEmpty ? [HttpQueryProvider(queryParams)] : [],
         body: requestBody,
         headerParameters: headers ?? {},
       ),
     );
+
+    if (response is NeoSuccessResponse) {
+      logger.logConsole('[VNextWorkflowClient] ✅ SUCCESS: ${response.statusCode}');
+      logger.logConsole('[VNextWorkflowClient] Response data: ${response.data}');
+    } else if (response is NeoErrorResponse) {
+      logger.logConsole('[VNextWorkflowClient] ❌ ERROR: ${response.statusCode}');
+      logger.logConsole('[VNextWorkflowClient] Error details: ${response.error}');
+      logger.logConsole('[VNextWorkflowClient] Error description: ${response.error.error?.description ?? "No description"}');
+    }
+
+    return response;
   }
 
   /// Make a transition on a workflow instance
@@ -66,9 +91,15 @@ class VNextWorkflowClient {
     required String instanceId,
     required String transitionKey,
     Map<String, dynamic> data = const {},
+    String? version, // Workflow version (e.g., "1.0.0")
     Map<String, String>? headers,
   }) async {
-    logger.logConsole('[VNextWorkflowClient] Making transition: $transitionKey for instance: $instanceId');
+    logger.logConsole('[VNextWorkflowClient] Making transition: $transitionKey for instance: $instanceId${version != null ? " version: $version" : ""}');
+
+    final queryParams = <String, dynamic>{};
+    if (version != null) {
+      queryParams['version'] = version;
+    }
 
     return networkManager.call(
       NeoHttpCall(
@@ -79,6 +110,7 @@ class VNextWorkflowClient {
           'INSTANCE_ID': instanceId,
           'TRANSITION_KEY': transitionKey,
         },
+        queryProviders: queryParams.isNotEmpty ? [HttpQueryProvider(queryParams)] : [],
         body: data,
         headerParameters: headers ?? {},
       ),
@@ -90,9 +122,15 @@ class VNextWorkflowClient {
     required String domain,
     required String workflowName,
     required String instanceId,
+    String? version, // Workflow version (e.g., "1.0.0")
     Map<String, String>? headers,
   }) async {
-    logger.logConsole('[VNextWorkflowClient] Getting available transitions for instance: $instanceId');
+    logger.logConsole('[VNextWorkflowClient] Getting available transitions for instance: $instanceId${version != null ? " version: $version" : ""}');
+
+    final queryParams = <String, dynamic>{};
+    if (version != null) {
+      queryParams['version'] = version;
+    }
 
     return networkManager.call(
       NeoHttpCall(
@@ -102,6 +140,7 @@ class VNextWorkflowClient {
           'WORKFLOW_NAME': workflowName,
           'INSTANCE_ID': instanceId,
         },
+        queryProviders: queryParams.isNotEmpty ? [HttpQueryProvider(queryParams)] : [],
         headerParameters: headers ?? {},
       ),
     );

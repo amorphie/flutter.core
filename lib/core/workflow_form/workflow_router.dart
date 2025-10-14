@@ -90,7 +90,12 @@ class WorkflowRouter {
     Map<String, String>? headerParameters,
     bool isSubFlow,
   ) async {
-    logger.logConsole('[WorkflowRouter] Routing initWorkflow to V2 (vNext)');
+    logger.logConsole('[WorkflowRouter] Routing initWorkflow to V2 (vNext)${engineConfig.version != null ? " with version: ${engineConfig.version}" : ""}');
+    logger.logConsole('[WorkflowRouter] Engine config: ${engineConfig.toJson()}');
+    logger.logConsole('[WorkflowRouter] Domain: ${engineConfig.vNextDomain}');
+    logger.logConsole('[WorkflowRouter] Base URL: ${engineConfig.vNextBaseUrl}');
+    logger.logConsole('[WorkflowRouter] Version: ${engineConfig.version}');
+    logger.logConsole('[WorkflowRouter] Query parameters: $queryParameters');
     
     try {
       final v2Response = await vNextClient.initWorkflow(
@@ -98,6 +103,7 @@ class WorkflowRouter {
         workflowName: workflowName,
         key: _generateKey(),
         attributes: queryParameters ?? const {},
+        version: engineConfig.version, // Pass version from config
         headers: headerParameters,
       );
       
@@ -119,6 +125,7 @@ class WorkflowRouter {
             domain: engineConfig.vNextDomain,
             metadata: {
               'engineConfig': engineConfig.toJson(),
+              'version': engineConfig.version, // Store version in metadata
               'isSubFlow': isSubFlow,
             },
           ));
@@ -254,7 +261,9 @@ class WorkflowRouter {
     Map<String, String>? headerParameters,
     WorkflowInstanceEntity instance,
   ) async {
-    logger.logConsole('[WorkflowRouter] Routing postTransition to V2 (vNext)');
+    // Extract version from instance metadata
+    final version = instance.metadata?['version'] as String?;
+    logger.logConsole('[WorkflowRouter] Routing postTransition to V2 (vNext)${version != null ? " with version: $version" : ""}');
     
     try {
       // Remove instanceId from body for vNext client (it goes in URL path)
@@ -270,6 +279,7 @@ class WorkflowRouter {
         instanceId: instance.instanceId,
         transitionKey: transitionName,
         data: cleanBody,
+        version: version, // Pass version from metadata
         headers: headerParameters,
       );
       
@@ -372,12 +382,15 @@ class WorkflowRouter {
     final instance = instanceManager.getInstance(targetInstanceId);
     
     if (instance?.engine == WorkflowEngine.vnext && instance?.domain != null) {
-      logger.logConsole('[WorkflowRouter] Routing getAvailableTransitions to V2 (vNext)');
+      // Extract version from instance metadata
+      final version = instance?.metadata?['version'] as String?;
+      logger.logConsole('[WorkflowRouter] Routing getAvailableTransitions to V2 (vNext)${version != null ? " with version: $version" : ""}');
       
       final v2Response = await vNextClient.getAvailableTransitions(
         domain: instance!.domain!,
         workflowName: instance.workflowName,
         instanceId: targetInstanceId,
+        version: version, // Pass version from metadata
       );
       return _convertV2ToV1Response(v2Response);
     } else {
@@ -396,7 +409,12 @@ class WorkflowRouter {
     logger.logConsole('[WorkflowRouter] Converting V2 response to V1 format');
 
     if (v2Response is NeoErrorResponse) {
-      logger.logConsole('[WorkflowRouter] V2 response is error, passing through');
+      logger.logConsole('[WorkflowRouter] ❌ V2 response is ERROR');
+      logger.logConsole('[WorkflowRouter] Status code: ${v2Response.statusCode}');
+      logger.logConsole('[WorkflowRouter] Error response code: ${v2Response.error.responseCode}');
+      logger.logConsole('[WorkflowRouter] Error detail: ${v2Response.error.error?.description}');
+      logger.logConsole('[WorkflowRouter] Error title: ${v2Response.error.error?.title}');
+      logger.logConsole('[WorkflowRouter] Full error: ${v2Response.error}');
       return v2Response;
     }
 
