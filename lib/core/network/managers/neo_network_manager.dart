@@ -51,7 +51,7 @@ abstract class _Constants {
   static const String requestKeyGrantType = "grant_type";
   static const String requestValueGrantTypeRefreshToken = "refresh_token";
   static const String requestValueGrantTypeBurganCredential = "urn:ietf:params:oauth:grant-type:burgan-credential";
-  static const String requestValueGrantTypeClientCredential = "client_credential";
+  static const String requestValueGrantTypeClientCredential = "client_credentials";
   static const String requestKeyRefreshToken = "refresh_token";
   static const String requestKeyScopes = "scopes";
   static const List<String> requestValueScopes = ["retail-customer"];
@@ -473,7 +473,7 @@ class NeoNetworkManager {
       return true;
     } else {
       if (!error && await _isExistUser) {
-        await getTemporaryTokenForNotLoggedInUser(currentCall: currentCall, error: true);
+        return getTemporaryTokenForNotLoggedInUser(currentCall: currentCall, error: true);
       }
       _tokenLockCompleter?.complete();
       _tokenLockCompleter = null;
@@ -581,6 +581,9 @@ class NeoNetworkManager {
     final deviceId = await secureStorage.read(NeoCoreParameterKey.secureStorageDeviceId);
 
     final serverPrivateKey = await MtlsHelper().getServerPrivateKey(clientKeyTag: "$deviceId$customerId");
+    if (serverPrivateKey == null) {
+      return "";
+    }
     final now = DateTime.now().toUtc();
 
     // Claims (RFC 7523 uyumlu)
