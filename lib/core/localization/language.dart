@@ -41,4 +41,15 @@ enum Language {
   }
 
   Locale get locale => Locale(languageCode);
+
+  /// Accept-Language header formatında dil kodu döndürür
+  /// Örnek: "tr-TR", "en-US"
+  String get toAcceptLanguage {
+    switch (this) {
+      case Language.turkish:
+        return "tr-TR";
+      case Language.english:
+        return "en-US";
+    }
+  }
 }
