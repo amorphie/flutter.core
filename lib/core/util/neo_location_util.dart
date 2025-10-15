@@ -17,20 +17,11 @@ class NeoLocationUtil {
   }
 
   Future<LocationData?> getCurrentLocation() async {
-    if (kIsWeb) {
+    final bool isLocationSensorEnabled = await isLocationServiceEnabled();
+    if (kIsWeb || !isLocationSensorEnabled) {
       return null;
     }
     try {
-      bool serviceEnabled = false;
-
-      serviceEnabled = await isLocationServiceEnabled();
-      if (!serviceEnabled) {
-        serviceEnabled = await _location.requestService();
-        if (!serviceEnabled) {
-          return null;
-        }
-      }
-
       if (!await hasLocationPermission()) {
         return null;
       }
