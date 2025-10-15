@@ -19,6 +19,7 @@ class NeoTransitionListenerEventInit extends NeoTransitionListenerEvent {
   final String signalRServerUrl;
   final String signalRMethodName;
   final Function(SignalrTransitionData navigationData) onTransitionEvent;
+  final Function(NeoSignalRTransition data) onSilentEvent;
   final Function(EkycEventData eventData) onEkycEvent;
   final Future Function({required bool isTwoFactorAuthenticated})? onLoggedInSuccessfully;
   final Function(NeoError error, {required bool displayAsPopup})? onTransitionError;
@@ -31,6 +32,7 @@ class NeoTransitionListenerEventInit extends NeoTransitionListenerEvent {
     required this.signalRServerUrl,
     required this.signalRMethodName,
     required this.onTransitionEvent,
+    required this.onSilentEvent,
     required this.onEkycEvent,
     required this.onLoggedInSuccessfully,
     required this.onTransitionError,
@@ -63,6 +65,7 @@ class NeoTransitionListenerEventInitWorkflow extends NeoTransitionListenerEvent 
   final Map<String, dynamic>? initialData;
   final NeoNavigationType? navigationType;
   final bool useSubNavigator;
+  final bool useRootNavigator;
 
   NeoTransitionListenerEventInitWorkflow({
     required this.workflowName,
@@ -73,6 +76,7 @@ class NeoTransitionListenerEventInitWorkflow extends NeoTransitionListenerEvent 
     this.initialData,
     this.navigationType,
     this.useSubNavigator = false,
+    this.useRootNavigator = false,
   });
 
   @override
@@ -85,6 +89,7 @@ class NeoTransitionListenerEventInitWorkflow extends NeoTransitionListenerEvent 
         initialData,
         navigationType,
         useSubNavigator,
+        useRootNavigator,
       ];
 }
 
