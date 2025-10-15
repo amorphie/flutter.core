@@ -23,7 +23,7 @@ class NeoLocationUtil {
     try {
       bool serviceEnabled = false;
 
-      serviceEnabled = await _location.serviceEnabled();
+      serviceEnabled = await isLocationServiceEnabled();
       if (!serviceEnabled) {
         serviceEnabled = await _location.requestService();
         if (!serviceEnabled) {
@@ -39,6 +39,18 @@ class NeoLocationUtil {
     } catch (e) {
       _neoLogger.logError("NeoLocationUtil-getCurrentLocation: $e");
       return null;
+    }
+  }
+
+  Future<bool> isLocationServiceEnabled() async {
+    if (kIsWeb) {
+      return false;
+    }
+    try {
+      return await _location.serviceEnabled();
+    } catch (e) {
+      _neoLogger.logError("NeoLocationUtil-isLocationServiceEnabled: $e");
+      return false;
     }
   }
 
