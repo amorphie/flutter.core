@@ -5,6 +5,7 @@ import 'package:neo_core/core/bus/widget_event_bus/neo_core_widget_event_keys.da
 import 'package:neo_core/core/environment_variables/neo_environment.dart';
 import 'package:neo_core/core/environment_variables/neo_environment_type.dart';
 import 'package:neo_core/core/managers/dengage_manager/dengage_manager.dart';
+import 'package:neo_core/core/managers/nba_manager/mixins/neo_nba_analytics_mixin.dart';
 import 'package:neo_core/core/managers/nba_manager/models/neo_nba_content_type.dart';
 import 'package:neo_core/core/managers/nba_manager/models/neo_nba_item.dart';
 import 'package:neo_core/core/managers/parameter_manager/neo_core_parameter_key.dart';
@@ -23,7 +24,7 @@ abstract class _Constants {
 }
 
 /// NBA means Next Best Action in marketing terminology
-class NeoNbaManager {
+class NeoNbaManager with NeoNbaAnalyticsMixin {
   final NeoNetworkManager networkManager;
   final NeoParameterManager neoParameterManager;
 
