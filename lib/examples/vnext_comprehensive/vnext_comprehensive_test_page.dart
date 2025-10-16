@@ -202,7 +202,7 @@ class _VNextComprehensiveTestPageState extends State<VNextComprehensiveTestPage>
 
   // Real workflow configurations from vNext setup
   final List<String> _availableWorkflows = [
-    'oauth-authentication', // OAuth2.0 authentication workflow
+    'account-opening',
   ];
 
   @override

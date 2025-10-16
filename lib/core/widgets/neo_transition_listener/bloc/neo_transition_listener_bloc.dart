@@ -37,6 +37,7 @@ import 'package:neo_core/core/widgets/neo_page/bloc/neo_page_bloc.dart';
 import 'package:neo_core/core/widgets/neo_transition_listener/bloc/usecases/process_login_certificate_silent_event_use_case.dart';
 import 'package:neo_core/core/widgets/neo_transition_listener/usecases/get_workflow_query_parameters_usecase.dart';
 import 'package:neo_core/core/workflow_form/neo_workflow_manager.dart';
+import 'package:neo_core/core/workflow_form/workflow_service.dart';
 import 'package:universal_io/io.dart';
 
 part 'neo_transition_listener_event.dart';
@@ -214,14 +215,19 @@ class NeoTransitionListenerBloc extends Bloc<NeoTransitionListenerEvent, NeoTran
       if (event.displayLoading) {
         onLoadingStatusChanged(displayLoading: true);
       }
-      final response = await neoWorkflowManager.postTransition(
+
+      // Route through engine-aware WorkflowService/WorkflowRouter to support vNext seamlessly
+      final workflowService = GetIt.I.get<WorkflowService>();
+      final result = await workflowService.postTransition(
         transitionName: event.transitionName,
         body: event.body,
-        headerParameters: event.headerParameters,
+        headers: event.headerParameters,
+        instanceId: neoWorkflowManager.instanceId.isNotEmpty ? neoWorkflowManager.instanceId : null,
         isSubFlow: event.isSubFlow,
       );
-      if (response.isError) {
-        _completeWithError(response.asError.error, shouldHideLoading: event.displayLoading);
+
+      if (!result.isSuccess) {
+        _completeWithError(const NeoError(), shouldHideLoading: event.displayLoading);
       } else {
         unawaited(_initSignalrConnectionManager());
       }

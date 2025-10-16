@@ -59,6 +59,15 @@ class WorkflowRouter {
     logger.logConsole('[WorkflowRouter] Router initialized with vNext message handler support');
   }
 
+  String? _mapAccountTypeTitleToValue(String title) {
+    final lower = title.toLowerCase();
+    if (lower.contains('demand')) return 'demand-deposit';
+    if (lower.contains('time')) return 'time-deposit';
+    if (lower.contains('investment')) return 'investment-account';
+    if (lower.contains('saving')) return 'savings-account';
+    return null;
+  }
+
   /// Get workflow engine configuration for a workflow name
   WorkflowEngineConfig _getConfigForWorkflow(String workflowName) {
     return httpClientConfig.getWorkflowConfig(workflowName);
@@ -262,14 +271,42 @@ class WorkflowRouter {
     WorkflowInstanceEntity instance,
   ) async {
     // Extract version from instance metadata
-    final version = instance.metadata?['version'] as String?;
+    final version = instance.metadata['version'] as String?;
     logger.logConsole('[WorkflowRouter] Routing postTransition to V2 (vNext)${version != null ? " with version: $version" : ""}');
     
     try {
-      // Remove instanceId from body for vNext client (it goes in URL path)
-      final cleanBody = Map<String, dynamic>.from(body);
-      final removedInstanceId = cleanBody.remove('instanceId');
-      
+      // Build vNext-friendly payload
+      // 1) Remove legacy-only fields
+      final incoming = Map<String, dynamic>.from(body);
+      final removedInstanceId = incoming.remove('instanceId');
+      // 2) Extract/compose attributes for vNext schema
+      final Map<String, dynamic> attributes = {};
+      // Respect pre-provided attributes
+      final dynamic rawAttrs = incoming['attributes'];
+      if (rawAttrs is Map<String, dynamic>) {
+        attributes.addAll(rawAttrs);
+      }
+      // Map accountType if present or infer from UI fields
+      final dynamic accountType = incoming['accountType'];
+      if (accountType is String && accountType.isNotEmpty) {
+        attributes['accountType'] = accountType;
+      } else {
+        final String? selectedTitle = incoming['selectedOptionTitle'] as String?;
+        if (selectedTitle != null && selectedTitle.isNotEmpty) {
+          // Normalize common titles to expected enum values
+          final normalized = _mapAccountTypeTitleToValue(selectedTitle);
+          if (normalized != null) {
+            attributes['accountType'] = normalized;
+          }
+        }
+      }
+
+      // 3) Construct minimal vNext payload: put attributes flat at root (schema expects top-level keys)
+      final cleanBody = <String, dynamic>{};
+      if (attributes.isNotEmpty) {
+        cleanBody.addAll(attributes);
+      }
+
       logger.logConsole('[WorkflowRouter] Removed instanceId from body: $removedInstanceId');
       logger.logConsole('[WorkflowRouter] Clean body for HTTP request: $cleanBody');
       
@@ -381,13 +418,13 @@ class WorkflowRouter {
     // Get instance information to determine engine
     final instance = instanceManager.getInstance(targetInstanceId);
     
-    if (instance?.engine == WorkflowEngine.vnext && instance?.domain != null) {
+    if (instance != null && instance.engine == WorkflowEngine.vnext && instance.domain != null) {
       // Extract version from instance metadata
-      final version = instance?.metadata?['version'] as String?;
+      final version = instance.metadata['version'] as String?;
       logger.logConsole('[WorkflowRouter] Routing getAvailableTransitions to V2 (vNext)${version != null ? " with version: $version" : ""}');
       
       final v2Response = await vNextClient.getAvailableTransitions(
-        domain: instance!.domain!,
+        domain: instance.domain!,
         workflowName: instance.workflowName,
         instanceId: targetInstanceId,
         version: version, // Pass version from metadata
@@ -412,8 +449,8 @@ class WorkflowRouter {
       logger.logConsole('[WorkflowRouter] ❌ V2 response is ERROR');
       logger.logConsole('[WorkflowRouter] Status code: ${v2Response.statusCode}');
       logger.logConsole('[WorkflowRouter] Error response code: ${v2Response.error.responseCode}');
-      logger.logConsole('[WorkflowRouter] Error detail: ${v2Response.error.error?.description}');
-      logger.logConsole('[WorkflowRouter] Error title: ${v2Response.error.error?.title}');
+      logger.logConsole('[WorkflowRouter] Error detail: ${v2Response.error.error.description}');
+      logger.logConsole('[WorkflowRouter] Error title: ${v2Response.error.error.title}');
       logger.logConsole('[WorkflowRouter] Full error: ${v2Response.error}');
       return v2Response;
     }

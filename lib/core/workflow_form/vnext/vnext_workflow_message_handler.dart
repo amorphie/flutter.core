@@ -183,17 +183,52 @@ class VNextWorkflowMessageHandler {
             break;
         }
 
-        if (newStatus != null || newState != null) {
+        // Persist vNext instance snapshot (including extensions) for downstream consumers
+        Map<String, dynamic> additionalMetadata = {
+          ...message.metadata,
+          'lastMessageType': message.type.name,
+          'lastMessageTime': message.timestamp.toIso8601String(),
+        };
+
+        // Extract and persist vNext extensions (view/data/transitions/status/currentState)
+        try {
+          final data = message.data;
+          if (data.isNotEmpty) {
+            final extensions = data['extensions'] as Map<String, dynamic>?;
+            if (extensions != null) {
+              final view = extensions['view'] as Map<String, dynamic>?;
+              final dataFn = extensions['data'] as Map<String, dynamic>?;
+              final transitions = extensions['transitions'];
+              final status = extensions['status'];
+              final currentState = extensions['currentState'];
+
+              additionalMetadata.addAll({
+                'vnextExtensions': {
+                  if (view != null) 'view': {
+                    if (view['href'] != null) 'href': view['href'],
+                    if (view['loadData'] != null) 'loadData': view['loadData'],
+                  },
+                  if (dataFn != null) 'data': {
+                    if (dataFn['href'] != null) 'href': dataFn['href'],
+                  },
+                  if (transitions != null) 'transitions': transitions,
+                  if (status != null) 'status': status,
+                  if (currentState != null) 'currentState': currentState,
+                }
+              });
+            }
+          }
+        } catch (_) {
+          // Best-effort metadata extraction; ignore failures
+        }
+
+        if (newStatus != null || newState != null || additionalMetadata.isNotEmpty) {
           _instanceManager.updateInstanceOnEvent(
             message.instanceId,
             newStatus: newStatus,
             newState: newState,
             additionalAttributes: message.data,
-            additionalMetadata: {
-              ...message.metadata,
-              'lastMessageType': message.type.name,
-              'lastMessageTime': message.timestamp.toIso8601String(),
-            },
+            additionalMetadata: additionalMetadata,
           );
         }
       }

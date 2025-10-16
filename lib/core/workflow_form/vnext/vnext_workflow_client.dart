@@ -108,7 +108,8 @@ class VNextWorkflowClient {
           'DOMAIN': domain,
           'WORKFLOW_NAME': workflowName,
           'INSTANCE_ID': instanceId,
-          'TRANSITION_KEY': transitionKey,
+          // Match http_client_config placeholder name
+          'TRANSITION_NAME': transitionKey,
         },
         queryProviders: queryParams.isNotEmpty ? [HttpQueryProvider(queryParams)] : [],
         body: data,
