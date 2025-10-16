@@ -75,14 +75,7 @@ class VNextLongPollingManager {
     
     // Remove from active sessions
     _activeSessions.remove(instanceId);
-    
-    // Emit a completion message to notify listeners
-    _messageController.add(VNextWorkflowMessage.completion(
-      instanceId: instanceId,
-      state: 'polling-stopped',
-      data: {'reason': reason},
-      timestamp: DateTime.now(),
-    ));
+    // Do not emit a completion message on user-interaction stop; UI will navigate via stateChange
   }
 
   /// Stop long polling for a specific workflow instance
@@ -91,14 +84,7 @@ class VNextLongPollingManager {
     if (session != null) {
       _logger.logConsole('[VNextLongPollingManager] Stopping polling for instance: $instanceId');
       await session.stop();
-      
-      // Emit a completion message to notify listeners that polling has stopped
-      _messageController.add(VNextWorkflowMessage.completion(
-        instanceId: instanceId,
-        state: 'polling-stopped',
-        data: {'reason': 'manual-stop'},
-        timestamp: DateTime.now(),
-      ));
+      // Do not emit completion here; only actual workflow completion should do so
     }
   }
 
@@ -319,11 +305,17 @@ class _PollingSession {
       
       if (instanceId != null && status != null) {
         // Create a synthetic message representing the state change
-        final message = VNextWorkflowMessage(
+        // Populate state/pageId so UI can navigate and fetch the view
+        final message = VNextWorkflowMessage.stateChange(
           instanceId: instanceId,
-          type: VNextWorkflowMessageType.stateChange,
-          timestamp: DateTime.now(),
+          state: currentState ?? '',
+          pageId: currentState ?? '',
           data: data,
+          metadata: {
+            'workflowName': workflowName,
+            'navigationType': 'push',
+          },
+          timestamp: DateTime.now(),
         );
         messages.add(message);
         logger.logConsole('[PollingSession] State: $currentState, Status: $status');

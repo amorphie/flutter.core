@@ -256,15 +256,15 @@ class WorkflowRouter {
     // Route based on instance engine
     if (instance.engine == WorkflowEngine.vnext) {
       logger.logConsole('[WorkflowRouter] Routing to V2 (vNext) engine');
-      return _postTransitionV2(transitionName, body, headerParameters, instance);
+      return _postTransitionVNext(transitionName, body, headerParameters, instance);
     } else {
-      logger.logConsole('[WorkflowRouter] Routing to V1 (amorphie) engine');
-      return _postTransitionV1(transitionName, body, headerParameters, isSubFlow);
+      logger.logConsole('[WorkflowRouter] Routing to V2 (amorphie) engine');
+      return _postTransitionV2(transitionName, body, headerParameters, isSubFlow);
     }
   }
 
-  /// Post transition using vNext (V2) engine
-  Future<NeoResponse> _postTransitionV2(
+  /// Post transition using vNext engine (dedicated)
+  Future<NeoResponse> _postTransitionVNext(
     String transitionName,
     Map<String, dynamic> body,
     Map<String, String>? headerParameters,
@@ -286,6 +286,7 @@ class WorkflowRouter {
       if (rawAttrs is Map<String, dynamic>) {
         attributes.addAll(rawAttrs);
       }
+      // todo: generic
       // Map accountType if present or infer from UI fields
       final dynamic accountType = incoming['accountType'];
       if (accountType is String && accountType.isNotEmpty) {
@@ -340,7 +341,7 @@ class WorkflowRouter {
       
       return _convertV2ToV1Response(v2Response, transitionName: transitionName);
     } catch (e, stackTrace) {
-      logger.logConsole('[WorkflowRouter] ERROR: V2 postTransition failed: $e\nStackTrace: $stackTrace');
+      logger.logConsole('[WorkflowRouter] ERROR: vNext postTransition failed: $e\nStackTrace: $stackTrace');
       return NeoErrorResponse(
         NeoError(
           responseCode: 500,
@@ -350,6 +351,20 @@ class WorkflowRouter {
         headers: {},
       );
     }
+  }
+// TODO: stop ship, this should be checked if implemented correctly.
+  /// Post transition using amorphie (V2) engine
+  /// Note: This restores the legacy "V2" naming for amorphie and delegates to the
+  /// existing V1 manager transition path to preserve behavior.
+  Future<NeoResponse> _postTransitionV2(
+    String transitionName,
+    Map<String, dynamic> body,
+    Map<String, String>? headerParameters,
+    bool isSubFlow,
+  ) async {
+    logger.logConsole('[WorkflowRouter] Routing postTransition to V2 (amorphie)');
+    // Delegate to existing amorphie transition implementation
+    return _postTransitionV1(transitionName, body, headerParameters, isSubFlow);
   }
 
   /// Post transition using amorphie (V1) engine

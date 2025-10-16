@@ -12,8 +12,10 @@
 
 import 'dart:async';
 
+import 'package:get_it/get_it.dart';
 import 'package:neo_core/core/analytics/neo_logger.dart';
 import 'package:neo_core/core/navigation/models/neo_navigation_type.dart';
+import 'package:neo_core/core/workflow_form/workflow_router.dart';
 import 'package:neo_core/core/workflow_form/workflow_service.dart';
 import 'package:neo_core/core/workflow_form/workflow_ui_events.dart';
 
@@ -22,6 +24,7 @@ class WorkflowFlutterBridge {
   final WorkflowService _workflowService;
   final NeoLogger _logger;
   final StreamController<WorkflowUIEvent> _uiEventController;
+  StreamSubscription<WorkflowUIEvent>? _vNextUiEventsSub;
 
   /// Stream of UI events for Flutter layer to listen to
   Stream<WorkflowUIEvent> get uiEvents => _uiEventController.stream;
@@ -31,7 +34,9 @@ class WorkflowFlutterBridge {
     required NeoLogger logger,
   })  : _workflowService = workflowService,
         _logger = logger,
-        _uiEventController = StreamController<WorkflowUIEvent>.broadcast();
+        _uiEventController = StreamController<WorkflowUIEvent>.broadcast() {
+    _trySubscribeVNextUiEvents();
+  }
 
   /// Initialize a workflow - used by custom functions and widgets
   /// This replaces direct BLoC calls in CustomFunctionRegisterer
@@ -43,6 +48,7 @@ class WorkflowFlutterBridge {
     WorkflowUIConfig? uiConfig,
     Map<String, dynamic>? initialData,
   }) async {
+    _ensureVNextSubscription();
     final config = uiConfig ?? const WorkflowUIConfig();
     
     _logger.logConsole('[WorkflowFlutterBridge] ========== INIT WORKFLOW START ==========');
@@ -139,6 +145,7 @@ class WorkflowFlutterBridge {
     bool isSubFlow = false,
     WorkflowUIConfig? uiConfig,
   }) async {
+    _ensureVNextSubscription();
     final config = uiConfig ?? const WorkflowUIConfig();
     final workflowInstanceId = instanceId ?? body['instanceId'] as String?;
     
@@ -247,11 +254,44 @@ class WorkflowFlutterBridge {
 
   /// Dispose resources
   void dispose() {
+    _vNextUiEventsSub?.cancel();
     _uiEventController.close();
   }
 
   // Private helper methods
+  void _trySubscribeVNextUiEvents() {
+    try {
+      if (_vNextUiEventsSub != null) {
+        return; // already subscribed
+      }
+      final router = GetIt.I.get<WorkflowRouter>();
+      final stream = router.vNextUIEventStream;
+      if (stream != null) {
+        _logger.logConsole('[WorkflowFlutterBridge] Subscribing to vNext UI events');
+        _vNextUiEventsSub = stream.listen((event) {
+          _logger.logConsole('[WorkflowFlutterBridge] Forwarding vNext UI event: ${event.type}');
+          _uiEventController.add(event);
+          // Ensure any pending loading overlay is hidden once we have a UI event
+          if (event.type == WorkflowUIEventType.navigate ||
+              event.type == WorkflowUIEventType.updateData ||
+              event.type == WorkflowUIEventType.error) {
+            _logger.logConsole('[WorkflowFlutterBridge] vNext event => emit loading=false (type=${event.type})');
+            _emitLoadingEvent(false, instanceId: event.instanceId);
+          }
+        });
+      }
+    } catch (_) {
+      // Router may not be registered yet; ignore
+    }
+  }
+
+  void _ensureVNextSubscription() {
+    if (_vNextUiEventsSub == null) {
+      _trySubscribeVNextUiEvents();
+    }
+  }
   void _emitLoadingEvent(bool isLoading, {String? instanceId}) {
+    _logger.logConsole('[WorkflowFlutterBridge] Dispatching loading event: isLoading=$isLoading, instanceId=${instanceId ?? 'null'}');
     _uiEventController.add(WorkflowUIEvent.loading(
       isLoading: isLoading,
       instanceId: instanceId,

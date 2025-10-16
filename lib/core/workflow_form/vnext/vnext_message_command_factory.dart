@@ -68,15 +68,13 @@ class VNextMessageCommandFactory {
       switch (message.type) {
         case VNextWorkflowMessageType.transition:
         case VNextWorkflowMessageType.stateChange:
-          if (message.requiresNavigation && message.pageId != null) {
-            return WorkflowUIEvent.navigate(
-              pageId: message.pageId!,
-              instanceId: message.instanceId,
-              pageData: message.data,
-              navigationType: _determineNavigationType(message),
-            );
-          }
-          break;
+          // For vNext, the view endpoint is stable; re-fetch on any state change/transition.
+          return WorkflowUIEvent.navigate(
+            pageId: 'vnext-view',
+            instanceId: message.instanceId,
+            pageData: message.data,
+            navigationType: _determineNavigationType(message),
+          );
 
         case VNextWorkflowMessageType.completion:
           return WorkflowUIEvent.navigate(
@@ -101,8 +99,6 @@ class VNextMessageCommandFactory {
             instanceId: message.instanceId,
           );
       }
-
-      return null;
     } catch (e) {
       _logger.logError('[VNextMessageCommandFactory] Failed to convert to UI event: $e');
       return null;
