@@ -1,3 +1,6 @@
+import 'package:neo_core/core/analytics/neo_analytics.dart';
+import 'package:neo_core/core/bus/widget_event_bus/neo_core_widget_event_keys.dart';
+
 mixin NeoNbaAnalyticsMixin {
   void sendInAppDisplayEvent({
     required int? bannerId,
@@ -94,22 +97,24 @@ mixin NeoNbaAnalyticsMixin {
     int? actionType,
     String? actionLink,
   }) {
-    dataroidRepository.collectCustomEvent(
-      eventName: eventName,
-      attributes: {
-        "bannerId": bannerId,
-        "pageId": pageId,
-        "bannerUrl": bannerUrl,
-        "content": {
-          "title": contentTitle ?? "",
-          "body": contentBody ?? "",
-          "contentType": contentType,
+    NeoCoreWidgetEventKeys.globalAnalyticEvent.sendEvent(
+      data: NeoAnalyticEventCustomEvent(
+        eventName: eventName,
+        attributes: {
+          "bannerId": bannerId,
+          "pageId": pageId,
+          "bannerUrl": bannerUrl,
+          "content": {
+            "title": contentTitle ?? "",
+            "body": contentBody ?? "",
+            "contentType": contentType,
+          },
+          "action": {
+            "actionType": actionType,
+            "actionLink": actionLink,
+          },
         },
-        "action": {
-          "actionType": actionType,
-          "actionLink": actionLink,
-        },
-      },
+      ),
     );
   }
 }
