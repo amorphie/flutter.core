@@ -58,6 +58,7 @@ dependencies:
 
   # Analytics
   logger: ^2.2.0
+  url_launcher: ^6.3.0
   adjust_sdk: 4.38.1
   dataroid_plugin_flutter:
     git:

@@ -11,6 +11,7 @@
  */
 
 import 'dart:async';
+import 'dart:convert';
 
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:get_it/get_it.dart';
@@ -147,9 +148,15 @@ class NeoCoreSecureStorage {
 
     final Map<String, dynamic> decodedToken = JwtDecoder.decode(token);
 
+    await write(key: NeoCoreParameterKey.secureStorageClaims, value: json.encode(decodedToken));
+
     final customerId = decodedToken["user.reference"];
     if (customerId is String && customerId.isNotEmpty) {
       await write(key: NeoCoreParameterKey.secureStorageCustomerId, value: customerId);
+    }
+    final role = decodedToken["role"];
+    if (role is String && role.isNotEmpty) {
+      await write(key: NeoCoreParameterKey.secureStorageRole, value: role);
     }
 
     final userId = decodedToken["user.id"];

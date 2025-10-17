@@ -13,6 +13,7 @@
 import 'dart:convert';
 
 import 'package:equatable/equatable.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:interpolation/interpolation.dart';
 import 'package:neo_core/core/analytics/neo_logger.dart';
@@ -46,8 +47,10 @@ class LocalizationBloc extends Bloc<LocalizationEvent, LocalizationState> {
   final bool isOnApp;
   final _neoSharedPrefs = getIt.get<NeoSharedPrefs>();
   final _neoNetworkManager = getIt.get<NeoNetworkManager>();
+  final bool fetchLocalizationFromApi;
 
-  LocalizationBloc({required this.isOnApp}) : super(LocalizationState(Language.defaultLanguage)) {
+  LocalizationBloc({required this.isOnApp, this.fetchLocalizationFromApi = true})
+      : super(LocalizationState(Language.defaultLanguage)) {
     on<LocalizationEventChangeLanguage>(_onLanguageChangedToState);
     on<LocalizationEventSwitchLanguage>(
       _onSwitchLanguage,
@@ -66,7 +69,9 @@ class LocalizationBloc extends Bloc<LocalizationEvent, LocalizationState> {
     final language = _getStoredLanguage();
     _currentLanguage = language;
     add(LocalizationEventChangeLanguage(language));
-    add(LocalizationEventFetchLocalizationFromAPI());
+    if (fetchLocalizationFromApi) {
+      add(LocalizationEventFetchLocalizationFromAPI());
+    }
   }
 
   _onLanguageChangedToState(LocalizationEventChangeLanguage event, Emitter<LocalizationState> emit) async {
@@ -142,6 +147,15 @@ class LocalizationBloc extends Bloc<LocalizationEvent, LocalizationState> {
       localizationData = json.decode(utf8.decode(base64Decode(localizationDataBase64)));
       emit(state.copyWith(lastUpdatedTime: DateTime.now()));
     }
+  }
+
+  static void addLocalization(String key, Map<String, String> translations) {
+    if (key.isEmpty || translations.isEmpty) {
+      debugPrint('[LocalizationBloc] Warning: Attempted to add empty key or translations');
+      return;
+    }
+
+    localizationData[key] = Map<String, String>.from(translations);
   }
 }
 

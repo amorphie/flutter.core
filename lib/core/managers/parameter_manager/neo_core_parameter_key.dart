@@ -5,6 +5,8 @@ abstract class NeoCoreParameterKey {
   static const cacheEncryptionRSAPublicKey = "cache:encryption:rsaPublicKey";
   static const secureStorageAuthToken = "secureStorage:infrastructure:authToken";
   static const secureStorageBusinessLine = "secureStorage:common:businessLine";
+  static const secureStorageRole = "secureStorage:common:role";
+  static const secureStorageClaims = "secureStorage:common:claims";
   static const secureStorageCustomerId = "secureStorage:common:customerId";
   static const secureStorageCustomerName = "secureStorage:common:customerName";
   static const secureStorageCustomerNameAndSurname = "secureStorage:common:customerNameAndSurname";

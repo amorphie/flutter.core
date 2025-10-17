@@ -48,6 +48,8 @@ class NavigateWithEventBusNavigationHandlerUseCase {
       case NeoNavigationType.bottomSheet:
         // No-op
         break;
+      case NeoNavigationType.none:
+      // No-op
     }
   }
 }
