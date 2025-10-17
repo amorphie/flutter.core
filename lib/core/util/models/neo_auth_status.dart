@@ -16,4 +16,5 @@ enum NeoAuthStatus {
 
 extension NeoAuthStatusExtension on NeoAuthStatus {
   bool get isTwoFactorAuth => this == NeoAuthStatus.twoFactorAuth;
+  bool get isRegisteredUser => this == NeoAuthStatus.twoFactorAuth || this == NeoAuthStatus.oneFactorAuth;
 }
