@@ -78,7 +78,7 @@ class VNextWorkflowClient {
     } else if (response is NeoErrorResponse) {
       logger.logConsole('[VNextWorkflowClient] ❌ ERROR: ${response.statusCode}');
       logger.logConsole('[VNextWorkflowClient] Error details: ${response.error}');
-      logger.logConsole('[VNextWorkflowClient] Error description: ${response.error.error?.description ?? "No description"}');
+      logger.logConsole('[VNextWorkflowClient] Error description: ${response.error.error.description}');
     }
 
     return response;
@@ -96,6 +96,16 @@ class VNextWorkflowClient {
   }) async {
     logger.logConsole('[VNextWorkflowClient] Making transition: $transitionKey for instance: $instanceId${version != null ? " version: $version" : ""}');
 
+    // TODO(stop-ship): remove temporary UI-key filtering when all callers send clean formData
+    final Map<String, dynamic> sanitized = <String, dynamic>{};
+    data.forEach((k, v) {
+      if (v == null) return;
+      if (k == 'selectedOptionTitle') return;
+      if (k.startsWith('__')) return;
+      if (k.endsWith('selectedOption')) return;
+      sanitized[k] = v;
+    });
+
     final queryParams = <String, dynamic>{};
     if (version != null) {
       queryParams['version'] = version;
@@ -112,7 +122,7 @@ class VNextWorkflowClient {
           'TRANSITION_NAME': transitionKey,
         },
         queryProviders: queryParams.isNotEmpty ? [HttpQueryProvider(queryParams)] : [],
-        body: data,
+        body: sanitized,
         headerParameters: headers ?? {},
       ),
     );
