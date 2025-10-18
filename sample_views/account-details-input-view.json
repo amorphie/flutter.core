@@ -1,0 +1,86 @@
+{
+  "key": "account-details-input-view",
+  "version": "1.0.0",
+  "domain": "core",
+  "flow": "sys-views",
+  "flowVersion": "1.0.0",
+  "tags": [
+    "banking",
+    "account-details",
+    "form",
+    "ui-view"
+  ],
+  "attributes": {
+    "type": 1,
+    "target": 1,
+    "content": {
+      "pageName": "account-details-input", 
+      "componentJson": {
+        "type": "neo_scaffold",
+        "args": {
+          "useSafeArea": true,
+          "appBar": {
+            "type": "neo_app_bar",
+            "args": {
+              "title": "Account Opening",
+              "leftWidgetType": "NeoAppBarLeftWidgetType.backButton"
+            }
+          },
+          "body": {
+            "type": "column",
+            "args": {
+              "crossAxisAlignment": "stretch",
+              "children": [
+                {
+                  "type": "neo_text_form_field",
+                  "args": {
+                    "dataKey": "accountName",
+                    "labelText": "Account Name",
+                    "validatorRequired": true,
+                    "padding": {"start": 24, "end": 24, "bottom": 16}
+                  }
+                },
+                {
+                  "type": "neo_text_form_field",
+                  "args": {
+                    "dataKey": "currency",
+                    "labelText": "Currency",
+                    "validatorRequired": true,
+                    "padding": {"start": 24, "end": 24, "bottom": 16}
+                  }
+                },
+                {
+                  "type": "neo_text_form_field",
+                  "args": {
+                    "dataKey": "initialDeposit",
+                    "labelText": "Initial Deposit",
+                    "validatorRequired": true,
+                    "padding": {"start": 24, "end": 24, "bottom": 24}
+                  }
+                },
+                {
+                  "type": "container",
+                  "args": {
+                    "padding": {"start": 24, "end": 24, "bottom": 24},
+                    "child": {
+                      "type": "neo_button",
+                      "args": {
+                        "transitionId": "submit-account-details",
+                        "labelText": "general_continue_button",
+                        "size": "NeoButtonSize.large",
+                        "displayMode": "NeoButtonDisplayMode.primary",
+                        "formValidationRequired": true
+                      }
+                    }
+                  }
+                }
+              ]
+            }
+          }
+        }
+      }
+    }
+  }
+}
+
+

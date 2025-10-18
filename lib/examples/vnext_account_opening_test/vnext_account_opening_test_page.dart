@@ -1215,7 +1215,7 @@ class _MockNeoNetworkManager implements NeoNetworkManager {
         final domain = neoCall.pathParameters?['DOMAIN'] ?? 'core';
         final workflowName = neoCall.pathParameters?['WORKFLOW_NAME'] ?? 'account-opening';
         final instanceId = neoCall.pathParameters?['INSTANCE_ID'] ?? 'test';
-        final transitionKey = neoCall.pathParameters?['TRANSITION_KEY'] ?? 'transition';
+        final transitionKey = neoCall.pathParameters?['TRANSITION_NAME'] ?? 'transition';
         url = '$apiBasePath/$domain/workflows/$workflowName/instances/$instanceId/transitions/$transitionKey';
         print('[NETWORK] POST Transition URL: $url');
         print('[NETWORK] Transition Key: $transitionKey');

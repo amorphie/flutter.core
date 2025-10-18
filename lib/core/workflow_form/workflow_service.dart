@@ -110,7 +110,9 @@ class WorkflowService {
   /// Automatically routes to the correct engine based on instance
   Future<WorkflowResult> postTransition({
     required String transitionName,
-    required Map<String, dynamic> body,
+    Map<String, dynamic>? formData,
+    Map<String, dynamic>? attributes,
+    @Deprecated('Use formData instead') Map<String, dynamic>? body,
     Map<String, String>? headers,
     String? instanceId,
     bool isSubFlow = false,
@@ -118,16 +120,21 @@ class WorkflowService {
     try {
       _logger.logConsole('[WorkflowService] Posting transition: $transitionName');
 
+      // Trust bridge to resolve, fallback to empty
+      final finalFormData = formData ?? const <String, dynamic>{};
+
       final response = await _router.postTransition(
         transitionName: transitionName,
-        body: {...body, if (instanceId != null) 'instanceId': instanceId},
+        formData: finalFormData,
+        attributes: attributes,
         headerParameters: headers,
+        instanceId: instanceId,
         isSubFlow: isSubFlow,
       );
 
       if (response.isSuccess) {
         final data = response.asSuccess.data;
-        final resultInstanceId = instanceId ?? body['instanceId'] as String? ?? data['instanceId'] as String?;
+        final resultInstanceId = instanceId ?? finalFormData['instanceId'] as String? ?? data['instanceId'] as String?;
         
         _logger.logConsole('[WorkflowService] Transition posted successfully: $resultInstanceId');
         

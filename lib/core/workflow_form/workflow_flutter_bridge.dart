@@ -139,7 +139,9 @@ class WorkflowFlutterBridge {
   /// This replaces direct BLoC calls in CustomFunctionRegisterer
   Future<void> postTransition({
     required String transitionName,
-    required Map<String, dynamic> body,
+    Map<String, dynamic>? formData,
+    Map<String, dynamic>? attributes,
+    @Deprecated('Use formData instead') Map<String, dynamic>? body,
     Map<String, String>? headers,
     String? instanceId,
     bool isSubFlow = false,
@@ -147,11 +149,15 @@ class WorkflowFlutterBridge {
   }) async {
     _ensureVNextSubscription();
     final config = uiConfig ?? const WorkflowUIConfig();
-    final workflowInstanceId = instanceId ?? body['instanceId'] as String?;
+    final workflowInstanceId = instanceId;
     
     _logger.logConsole('[WorkflowFlutterBridge] ========== POST TRANSITION START ==========');
     _logger.logConsole('[WorkflowFlutterBridge] Transition: $transitionName');
-    _logger.logConsole('[WorkflowFlutterBridge] Body: $body');
+    final finalFormData = formData ?? body ?? const <String, dynamic>{};
+    _logger.logConsole('[WorkflowFlutterBridge] FormData: $finalFormData');
+    if (attributes != null && attributes.isNotEmpty) {
+      _logger.logConsole('[WorkflowFlutterBridge] Attributes: $attributes');
+    }
     _logger.logConsole('[WorkflowFlutterBridge] Headers: $headers');
     _logger.logConsole('[WorkflowFlutterBridge] InstanceId: $workflowInstanceId');
     _logger.logConsole('[WorkflowFlutterBridge] IsSubFlow: $isSubFlow');
@@ -169,7 +175,8 @@ class WorkflowFlutterBridge {
       // Call pure business logic
       final result = await _workflowService.postTransition(
         transitionName: transitionName,
-        body: body,
+        formData: finalFormData,
+        attributes: attributes,
         headers: headers,
         instanceId: workflowInstanceId,
         isSubFlow: isSubFlow,

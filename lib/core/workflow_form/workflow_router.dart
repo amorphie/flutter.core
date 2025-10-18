@@ -59,14 +59,7 @@ class WorkflowRouter {
     logger.logConsole('[WorkflowRouter] Router initialized with vNext message handler support');
   }
 
-  String? _mapAccountTypeTitleToValue(String title) {
-    final lower = title.toLowerCase();
-    if (lower.contains('demand')) return 'demand-deposit';
-    if (lower.contains('time')) return 'time-deposit';
-    if (lower.contains('investment')) return 'investment-account';
-    if (lower.contains('saving')) return 'savings-account';
-    return null;
-  }
+  // Note: Keep the router generic; no workflow-specific mappings here.
 
   /// Get workflow engine configuration for a workflow name
   WorkflowEngineConfig _getConfigForWorkflow(String workflowName) {
@@ -220,19 +213,23 @@ class WorkflowRouter {
   /// Post transition - routes to V1 or V2 based on instanceId and configuration
   Future<NeoResponse> postTransition({
     required String transitionName,
-    required Map<String, dynamic> body,
+    Map<String, dynamic>? formData,
+    Map<String, dynamic>? attributes,
+    @Deprecated('Use formData instead') Map<String, dynamic>? body,
     Map<String, String>? headerParameters,
+    String? instanceId,
     bool isSubFlow = false,
   }) async {
-    logger.logConsole('[WorkflowRouter] postTransition called for: $transitionName with body: $body');
+    logger.logConsole('[WorkflowRouter] postTransition called for: $transitionName');
 
-    // Try to get instanceId from body or current managers
-    final instanceId = body['instanceId'] as String? ?? 
-                      (isSubFlow ? v1Manager.subFlowInstanceId : v1Manager.instanceId);
+    // Service/bridge should provide resolved formData; fallback to empty
+    final finalFormData = formData ?? const <String, dynamic>{};
+    final resolvedInstanceId = instanceId ?? finalFormData['instanceId'] as String? ??
+        (isSubFlow ? v1Manager.subFlowInstanceId : v1Manager.instanceId);
     
-    logger.logConsole('[WorkflowRouter] Using instanceId: $instanceId (isSubFlow: $isSubFlow)');
+    logger.logConsole('[WorkflowRouter] Using instanceId: $resolvedInstanceId (isSubFlow: $isSubFlow)');
     
-    if (instanceId.isEmpty) {
+    if (resolvedInstanceId.isEmpty) {
       logger.logConsole('[WorkflowRouter] ERROR: No instanceId available for transition');
       return const NeoErrorResponse(
         NeoError(
@@ -244,11 +241,11 @@ class WorkflowRouter {
     }
 
     // Get instance information from instance manager
-    final instance = instanceManager.getInstance(instanceId);
+    final instance = instanceManager.getInstance(resolvedInstanceId);
     if (instance == null) {
       logger.logConsole('[WorkflowRouter] WARNING: Instance not found in manager, using V1 fallback');
       // Fallback to V1 if instance not tracked
-      return _postTransitionV1(transitionName, body, headerParameters, isSubFlow);
+      return _postTransitionV1(transitionName, finalFormData, headerParameters, isSubFlow);
     }
 
     logger.logConsole('[WorkflowRouter] Found instance - Engine: ${instance.engine}, Domain: ${instance.domain}');
@@ -256,17 +253,18 @@ class WorkflowRouter {
     // Route based on instance engine
     if (instance.engine == WorkflowEngine.vnext) {
       logger.logConsole('[WorkflowRouter] Routing to V2 (vNext) engine');
-      return _postTransitionVNext(transitionName, body, headerParameters, instance);
+      return _postTransitionVNext(transitionName, finalFormData, attributes, headerParameters, instance);
     } else {
       logger.logConsole('[WorkflowRouter] Routing to V2 (amorphie) engine');
-      return _postTransitionV2(transitionName, body, headerParameters, isSubFlow);
+      return _postTransitionV2(transitionName, finalFormData, headerParameters, isSubFlow);
     }
   }
 
   /// Post transition using vNext engine (dedicated)
   Future<NeoResponse> _postTransitionVNext(
     String transitionName,
-    Map<String, dynamic> body,
+    Map<String, dynamic> formData,
+    Map<String, dynamic>? attributes,
     Map<String, String>? headerParameters,
     WorkflowInstanceEntity instance,
   ) async {
@@ -275,41 +273,19 @@ class WorkflowRouter {
     logger.logConsole('[WorkflowRouter] Routing postTransition to V2 (vNext)${version != null ? " with version: $version" : ""}');
     
     try {
-      // Build vNext-friendly payload
-      // 1) Remove legacy-only fields
-      final incoming = Map<String, dynamic>.from(body);
+      // Start with a copy of the incoming body
+      final incoming = Map<String, dynamic>.from(formData);
+      // Remove instanceId - it is sent in path
       final removedInstanceId = incoming.remove('instanceId');
-      // 2) Extract/compose attributes for vNext schema
-      final Map<String, dynamic> attributes = {};
-      // Respect pre-provided attributes
-      final dynamic rawAttrs = incoming['attributes'];
+      // Flatten attributes (if provided) into root
+      final dynamic rawAttrs = attributes ?? incoming.remove('attributes');
       if (rawAttrs is Map<String, dynamic>) {
-        attributes.addAll(rawAttrs);
+        incoming.addAll(rawAttrs);
       }
-      // todo: generic
-      // Map accountType if present or infer from UI fields
-      final dynamic accountType = incoming['accountType'];
-      if (accountType is String && accountType.isNotEmpty) {
-        attributes['accountType'] = accountType;
-      } else {
-        final String? selectedTitle = incoming['selectedOptionTitle'] as String?;
-        if (selectedTitle != null && selectedTitle.isNotEmpty) {
-          // Normalize common titles to expected enum values
-          final normalized = _mapAccountTypeTitleToValue(selectedTitle);
-          if (normalized != null) {
-            attributes['accountType'] = normalized;
-          }
-        }
-      }
-
-      // 3) Construct minimal vNext payload: put attributes flat at root (schema expects top-level keys)
-      final cleanBody = <String, dynamic>{};
-      if (attributes.isNotEmpty) {
-        cleanBody.addAll(attributes);
-      }
+      final cleanBody = incoming;
 
       logger.logConsole('[WorkflowRouter] Removed instanceId from body: $removedInstanceId');
-      logger.logConsole('[WorkflowRouter] Clean body for HTTP request: $cleanBody');
+      logger.logConsole('[WorkflowRouter] vNext payload keys: ${cleanBody.keys.toList()}');
       
       final v2Response = await vNextClient.postTransition(
         domain: instance.domain!,
@@ -327,7 +303,7 @@ class WorkflowRouter {
           instance.instanceId,
           newStatus: _parseWorkflowStatus(v2Response.data['status'] as String?),
           newState: v2Response.data['currentState'] as String?,
-          additionalAttributes: body,
+          additionalAttributes: formData,
           additionalMetadata: {
             'lastTransition': transitionName,
             'lastTransitionAt': DateTime.now().toIso8601String(),
