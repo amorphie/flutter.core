@@ -153,8 +153,11 @@ class WorkflowFlutterBridge {
     
     _logger.logConsole('[WorkflowFlutterBridge] ========== POST TRANSITION START ==========');
     _logger.logConsole('[WorkflowFlutterBridge] Transition: $transitionName');
-    final finalFormData = formData ?? body ?? const <String, dynamic>{};
-    _logger.logConsole('[WorkflowFlutterBridge] FormData: $finalFormData');
+    final effectiveFormData = formData ?? body ?? const <String, dynamic>{};
+    _logger.logConsole('[WorkflowFlutterBridge] Body(formData): $effectiveFormData');
+    if (effectiveFormData.isEmpty) {
+      _logger.logError('[WorkflowFlutterBridge] ERROR: formData is empty. Callers must pass formData.');
+    }
     if (attributes != null && attributes.isNotEmpty) {
       _logger.logConsole('[WorkflowFlutterBridge] Attributes: $attributes');
     }
@@ -175,7 +178,7 @@ class WorkflowFlutterBridge {
       // Call pure business logic
       final result = await _workflowService.postTransition(
         transitionName: transitionName,
-        formData: finalFormData,
+        formData: effectiveFormData,
         attributes: attributes,
         headers: headers,
         instanceId: workflowInstanceId,

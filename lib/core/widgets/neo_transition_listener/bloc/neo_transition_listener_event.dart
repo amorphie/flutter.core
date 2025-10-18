@@ -97,6 +97,7 @@ class NeoTransitionListenerEventPostTransition extends NeoTransitionListenerEven
   final String transitionName;
   final String? workflowName;
   final Map<String, dynamic> body;
+  final Map<String, dynamic>? formInputData;
   final Map<String, String>? headerParameters;
   final bool displayLoading;
   final bool isSubFlow;
@@ -105,6 +106,7 @@ class NeoTransitionListenerEventPostTransition extends NeoTransitionListenerEven
   NeoTransitionListenerEventPostTransition({
     required this.transitionName,
     required this.body,
+    this.formInputData,
     this.workflowName,
     this.headerParameters,
     this.displayLoading = true,
@@ -117,6 +119,7 @@ class NeoTransitionListenerEventPostTransition extends NeoTransitionListenerEven
         transitionName,
         workflowName,
         body,
+        formInputData,
         headerParameters,
         displayLoading,
         isSubFlow,

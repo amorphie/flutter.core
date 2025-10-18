@@ -213,7 +213,7 @@ class WorkflowRouter {
   /// Post transition - routes to V1 or V2 based on instanceId and configuration
   Future<NeoResponse> postTransition({
     required String transitionName,
-    Map<String, dynamic>? formData,
+    required Map<String, dynamic> formData,
     Map<String, dynamic>? attributes,
     @Deprecated('Use formData instead') Map<String, dynamic>? body,
     Map<String, String>? headerParameters,
@@ -222,14 +222,13 @@ class WorkflowRouter {
   }) async {
     logger.logConsole('[WorkflowRouter] postTransition called for: $transitionName');
 
-    // Service/bridge should provide resolved formData; fallback to empty
-    final finalFormData = formData ?? const <String, dynamic>{};
-    final resolvedInstanceId = instanceId ?? finalFormData['instanceId'] as String? ??
+    // Compute instance id from explicit arg or formData, else v1 defaults
+    final effectiveInstanceId = instanceId ?? formData['instanceId'] as String? ??
         (isSubFlow ? v1Manager.subFlowInstanceId : v1Manager.instanceId);
     
-    logger.logConsole('[WorkflowRouter] Using instanceId: $resolvedInstanceId (isSubFlow: $isSubFlow)');
+    logger.logConsole('[WorkflowRouter] Using instanceId: $effectiveInstanceId (isSubFlow: $isSubFlow)');
     
-    if (resolvedInstanceId.isEmpty) {
+    if (effectiveInstanceId.isEmpty) {
       logger.logConsole('[WorkflowRouter] ERROR: No instanceId available for transition');
       return const NeoErrorResponse(
         NeoError(
@@ -241,11 +240,11 @@ class WorkflowRouter {
     }
 
     // Get instance information from instance manager
-    final instance = instanceManager.getInstance(resolvedInstanceId);
+    final instance = instanceManager.getInstance(effectiveInstanceId);
     if (instance == null) {
       logger.logConsole('[WorkflowRouter] WARNING: Instance not found in manager, using V1 fallback');
       // Fallback to V1 if instance not tracked
-      return _postTransitionV1(transitionName, finalFormData, headerParameters, isSubFlow);
+      return _postTransitionV1(transitionName, formData, headerParameters, isSubFlow);
     }
 
     logger.logConsole('[WorkflowRouter] Found instance - Engine: ${instance.engine}, Domain: ${instance.domain}');
@@ -253,10 +252,10 @@ class WorkflowRouter {
     // Route based on instance engine
     if (instance.engine == WorkflowEngine.vnext) {
       logger.logConsole('[WorkflowRouter] Routing to V2 (vNext) engine');
-      return _postTransitionVNext(transitionName, finalFormData, attributes, headerParameters, instance);
+      return _postTransitionVNext(transitionName, formData, attributes, headerParameters, instance);
     } else {
       logger.logConsole('[WorkflowRouter] Routing to V2 (amorphie) engine');
-      return _postTransitionV2(transitionName, finalFormData, headerParameters, isSubFlow);
+      return _postTransitionV2(transitionName, formData, headerParameters, isSubFlow);
     }
   }
 

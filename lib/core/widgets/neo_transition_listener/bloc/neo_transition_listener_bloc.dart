@@ -228,7 +228,7 @@ class NeoTransitionListenerBloc extends Bloc<NeoTransitionListenerEvent, NeoTran
         final bridge = GetIt.I.get<WorkflowFlutterBridge>();
         await bridge.postTransition(
           transitionName: event.transitionName,
-          body: event.body,
+          formData: (event.formInputData ?? event.body).cast<String, dynamic>(),
           headers: event.headerParameters,
           instanceId: instanceId.isNotEmpty ? instanceId : null,
           isSubFlow: event.isSubFlow,
