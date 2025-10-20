@@ -78,6 +78,7 @@ abstract class _Constants {
 enum NeoNetworkManagerLogScale { none, simplified, all }
 
 class NeoNetworkManager {
+  static bool _clientCredentialError = false;
   final HttpClientConfig httpClientConfig;
   final NeoCoreSecureStorage secureStorage;
   final NeoSharedPrefs neoSharedPrefs;
@@ -416,7 +417,7 @@ class NeoNetworkManager {
     final response = await call(
       NeoHttpCall(
         endpoint: _Constants.endpointGetToken,
-        body: await _isExistUser
+        body: await _isExistUser && !_clientCredentialError
             ? {
                 _Constants.requestKeyGrantType: _Constants.requestValueGrantTypeRefreshTokenLiteral,
                 _Constants.requestKeyClientAssertion: await _createJwtTokenForAccessRequest(isRefreshToken: true),
@@ -447,7 +448,7 @@ class NeoNetworkManager {
     return isTwoFactorAuth;
   }
 
-  Future<bool> getTemporaryTokenForNotLoggedInUser({NeoHttpCall? currentCall, bool error = false}) async {
+  Future<bool> getTemporaryTokenForNotLoggedInUser({NeoHttpCall? currentCall}) async {
     // Prevent infinite call loop
     if (currentCall?.endpoint == _Constants.endpointGetToken || await _isTwoFactorAuthenticated) {
       return false;
@@ -460,7 +461,7 @@ class NeoNetworkManager {
 
     final response = await call(
       await _isExistUser
-          ? error
+          ? _clientCredentialError
               ? _clientCredentialHttpCall()
               : await _onefaCredentialHttpCall()
           : await _notLoggedInUserCredentialHttpCall(),
@@ -472,8 +473,9 @@ class NeoNetworkManager {
       _tokenLockCompleter = null;
       return true;
     } else {
-      if (!error && await _isExistUser) {
-        return getTemporaryTokenForNotLoggedInUser(currentCall: currentCall, error: true);
+      if (!_clientCredentialError && await _isExistUser) {
+        _clientCredentialError = true;
+        return getTemporaryTokenForNotLoggedInUser(currentCall: currentCall);
       }
       _tokenLockCompleter?.complete();
       _tokenLockCompleter = null;
