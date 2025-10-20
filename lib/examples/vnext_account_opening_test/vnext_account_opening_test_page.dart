@@ -10,11 +10,16 @@ import 'package:neo_core/core/analytics/neo_logger_type.dart';
 import 'package:neo_core/core/network/managers/neo_network_manager.dart';
 import 'package:neo_core/core/network/models/http_client_config.dart';
 import 'package:neo_core/core/network/models/http_client_config_parameters.dart';
+import 'package:neo_core/core/network/models/http_host_details.dart';
+import 'package:neo_core/core/network/models/http_active_host.dart';
+import 'package:neo_core/core/network/models/http_service.dart';
+import 'package:neo_core/core/network/models/http_method.dart';
 import 'package:neo_core/core/storage/neo_core_secure_storage.dart';
 import 'package:neo_core/core/storage/neo_shared_prefs.dart';
 import 'package:neo_core/core/workflow_form/vnext/models/vnext_instance_snapshot.dart';
 import 'package:neo_core/core/workflow_form/vnext/vnext_data_service.dart';
 import 'package:neo_core/core/workflow_form/vnext/vnext_workflow_client.dart';
+// NOTE: Cannot import migration helper into lib; define minimal services here for the demo
 
 class VNextAccountOpeningTestPage extends StatefulWidget {
   const VNextAccountOpeningTestPage({super.key});
@@ -580,9 +585,26 @@ class _PrintLogger extends NeoLogger {
 class _DummyConfig extends HttpClientConfig {
   _DummyConfig()
       : super(
-          hosts: const [],
+          hosts: const [
+            HttpHostDetails(
+              key: 'vnext',
+              workflowHubUrl: '',
+              activeHosts: [HttpActiveHost(host: 'localhost:4201/api/v1', mtlsHost: '', retryCount: 0)],
+            ),
+          ],
           config: const HttpClientConfigParameters(cachePages: false, cacheStorage: false, logLevel: Level.info),
-          services: const [],
+          services: const [
+            // Use /instances/start for init
+            HttpService(key: 'vnext-init-workflow', method: HttpMethod.post, host: 'vnext', name: '/{DOMAIN}/workflows/{WORKFLOW_NAME}/instances/start'),
+            HttpService(key: 'vnext-post-transition', method: HttpMethod.post, host: 'vnext', name: '/{DOMAIN}/workflows/{WORKFLOW_NAME}/instances/{INSTANCE_ID}/transitions/{TRANSITION_NAME}'),
+            HttpService(key: 'vnext-get-available-transitions', method: HttpMethod.get, host: 'vnext', name: '/{DOMAIN}/workflows/{WORKFLOW_NAME}/instances/{INSTANCE_ID}/transitions'),
+            HttpService(key: 'vnext-get-workflow-instance', method: HttpMethod.get, host: 'vnext', name: '/{DOMAIN}/workflows/{WORKFLOW_NAME}/instances/{INSTANCE_ID}'),
+            HttpService(key: 'vnext-list-workflow-instances', method: HttpMethod.get, host: 'vnext', name: '/{DOMAIN}/workflows/{WORKFLOW_NAME}/instances'),
+            HttpService(key: 'vnext-get-instance-history', method: HttpMethod.get, host: 'vnext', name: '/{DOMAIN}/workflows/{WORKFLOW_NAME}/instances/{INSTANCE_ID}/history'),
+            HttpService(key: 'vnext-get-system-health', method: HttpMethod.get, host: 'vnext', name: '/system/health'),
+            HttpService(key: 'vnext-get-system-metrics', method: HttpMethod.get, host: 'vnext', name: '/system/metrics'),
+            HttpService(key: 'vnext-fetch-by-path', method: HttpMethod.get, host: 'vnext', name: '/{PATH}'),
+          ],
         );
 }
 

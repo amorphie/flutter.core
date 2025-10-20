@@ -51,6 +51,8 @@ class VNextWorkflowClient {
     logger.logConsole('[VNextWorkflowClient] Request headers: $headers');
 
     final queryParams = <String, dynamic>{};
+    // Match working endpoint's sync flag
+    queryParams['sync'] = 'true';
     if (version != null) {
       queryParams['version'] = version;
     }
@@ -66,9 +68,10 @@ class VNextWorkflowClient {
           'DOMAIN': domain,
           'WORKFLOW_NAME': workflowName,
         },
-        queryProviders: queryParams.isNotEmpty ? [HttpQueryProvider(queryParams)] : [],
+        queryProviders: [HttpQueryProvider(queryParams)],
         body: requestBody,
         headerParameters: headers ?? {},
+        useHttps: false,
       ),
     );
 
@@ -124,6 +127,7 @@ class VNextWorkflowClient {
         queryProviders: queryParams.isNotEmpty ? [HttpQueryProvider(queryParams)] : [],
         body: sanitized,
         headerParameters: headers ?? {},
+        useHttps: false,
       ),
     );
   }
@@ -153,6 +157,7 @@ class VNextWorkflowClient {
         },
         queryProviders: queryParams.isNotEmpty ? [HttpQueryProvider(queryParams)] : [],
         headerParameters: headers ?? {},
+        useHttps: false,
       ),
     );
   }
@@ -175,6 +180,7 @@ class VNextWorkflowClient {
           'INSTANCE_ID': instanceId,
         },
         headerParameters: headers ?? {},
+        useHttps: false,
       ),
     );
   }
@@ -221,6 +227,34 @@ class VNextWorkflowClient {
         // Future enhancement could support multiple concurrent filters
         break; // For now, take the first filter
       }
+    }
+    
+    // Legacy filter support (backward compatibility)
+    if (filter != null && !queryParams.containsKey('filter')) {
+      queryParams['filter'] = filter;
+    }
+    
+    // Pagination
+    if (page != null) queryParams['page'] = page;
+    if (pageSize != null) queryParams['pageSize'] = pageSize;
+    
+    // Sorting support
+    if (sortBy != null) queryParams['sortBy'] = sortBy;
+    if (sortOrder != null) queryParams['sortOrder'] = sortOrder;
+
+    return await networkManager.call(
+      NeoHttpCall(
+        endpoint: 'vnext-list-workflow-instances',
+        pathParameters: {
+          'DOMAIN': domain,
+          'WORKFLOW_NAME': workflowName,
+        },
+        queryProviders: queryParams.isNotEmpty ? [HttpQueryProvider(queryParams)] : [],
+        headerParameters: headers ?? {},
+        useHttps: false,
+      ),
+    );
+  }
 
   /// Fetch any vNext resource by relative path (href from instance extensions)
   /// Example: href = "core/workflows/.../functions/view?async=false"
@@ -248,33 +282,7 @@ class VNextWorkflowClient {
           'PATH': adjusted,
         },
         headerParameters: headers ?? {},
-      ),
-    );
-  }
-    }
-    
-    // Legacy filter support (backward compatibility)
-    if (filter != null && !queryParams.containsKey('filter')) {
-      queryParams['filter'] = filter;
-    }
-    
-    // Pagination
-    if (page != null) queryParams['page'] = page;
-    if (pageSize != null) queryParams['pageSize'] = pageSize;
-    
-    // Sorting support
-    if (sortBy != null) queryParams['sortBy'] = sortBy;
-    if (sortOrder != null) queryParams['sortOrder'] = sortOrder;
-
-    return await networkManager.call(
-      NeoHttpCall(
-        endpoint: 'vnext-list-workflow-instances',
-        pathParameters: {
-          'DOMAIN': domain,
-          'WORKFLOW_NAME': workflowName,
-        },
-        queryProviders: queryParams.isNotEmpty ? [HttpQueryProvider(queryParams)] : [],
-        headerParameters: headers ?? {},
+        useHttps: false,
       ),
     );
   }
@@ -297,6 +305,7 @@ class VNextWorkflowClient {
           'INSTANCE_ID': instanceId,
         },
         headerParameters: headers ?? {},
+        useHttps: false,
       ),
     );
   }
@@ -311,6 +320,7 @@ class VNextWorkflowClient {
       NeoHttpCall(
         endpoint: 'vnext-get-system-health',
         headerParameters: headers ?? {},
+        useHttps: false,
       ),
     );
   }
@@ -325,8 +335,8 @@ class VNextWorkflowClient {
       NeoHttpCall(
         endpoint: 'vnext-get-system-metrics',
         headerParameters: headers ?? {},
+        useHttps: false,
       ),
     );
   }
-
 }

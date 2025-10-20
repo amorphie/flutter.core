@@ -32,24 +32,30 @@ class NeoWorkflowManager {
   void resetInstanceId({bool isSubFlow = false}) {
     if (isSubFlow) {
       _subFlowInstanceId = UuidUtil.generateUUID();
+      _log('[NeoWorkflowManager] Reset subFlow instanceId: $_subFlowInstanceId');
     } else {
       _instanceId = UuidUtil.generateUUID();
+      _log('[NeoWorkflowManager] Reset instanceId: $_instanceId');
     }
   }
 
   void setInstanceId(String? newInstanceId, {bool isSubFlow = false}) {
     if (isSubFlow) {
       _subFlowInstanceId = newInstanceId ?? _subFlowInstanceId;
+      _log('[NeoWorkflowManager] Set subFlow instanceId: $_subFlowInstanceId');
     } else {
       _instanceId = newInstanceId ?? _instanceId;
+      _log('[NeoWorkflowManager] Set instanceId: $_instanceId');
     }
   }
 
   void setWorkflowName(String workflowName, {bool isSubFlow = false}) {
     if (isSubFlow) {
       _subWorkflowName = workflowName;
+      _log('[NeoWorkflowManager] Set subWorkflowName: $_subWorkflowName');
     } else {
       _workflowName = workflowName;
+      _log('[NeoWorkflowManager] Set workflowName: $_workflowName');
     }
   }
 
@@ -62,6 +68,16 @@ class NeoWorkflowManager {
   String get subFlowInstanceId => _subFlowInstanceId;
 
   NeoLogger? get _neoLogger => GetIt.I.getIfReady<NeoLogger>();
+
+  void _log(String message) {
+    // Always print to ensure visibility even if logger is disabled
+    // ignore: avoid_print
+    print(message);
+    final logger = _neoLogger;
+    if (logger != null) {
+      logger.logConsole(message);
+    }
+  }
 
   Future<NeoResponse> initWorkflow({
     required String workflowName,
@@ -91,12 +107,13 @@ class NeoWorkflowManager {
         queryProviders: queryProviders,
       ),
     );
-    _neoLogger?.logConsole('[NeoWorkflowManager] Init Workflow: $response');
+    _log('[NeoWorkflowManager] Init Workflow: $response');
     return response;
   }
 
   Future<NeoResponse> getAvailableTransitions({String? instanceId}) async {
     setInstanceId(instanceId);
+    _log('[NeoWorkflowManager] getAvailableTransitions for instanceId=$_instanceId');
     final response = await neoNetworkManager.call(
       NeoHttpCall(
         endpoint: _Constants.endpointGetAvailableTransitions,
@@ -105,7 +122,7 @@ class NeoWorkflowManager {
         },
       ),
     );
-    _neoLogger?.logConsole('[NeoWorkflowManager] Get Transitions: $response');
+    _log('[NeoWorkflowManager] Get Transitions: $response');
     return response;
   }
 
@@ -115,11 +132,13 @@ class NeoWorkflowManager {
     Map<String, String>? headerParameters,
     bool isSubFlow = false,
   }) async {
+    final targetInstanceId = _getActiveInstanceId(isSubFlow: isSubFlow);
+    _log('[NeoWorkflowManager] postTransition: transition=$transitionName, isSubFlow=$isSubFlow, instanceId=$targetInstanceId, bodyKeys=${body.keys.toList()}, headerKeys=${(headerParameters ?? {}).keys.toList()}');
     return neoNetworkManager.call(
       NeoHttpCall(
         endpoint: endpointPostTransition,
         pathParameters: {
-          _Constants.pathParameterInstanceId: _getActiveInstanceId(isSubFlow: isSubFlow),
+          _Constants.pathParameterInstanceId: targetInstanceId,
           pathParameterTransitionName: transitionName,
         },
         headerParameters: headerParameters ?? {},
@@ -129,6 +148,9 @@ class NeoWorkflowManager {
   }
 
   Future<NeoResponse> getLastTransitionByLongPolling({bool isSubFlow = false}) async {
+    final name = _getActiveWorkflowName(isSubFlow: isSubFlow);
+    final id = _getActiveInstanceId(isSubFlow: isSubFlow);
+    _log('[NeoWorkflowManager] getLastTransitionByLongPolling: workflowName=$name, instanceId=$id');
     return neoNetworkManager.call(
       NeoHttpCall(
         endpoint: _Constants.endpointGetLastEventByLongPolling,
@@ -149,6 +171,7 @@ class NeoWorkflowManager {
   }
 
   void terminateWorkflow() {
+    _log('[NeoWorkflowManager] terminateWorkflow: clearing workflow and instance IDs');
     resetInstanceId();
     resetInstanceId(isSubFlow: true);
     _workflowName = _Constants.noWorkflowName;
