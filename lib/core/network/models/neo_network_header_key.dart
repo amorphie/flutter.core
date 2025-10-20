@@ -28,6 +28,7 @@ abstract class NeoNetworkHeaderKey {
   static const devicePlatform = "X-Device-Platform";
   static const deviceVersion = "X-Device-Version";
   static const encrypt = "x-encrpt";
+  static const fingerprint = "X-Fingerprint";
   static const googleServiceAvailable = "X-Google-Service-Available";
   static const ifNoneMatch = "If-None-Match";
   static const installationId = "X-Installation-Id";
