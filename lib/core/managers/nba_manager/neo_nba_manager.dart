@@ -62,9 +62,7 @@ class NeoNbaManager with NeoNbaAnalyticsMixin {
       return;
     }
 
-    if (NeoEnvironment.current.isOn) {
       _fetchItemsByPageIdFutures[toPage] = _fetchNbaContentList(fromPage: fromPage, toPage: toPage);
-    }
 
     DengageManager.setNavigationWithName(toPage);
     _reportToDataroid(fromPage, toPage);
