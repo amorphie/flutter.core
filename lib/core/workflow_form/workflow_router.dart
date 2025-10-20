@@ -709,7 +709,7 @@ class WorkflowRouter {
     final config = engineConfig.config;
     
     // Extract polling parameters from config or use defaults
-    final pollingIntervalSeconds = config['pollingIntervalSeconds'] as int? ?? 5;
+    final pollingIntervalSeconds = config['pollingIntervalSeconds'] as int? ?? 20;
     final pollingDurationSeconds = config['pollingDurationSeconds'] as int? ?? 60;
     final maxConsecutiveErrors = config['maxConsecutiveErrors'] as int? ?? 5;
     final requestTimeoutSeconds = config['requestTimeoutSeconds'] as int? ?? 30;

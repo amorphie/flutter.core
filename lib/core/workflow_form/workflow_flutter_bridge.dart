@@ -215,13 +215,20 @@ class WorkflowFlutterBridge {
             pageData: _buildPageData(data, null),
           ));
         } else {
-          _logger.logConsole('[WorkflowFlutterBridge] No navigation/pageId found, emitting update data event');
-          
-          // Silent success - update data only
-          _uiEventController.add(WorkflowUIEvent.updateData(
-            pageData: data,
-            instanceId: result.instanceId ?? workflowInstanceId,
-          ));
+          // Heuristic: For vNext, immediate transition response during processing includes 'transition' data
+          // but no navigation/pageId. Emitting updateData causes a redundant render of the same state.
+          final hasVNextTransitionData = data.containsKey('transition');
+          if (hasVNextTransitionData) {
+            _logger.logConsole('[WorkflowFlutterBridge] No navigation/pageId; vNext busy response detected. Deferring UI update until polling event.');
+            // Keep loading; vNext UI event (navigate/updateData/error) will dismiss it.
+          } else {
+            _logger.logConsole('[WorkflowFlutterBridge] No navigation/pageId found, emitting update data event');
+            // Silent success - update data only (non-vNext paths)
+            _uiEventController.add(WorkflowUIEvent.updateData(
+              pageData: data,
+              instanceId: result.instanceId ?? workflowInstanceId,
+            ));
+          }
         }
 
         _logger.logConsole('[WorkflowFlutterBridge] Transition posted successfully: ${result.instanceId ?? workflowInstanceId}');
@@ -236,11 +243,7 @@ class WorkflowFlutterBridge {
       _logger.logError('[WorkflowFlutterBridge] Stack trace: $stackTrace');
       _emitErrorEvent('Transition failed: $e', instanceId: workflowInstanceId);
     } finally {
-      // Always hide loading
-      if (config.displayLoading) {
-        _logger.logConsole('[WorkflowFlutterBridge] Emitting loading event: false');
-        _emitLoadingEvent(false, instanceId: workflowInstanceId);
-      }
+      // Do NOT auto-hide here for vNext; vNext UI events will hide when navigate/updateData/error arrives
       _logger.logConsole('[WorkflowFlutterBridge] ========== POST TRANSITION END ==========');
     }
   }
@@ -315,6 +318,8 @@ class WorkflowFlutterBridge {
       instanceId: instanceId,
       displayAsPopup: true,
     ));
+    // Ensure any visible loading overlay is dismissed on errors
+    _emitLoadingEvent(false, instanceId: instanceId);
   }
 
   NeoNavigationType _parseNavigationType(String? navigation) {
