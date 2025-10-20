@@ -88,7 +88,14 @@ List<HttpService> getVNextHttpServices(String hostKey) {
       host: hostKey,
       name: '/system/metrics',
     ),
+
+    // GET generic by-path fetcher to support href-based view/data loading
+    // name template expects PATH without leading slash (we prepend one)
+    HttpService(
+      key: 'vnext-fetch-by-path',
+      method: HttpMethod.get,
+      host: hostKey,
+      name: '/{PATH}',
+    ),
   ];
 }
-
-
