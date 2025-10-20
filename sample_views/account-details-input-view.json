@@ -52,10 +52,146 @@
                 {
                   "type": "neo_text_form_field",
                   "args": {
-                    "dataKey": "initialDeposit",
-                    "labelText": "Initial Deposit",
+                    "dataKey": "branchCode",
+                    "labelText": "Branch Code (4 digits)",
                     "validatorRequired": true,
+                    "validatorRegex": "^[0-9]{4}$",
+                    "padding": {"start": 24, "end": 24, "bottom": 16},
+                    "inputFormatters": [
+                      {"regex": "[0-9]"}
+                    ]
+                  }
+                },
+                {
+                  "type": "neo_number_form_field",
+                  "args": {
+                    "dataKey": "initialDeposit",
+                    "labelText": "Initial Deposit (TRY)",
+                    "writeToWorkflow": true,
+                    "minValue": 0,
+                    "maxValue": 1000000,
+                    "padding": {"start": 24, "end": 24, "bottom": 16}
+                  }
+                },
+                {
+                  "type": "neo_picker",
+                  "args": {
+                    "selectedItemKey": "accountPurpose",
+                    "hintText": "Account Purpose",
+                    "items": [
+                      "personal-banking",
+                      "salary-account",
+                      "savings",
+                      "business-expenses"
+                    ],
+                    "initialItem": "personal-banking",
                     "padding": {"start": 24, "end": 24, "bottom": 24}
+                  }
+                },
+                {
+                  "type": "container",
+                  "args": {
+                    "padding": {"start": 24, "end": 24, "top": 0, "bottom": 16},
+                    "child": {
+                      "type": "text",
+                      "args": {
+                        "data": "Notifications",
+                        "style": {
+                          "fontSize": 16,
+                          "fontWeight": "w600"
+                        }
+                      }
+                    }
+                  }
+                },
+                {
+                  "type": "container",
+                  "args": {
+                    "padding": {"start": 24, "end": 24, "bottom": 12},
+                    "child": {
+                      "type": "row",
+                      "args": {
+                        "mainAxisAlignment": "spaceBetween",
+                        "children": [
+                          {
+                            "type": "text",
+                            "args": {
+                              "data": "SMS Notifications",
+                              "style": {
+                                "fontSize": 14
+                              }
+                            }
+                          },
+                          {
+                            "type": "neo_switch",
+                            "args": {
+                              "dataKey": "notifications.smsNotifications",
+                              "initialValue": true
+                            }
+                          }
+                        ]
+                      }
+                    }
+                  }
+                },
+                {
+                  "type": "container",
+                  "args": {
+                    "padding": {"start": 24, "end": 24, "bottom": 12},
+                    "child": {
+                      "type": "row",
+                      "args": {
+                        "mainAxisAlignment": "spaceBetween",
+                        "children": [
+                          {
+                            "type": "text",
+                            "args": {
+                              "data": "Email Notifications",
+                              "style": {
+                                "fontSize": 14
+                              }
+                            }
+                          },
+                          {
+                            "type": "neo_switch",
+                            "args": {
+                              "dataKey": "notifications.emailNotifications",
+                              "initialValue": true
+                            }
+                          }
+                        ]
+                      }
+                    }
+                  }
+                },
+                {
+                  "type": "container",
+                  "args": {
+                    "padding": {"start": 24, "end": 24, "bottom": 24},
+                    "child": {
+                      "type": "row",
+                      "args": {
+                        "mainAxisAlignment": "spaceBetween",
+                        "children": [
+                          {
+                            "type": "text",
+                            "args": {
+                              "data": "Push Notifications",
+                              "style": {
+                                "fontSize": 14
+                              }
+                            }
+                          },
+                          {
+                            "type": "neo_switch",
+                            "args": {
+                              "dataKey": "notifications.pushNotifications",
+                              "initialValue": true
+                            }
+                          }
+                        ]
+                      }
+                    }
                   }
                 },
                 {
