@@ -32,5 +32,3 @@ class VNextPollingConfig {
   String toString() =>
       'VNextPollingConfig(interval: ${interval.inSeconds}s, duration: ${duration.inSeconds}s, timeout: ${requestTimeout.inSeconds}s)';
 }
-
-

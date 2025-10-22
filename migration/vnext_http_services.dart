@@ -33,10 +33,10 @@ List<HttpService> getVNextHttpServices(String hostKey) {
       name: '/{$_pDomain}/workflows/{$_pWorkflowName}/instances',
     ),
 
-    // POST /{DOMAIN}/workflows/{WORKFLOW_NAME}/instances/{INSTANCE_ID}/transitions/{TRANSITION_NAME}
+    // PATCH /{DOMAIN}/workflows/{WORKFLOW_NAME}/instances/{INSTANCE_ID}/transitions/{TRANSITION_NAME}
     HttpService(
       key: 'vnext-post-transition',
-      method: HttpMethod.post,
+      method: HttpMethod.patch,
       host: hostKey,
       name: '/{$_pDomain}/workflows/{$_pWorkflowName}/instances/{$_pInstanceId}/transitions/{$_pTransitionName}',
     ),
