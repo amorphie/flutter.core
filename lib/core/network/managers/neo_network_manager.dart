@@ -28,6 +28,7 @@ import 'package:neo_core/core/network/headers/neo_constant_headers.dart';
 import 'package:neo_core/core/network/headers/neo_dynamic_headers.dart';
 import 'package:neo_core/core/network/helpers/mtls_helper.dart';
 import 'package:neo_core/core/network/interceptors/neo_response_interceptor.dart';
+import 'package:neo_core/core/network/interceptors/neo_user_internet_usage_interceptor.dart';
 import 'package:neo_core/core/network/models/http_auth_response.dart';
 import 'package:neo_core/core/network/models/http_method.dart';
 import 'package:neo_core/core/network/models/neo_http_call.dart';
@@ -90,6 +91,9 @@ class NeoNetworkManager {
 
   late final MtlsHelper _mtlsHelper = MtlsHelper();
   late final MtlsHeaders _mtlsHeaders = MtlsHeaders(secureStorage: secureStorage);
+
+  NeoUserInternetUsageInterceptor? get _internetUsageInterceptor =>
+      GetIt.I.getIfReady<NeoUserInternetUsageInterceptor>();
 
   NeoNetworkManager({
     required this.httpClientConfig,
@@ -190,7 +194,7 @@ class NeoNetworkManager {
     if (fullPath == null || method == null) {
       return NeoResponse.error(const NeoError(), responseHeaders: {});
     }
-
+    // Internet usage tracking will be handled in response/error interceptors
     NeoResponse response;
     try {
       switch (method) {
@@ -205,8 +209,11 @@ class NeoNetworkManager {
         case HttpMethod.patch:
           response = await _requestPatch(fullPath, neoCall);
       }
+
       return response;
     } catch (e) {
+      _internetUsageInterceptor?.interceptError(neoCall, e, fullPath);
+
       if (e is TimeoutException) {
         _neoLogger?.logError("[NeoNetworkManager]: Service call timeout! Endpoint: ${neoCall.endpoint}");
         return NeoResponse.error(const NeoError(responseCode: HttpStatus.requestTimeout), responseHeaders: {});
@@ -320,6 +327,8 @@ class NeoNetworkManager {
     }
 
     _logResponse(response);
+
+    _internetUsageInterceptor?.interceptResponse(call, response);
 
     if (response.statusCode >= 200 && response.statusCode < 300) {
       onRequestSucceed?.call(call.endpoint, call.requestId);
