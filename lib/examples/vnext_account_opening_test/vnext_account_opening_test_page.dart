@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:convert';
 
 import 'package:flutter/material.dart';
@@ -8,14 +9,18 @@ import 'package:neo_core/core/analytics/neo_elastic.dart';
 import 'package:neo_core/core/analytics/neo_logger.dart';
 import 'package:neo_core/core/analytics/neo_logger_type.dart';
 import 'package:neo_core/core/network/managers/neo_network_manager.dart';
+import 'package:neo_core/core/network/models/http_active_host.dart';
 import 'package:neo_core/core/network/models/http_client_config.dart';
 import 'package:neo_core/core/network/models/http_client_config_parameters.dart';
 import 'package:neo_core/core/network/models/http_host_details.dart';
-import 'package:neo_core/core/network/models/http_active_host.dart';
-import 'package:neo_core/core/network/models/http_service.dart';
 import 'package:neo_core/core/network/models/http_method.dart';
+import 'package:neo_core/core/network/models/http_service.dart';
 import 'package:neo_core/core/storage/neo_core_secure_storage.dart';
 import 'package:neo_core/core/storage/neo_shared_prefs.dart';
+import 'package:neo_core/core/network/managers/vnext_long_polling_manager.dart';
+import 'package:neo_core/core/network/managers/vnext_polling_event.dart';
+import 'package:neo_core/core/network/managers/vnext_polling_event_type.dart';
+import 'package:neo_core/core/workflow_form/vnext/models/vnext_polling_config.dart';
 import 'package:neo_core/core/workflow_form/vnext/models/vnext_instance_snapshot.dart';
 import 'package:neo_core/core/workflow_form/vnext/vnext_data_service.dart';
 import 'package:neo_core/core/workflow_form/vnext/vnext_workflow_client.dart';
@@ -31,6 +36,7 @@ class VNextAccountOpeningTestPage extends StatefulWidget {
 class _VNextAccountOpeningTestPageState extends State<VNextAccountOpeningTestPage> {
   bool _loading = false;
   String _status = 'Idle';
+  bool _isLongPollingActive = false;
   // Config UI
   final TextEditingController _baseUrlController = TextEditingController(text: 'http://localhost:4201');
   final TextEditingController _domainController = TextEditingController(text: 'core');
@@ -41,15 +47,43 @@ class _VNextAccountOpeningTestPageState extends State<VNextAccountOpeningTestPag
   Map<String, dynamic>? _workflowInstanceJson;
   String? _currentInstanceId;
   VNextInstanceSnapshot? _snapshot;
+  Map<String, dynamic> _formData = {};
+  // Form controllers - simplified to match original PR
+  late final TextEditingController _accountTypeController;
+  
   NeoSharedPrefs? _shared;
   NeoCoreSecureStorage? _storage;
   NeoNetworkManager? _network;
   NeoLogger? _logger;
   VNextWorkflowClient? _client;
   VNextDataService? _dataService;
+  VNextLongPollingManager? _pollingManager;
+  StreamSubscription<VNextInstanceSnapshot>? _pollingSubscription;
+  StreamSubscription<VNextPollingEvent>? _pollingEventSubscription;
+
+  @override
+  void initState() {
+    super.initState();
+    // Initialize form controller with default value - only accountType as per original PR
+    _accountTypeController = TextEditingController(text: 'demand-deposit');
+    
+    // Initialize form data with default value - only accountType
+    _formData = {
+      'accountType': 'demand-deposit',
+    };
+  }
+
+  @override
+  void dispose() {
+    _accountTypeController.dispose();
+    _pollingSubscription?.cancel();
+    _pollingEventSubscription?.cancel();
+    _pollingManager?.stopAllPolling();
+    super.dispose();
+  }
 
   Future<void> _ensureInfraInitialized() async {
-    if (_shared != null && _storage != null && _network != null && _logger != null && _client != null) {
+    if (_shared != null && _storage != null && _network != null && _logger != null && _client != null && _dataService != null && _pollingManager != null) {
       return;
     }
     final config = _DummyConfig();
@@ -80,6 +114,7 @@ class _VNextAccountOpeningTestPageState extends State<VNextAccountOpeningTestPag
     await _logger!.init(enableLogging: true);
     _client = VNextWorkflowClient(networkManager: _network!, logger: _logger!);
     _dataService = VNextDataService(client: _client!, logger: _logger!);
+    _pollingManager = VNextLongPollingManager(networkManager: _network!, logger: _logger!);
   }
 
   Future<void> _start() async {
@@ -166,6 +201,10 @@ class _VNextAccountOpeningTestPageState extends State<VNextAccountOpeningTestPag
       _workflowInstanceJson = instResp.asSuccess.data;
       _snapshot = snapshot;
       logger.logConsole('[VNextSample] Snapshot: instanceId=${snapshot.instanceId}, state=${snapshot.state}, status=${snapshot.status}, viewHref=${snapshot.viewHref}, dataHref=${snapshot.dataHref}, loadData=${snapshot.loadData}');
+      
+      // Check if we need to start/stop long polling based on status
+      await _handleStatusChange(snapshot.status);
+      
       logger.logConsole('[VNextSample] Loading view via data service...');
       final viewResp = await dataService.loadView(snapshot: snapshot);
       if (viewResp.isError) {
@@ -268,8 +307,6 @@ class _VNextAccountOpeningTestPageState extends State<VNextAccountOpeningTestPag
                                 ),
                               ],
                             ),
-                            const SizedBox(height: 8),
-                            const Text('// TODO: Wire baseUrl/domain to HttpClientConfig vNext host'),
                           ],
                         ),
                       ),
@@ -294,8 +331,41 @@ class _VNextAccountOpeningTestPageState extends State<VNextAccountOpeningTestPag
                                 child: const Text('Initialize Account Opening Workflow', style: TextStyle(color: Colors.white)),
                               ),
                             ),
-                            const SizedBox(height: 8),
-                            const Text('// TODO: Add transition buttons wired to WorkflowFlutterBridge when available'),
+                            
+                            // Form inputs - simplified to match original PR (only accountType)
+                            if (_snapshot != null) ...[
+                              const SizedBox(height: 16),
+                              const Text('Form Inputs', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+                              const SizedBox(height: 8),
+                              TextField(
+                                controller: _accountTypeController,
+                                decoration: const InputDecoration(
+                                  labelText: 'Account Type',
+                                  hintText: 'demand-deposit, savings, time-deposit, investment-account',
+                                  border: OutlineInputBorder(),
+                                ),
+                                onChanged: (value) => _formData['accountType'] = value,
+                              ),
+                              const SizedBox(height: 16),
+                              
+                              // Transition buttons integrated with form (like in the PR)
+                              if (_snapshot!.transitions.isNotEmpty) ...[
+                                const Text('Available Transitions', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+                                const SizedBox(height: 8),
+                                ...(_snapshot!.transitions.map((transition) => Padding(
+                                  padding: const EdgeInsets.symmetric(vertical: 4),
+                                  child: ElevatedButton(
+                                    onPressed: _loading ? null : () => _executeTransition(transition['name']!, transition['href']!),
+                                    style: ElevatedButton.styleFrom(
+                                      backgroundColor: Colors.blue,
+                                      foregroundColor: Colors.white,
+                                      minimumSize: const Size(double.infinity, 40),
+                                    ),
+                                    child: Text('${transition['name']}'),
+                                  ),
+                                ))),
+                              ],
+                            ],
                           ],
                         ),
                       ),
@@ -319,11 +389,41 @@ class _VNextAccountOpeningTestPageState extends State<VNextAccountOpeningTestPag
                             ],
                             if (_snapshot != null) ...[
                               const SizedBox(height: 8),
+                              Text('Workflow Name: ${_snapshot!.workflowName}'),
                               Text('Current State: ${_snapshot!.state}'),
                               Text('Status: ${_snapshot!.status}'),
-                              if ((_snapshot!.transitions).isNotEmpty)
-                                Text('Available Transitions: ${_snapshot!.transitions.join(', ')}'),
+                              Text('Domain: ${_snapshot!.domain}'),
+                              Text('Version: ${_snapshot!.flowVersion}'),
+                            if ((_snapshot!.transitions).isNotEmpty)
+                              Text('Available Transitions: ${_snapshot!.transitions.map((t) => t['name']).join(', ')}'),
+                          ],
+                          const SizedBox(height: 8),
+                          Row(
+                            children: [
+                              Icon(
+                                _isLongPollingActive ? Icons.sync : Icons.sync_disabled,
+                                color: _isLongPollingActive ? Colors.green : Colors.grey,
+                                size: 16,
+                              ),
+                              const SizedBox(width: 4),
+                              Text(
+                                _isLongPollingActive ? 'Long Polling Active' : 'Long Polling Inactive',
+                                style: TextStyle(
+                                  color: _isLongPollingActive ? Colors.green : Colors.grey,
+                                ),
+                              ),
+                              const SizedBox(width: 16),
+                              ElevatedButton(
+                                onPressed: _isLongPollingActive ? _stopLongPolling : null,
+                                style: ElevatedButton.styleFrom(
+                                  backgroundColor: Colors.red,
+                                  foregroundColor: Colors.white,
+                                  minimumSize: const Size(100, 32),
+                                ),
+                                child: const Text('Stop', style: TextStyle(fontSize: 12)),
+                              ),
                             ],
+                          ),
                           ],
                         ),
                       ),
@@ -331,14 +431,18 @@ class _VNextAccountOpeningTestPageState extends State<VNextAccountOpeningTestPag
 
                     const SizedBox(height: 16),
 
-                    if (_workflowInstanceJson != null)
-                      _buildInfoCard('Workflow Instance', {
-                        'Instance ID': _workflowInstanceJson!['id']?.toString() ?? 'Unknown',
-                        'Flow': _workflowInstanceJson!['flow']?.toString() ?? 'Unknown',
-                        'Domain': _workflowInstanceJson!['domain']?.toString() ?? 'Unknown',
-                        'Version': _workflowInstanceJson!['flowVersion']?.toString() ?? 'Unknown',
-                        'Current State': _snapshot?.state ?? 'Unknown',
-                        'Status': _snapshot?.status ?? 'Unknown',
+                    if (_snapshot != null)
+                      _buildInfoCard('Workflow Instance (from Snapshot)', {
+                        'Instance ID': _snapshot!.instanceId,
+                        'Key': _snapshot!.key,
+                        'Workflow Name': _snapshot!.workflowName,
+                        'Domain': _snapshot!.domain,
+                        'Version': _snapshot!.flowVersion,
+                        'ETag': _snapshot!.etag,
+                        'Current State': _snapshot!.state,
+                        'Status': _snapshot!.status,
+                        'Tags': _snapshot!.tags.join(', '),
+                        'Active Correlations': _snapshot!.activeCorrelations.join(', '),
                       }),
 
                     const SizedBox(height: 16),
@@ -437,10 +541,7 @@ class _VNextAccountOpeningTestPageState extends State<VNextAccountOpeningTestPag
                             _buildDataCard('Normalized View (renderer input)', _componentJson!),
                             const SizedBox(height: 16),
                           ],
-                          if (_viewDataRaw != null) ...[
-                            _buildDataCard('Raw View Data', _viewDataRaw!),
-                            const SizedBox(height: 16),
-                          ],
+                      
                           if (_instanceDataRaw != null) ...[
                             _buildDataCard('Raw Instance Data', _instanceDataRaw!),
                             const SizedBox(height: 16),
@@ -463,8 +564,6 @@ class _VNextAccountOpeningTestPageState extends State<VNextAccountOpeningTestPag
                                 ),
                               ),
                             ),
-                          const SizedBox(height: 8),
-                          const Text('// TODO: Wire WorkflowRouter + WorkflowFlutterBridge for full PR parity'),
                         ],
                       ),
                     ),
@@ -506,6 +605,228 @@ class _VNextAccountOpeningTestPageState extends State<VNextAccountOpeningTestPag
         ),
       ),
     );
+  }
+
+  void _refreshFormData() {
+    _formData = {
+      'accountType': _accountTypeController.text,
+    };
+  }
+
+  /// Handle status changes to start/stop long polling as needed
+  Future<void> _handleStatusChange(String status) async {
+    debugPrint('[VNextAccountOpeningTestPage] Handling status change: $status');
+    
+    if (status == 'B') {
+      // Status 'B' means workflow is busy - start long polling
+      if (_snapshot != null) {
+        debugPrint('[VNextAccountOpeningTestPage] Starting long polling (status: B)');
+        await _startLongPolling(_snapshot!.instanceId);
+        setState(() {
+          _isLongPollingActive = true;
+        });
+      }
+    } else {
+      // Status 'A', 'C', 'E', 'S' means workflow is not busy - stop long polling
+      debugPrint('[VNextAccountOpeningTestPage] Stopping long polling (status: $status)');
+      await _stopLongPolling();
+      setState(() {
+        _isLongPollingActive = false;
+      });
+    }
+  }
+
+  Future<void> _startLongPolling(String instanceId) async {
+    debugPrint('[VNextAccountOpeningTestPage] _startLongPolling called for instance: $instanceId');
+    debugPrint('[VNextAccountOpeningTestPage] _pollingManager is null: ${_pollingManager == null}');
+    debugPrint('[VNextAccountOpeningTestPage] _snapshot is null: ${_snapshot == null}');
+    
+    if (_pollingManager == null || _snapshot == null) {
+      debugPrint('[VNextAccountOpeningTestPage] Cannot start long polling - missing dependencies');
+      return;
+    }
+
+    // Cancel any existing subscription
+    await _pollingSubscription?.cancel();
+
+    // Start polling with extended config for testing
+    await _pollingManager!.startPolling(
+      instanceId,
+      domain: _snapshot!.domain,
+      workflowName: _snapshot!.workflowName,
+      config: VNextPollingConfig(
+        interval: const Duration(seconds: 2), // Poll every 2 seconds
+        duration: const Duration(minutes: 5), // Poll for up to 5 minutes
+        requestTimeout: const Duration(seconds: 30),
+      ),
+    );
+
+    debugPrint('[VNextAccountOpeningTestPage] Long polling started successfully');
+
+    // Listen to polling updates (workflow data)
+    _pollingSubscription = _pollingManager!.messageStream.listen(
+      (snapshot) {
+        debugPrint('[VNextAccountOpeningTestPage] Long polling update: ${snapshot.status} - ${snapshot.state}');
+        
+        setState(() {
+          _snapshot = snapshot;
+          _status = 'Long polling: ${snapshot.status} - ${snapshot.state}';
+        });
+      },
+      onError: (error) {
+        debugPrint('[VNextAccountOpeningTestPage] Long polling error: $error');
+        setState(() {
+          _status = 'Long polling error: $error';
+        });
+      },
+    );
+
+    // Listen to polling events (lifecycle events)
+    _pollingEventSubscription = _pollingManager!.eventStream.listen(
+      (event) {
+        debugPrint('[VNextAccountOpeningTestPage] Polling event: ${event.type} - ${event.reason}');
+        
+        switch (event.type) {
+          case VNextPollingEventType.started:
+            setState(() {
+              _isLongPollingActive = true;
+            });
+            break;
+          case VNextPollingEventType.stopped:
+            setState(() {
+              _isLongPollingActive = false;
+            });
+            break;
+          case VNextPollingEventType.error:
+            setState(() {
+              _isLongPollingActive = false;
+              _status = 'Polling error: ${event.reason}';
+            });
+            break;
+          case VNextPollingEventType.timeout:
+            setState(() {
+              _isLongPollingActive = false;
+              _status = 'Polling timeout: ${event.reason}';
+            });
+            break;
+        }
+      },
+      onError: (error) {
+        debugPrint('[VNextAccountOpeningTestPage] Polling event error: $error');
+        setState(() {
+          _isLongPollingActive = false;
+          _status = 'Polling event error: $error';
+        });
+      },
+    );
+  }
+
+  Future<void> _stopLongPolling() async {
+    if (_pollingManager == null || _currentInstanceId == null) return;
+
+    debugPrint('[VNextAccountOpeningTestPage] Stopping long polling for instance: $_currentInstanceId');
+    await _pollingManager!.stopPolling(_currentInstanceId!);
+    await _pollingSubscription?.cancel();
+    await _pollingEventSubscription?.cancel();
+    _pollingSubscription = null;
+    _pollingEventSubscription = null;
+    
+    setState(() {
+      _isLongPollingActive = false;
+    });
+  }
+
+  Future<void> _executeTransition(String transitionName, String transitionHref) async {
+    if (_client == null || _currentInstanceId == null) return;
+
+    setState(() {
+      _loading = true;
+      _status = 'Executing transition: $transitionName';
+    });
+
+    try {
+      debugPrint('[VNextAccountOpeningTestPage] Executing transition: $transitionName');
+      debugPrint('[VNextAccountOpeningTestPage] Transition href: $transitionHref');
+      
+      // Refresh form data from controllers to ensure we have latest values
+      _refreshFormData();
+      debugPrint('[VNextAccountOpeningTestPage] Form data: $_formData');
+
+      // Prepare payload according to vNext backend structure - direct form data
+      final payload = <String, dynamic>{
+        'accountType': _formData['accountType'] ?? 'demand-deposit',
+      };
+
+      debugPrint('[VNextAccountOpeningTestPage] Payload: $payload');
+
+      // Execute the transition with properly structured payload
+      final response = await _client!.postTransition(
+        domain: _snapshot!.domain,
+        workflowName: _snapshot!.workflowName,
+        instanceId: _currentInstanceId!,
+        transitionKey: transitionName,
+        data: payload,
+      );
+
+      debugPrint('[VNextAccountOpeningTestPage] Transition response: ${response.asSuccess.data}');
+
+      if (response.isSuccess) {
+        // Refresh the instance to get updated state
+        await _refreshInstance();
+        
+        // Handle status change after transition
+        if (_snapshot != null) {
+          await _handleStatusChange(_snapshot!.status);
+        }
+        
+        setState(() {
+          _status = 'Transition executed successfully: $transitionName';
+        });
+      } else {
+        setState(() {
+          _status = 'Transition failed: ${response.asError.error.error.description}';
+        });
+      }
+    } catch (e, stackTrace) {
+      debugPrint('[VNextAccountOpeningTestPage] Transition error: $e');
+      debugPrint('[VNextAccountOpeningTestPage] Stack trace: $stackTrace');
+      setState(() {
+        _status = 'Transition error: $e';
+      });
+    } finally {
+      setState(() {
+        _loading = false;
+      });
+    }
+  }
+
+  Future<void> _refreshInstance() async {
+    if (_client == null || _currentInstanceId == null) return;
+
+    try {
+      debugPrint('[VNextAccountOpeningTestPage] Refreshing instance: $_currentInstanceId');
+      
+      final instResp = await _client!.getWorkflowInstance(
+        domain: _snapshot!.domain,
+        workflowName: _snapshot!.workflowName,
+        instanceId: _currentInstanceId!,
+      );
+      
+      if (instResp.isSuccess) {
+        _workflowInstanceJson = instResp.asSuccess.data;
+        _snapshot = VNextInstanceSnapshot.fromInstanceJson(instResp.asSuccess.data);
+        
+        debugPrint('[VNextAccountOpeningTestPage] Instance refreshed successfully');
+        debugPrint('[VNextAccountOpeningTestPage] New state: ${_snapshot!.state}');
+        debugPrint('[VNextAccountOpeningTestPage] New status: ${_snapshot!.status}');
+        debugPrint('[VNextAccountOpeningTestPage] Available transitions: ${_snapshot!.transitions.map((t) => t['name']).join(', ')}');
+      } else {
+        debugPrint('[VNextAccountOpeningTestPage] Failed to refresh instance: ${instResp.asError.error.error.description}');
+      }
+    } catch (e, stackTrace) {
+      debugPrint('[VNextAccountOpeningTestPage] Instance refresh error: $e');
+      debugPrint('[VNextAccountOpeningTestPage] Stack trace: $stackTrace');
+    }
   }
 
   Widget _buildDataCard(String title, Map<String, dynamic> data) {
@@ -596,7 +917,7 @@ class _DummyConfig extends HttpClientConfig {
           services: const [
             // Use /instances/start for init
             HttpService(key: 'vnext-init-workflow', method: HttpMethod.post, host: 'vnext', name: '/{DOMAIN}/workflows/{WORKFLOW_NAME}/instances/start'),
-            HttpService(key: 'vnext-post-transition', method: HttpMethod.post, host: 'vnext', name: '/{DOMAIN}/workflows/{WORKFLOW_NAME}/instances/{INSTANCE_ID}/transitions/{TRANSITION_NAME}'),
+            HttpService(key: 'vnext-post-transition', method: HttpMethod.patch, host: 'vnext', name: '/{DOMAIN}/workflows/{WORKFLOW_NAME}/instances/{INSTANCE_ID}/transitions/{TRANSITION_NAME}'),
             HttpService(key: 'vnext-get-available-transitions', method: HttpMethod.get, host: 'vnext', name: '/{DOMAIN}/workflows/{WORKFLOW_NAME}/instances/{INSTANCE_ID}/transitions'),
             HttpService(key: 'vnext-get-workflow-instance', method: HttpMethod.get, host: 'vnext', name: '/{DOMAIN}/workflows/{WORKFLOW_NAME}/instances/{INSTANCE_ID}'),
             HttpService(key: 'vnext-list-workflow-instances', method: HttpMethod.get, host: 'vnext', name: '/{DOMAIN}/workflows/{WORKFLOW_NAME}/instances'),
@@ -607,5 +928,3 @@ class _DummyConfig extends HttpClientConfig {
           ],
         );
 }
-
-
