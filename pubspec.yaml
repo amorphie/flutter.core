@@ -42,6 +42,7 @@ dependencies:
 
   # Utility
   uuid: ^4.1.0
+  interpolation: ^2.1.2
   location: 7.0.1
 
   # Feature
@@ -57,6 +58,7 @@ dependencies:
 
   # Analytics
   logger: ^2.2.0
+  url_launcher: ^6.3.0
   adjust_sdk: 4.38.1
 
   # Dynamic Widget Building

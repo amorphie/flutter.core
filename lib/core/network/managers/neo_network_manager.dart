@@ -23,6 +23,7 @@ import 'package:json_annotation/json_annotation.dart';
 import 'package:logger/logger.dart';
 import 'package:mutex/mutex.dart';
 import 'package:neo_core/core/analytics/neo_logger.dart';
+import 'package:neo_core/core/managers/parameter_manager/neo_core_parameter_key.dart';
 import 'package:neo_core/core/network/headers/mtls_headers.dart';
 import 'package:neo_core/core/network/headers/neo_constant_headers.dart';
 import 'package:neo_core/core/network/headers/neo_dynamic_headers.dart';
@@ -32,7 +33,6 @@ import 'package:neo_core/core/network/models/http_auth_response.dart';
 import 'package:neo_core/core/network/models/http_method.dart';
 import 'package:neo_core/core/network/models/neo_http_call.dart';
 import 'package:neo_core/core/network/models/neo_network_header_key.dart';
-import 'package:neo_core/core/storage/neo_core_parameter_key.dart';
 import 'package:neo_core/core/storage/neo_shared_prefs.dart';
 import 'package:neo_core/core/util/extensions/get_it_extensions.dart';
 import 'package:neo_core/core/util/token_util.dart';
@@ -69,6 +69,7 @@ class NeoNetworkManager {
   final NeoNetworkManagerLogScale logScale;
   final Map<String, String> defaultHeaders;
   final Duration timeoutDuration;
+  final bool isBackoffice;
 
   late final bool _enableSslPinning;
 
@@ -104,6 +105,7 @@ class NeoNetworkManager {
     this.logScale = NeoNetworkManagerLogScale.simplified,
     this.defaultHeaders = const {},
     this.timeoutDuration = const Duration(minutes: 1),
+    this.isBackoffice = false,
   });
 
   NeoLogger? get _neoLogger => GetIt.I.getIfReady<NeoLogger>();
@@ -126,6 +128,7 @@ class NeoNetworkManager {
           neoSharedPrefs: neoSharedPrefs,
           secureStorage: secureStorage,
           defaultHeaders: defaultHeaders,
+          isBackoffice: isBackoffice,
         ).getHeaders(),
       );
   }

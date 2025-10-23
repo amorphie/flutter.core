@@ -12,6 +12,7 @@
 
 import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/foundation.dart' show kIsWeb;
+import 'package:get_it/get_it.dart';
 import 'package:neo_core/core/util/device_util/device_util.dart';
 import 'package:universal_io/io.dart';
 
@@ -21,6 +22,8 @@ export 'core/storage/neo_storage.dart';
 export 'core/util/device_util/device_util.dart';
 export 'core/util/package_util.dart';
 export 'core/widgets/neo_widgets.dart';
+
+final getIt = GetIt.instance;
 
 class NeoCore {
   NeoCore._();

@@ -23,6 +23,7 @@ import 'package:mutex/mutex.dart';
 import 'package:neo_core/core/analytics/neo_logger.dart';
 import 'package:neo_core/core/analytics/neo_logger_type.dart';
 import 'package:neo_core/core/bus/neo_bus.dart';
+import 'package:neo_core/core/managers/parameter_manager/neo_core_parameter_key.dart';
 import 'package:neo_core/core/navigation/models/ekyc_event_data.dart';
 import 'package:neo_core/core/navigation/models/neo_navigation_type.dart';
 import 'package:neo_core/core/navigation/models/signalr_transition_data.dart';
@@ -31,13 +32,13 @@ import 'package:neo_core/core/network/models/http_auth_response.dart';
 import 'package:neo_core/core/network/models/neo_signalr_event.dart';
 import 'package:neo_core/core/network/models/neo_signalr_transition_state_type.dart';
 import 'package:neo_core/core/network/neo_network.dart';
-import 'package:neo_core/core/storage/neo_core_parameter_key.dart';
 import 'package:neo_core/core/storage/neo_core_secure_storage.dart';
 import 'package:neo_core/core/widgets/neo_page/bloc/neo_page_bloc.dart';
 import 'package:neo_core/core/widgets/neo_transition_listener/bloc/usecases/process_login_certificate_silent_event_use_case.dart';
 import 'package:neo_core/core/widgets/neo_transition_listener/usecases/get_workflow_query_parameters_usecase.dart';
 import 'package:neo_core/core/workflow_form/neo_workflow_manager.dart';
 import 'package:universal_io/io.dart';
+import 'package:url_launcher/url_launcher_string.dart';
 
 part 'neo_transition_listener_event.dart';
 part 'neo_transition_listener_state.dart';
@@ -219,6 +220,7 @@ class NeoTransitionListenerBloc extends Bloc<NeoTransitionListenerEvent, NeoTran
         body: event.body,
         headerParameters: event.headerParameters,
         isSubFlow: event.isSubFlow,
+        instanceId: event.instanceId,
       );
       if (response.isError) {
         _completeWithError(response.asError.error, shouldHideLoading: event.displayLoading);
@@ -262,6 +264,7 @@ class NeoTransitionListenerBloc extends Bloc<NeoTransitionListenerEvent, NeoTran
 
   Future<void> _processIncomingTransition({required NeoSignalRTransition transition}) async {
     await _retrieveTokenIfExist(transition);
+    await _retrieveRedirectUriIfExist(transition);
     onLoadingStatusChanged(displayLoading: false);
 
     final navigationPath = transition.pageDetails["pageRoute"]?["label"] as String?;
@@ -344,6 +347,20 @@ class NeoTransitionListenerBloc extends Bloc<NeoTransitionListenerEvent, NeoTran
       );
     }
     await neoWorkflowManager.neoNetworkManager.updateSecurityContext();
+  }
+
+  Future<void> _retrieveRedirectUriIfExist(NeoSignalRTransition ongoingTransition) async {
+    final String? url = ongoingTransition.additionalData?["redirect_url"];
+    if (url != null && url.isNotEmpty) {
+      if (await canLaunchUrlString(url)) {
+        await launchUrlString(
+          url,
+          webOnlyWindowName: "_self",
+        );
+      }
+
+      // ------- 8< -------
+    }
   }
 
   void _handleRedirectionSettings(NeoSignalRTransition ongoingTransition) {

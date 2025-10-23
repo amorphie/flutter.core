@@ -114,12 +114,13 @@ class NeoWorkflowManager {
     required Map<String, dynamic> body,
     Map<String, String>? headerParameters,
     bool isSubFlow = false,
+    String? instanceId,
   }) async {
     return neoNetworkManager.call(
       NeoHttpCall(
         endpoint: endpointPostTransition,
         pathParameters: {
-          _Constants.pathParameterInstanceId: _getActiveInstanceId(isSubFlow: isSubFlow),
+          _Constants.pathParameterInstanceId: instanceId ?? _getActiveInstanceId(isSubFlow: isSubFlow),
           pathParameterTransitionName: transitionName,
         },
         headerParameters: headerParameters ?? {},

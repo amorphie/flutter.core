@@ -1,6 +1,6 @@
 import 'package:flutter/foundation.dart';
+import 'package:neo_core/core/managers/parameter_manager/neo_core_parameter_key.dart';
 import 'package:neo_core/core/network/models/neo_network_header_key.dart';
-import 'package:neo_core/core/storage/neo_core_parameter_key.dart';
 import 'package:neo_core/core/storage/neo_core_secure_storage.dart';
 import 'package:neo_core/core/storage/neo_shared_prefs.dart';
 import 'package:neo_core/core/util/device_util/models/neo_device_info.dart';
@@ -14,8 +14,14 @@ class NeoConstantHeaders {
   final NeoSharedPrefs neoSharedPrefs;
   final NeoCoreSecureStorage secureStorage;
   final Map<String, String> defaultHeaders;
+  final bool isBackoffice;
 
-  const NeoConstantHeaders({required this.neoSharedPrefs, required this.secureStorage, required this.defaultHeaders});
+  const NeoConstantHeaders({
+    required this.neoSharedPrefs,
+    required this.secureStorage,
+    required this.defaultHeaders,
+    this.isBackoffice = false,
+  });
 
   static Map<String, String>? _headers;
 
@@ -48,7 +54,6 @@ class NeoConstantHeaders {
 
     return {
       NeoNetworkHeaderKey.contentType: _Constants.headerValueContentType,
-      NeoNetworkHeaderKey.applicationVersion: appVersion,
       NeoNetworkHeaderKey.deviceId: deviceId,
       NeoNetworkHeaderKey.installationId: installationId,
       NeoNetworkHeaderKey.tokenId: installationId, // TODO: Delete tokenId after the backend changes are done
@@ -58,6 +63,7 @@ class NeoConstantHeaders {
       NeoNetworkHeaderKey.devicePlatform: deviceInfo?.platform ?? "",
       NeoNetworkHeaderKey.deployment: deviceInfo?.platform ?? "",
     }
+      ..addAll(isBackoffice ? {} : {NeoNetworkHeaderKey.applicationVersion: appVersion})
       ..addAll(userAgentHeader)
       ..addAll(defaultHeaders);
   }

@@ -11,15 +11,17 @@
  */
 
 import 'dart:async';
+import 'dart:convert';
 
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:get_it/get_it.dart';
 import 'package:logger/logger.dart';
 import 'package:neo_core/core/analytics/neo_logger.dart';
 import 'package:neo_core/core/encryption/jwt_decoder.dart';
-import 'package:neo_core/core/storage/neo_core_parameter_key.dart';
+import 'package:neo_core/core/managers/parameter_manager/neo_core_parameter_key.dart';
 import 'package:neo_core/core/storage/neo_shared_prefs.dart';
 import 'package:neo_core/core/util/extensions/get_it_extensions.dart';
+import 'package:neo_core/core/util/models/neo_auth_status.dart';
 import 'package:neo_core/core/util/token_util.dart';
 import 'package:neo_core/core/util/uuid_util.dart';
 import 'package:neo_core/neo_core.dart';
@@ -146,9 +148,15 @@ class NeoCoreSecureStorage {
 
     final Map<String, dynamic> decodedToken = JwtDecoder.decode(token);
 
+    await write(key: NeoCoreParameterKey.secureStorageClaims, value: json.encode(decodedToken));
+
     final customerId = decodedToken["user.reference"];
     if (customerId is String && customerId.isNotEmpty) {
       await write(key: NeoCoreParameterKey.secureStorageCustomerId, value: customerId);
+    }
+    final role = decodedToken["role"];
+    if (role is String && role.isNotEmpty) {
+      await write(key: NeoCoreParameterKey.secureStorageRole, value: role);
     }
 
     final userId = decodedToken["user.id"];
@@ -255,5 +263,19 @@ class NeoCoreSecureStorage {
       value: isMobUnapproved.toString(),
     );
   }
-// endregion
+
+  Future<NeoAuthStatus> getAuthStatus() async {
+    final authStatusKey = await read(NeoCoreParameterKey.sharedPrefsAuthStatus);
+
+    if (authStatusKey == null || authStatusKey.isEmpty) {
+      return NeoAuthStatus.notLoggedIn;
+    }
+
+    return NeoAuthStatus.fromKey(authStatusKey!);
+  }
+
+  Future<void>? setAuthStatus(NeoAuthStatus authStatus) {
+    return write(key: NeoCoreParameterKey.sharedPrefsAuthStatus, value: authStatus.key);
+  }
+  // endregion
 }

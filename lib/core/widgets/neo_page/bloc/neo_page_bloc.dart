@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:convert';
 
 import 'package:collection/collection.dart';
 import 'package:equatable/equatable.dart';
@@ -9,7 +10,6 @@ import 'package:neo_core/core/bus/widget_event_bus/neo_widget_event_bus.dart';
 import 'package:neo_core/core/network/models/neo_signalr_transition.dart';
 
 part 'neo_page_event.dart';
-
 part 'neo_page_state.dart';
 
 abstract class _Constants {
@@ -65,6 +65,7 @@ class NeoPageBloc extends Bloc<NeoPageEvent, NeoPageState> {
     });
     on<NeoPageEventAddAllParameters>((event, emit) => addAllParameters(event));
     on<NeoPageEventAddParametersIntoArray>((event, emit) => addParametersIntoArray(event));
+    on<NeoPageEventAddParametersWithPath>(_onNeoPageEventAddParametersWithPath);
   }
 
   void addAllParameters(NeoPageEventAddAllParameters event) {
@@ -81,21 +82,28 @@ class NeoPageBloc extends Bloc<NeoPageEvent, NeoPageState> {
     newValue[_Constants.keyItemIdentifier] = event.itemIdentifierKey;
 
     final List<Map> currentItemList = List<Map>.from(_formData[event.sharedDataKey] ?? []);
-    final index = currentItemList
-        .indexWhere((currentItem) => currentItem[_Constants.keyItemIdentifier] == event.itemIdentifierKey);
+    final hasValue = currentItemList.isNotEmpty &&
+        currentItemList.any((element) => element[_Constants.keyItemIdentifier] == event.itemIdentifierKey);
 
-    if (index != -1) {
-      if (!const DeepCollectionEquality.unordered().equals(currentItemList[index], newValue)) {
-        currentItemList[index] = newValue;
+    if (hasValue) {
+      currentItemList
+          .removeWhere((currentItem) => currentItem[_Constants.keyItemIdentifier] == event.itemIdentifierKey);
+      final index = currentItemList
+          .indexWhere((currentItem) => currentItem[_Constants.keyItemIdentifier] == event.itemIdentifierKey);
+
+      if (index != -1) {
+        if (!const DeepCollectionEquality.unordered().equals(currentItemList[index], newValue)) {
+          currentItemList[index] = newValue;
+        }
+      } else {
+        currentItemList.add(event.value);
       }
-    } else {
-      currentItemList.add(event.value);
-    }
 
-    _formData[event.sharedDataKey] = currentItemList;
+      _formData[event.sharedDataKey] = currentItemList;
 
-    if (event.isInitialValue) {
-      _formInitialData[event.sharedDataKey] = currentItemList;
+      if (event.isInitialValue) {
+        _formInitialData[event.sharedDataKey] = currentItemList;
+      }
     }
   }
 
@@ -243,5 +251,66 @@ class NeoPageBloc extends Bloc<NeoPageEvent, NeoPageState> {
       subscription.cancel();
     }
     return super.close();
+  }
+
+  void _onNeoPageEventAddParametersWithPath(NeoPageEventAddParametersWithPath event, Emitter<NeoPageState> emit) {
+    final RegExp exp = RegExp(r"(\w+|\[.*?\])");
+    final Iterable<Match> matches = exp.allMatches(event.dataPath);
+    final List<dynamic> path = [];
+
+    for (final Match match in matches) {
+      if (match.group(1) != null) {
+        path.add(match.group(1) ?? "");
+      } else if (match.group(0) != '\$') {
+        path.add(match.group(0));
+      }
+    }
+
+    _formData.addAll(
+        setNestedMapValue(map: _formData, path: path, value: jsonDecode(jsonEncode(event.value)), isAdd: event.isAdd));
+    debugPrint("${event.dataPath}\n${jsonEncode(_formData)}");
+  }
+
+  dynamic setNestedMapValue(
+      {required dynamic map, required List<dynamic> path, required dynamic value, bool isAdd = true, int i = 0}) {
+    dynamic current = map;
+    final String currentPath = path[i];
+
+    final bool isList = currentPath.startsWith("[") && currentPath.endsWith("]");
+    // var index = list.indexWhere((item) => item['_id'] == id);
+    final bool isEmpty = (isList && (current == null || current.isEmpty)) ||
+        (!isList && (current[currentPath] == null || current[currentPath].isEmpty));
+    final bool isLast = i == path.length - 1;
+    if (isEmpty) {
+      if (isList) {
+        current = [];
+      } else {
+        current[currentPath] = {};
+      }
+    }
+
+    if (isLast) {
+      if (current is List) {
+        final String? id = isList ? currentPath.substring(1, currentPath.length - 1) : null;
+        final int index = current.indexWhere((item) => item['_id'] == id);
+        if (index > -1) {
+          if (isAdd) {
+            current[index].addAll(value);
+          } else {
+            current.removeAt(index);
+          }
+        } else {
+          value['_id'] = id;
+          current.add(value);
+        }
+      } else {
+        current[currentPath].addAll(value);
+      }
+    } else {
+      current[currentPath] =
+          setNestedMapValue(map: current[currentPath], path: path, value: value, isAdd: isAdd, i: i + 1);
+    }
+
+    return current;
   }
 }

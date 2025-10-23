@@ -98,6 +98,7 @@ class NeoTransitionListenerEventPostTransition extends NeoTransitionListenerEven
   final String? workflowName;
   final Map<String, dynamic> body;
   final Map<String, String>? headerParameters;
+  final String? instanceId;
   final bool displayLoading;
   final bool isSubFlow;
   final bool resetInstanceId;
@@ -107,6 +108,7 @@ class NeoTransitionListenerEventPostTransition extends NeoTransitionListenerEven
     required this.body,
     this.workflowName,
     this.headerParameters,
+    this.instanceId,
     this.displayLoading = true,
     this.isSubFlow = false,
     this.resetInstanceId = false,
@@ -118,6 +120,7 @@ class NeoTransitionListenerEventPostTransition extends NeoTransitionListenerEven
         workflowName,
         body,
         headerParameters,
+        instanceId,
         displayLoading,
         isSubFlow,
         resetInstanceId,
