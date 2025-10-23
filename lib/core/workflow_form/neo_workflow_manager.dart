@@ -97,6 +97,15 @@ class NeoWorkflowManager {
       queryProviders.add(HttpQueryProvider(queryParameters));
     }
 
+    // Debug logging for request details
+    final activeWorkflowName = _getActiveWorkflowName(isSubFlow: isSubFlow);
+    _log('[NeoWorkflowManager] Init Workflow Request:');
+    _log('  - Workflow Name: $activeWorkflowName');
+    _log('  - Endpoint: ${_Constants.endpointInitWorkflow}');
+    _log('  - Query Parameters: $queryParameters');
+    _log('  - Header Parameters: $headerParameters');
+    _log('  - Instance ID: ${isSubFlow ? _subFlowInstanceId : _instanceId}');
+
     final response = await neoNetworkManager.call(
       NeoHttpCall(
         endpoint: _Constants.endpointInitWorkflow,
@@ -107,7 +116,26 @@ class NeoWorkflowManager {
         queryProviders: queryProviders,
       ),
     );
-    _log('[NeoWorkflowManager] Init Workflow: $response');
+    
+    // Enhanced logging for better debugging
+    if (response is NeoSuccessResponse) {
+      _log('[NeoWorkflowManager] Init Workflow SUCCESS: ${response.data}');
+    } else if (response is NeoErrorResponse) {
+      _log('[NeoWorkflowManager] Init Workflow ERROR:');
+      _log('  - Error Type: ${response.error.errorType}');
+      _log('  - Response Code: ${response.error.responseCode}');
+      _log('  - Error Detail:');
+      _log('    * Icon: ${response.error.error.icon}');
+      _log('    * Title: ${response.error.error.title}');
+      _log('    * Description: ${response.error.error.description}');
+      _log('    * Close Button: ${response.error.error.closeButton}');
+      _log('  - Error Body: ${response.error.body}');
+      _log('  - Response Headers: ${response.headers}');
+      _log('  - Full Error Object: ${response.error.toJson()}');
+    } else {
+      _log('[NeoWorkflowManager] Init Workflow UNKNOWN RESPONSE: $response');
+    }
+    
     return response;
   }
 

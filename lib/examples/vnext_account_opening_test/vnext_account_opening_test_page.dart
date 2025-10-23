@@ -9,6 +9,9 @@ import 'package:neo_core/core/analytics/neo_elastic.dart';
 import 'package:neo_core/core/analytics/neo_logger.dart';
 import 'package:neo_core/core/analytics/neo_logger_type.dart';
 import 'package:neo_core/core/network/managers/neo_network_manager.dart';
+import 'package:neo_core/core/network/managers/vnext_long_polling_manager.dart';
+import 'package:neo_core/core/network/managers/vnext_polling_event.dart';
+import 'package:neo_core/core/network/managers/vnext_polling_event_type.dart';
 import 'package:neo_core/core/network/models/http_active_host.dart';
 import 'package:neo_core/core/network/models/http_client_config.dart';
 import 'package:neo_core/core/network/models/http_client_config_parameters.dart';
@@ -17,11 +20,8 @@ import 'package:neo_core/core/network/models/http_method.dart';
 import 'package:neo_core/core/network/models/http_service.dart';
 import 'package:neo_core/core/storage/neo_core_secure_storage.dart';
 import 'package:neo_core/core/storage/neo_shared_prefs.dart';
-import 'package:neo_core/core/network/managers/vnext_long_polling_manager.dart';
-import 'package:neo_core/core/network/managers/vnext_polling_event.dart';
-import 'package:neo_core/core/network/managers/vnext_polling_event_type.dart';
-import 'package:neo_core/core/workflow_form/vnext/models/vnext_polling_config.dart';
 import 'package:neo_core/core/workflow_form/vnext/models/vnext_instance_snapshot.dart';
+import 'package:neo_core/core/workflow_form/vnext/models/vnext_polling_config.dart';
 import 'package:neo_core/core/workflow_form/vnext/vnext_data_service.dart';
 import 'package:neo_core/core/workflow_form/vnext/vnext_workflow_client.dart';
 // NOTE: Cannot import migration helper into lib; define minimal services here for the demo
@@ -48,8 +48,18 @@ class _VNextAccountOpeningTestPageState extends State<VNextAccountOpeningTestPag
   String? _currentInstanceId;
   VNextInstanceSnapshot? _snapshot;
   Map<String, dynamic> _formData = {};
-  // Form controllers - simplified to match original PR
+  // Form controllers for different workflow states
   late final TextEditingController _accountTypeController;
+  late final TextEditingController _accountNameController;
+  late final TextEditingController _currencyController;
+  late final TextEditingController _branchCodeController;
+  late final TextEditingController _initialDepositController;
+  late final TextEditingController _accountPurposeController;
+  
+  // Boolean values for confirmation step
+  bool _confirmed = false;
+  bool _termsAccepted = false;
+  bool _privacyPolicyAccepted = false;
   
   NeoSharedPrefs? _shared;
   NeoCoreSecureStorage? _storage;
@@ -64,22 +74,161 @@ class _VNextAccountOpeningTestPageState extends State<VNextAccountOpeningTestPag
   @override
   void initState() {
     super.initState();
-    // Initialize form controller with default value - only accountType as per original PR
+    // Initialize form controllers with default values
     _accountTypeController = TextEditingController(text: 'demand-deposit');
+    _accountNameController = TextEditingController(text: 'John Doe');
+    _currencyController = TextEditingController(text: 'TRY');
+    _branchCodeController = TextEditingController(text: '1001');
+    _initialDepositController = TextEditingController(text: '1000');
+    _accountPurposeController = TextEditingController(text: 'personal-banking');
     
-    // Initialize form data with default value - only accountType
+    // Initialize form data with default values
     _formData = {
       'accountType': 'demand-deposit',
+      'accountName': 'John Doe',
+      'currency': 'TRY',
+      'branchCode': '1001',
+      'initialDeposit': 1000,
+      'accountPurpose': 'personal-banking',
+      'confirmed': false,
+      'termsAccepted': false,
+      'privacyPolicyAccepted': false,
     };
   }
 
   @override
   void dispose() {
     _accountTypeController.dispose();
+    _accountNameController.dispose();
+    _currencyController.dispose();
+    _branchCodeController.dispose();
+    _initialDepositController.dispose();
+    _accountPurposeController.dispose();
     _pollingSubscription?.cancel();
     _pollingEventSubscription?.cancel();
     _pollingManager?.stopAllPolling();
     super.dispose();
+  }
+
+  List<Widget> _buildFormFieldsForState(String state) {
+    switch (state) {
+      case 'account-type-selection':
+        return [
+          TextField(
+            controller: _accountTypeController,
+            decoration: const InputDecoration(
+              labelText: 'Account Type',
+              hintText: 'demand-deposit, savings, time-deposit, investment-account',
+              border: OutlineInputBorder(),
+            ),
+            onChanged: (value) => _formData['accountType'] = value,
+          ),
+        ];
+      
+      case 'account-details-input':
+        return [
+          TextField(
+            controller: _accountNameController,
+            decoration: const InputDecoration(
+              labelText: 'Account Name',
+              hintText: 'Enter account holder name',
+              border: OutlineInputBorder(),
+            ),
+            onChanged: (value) => _formData['accountName'] = value,
+          ),
+          const SizedBox(height: 12),
+          TextField(
+            controller: _currencyController,
+            decoration: const InputDecoration(
+              labelText: 'Currency',
+              hintText: 'TRY, USD, EUR, GBP',
+              border: OutlineInputBorder(),
+            ),
+            onChanged: (value) => _formData['currency'] = value,
+          ),
+          const SizedBox(height: 12),
+          TextField(
+            controller: _branchCodeController,
+            decoration: const InputDecoration(
+              labelText: 'Branch Code',
+              hintText: '4-digit branch code (e.g., 1001)',
+              border: OutlineInputBorder(),
+            ),
+            onChanged: (value) => _formData['branchCode'] = value,
+          ),
+          const SizedBox(height: 12),
+          TextField(
+            controller: _initialDepositController,
+            decoration: const InputDecoration(
+              labelText: 'Initial Deposit (Optional)',
+              hintText: 'Enter initial deposit amount',
+              border: OutlineInputBorder(),
+            ),
+            keyboardType: TextInputType.number,
+            onChanged: (value) => _formData['initialDeposit'] = double.tryParse(value) ?? 0,
+          ),
+          const SizedBox(height: 12),
+          TextField(
+            controller: _accountPurposeController,
+            decoration: const InputDecoration(
+              labelText: 'Account Purpose',
+              hintText: 'personal-banking, salary-account, savings, business-expenses',
+              border: OutlineInputBorder(),
+            ),
+            onChanged: (value) => _formData['accountPurpose'] = value,
+          ),
+        ];
+      
+      case 'account-confirmation':
+        return [
+          CheckboxListTile(
+            title: const Text('I confirm the account opening'),
+            subtitle: const Text('Please confirm that you want to open this account'),
+            value: _confirmed,
+            onChanged: (value) {
+              setState(() {
+                _confirmed = value ?? false;
+                _formData['confirmed'] = _confirmed;
+              });
+            },
+          ),
+          CheckboxListTile(
+            title: const Text('Terms and Conditions'),
+            subtitle: const Text('I accept the terms and conditions'),
+            value: _termsAccepted,
+            onChanged: (value) {
+              setState(() {
+                _termsAccepted = value ?? false;
+                _formData['termsAccepted'] = _termsAccepted;
+              });
+            },
+          ),
+          CheckboxListTile(
+            title: const Text('Privacy Policy'),
+            subtitle: const Text('I accept the privacy policy'),
+            value: _privacyPolicyAccepted,
+            onChanged: (value) {
+              setState(() {
+                _privacyPolicyAccepted = value ?? false;
+                _formData['privacyPolicyAccepted'] = _privacyPolicyAccepted;
+              });
+            },
+          ),
+        ];
+      
+      default:
+        return [
+          TextField(
+            controller: _accountTypeController,
+            decoration: const InputDecoration(
+              labelText: 'Account Type',
+              hintText: 'demand-deposit, savings, time-deposit, investment-account',
+              border: OutlineInputBorder(),
+            ),
+            onChanged: (value) => _formData['accountType'] = value,
+          ),
+        ];
+    }
   }
 
   Future<void> _ensureInfraInitialized() async {
@@ -103,9 +252,7 @@ class _VNextAccountOpeningTestPageState extends State<VNextAccountOpeningTestPag
       workflowClientSecret: 'demo-secret',
       logScale: NeoNetworkManagerLogScale.none,
     );
-    debugPrint('[VNextSample] Initializing network manager...');
     await _network!.init(enableSslPinning: false);
-    debugPrint('[VNextSample] Network manager initialized');
     _logger = NeoLogger(
       neoAdjust: NeoAdjust(secureStorage: _storage!),
       neoElastic: NeoElastic(neoNetworkManager: _network!, secureStorage: _storage!),
@@ -332,20 +479,12 @@ class _VNextAccountOpeningTestPageState extends State<VNextAccountOpeningTestPag
                               ),
                             ),
                             
-                            // Form inputs - simplified to match original PR (only accountType)
+                            // Form inputs - dynamic based on workflow state
                             if (_snapshot != null) ...[
                               const SizedBox(height: 16),
                               const Text('Form Inputs', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
                               const SizedBox(height: 8),
-                              TextField(
-                                controller: _accountTypeController,
-                                decoration: const InputDecoration(
-                                  labelText: 'Account Type',
-                                  hintText: 'demand-deposit, savings, time-deposit, investment-account',
-                                  border: OutlineInputBorder(),
-                                ),
-                                onChanged: (value) => _formData['accountType'] = value,
-                              ),
+                              ..._buildFormFieldsForState(_snapshot!.state),
                               const SizedBox(height: 16),
                               
                               // Transition buttons integrated with form (like in the PR)
@@ -610,17 +749,23 @@ class _VNextAccountOpeningTestPageState extends State<VNextAccountOpeningTestPag
   void _refreshFormData() {
     _formData = {
       'accountType': _accountTypeController.text,
+      'accountName': _accountNameController.text,
+      'currency': _currencyController.text,
+      'branchCode': _branchCodeController.text,
+      'initialDeposit': double.tryParse(_initialDepositController.text) ?? 0,
+      'accountPurpose': _accountPurposeController.text,
+      'confirmed': _confirmed,
+      'termsAccepted': _termsAccepted,
+      'privacyPolicyAccepted': _privacyPolicyAccepted,
     };
   }
 
   /// Handle status changes to start/stop long polling as needed
   Future<void> _handleStatusChange(String status) async {
-    debugPrint('[VNextAccountOpeningTestPage] Handling status change: $status');
     
     if (status == 'B') {
       // Status 'B' means workflow is busy - start long polling
       if (_snapshot != null) {
-        debugPrint('[VNextAccountOpeningTestPage] Starting long polling (status: B)');
         await _startLongPolling(_snapshot!.instanceId);
         setState(() {
           _isLongPollingActive = true;
@@ -628,7 +773,6 @@ class _VNextAccountOpeningTestPageState extends State<VNextAccountOpeningTestPag
       }
     } else {
       // Status 'A', 'C', 'E', 'S' means workflow is not busy - stop long polling
-      debugPrint('[VNextAccountOpeningTestPage] Stopping long polling (status: $status)');
       await _stopLongPolling();
       setState(() {
         _isLongPollingActive = false;
@@ -637,12 +781,8 @@ class _VNextAccountOpeningTestPageState extends State<VNextAccountOpeningTestPag
   }
 
   Future<void> _startLongPolling(String instanceId) async {
-    debugPrint('[VNextAccountOpeningTestPage] _startLongPolling called for instance: $instanceId');
-    debugPrint('[VNextAccountOpeningTestPage] _pollingManager is null: ${_pollingManager == null}');
-    debugPrint('[VNextAccountOpeningTestPage] _snapshot is null: ${_snapshot == null}');
     
     if (_pollingManager == null || _snapshot == null) {
-      debugPrint('[VNextAccountOpeningTestPage] Cannot start long polling - missing dependencies');
       return;
     }
 
@@ -661,12 +801,10 @@ class _VNextAccountOpeningTestPageState extends State<VNextAccountOpeningTestPag
       ),
     );
 
-    debugPrint('[VNextAccountOpeningTestPage] Long polling started successfully');
 
     // Listen to polling updates (workflow data)
     _pollingSubscription = _pollingManager!.messageStream.listen(
       (snapshot) {
-        debugPrint('[VNextAccountOpeningTestPage] Long polling update: ${snapshot.status} - ${snapshot.state}');
         
         setState(() {
           _snapshot = snapshot;
@@ -674,7 +812,6 @@ class _VNextAccountOpeningTestPageState extends State<VNextAccountOpeningTestPag
         });
       },
       onError: (error) {
-        debugPrint('[VNextAccountOpeningTestPage] Long polling error: $error');
         setState(() {
           _status = 'Long polling error: $error';
         });
@@ -684,7 +821,6 @@ class _VNextAccountOpeningTestPageState extends State<VNextAccountOpeningTestPag
     // Listen to polling events (lifecycle events)
     _pollingEventSubscription = _pollingManager!.eventStream.listen(
       (event) {
-        debugPrint('[VNextAccountOpeningTestPage] Polling event: ${event.type} - ${event.reason}');
         
         switch (event.type) {
           case VNextPollingEventType.started:
@@ -712,7 +848,6 @@ class _VNextAccountOpeningTestPageState extends State<VNextAccountOpeningTestPag
         }
       },
       onError: (error) {
-        debugPrint('[VNextAccountOpeningTestPage] Polling event error: $error');
         setState(() {
           _isLongPollingActive = false;
           _status = 'Polling event error: $error';
@@ -724,7 +859,6 @@ class _VNextAccountOpeningTestPageState extends State<VNextAccountOpeningTestPag
   Future<void> _stopLongPolling() async {
     if (_pollingManager == null || _currentInstanceId == null) return;
 
-    debugPrint('[VNextAccountOpeningTestPage] Stopping long polling for instance: $_currentInstanceId');
     await _pollingManager!.stopPolling(_currentInstanceId!);
     await _pollingSubscription?.cancel();
     await _pollingEventSubscription?.cancel();
@@ -736,6 +870,36 @@ class _VNextAccountOpeningTestPageState extends State<VNextAccountOpeningTestPag
     });
   }
 
+  Map<String, dynamic> _buildPayloadForState(String state) {
+    switch (state) {
+      case 'account-type-selection':
+        return {
+          'accountType': _formData['accountType'] ?? 'demand-deposit',
+        };
+      
+      case 'account-details-input':
+        return {
+          'accountName': _formData['accountName'] ?? 'John Doe',
+          'currency': _formData['currency'] ?? 'TRY',
+          'branchCode': _formData['branchCode'] ?? '1001',
+          'initialDeposit': _formData['initialDeposit'] ?? 1000,
+          'accountPurpose': _formData['accountPurpose'] ?? 'personal-banking',
+        };
+      
+      case 'account-confirmation':
+        return {
+          'confirmed': _formData['confirmed'] ?? false,
+          'termsAccepted': _formData['termsAccepted'] ?? false,
+          'privacyPolicyAccepted': _formData['privacyPolicyAccepted'] ?? false,
+        };
+      
+      default:
+        return {
+          'accountType': _formData['accountType'] ?? 'demand-deposit',
+        };
+    }
+  }
+
   Future<void> _executeTransition(String transitionName, String transitionHref) async {
     if (_client == null || _currentInstanceId == null) return;
 
@@ -745,19 +909,13 @@ class _VNextAccountOpeningTestPageState extends State<VNextAccountOpeningTestPag
     });
 
     try {
-      debugPrint('[VNextAccountOpeningTestPage] Executing transition: $transitionName');
-      debugPrint('[VNextAccountOpeningTestPage] Transition href: $transitionHref');
       
       // Refresh form data from controllers to ensure we have latest values
       _refreshFormData();
-      debugPrint('[VNextAccountOpeningTestPage] Form data: $_formData');
 
-      // Prepare payload according to vNext backend structure - direct form data
-      final payload = <String, dynamic>{
-        'accountType': _formData['accountType'] ?? 'demand-deposit',
-      };
+      // Prepare payload based on current workflow state
+      final payload = _buildPayloadForState(_snapshot!.state);
 
-      debugPrint('[VNextAccountOpeningTestPage] Payload: $payload');
 
       // Execute the transition with properly structured payload
       final response = await _client!.postTransition(
@@ -768,7 +926,6 @@ class _VNextAccountOpeningTestPageState extends State<VNextAccountOpeningTestPag
         data: payload,
       );
 
-      debugPrint('[VNextAccountOpeningTestPage] Transition response: ${response.asSuccess.data}');
 
       if (response.isSuccess) {
         // Refresh the instance to get updated state
@@ -787,9 +944,7 @@ class _VNextAccountOpeningTestPageState extends State<VNextAccountOpeningTestPag
           _status = 'Transition failed: ${response.asError.error.error.description}';
         });
       }
-    } catch (e, stackTrace) {
-      debugPrint('[VNextAccountOpeningTestPage] Transition error: $e');
-      debugPrint('[VNextAccountOpeningTestPage] Stack trace: $stackTrace');
+      } catch (e) {
       setState(() {
         _status = 'Transition error: $e';
       });
@@ -804,7 +959,6 @@ class _VNextAccountOpeningTestPageState extends State<VNextAccountOpeningTestPag
     if (_client == null || _currentInstanceId == null) return;
 
     try {
-      debugPrint('[VNextAccountOpeningTestPage] Refreshing instance: $_currentInstanceId');
       
       final instResp = await _client!.getWorkflowInstance(
         domain: _snapshot!.domain,
@@ -816,16 +970,9 @@ class _VNextAccountOpeningTestPageState extends State<VNextAccountOpeningTestPag
         _workflowInstanceJson = instResp.asSuccess.data;
         _snapshot = VNextInstanceSnapshot.fromInstanceJson(instResp.asSuccess.data);
         
-        debugPrint('[VNextAccountOpeningTestPage] Instance refreshed successfully');
-        debugPrint('[VNextAccountOpeningTestPage] New state: ${_snapshot!.state}');
-        debugPrint('[VNextAccountOpeningTestPage] New status: ${_snapshot!.status}');
-        debugPrint('[VNextAccountOpeningTestPage] Available transitions: ${_snapshot!.transitions.map((t) => t['name']).join(', ')}');
       } else {
-        debugPrint('[VNextAccountOpeningTestPage] Failed to refresh instance: ${instResp.asError.error.error.description}');
       }
-    } catch (e, stackTrace) {
-      debugPrint('[VNextAccountOpeningTestPage] Instance refresh error: $e');
-      debugPrint('[VNextAccountOpeningTestPage] Stack trace: $stackTrace');
+      } catch (e) {
     }
   }
 

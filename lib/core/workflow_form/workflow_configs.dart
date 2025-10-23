@@ -10,8 +10,8 @@
  * Any reproduction of this material must contain this notice.
  */
 
-import 'workflow_config.dart';
-import 'workflow_engine.dart';
+import 'models/workflow_config.dart';
+import 'models/workflow_engine.dart';
 
 /// Hardcoded configuration for workflow engines
 /// 
@@ -21,7 +21,7 @@ import 'workflow_engine.dart';
 /// To add a new vNext workflow, simply add it to the [vnextWorkflows] list.
 class WorkflowConfigs {
   /// List of workflows that should use the vNext engine
-  static const List<WorkflowConfig> vnextWorkflows = [
+  static final List<WorkflowConfig> vnextWorkflows = [
     WorkflowConfig(
       name: 'account-opening',
       engine: WorkflowEngine.vnext,
