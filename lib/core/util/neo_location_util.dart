@@ -17,20 +17,11 @@ class NeoLocationUtil {
   }
 
   Future<LocationData?> getCurrentLocation() async {
-    if (kIsWeb) {
+    final bool isLocationSensorEnabled = await isLocationServiceEnabled();
+    if (kIsWeb || !isLocationSensorEnabled) {
       return null;
     }
     try {
-      bool serviceEnabled = false;
-
-      serviceEnabled = await _location.serviceEnabled();
-      if (!serviceEnabled) {
-        serviceEnabled = await _location.requestService();
-        if (!serviceEnabled) {
-          return null;
-        }
-      }
-
       if (!await hasLocationPermission()) {
         return null;
       }
@@ -39,6 +30,18 @@ class NeoLocationUtil {
     } catch (e) {
       _neoLogger.logError("NeoLocationUtil-getCurrentLocation: $e");
       return null;
+    }
+  }
+
+  Future<bool> isLocationServiceEnabled() async {
+    if (kIsWeb) {
+      return false;
+    }
+    try {
+      return await _location.serviceEnabled();
+    } catch (e) {
+      _neoLogger.logError("NeoLocationUtil-isLocationServiceEnabled: $e");
+      return false;
     }
   }
 
