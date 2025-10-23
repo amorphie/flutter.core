@@ -27,6 +27,7 @@ import 'package:neo_core/core/network/headers/mtls_headers.dart';
 import 'package:neo_core/core/network/headers/neo_constant_headers.dart';
 import 'package:neo_core/core/network/headers/neo_dynamic_headers.dart';
 import 'package:neo_core/core/network/helpers/mtls_helper.dart';
+import 'package:neo_core/core/network/interceptors/neo_response_interceptor.dart';
 import 'package:neo_core/core/network/models/http_auth_response.dart';
 import 'package:neo_core/core/network/models/http_method.dart';
 import 'package:neo_core/core/network/models/neo_http_call.dart';
@@ -302,7 +303,13 @@ class NeoNetworkManager {
     try {
       const utf8Decoder = Utf8Decoder();
       final responseString = utf8Decoder.convert(response.bodyBytes);
-      final decodedResponse = json.decode(responseString);
+      var decodedResponse = json.decode(responseString);
+      decodedResponse = await NeoResponseInterceptor(
+        body: decodedResponse,
+        response: response,
+        secureStorage: secureStorage,
+        mtlsHelper: _mtlsHelper,
+      ).intercept();
       if (decodedResponse is Map<String, dynamic>) {
         responseJSON = decodedResponse;
       } else {

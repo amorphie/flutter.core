@@ -25,8 +25,11 @@ abstract class INeoLogger {
     Map<String, dynamic>? properties,
     Map<String, dynamic>? options,
   });
+
   void setPageBuildStartingTime(String pageId, NeoPageType pageType);
+
   void logPageBuildSuccessTime(String pageId, NeoPageType pageType);
+
   void logCustom(
     dynamic message, {
     Level logLevel,
@@ -35,6 +38,7 @@ abstract class INeoLogger {
     Map<String, dynamic>? options,
   });
 
-  void logError(String message);
+  void logError(String message, {Map<String, dynamic>? properties});
+
   void logException(dynamic exception, StackTrace stackTrace, {Map<String, dynamic>? parameters});
 }

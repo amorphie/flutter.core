@@ -50,4 +50,13 @@ class MtlsHelper {
     final privateKeyResult = await _secureEnclavePlugin.getServerKey(tag: clientKeyTag);
     return privateKeyResult.value;
   }
+
+  Future<String?> decrypt({required String clientKeyTag, required Uint8List message}) async {
+    final result = await _secureEnclavePlugin.decrypt(message: message, tag: clientKeyTag);
+    return result.value;
+  }
+
+  Future<ResultModel<String?>> decryptWithAES({required Uint8List encryptedData, required Uint8List aesKey}) {
+    return _secureEnclavePlugin.decryptWithAES(encryptedData: encryptedData, aesKey: aesKey);
+  }
 }
