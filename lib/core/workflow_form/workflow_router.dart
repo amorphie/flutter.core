@@ -13,9 +13,9 @@
 import 'package:get_it/get_it.dart';
 import 'package:logger/logger.dart';
 
-import '../analytics/neo_logger.dart';
-import 'models/workflow_config.dart';
-import 'workflow_configs.dart';
+import 'package:neo_core/core/analytics/neo_logger.dart';
+import 'package:neo_core/core/workflow_form/models/workflow_config.dart';
+import 'package:neo_core/core/workflow_form/workflow_configs.dart';
 
 /// Single authority for determining which workflow engine should handle a workflow
 /// 
