@@ -37,6 +37,9 @@ import 'package:neo_core/core/widgets/neo_page/bloc/neo_page_bloc.dart';
 import 'package:neo_core/core/widgets/neo_transition_listener/bloc/usecases/process_login_certificate_silent_event_use_case.dart';
 import 'package:neo_core/core/widgets/neo_transition_listener/usecases/get_workflow_query_parameters_usecase.dart';
 import 'package:neo_core/core/workflow_form/neo_workflow_manager.dart';
+import 'package:neo_core/core/workflow_form/workflow_flutter_bridge.dart';
+import 'package:neo_core/core/workflow_form/workflow_instance_manager.dart' as wf;
+import 'package:neo_core/core/workflow_form/workflow_ui_events.dart';
 import 'package:universal_io/io.dart';
 
 part 'neo_transition_listener_event.dart';
@@ -214,18 +217,45 @@ class NeoTransitionListenerBloc extends Bloc<NeoTransitionListenerEvent, NeoTran
       if (event.displayLoading) {
         onLoadingStatusChanged(displayLoading: true);
       }
-      final response = await neoWorkflowManager.postTransition(
-        transitionName: event.transitionName,
-        body: event.body,
-        headerParameters: event.headerParameters,
-        isSubFlow: event.isSubFlow,
-      );
-      if (response.isError) {
-        _completeWithError(response.asError.error, shouldHideLoading: event.displayLoading);
+
+      // Determine engine by instance tracking
+      final instanceId = neoWorkflowManager.instanceId;
+      final instance = GetIt.I<wf.WorkflowInstanceManager>().getInstance(instanceId);
+      final isVNext = instance?.engine == wf.WorkflowEngine.vnext;
+
+      if (isVNext) {
+        // Delegate to bridge for vNext; vNext long polling is handled by WorkflowRouter
+        final bridge = GetIt.I.get<WorkflowFlutterBridge>();
+        await bridge.postTransition(
+          transitionName: event.transitionName,
+          formData: (event.formInputData ?? event.body).cast<String, dynamic>(),
+          headers: event.headerParameters,
+          instanceId: instanceId.isNotEmpty ? instanceId : null,
+          isSubFlow: event.isSubFlow,
+          uiConfig: const WorkflowUIConfig(displayLoading: true),
+        );
       } else {
+        // Amorphie (V1) path: use legacy manager and rely on SignalR/LP for navigation
+        final response = await neoWorkflowManager.postTransition(
+          transitionName: event.transitionName,
+          body: event.body,
+          headerParameters: event.headerParameters,
+          isSubFlow: event.isSubFlow,
+        );
+
+        // Continue long polling (or SignalR) to receive navigate/state events
         unawaited(_initSignalrConnectionManager());
+        _getLastTransitionsWithLongPolling(isSubFlow: event.isSubFlow);
+
+        if (!response.isSuccess) {
+          _completeWithError(response.asError.error, shouldHideLoading: event.displayLoading, displayAsPopup: true);
+          return;
+        }
+
+        if (event.displayLoading) {
+          onLoadingStatusChanged(displayLoading: false);
+        }
       }
-      _getLastTransitionsWithLongPolling(isSubFlow: event.isSubFlow);
     } catch (e) {
       _completeWithError(e is NeoError ? e : const NeoError(), shouldHideLoading: event.displayLoading);
     }

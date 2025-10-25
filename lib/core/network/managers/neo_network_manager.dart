@@ -187,7 +187,16 @@ class NeoNetworkManager {
       useHttps: neoCall.useHttps,
     );
     final method = httpClientConfig.getServiceMethodByKey(neoCall.endpoint);
+    
+    _neoLogger?.logConsole("[NeoNetworkManager] Endpoint: ${neoCall.endpoint}");
+    _neoLogger?.logConsole("[NeoNetworkManager] Full path: $fullPath");
+    _neoLogger?.logConsole("[NeoNetworkManager] Method: $method");
+    _neoLogger?.logConsole("[NeoNetworkManager] useHttps: ${neoCall.useHttps}");
+    
     if (fullPath == null || method == null) {
+      _neoLogger?.logConsole("[NeoNetworkManager] ❌ ERROR: Endpoint not found or method is null!");
+      _neoLogger?.logConsole("[NeoNetworkManager] fullPath == null: ${fullPath == null}");
+      _neoLogger?.logConsole("[NeoNetworkManager] method == null: ${method == null}");
       return NeoResponse.error(const NeoError(), responseHeaders: {});
     }
 
@@ -206,15 +215,19 @@ class NeoNetworkManager {
           response = await _requestPatch(fullPath, neoCall);
       }
       return response;
-    } catch (e) {
+    } catch (e, stackTrace) {
       if (e is TimeoutException) {
         _neoLogger?.logError("[NeoNetworkManager]: Service call timeout! Endpoint: ${neoCall.endpoint}");
         return NeoResponse.error(const NeoError(responseCode: HttpStatus.requestTimeout), responseHeaders: {});
       } else if (e is HandshakeException) {
         _neoLogger?.logConsole("[NeoNetworkManager]: Handshake exception! Endpoint: ${neoCall.endpoint}");
+        _neoLogger?.logConsole("[NeoNetworkManager]: HandshakeException details: $e");
         return NeoResponse.error(const NeoError(), responseHeaders: {});
       } else {
         _neoLogger?.logError("[NeoNetworkManager]: Service call failed! Endpoint: ${neoCall.endpoint}");
+        _neoLogger?.logError("[NeoNetworkManager]: Exception type: ${e.runtimeType}");
+        _neoLogger?.logError("[NeoNetworkManager]: Exception message: $e");
+        _neoLogger?.logError("[NeoNetworkManager]: Stack trace: $stackTrace");
         return NeoResponse.error(const NeoError(), responseHeaders: {});
       }
     }
@@ -239,10 +252,17 @@ class NeoNetworkManager {
 
   Future<NeoResponse> _requestPost(String fullPath, NeoHttpCall neoCall) async {
     final fullPathWithQueries = _getFullPathWithQueries(fullPath, neoCall.queryProviders);
+    _neoLogger?.logConsole("[NeoNetworkManager] POST Request URL: $fullPathWithQueries");
+    _neoLogger?.logConsole("[NeoNetworkManager] POST Request Body: ${json.encode(neoCall.body)}");
+    
+    // Build final headers
+    final finalHeaders = (await _getDefaultPostHeaders(neoCall))..addAll(neoCall.headerParameters);
+    _neoLogger?.logConsole("[NeoNetworkManager] POST Request Headers: $finalHeaders");
+    
     final response = await httpClient!
         .post(
           Uri.parse(fullPathWithQueries),
-          headers: (await _getDefaultPostHeaders(neoCall))..addAll(neoCall.headerParameters),
+          headers: finalHeaders,
           body: json.encode(neoCall.body),
         )
         .timeout(timeoutDuration);
@@ -320,6 +340,11 @@ class NeoNetworkManager {
     }
 
     _logResponse(response);
+    
+    // Additional logging for error responses to see raw body
+    if (response.statusCode >= 400) {
+      _neoLogger?.logConsole("[NeoNetworkManager] ERROR Response Body: ${response.body}");
+    }
 
     if (response.statusCode >= 200 && response.statusCode < 300) {
       onRequestSucceed?.call(call.endpoint, call.requestId);

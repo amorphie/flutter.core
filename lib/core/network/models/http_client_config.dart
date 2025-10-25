@@ -21,11 +21,15 @@ import 'package:neo_core/core/network/models/neo_http_call.dart';
 import 'package:neo_core/core/storage/neo_core_parameter_key.dart';
 import 'package:neo_core/core/storage/neo_core_secure_storage.dart';
 import 'package:neo_core/core/workflow_form/neo_workflow_manager.dart';
+import 'package:neo_core/core/workflow_form/workflow_engine_config.dart';
 
 class HttpClientConfig {
   final List<HttpHostDetails> hosts;
   final List<HttpService> services;
   final List<MtlsEnabledTransition> mtlsEnabledTransitions;
+  final Map<String, WorkflowEngineConfig> workflowConfigs;
+  final WorkflowEngineConfig defaultWorkflowConfig;
+  final List<HttpHostDetails> vNextHosts;
 
   HttpClientConfigParameters _config;
 
@@ -33,8 +37,73 @@ class HttpClientConfig {
     required this.hosts,
     required HttpClientConfigParameters config,
     required this.services,
-    this.mtlsEnabledTransitions = const [],
-  }) : _config = config;
+    List<MtlsEnabledTransition>? mtlsEnabledTransitions,
+    Map<String, WorkflowEngineConfig>? workflowConfigs,
+    WorkflowEngineConfig? defaultWorkflowConfig,
+    List<HttpHostDetails>? vNextHosts,
+  }) : _config = config,
+       mtlsEnabledTransitions = mtlsEnabledTransitions ?? <MtlsEnabledTransition>[],
+       workflowConfigs = workflowConfigs ?? <String, WorkflowEngineConfig>{},
+       vNextHosts = vNextHosts ?? <HttpHostDetails>[],
+       defaultWorkflowConfig = defaultWorkflowConfig ?? WorkflowEngineConfig(
+         workflowName: 'default',
+         engine: 'amorphie',
+         config: {},
+       );
+
+  /// Factory constructor that handles raw JSON workflow configurations
+  /// Accepts both list and map formats:
+  /// - List: [{ "name": "account-opening", "type": "vNext", "version": "1.0.0", "domain": "core" }]
+  /// - Map: { "workflow-name": { "engine": "vnext", "config": { "domain": "..." } } }
+  factory HttpClientConfig.fromJson({
+    required List<HttpHostDetails> hosts,
+    required HttpClientConfigParameters config,
+    required List<HttpService> services,
+    List<MtlsEnabledTransition>? mtlsEnabledTransitions,
+    dynamic rawWorkflowConfigs, // Can be List or Map
+    List<HttpHostDetails>? vNextHosts,
+  }) {
+    Map<String, WorkflowEngineConfig> parsedWorkflowConfigs = {};
+    
+    if (rawWorkflowConfigs != null) {
+      // Create a temporary JSON structure for parsing
+      final tempJson = {'workflows': rawWorkflowConfigs};
+      parsedWorkflowConfigs = WorkflowEngineConfigParser.parseWorkflowConfigs(tempJson);
+      
+      // Add baseUrl from vNextHosts to each vNext workflow config
+      if (vNextHosts != null && vNextHosts.isNotEmpty) {
+        final host = vNextHosts.first.activeHosts.first.host;
+        // Use http:// for localhost/127.0.0.1/10.0.2.2, https:// for remote hosts
+        final protocol = host.startsWith('localhost') || 
+                         host.startsWith('127.0.0.1') || 
+                         host.startsWith('10.0.2.2') ? 'http' : 'https';
+        final baseUrl = '$protocol://$host';
+        parsedWorkflowConfigs = parsedWorkflowConfigs.map((key, config) {
+          if (config.isVNext) {
+            return MapEntry(
+              key,
+              config.copyWith(
+                config: {
+                  ...config.config,
+                  'baseUrl': baseUrl,
+                },
+              ),
+            );
+          }
+          return MapEntry(key, config);
+        });
+      }
+    }
+
+    return HttpClientConfig(
+      hosts: hosts,
+      config: config,
+      services: services,
+      mtlsEnabledTransitions: mtlsEnabledTransitions,
+      workflowConfigs: parsedWorkflowConfigs,
+      vNextHosts: vNextHosts,
+    );
+  }
 
   HttpClientConfigParameters get config => _config;
 
@@ -43,12 +112,18 @@ class HttpClientConfig {
     HttpClientConfigParameters? config,
     List<HttpService>? services,
     List<MtlsEnabledTransition>? mtlsEnabledTransitions,
+    Map<String, WorkflowEngineConfig>? workflowConfigs,
+    WorkflowEngineConfig? defaultWorkflowConfig,
+    List<HttpHostDetails>? vNextHosts,
   }) {
     return HttpClientConfig(
       hosts: hosts ?? this.hosts,
       config: config ?? this.config,
       services: services ?? this.services,
       mtlsEnabledTransitions: mtlsEnabledTransitions ?? this.mtlsEnabledTransitions,
+      workflowConfigs: workflowConfigs ?? this.workflowConfigs,
+      defaultWorkflowConfig: defaultWorkflowConfig ?? this.defaultWorkflowConfig,
+      vNextHosts: vNextHosts ?? this.vNextHosts,
     );
   }
 
@@ -63,6 +138,12 @@ class HttpClientConfig {
     mtlsEnabledTransitions
       ..clear()
       ..addAll(newConfig.mtlsEnabledTransitions);
+    workflowConfigs
+      ..clear()
+      ..addAll(newConfig.workflowConfigs);
+    vNextHosts
+      ..clear()
+      ..addAll(newConfig.vNextHosts);
   }
 
   HttpMethod? getServiceMethodByKey(String key) {
@@ -115,7 +196,6 @@ class HttpClientConfig {
     Map<String, String>? parameters,
     bool useHttps = true,
   }) {
-    final prefix = useHttps ? "https://" : "http://";
     final service = _findServiceByKey(key);
     if (service == null) {
       return null;
@@ -125,6 +205,14 @@ class HttpClientConfig {
     if (baseUrl == null) {
       return null;
     }
+    
+    // Force HTTP for localhost/127.0.0.1/10.0.2.2 regardless of useHttps parameter
+    final isLocalhost = baseUrl.startsWith('localhost') || 
+                        baseUrl.startsWith('127.0.0.1') || 
+                        baseUrl.startsWith('10.0.2.2');
+    final protocol = isLocalhost ? 'http' : (useHttps ? 'https' : 'http');
+    final prefix = '$protocol://';
+    
     String fullUrl = prefix + baseUrl + service.name;
     parameters?.forEach((key, value) {
       fullUrl = fullUrl.replaceAll('{$key}', value);
@@ -154,5 +242,48 @@ class HttpClientConfig {
 
   int? _getRetryCountByHost(String host) {
     return hosts.firstWhereOrNull((element) => element.key == host)?.activeHosts.firstOrNull?.retryCount;
+  }
+
+  // Workflow configuration methods
+
+  /// Get workflow engine configuration for a specific workflow name
+  WorkflowEngineConfig getWorkflowConfig(String workflowName) {
+    return WorkflowEngineConfigParser.getConfigForWorkflow(
+      workflowName,
+      workflowConfigs,
+      defaultWorkflowConfig,
+    );
+  }
+
+
+  /// Check if any workflow is configured to use vNext
+  bool get hasVNextWorkflows {
+    if (defaultWorkflowConfig.isVNext) {
+      return true;
+    }
+    return workflowConfigs.values.any((config) => config.isVNext);
+  }
+
+  /// Get all workflow names configured for a specific engine
+  List<String> getWorkflowsForEngine(String engine) {
+    final workflows = <String>[];
+    
+    for (final entry in workflowConfigs.entries) {
+      if (entry.value.engine == engine) {
+        workflows.add(entry.key);
+      }
+    }
+    
+    return workflows;
+  }
+
+  /// Get workflow configuration summary
+  Map<String, dynamic> getWorkflowConfigSummary() {
+    return WorkflowEngineConfigParser.getConfigSummary(workflowConfigs, defaultWorkflowConfig);
+  }
+
+  /// Validate all workflow configurations
+  List<String> validateWorkflowConfigs() {
+    return WorkflowEngineConfigParser.validateConfigs(workflowConfigs);
   }
 }

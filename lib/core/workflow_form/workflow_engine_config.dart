@@ -1,0 +1,252 @@
+/*
+ * neo_core
+ *
+ * Created on 22/9/2025.
+ * Copyright (c) 2025 Commencis. All rights reserved.
+ *
+ * Save to the extent permitted by law, you may not use, copy, modify,
+ * distribute or create derivative works of this material or any part
+ * of it without the prior written consent of Commencis.
+ * Any reproduction of this material must contain this notice.
+ */
+
+/// Configuration for a specific workflow's engine selection and settings
+class WorkflowEngineConfig {
+  final String workflowName;
+  final String engine; // "vnext" or "amorphie"
+  final Map<String, dynamic> config;
+  final String? version; // Workflow version (e.g., "1.0.0")
+
+  WorkflowEngineConfig({
+    required this.workflowName,
+    required this.engine,
+    required this.config,
+    this.version,
+  });
+
+  /// Create configuration from JSON (map format - legacy)
+  factory WorkflowEngineConfig.fromJson(String workflowName, Map<String, dynamic> json) {
+    return WorkflowEngineConfig(
+      workflowName: workflowName,
+      engine: json['engine'] as String? ?? 'amorphie',
+      config: json['config'] as Map<String, dynamic>? ?? {},
+      version: json['version'] as String?,
+    );
+  }
+
+  /// Create configuration from list item (new format)
+  /// Expected format: { "name": "account-opening", "type": "vNext", "version": "1.0.0", "domain": "core" }
+  factory WorkflowEngineConfig.fromListItem(Map<String, dynamic> item) {
+    final name = item['name'] as String;
+    final type = item['type'] as String? ?? 'amorphie';
+    final version = item['version'] as String?;
+    final domain = item['domain'] as String?;
+
+    return WorkflowEngineConfig(
+      workflowName: name,
+      engine: type,
+      version: version,
+      config: {
+        if (domain != null) 'domain': domain,
+      },
+    );
+  }
+
+  /// Convert configuration to JSON
+  Map<String, dynamic> toJson() {
+    return {
+      'engine': engine,
+      'config': config,
+      if (version != null) 'version': version,
+    };
+  }
+
+  /// Check if this configuration uses vNext engine
+  bool get isVNext => engine.toLowerCase() == 'vnext';
+
+  /// Check if this configuration uses amorphie engine
+  bool get isAmorphie => engine.toLowerCase() == 'amorphie';
+
+  /// Get vNext domain from config (if applicable)
+  String? get vNextDomain => isVNext ? config['domain'] as String? : null;
+
+  /// Get vNext base URL from config (if applicable)
+  String? get vNextBaseUrl => isVNext ? config['baseUrl'] as String? : null;
+
+  /// Check if the configuration is valid and complete
+  bool get isValid {
+    if (isVNext) {
+      // vNext requires domain and baseUrl
+      return vNextDomain != null && 
+             vNextDomain!.isNotEmpty && 
+             vNextBaseUrl != null && 
+             vNextBaseUrl!.isNotEmpty;
+    } else if (isAmorphie) {
+      // Amorphie is always valid (uses existing infrastructure)
+      return true;
+    }
+    
+    return false;
+  }
+
+  @override
+  String toString() => 'WorkflowEngineConfig(workflow: $workflowName, engine: $engine, valid: $isValid)';
+
+  WorkflowEngineConfig copyWith({
+    String? workflowName,
+    String? engine,
+    Map<String, dynamic>? config,
+    String? version,
+  }) {
+    return WorkflowEngineConfig(
+      workflowName: workflowName ?? this.workflowName,
+      engine: engine ?? this.engine,
+      config: config ?? this.config,
+      version: version ?? this.version,
+    );
+  }
+}
+
+/// Parser for workflow engine configurations from HTTP client config
+class WorkflowEngineConfigParser {
+  /// Parse workflow configurations from http_client_config
+  /// Supports list format: [{ "name": "account-opening", "type": "vNext", "version": "1.0.0", "domain": "core" }]
+  static Map<String, WorkflowEngineConfig> parseWorkflowConfigs(
+    Map<String, dynamic> httpClientConfig,
+  ) {
+    final workflowsConfigRaw = httpClientConfig['workflows'];
+    
+    if (workflowsConfigRaw == null) {
+      return {};
+    }
+
+    final configs = <String, WorkflowEngineConfig>{};
+
+    // Handle list format (new)
+    if (workflowsConfigRaw is List) {
+      for (final item in workflowsConfigRaw) {
+        if (item is Map<String, dynamic>) {
+          try {
+            final config = WorkflowEngineConfig.fromListItem(item);
+            configs[config.workflowName] = config;
+          } catch (e) {
+            print('[WorkflowEngineConfigParser] Invalid list item config: $e');
+          }
+        }
+      }
+      return configs;
+    }
+
+    // Handle map format (legacy - for backward compatibility if needed)
+    if (workflowsConfigRaw is Map<String, dynamic>) {
+      workflowsConfigRaw.forEach((workflowName, config) {
+        if (workflowName != 'default' && config is Map<String, dynamic>) {
+          try {
+            configs[workflowName] = WorkflowEngineConfig.fromJson(workflowName, config);
+          } catch (e) {
+            print('[WorkflowEngineConfigParser] Invalid config for $workflowName: $e');
+          }
+        }
+      });
+      return configs;
+    }
+
+    print('[WorkflowEngineConfigParser] Unsupported workflows config format');
+    return configs;
+  }
+
+  /// Parse default workflow configuration
+  static WorkflowEngineConfig parseDefaultConfig(
+    Map<String, dynamic> httpClientConfig,
+  ) {
+    final workflowsConfig = httpClientConfig['workflows'] as Map<String, dynamic>?;
+    final defaultConfig = workflowsConfig?['default'] as Map<String, dynamic>?;
+
+    if (defaultConfig != null) {
+      return WorkflowEngineConfig.fromJson('default', defaultConfig);
+    }
+
+    // Return amorphie as default if no configuration found
+    return WorkflowEngineConfig(
+      workflowName: 'default',
+      engine: 'amorphie',
+      config: {},
+    );
+  }
+
+  /// Get engine configuration for a specific workflow name
+  static WorkflowEngineConfig getConfigForWorkflow(
+    String workflowName,
+    Map<String, WorkflowEngineConfig> workflowConfigs,
+    WorkflowEngineConfig defaultConfig,
+  ) {
+    // Check for exact workflow name match only
+    if (workflowConfigs.containsKey(workflowName)) {
+      return workflowConfigs[workflowName]!;
+    }
+
+    // Return default configuration if no exact match found
+    return defaultConfig;
+  }
+
+  /// Validate all workflow configurations
+  static List<String> validateConfigs(Map<String, WorkflowEngineConfig> configs) {
+    final errors = <String>[];
+
+    for (final entry in configs.entries) {
+      final config = entry.value;
+
+      if (!config.isValid) {
+        if (config.isVNext) {
+          if (config.vNextBaseUrl == null || config.vNextBaseUrl!.isEmpty) {
+            errors.add('${config.workflowName}: vNext configuration missing baseUrl');
+          }
+          if (config.vNextDomain == null || config.vNextDomain!.isEmpty) {
+            errors.add('${config.workflowName}: vNext configuration missing domain');
+          }
+        } else {
+          errors.add('${config.workflowName}: Invalid engine configuration');
+        }
+      }
+    }
+
+    return errors;
+  }
+
+  /// Get summary of workflow configurations
+  static Map<String, dynamic> getConfigSummary(
+    Map<String, WorkflowEngineConfig> configs,
+    WorkflowEngineConfig defaultConfig,
+  ) {
+    final summary = <String, dynamic>{
+      'totalConfigs': configs.length + 1, // +1 for default config
+      'defaultEngine': defaultConfig.engine,
+      'engines': <String, int>{},
+      'validConfigs': 0,
+      'invalidConfigs': 0,
+    };
+
+    // Count default config
+    if (defaultConfig.isValid) {
+      summary['validConfigs'] = (summary['validConfigs'] as int) + 1;
+    } else {
+      summary['invalidConfigs'] = (summary['invalidConfigs'] as int) + 1;
+    }
+
+    final engines = summary['engines'] as Map<String, int>;
+    engines[defaultConfig.engine] = (engines[defaultConfig.engine] ?? 0) + 1;
+
+    // Count workflow configs
+    for (final config in configs.values) {
+      if (config.isValid) {
+        summary['validConfigs'] = (summary['validConfigs'] as int) + 1;
+      } else {
+        summary['invalidConfigs'] = (summary['invalidConfigs'] as int) + 1;
+      }
+
+      engines[config.engine] = (engines[config.engine] ?? 0) + 1;
+    }
+
+    return summary;
+  }
+}

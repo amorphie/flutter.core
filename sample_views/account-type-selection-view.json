@@ -1,0 +1,52 @@
+ {
+            "pageName": "account-type-selection",
+            "componentJson": {
+                "type": "neo_scaffold",
+                "args": {
+                    "useSafeArea": true,
+                    "body": {
+                        "type": "column",
+                        "args": {
+                            "crossAxisAlignment": "stretch",
+                            "children": [
+                                {
+                                    "type": "neo_radio_button_group_widget",
+                                    "args": {
+                                        "dataKey": "accountType",
+                                        "items": [
+                                            {
+                                                "title": "Demand Deposit",
+                                                "dataKey": "demand-deposit"
+                                            },
+                                            {
+                                                "title": "Time Deposit",
+                                                "dataKey": "time-deposit"
+                                            },
+                                            {
+                                                "title": "Investment Account",
+                                                "dataKey": "investment-account"
+                                            },
+                                            {
+                                                "title": "Savings Account",
+                                                "dataKey": "savings-account"
+                                            }
+                                        ],
+                                        "itemSize": "NeoRadioButtonItemSize.large",
+                                        "selectedOption": -1
+                                    }
+                                },
+                                {
+                                    "type": "neo_button",
+                                    "args": {
+                                        "labelText": "Continue",
+                                        "size": "NeoButtonSize.large",
+                                        "displayMode": "NeoButtonDisplayMode.primary",
+                                        "transitionId": "select-demand-deposit",
+                                        "workflowName": "account-opening"
+                                    }
+                                }
+                            ]
+                        }
+                    }
+                }
+            }
