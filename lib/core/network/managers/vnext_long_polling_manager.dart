@@ -298,7 +298,7 @@ class _PollingSession {
   VNextInstanceSnapshot? _toSnapshot(Map<String, dynamic> data) {
     try {
       final snapshot = VNextInstanceSnapshot.fromInstanceJson(data);
-      if (snapshot.instanceId.isNotEmpty && snapshot.status.isNotEmpty) return snapshot;
+      if (snapshot.instanceId.isNotEmpty && snapshot.statusCode.isNotEmpty) return snapshot;
     } catch (e) {
       logger.logError('[VNextLongPollingManager] Failed to parse instance snapshot for $instanceId/$workflowName: $e');
     }
@@ -306,17 +306,9 @@ class _PollingSession {
   }
 
   bool _shouldStopPolling(VNextInstanceSnapshot snapshot) {
-    final status = snapshot.status; // A, B, C, E, S
-    switch (status.toUpperCase()) {
-      case 'B':
-        return false; // keep polling while busy (workflow is processing)
-      case 'A':
-      case 'C':
-      case 'E':
-      case 'S':
-      default:
-        return true; // stop polling for A (active), C (completed), E (error), S (suspended)
-    }
+    final status = snapshot.status; // enum
+    if (status.isBusy) return false; // keep polling while busy
+    return true; // stop polling otherwise (active/user input, completed, faulted)
   }
 
   Map<String, dynamic> getStats() {

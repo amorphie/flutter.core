@@ -6,6 +6,38 @@
 
 import 'package:equatable/equatable.dart';
 
+enum VNextInstanceStatus {
+  busy('B'),
+  active('A'),
+  passive('P'),
+  completed('C'),
+  faulted('F');
+
+  const VNextInstanceStatus(this.code);
+  final String code;
+
+  static VNextInstanceStatus fromCode(String? code) {
+    switch ((code ?? '').toUpperCase()) {
+      case 'B':
+        return VNextInstanceStatus.busy;
+      case 'A':
+        return VNextInstanceStatus.active;
+      case 'P':
+        return VNextInstanceStatus.passive;
+      case 'C':
+        return VNextInstanceStatus.completed;
+      case 'F':
+        return VNextInstanceStatus.faulted;
+      default:
+        return VNextInstanceStatus.active; // safe default
+    }
+  }
+
+  bool get isBusy => this == VNextInstanceStatus.busy;
+  bool get isActive => this == VNextInstanceStatus.active;
+  bool get isTerminal => this == VNextInstanceStatus.completed || this == VNextInstanceStatus.faulted;
+}
+
 class VNextInstanceSnapshot extends Equatable {
   final String instanceId;
   final String key;
@@ -15,7 +47,7 @@ class VNextInstanceSnapshot extends Equatable {
   final String etag;
   final List<String> tags;
   final String state; // extensions.currentState
-  final String status; // extensions.status (A/B/C/E/...)
+  final String statusCode; // extensions.status (A/B/C/E/...)
   final String? viewHref; // extensions.view.href
   final bool loadData; // extensions.view.loadData
   final String? dataHref; // extensions.data.href
@@ -32,7 +64,7 @@ class VNextInstanceSnapshot extends Equatable {
     required this.etag,
     required this.tags,
     required this.state,
-    required this.status,
+    required this.statusCode,
     required this.viewHref,
     required this.loadData,
     required this.dataHref,
@@ -71,7 +103,7 @@ class VNextInstanceSnapshot extends Equatable {
       etag: (json['etag'] as String?) ?? '',
       tags: tags,
       state: (extensions['currentState'] as String?) ?? '',
-      status: (extensions['status'] as String?) ?? '',
+      statusCode: (extensions['status'] as String?) ?? '',
       viewHref: view['href']?.toString(),
       loadData: (view['loadData'] as bool?) ?? false,
       dataHref: dataFn['href']?.toString(),
@@ -80,6 +112,10 @@ class VNextInstanceSnapshot extends Equatable {
       timestamp: DateTime.now(),
     );
   }
+
+  VNextInstanceStatus get status => VNextInstanceStatus.fromCode(statusCode);
+  bool get hasView => (viewHref ?? '').isNotEmpty;
+  bool get isRenderable => hasView && !status.isBusy;
 
   @override
   List<Object?> get props => [
@@ -91,7 +127,7 @@ class VNextInstanceSnapshot extends Equatable {
         etag,
         tags,
         state,
-        status,
+        statusCode,
         viewHref,
         loadData,
         dataHref,
