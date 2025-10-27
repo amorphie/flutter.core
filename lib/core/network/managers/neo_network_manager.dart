@@ -116,41 +116,29 @@ class NeoNetworkManager {
   }
 
   Future<Map<String, String>> _getDefaultHeaders(NeoHttpCall? neoCall) async {
-    print('[NNM] ===== GETTING DEFAULT HEADERS =====');
     
-    print('[NNM] Getting dynamic headers...');
     final dynamicHeaders = await NeoDynamicHeaders(neoSharedPrefs: neoSharedPrefs, secureStorage: secureStorage).getHeaders();
-    print('[NNM] Dynamic headers: $dynamicHeaders');
     
-    print('[NNM] Checking MTLS...');
-    print('[NNM] MTLS enabled: $_isMtlsEnabled');
-    print('[NNM] Sign for MTLS: ${neoCall?.signForMtls ?? false}');
     
     final mtlsHeaders = _isMtlsEnabled && (neoCall?.signForMtls ?? false) ? await _mtlsHeaders.getHeaders(neoCall?.body ?? {}) : {};
-    print('[NNM] MTLS headers: $mtlsHeaders');
     
-    print('[NNM] Getting constant headers...');
     final constantHeaders = await NeoConstantHeaders(
       neoSharedPrefs: neoSharedPrefs,
       secureStorage: secureStorage,
       defaultHeaders: defaultHeaders,
     ).getHeaders();
-    print('[NNM] Constant headers: $constantHeaders');
     
     final allHeaders = <String, String>{}
       ..addAll(Map<String, String>.from(dynamicHeaders))
       ..addAll(Map<String, String>.from(mtlsHeaders))
       ..addAll(Map<String, String>.from(constantHeaders));
     
-    print('[NNM] Final default headers: $allHeaders');
     return allHeaders;
   }
 
   Future<Map<String, String>> _getDefaultPostHeaders(NeoHttpCall neoCall) async {
-    print('[NNM] ===== GETTING DEFAULT POST HEADERS =====');
-    print('[NNM] Getting base default headers...');
+    
     final baseHeaders = await _getDefaultHeaders(neoCall);
-    print('[NNM] Base headers: $baseHeaders');
     
     final postHeaders = <String, String>{}
       ..addAll(baseHeaders)
@@ -159,7 +147,6 @@ class NeoNetworkManager {
         NeoNetworkHeaderKey.behalfOfUser: UuidUtil.generateUUID(), // STOPSHIP: Delete it
       });
     
-    print('[NNM] Final POST headers: $postHeaders');
     return postHeaders;
   }
 
@@ -179,107 +166,83 @@ class NeoNetworkManager {
   }
 
   Future<NeoResponse> call(NeoHttpCall neoCall) async {
-    print('[NNM] ===== STARTING REQUEST =====');
-    print('[NNM] Endpoint: ${neoCall.endpoint}');
-    print('[NNM] Body: ${neoCall.body}');
-    print('[NNM] Headers: ${neoCall.headerParameters}');
-    print('[NNM] Path Parameters: ${neoCall.pathParameters}');
-    print('[NNM] Query Providers: ${neoCall.queryProviders}');
+    
 
     if (neoCall.endpoint != _Constants.endpointGetToken && !neoCall.endpoint.startsWith('vnext-')) {
-      print('[NNM] Checking token validity...');
+      
       await _tokenLock.protect(() async {
         final refreshToken = await _getRefreshToken();
-        print('[NNM] Refresh token exists: ${refreshToken != null}');
-        print('[NNM] Refresh token expired: $isRefreshTokenExpired');
+        
 
         if (refreshToken == null || isRefreshTokenExpired) {
-          print('[NNM] No valid refresh token, checking 2FA...');
+          
           if (await _isTwoFactorAuthenticated) {
-            print('[NNM] 2FA authenticated, calling invalid token error');
+            
             await _onInvalidTokenError();
             return NeoResponse.error(const NeoError(responseCode: HttpStatus.forbidden), responseHeaders: {});
           } else {
-            print('[NNM] Getting temporary token for not logged in user');
+            
             await getTemporaryTokenForNotLoggedInUser(currentCall: neoCall);
           }
         }
 
         final token = await _getToken();
-        print('[NNM] Token exists: ${token != null}');
-        print('[NNM] Token expired: $isTokenExpired');
+        
         if (token == null) {
-          print('[NNM] No token, waiting for ongoing token request...');
+          
           await _waitForOngoingTokenRequest();
-          print('[NNM] Getting temporary token after wait');
           await getTemporaryTokenForNotLoggedInUser(currentCall: neoCall);
         } else if (isTokenExpired) {
-          print('[NNM] Token expired, refreshing...');
           await _waitForOngoingTokenRequest();
           await _refreshTokenIfExpired();
         }
       });
     } else if (neoCall.endpoint.startsWith('vnext-')) {
-      print('[NNM] Skipping token check for vNext endpoint: ${neoCall.endpoint}');
+      
     }
 
     if (_isMtlsEnabled) {
-      print('[NNM] MTLS enabled, setting MTLS status...');
+      
       await httpClientConfig.setMtlsStatusForHttpCall(neoCall, _mtlsHelper, secureStorage);
     }
     
-    print('[NNM] Getting service URL...');
     final fullPath = httpClientConfig.getServiceUrlByKey(
       neoCall.endpoint,
       enableMtls: neoCall.enableMtls,
       parameters: neoCall.pathParameters,
       useHttps: neoCall.useHttps,
     );
-    print('[NNM] Full path: $fullPath');
     
     final method = httpClientConfig.getServiceMethodByKey(neoCall.endpoint);
-    print('[NNM] HTTP method: $method');
     
     if (fullPath == null || method == null) {
-      print('[NNM] ERROR: Full path or method is null');
       return NeoResponse.error(const NeoError(), responseHeaders: {});
     }
 
-    print('[NNM] Making HTTP request...');
     NeoResponse response;
     try {
       switch (method) {
         case HttpMethod.get:
-          print('[NNM] Executing GET request');
           response = await _requestGet(fullPath, neoCall);
         case HttpMethod.post:
-          print('[NNM] Executing POST request');
           response = await _requestPost(fullPath, neoCall);
         case HttpMethod.delete:
-          print('[NNM] Executing DELETE request');
           response = await _requestDelete(fullPath, neoCall);
         case HttpMethod.put:
-          print('[NNM] Executing PUT request');
           response = await _requestPut(fullPath, neoCall);
         case HttpMethod.patch:
-          print('[NNM] Executing PATCH request');
           response = await _requestPatch(fullPath, neoCall);
       }
-      print('[NNM] Request completed successfully');
       return response;
     } catch (e) {
-      print('[NNM] EXCEPTION during request: $e');
-      print('[NNM] Exception type: ${e.runtimeType}');
+      _neoLogger?.logError('[NeoNetworkManager] Exception during request: $e (${e.runtimeType}). Endpoint: ${neoCall.endpoint}');
       if (e is TimeoutException) {
-        print('[NNM] Timeout exception occurred');
         _neoLogger?.logError("[NeoNetworkManager]: Service call timeout! Endpoint: ${neoCall.endpoint}");
         return NeoResponse.error(const NeoError(responseCode: HttpStatus.requestTimeout), responseHeaders: {});
       } else if (e is HandshakeException) {
-        print('[NNM] Handshake exception occurred');
-        _neoLogger?.logConsole("[NeoNetworkManager]: Handshake exception! Endpoint: ${neoCall.endpoint}");
+        _neoLogger?.logError("[NeoNetworkManager]: Handshake exception! Endpoint: ${neoCall.endpoint}");
         return NeoResponse.error(const NeoError(), responseHeaders: {});
       } else {
-        print('[NNM] Generic exception occurred');
         _neoLogger?.logError("[NeoNetworkManager]: Service call failed! Endpoint: ${neoCall.endpoint}");
         return NeoResponse.error(const NeoError(), responseHeaders: {});
       }
@@ -304,21 +267,14 @@ class NeoNetworkManager {
   }
 
   Future<NeoResponse> _requestPost(String fullPath, NeoHttpCall neoCall) async {
-    print('[NNM] ===== POST REQUEST =====');
     final fullPathWithQueries = _getFullPathWithQueries(fullPath, neoCall.queryProviders);
-    print('[NNM] POST URL: $fullPathWithQueries');
     
-    print('[NNM] Getting default POST headers...');
     final defaultHeaders = await _getDefaultPostHeaders(neoCall);
-    print('[NNM] Default headers: $defaultHeaders');
     
     final finalHeaders = defaultHeaders..addAll(neoCall.headerParameters);
-    print('[NNM] Final headers: $finalHeaders');
     
     final bodyJson = json.encode(neoCall.body);
-    print('[NNM] POST body JSON: $bodyJson');
     
-    print('[NNM] Making HTTP POST call...');
     final response = await httpClient!
         .post(
           Uri.parse(fullPathWithQueries),
@@ -327,10 +283,7 @@ class NeoNetworkManager {
         )
         .timeout(timeoutDuration);
     
-    print('[NNM] POST response received');
-    print('[NNM] Response status: ${response.statusCode}');
-    print('[NNM] Response headers: ${response.headers}');
-    print('[NNM] Response body: ${response.body}');
+    _neoLogger?.logConsole('[NeoNetworkManager] POST ${response.request?.url} -> ${response.statusCode}', logLevel: Level.debug);
     
     return _createResponse(response, neoCall);
   }
@@ -372,82 +325,66 @@ class NeoNetworkManager {
   }
 
   String _getFullPathWithQueries(String fullPath, List<HttpQueryProvider> queryProviders) {
-    print('[NNM] ===== GETTING FULL PATH WITH QUERIES =====');
-    print('[NNM] Full path: $fullPath');
-    print('[NNM] Query providers count: ${queryProviders.length}');
+    
     
     final Map<String, dynamic> queryParameters = queryProviders.fold(
       {},
       (previousValue, element) {
-        print('[NNM] Processing query provider: ${element.queryParameters}');
+        
         return previousValue..addAll(element.queryParameters);
       },
     );
     
-    print('[NNM] Final query parameters: $queryParameters');
+    
     
     if (queryParameters.isEmpty) {
-      print('[NNM] No query parameters, returning original path');
+      
       return fullPath;
     }
 
     // Convert dynamic values to strings for Uri.replace
-    print('[NNM] Query parameters types: ${queryParameters.map((k, v) => MapEntry(k, v.runtimeType))}');
-    print('[NNM] Converting query parameters to strings...');
+    
     
     final Map<String, String> stringQueryParameters = queryParameters.map(
       (key, value) {
-        print('[NNM] Converting $key: $value (${value.runtimeType}) -> ${value.toString()}');
+        
         return MapEntry(key, value.toString());
       },
     );
     
-    print('[NNM] String query parameters: $stringQueryParameters');
-
     final uri = Uri.parse(fullPath);
     final finalUrl = uri.replace(queryParameters: stringQueryParameters).toString();
-    print('[NNM] Final URL with queries: $finalUrl');
     
     return finalUrl;
   }
 
   Future<NeoResponse> _createResponse(http.Response response, NeoHttpCall call) async {
-    print('[NNM] ===== CREATING RESPONSE =====');
-    print('[NNM] Raw response status: ${response.statusCode}');
-    print('[NNM] Raw response body: ${response.body}');
-    print('[NNM] Raw response headers: ${response.headers}');
+    
     
     Map<String, dynamic>? responseJSON;
     try {
-      print('[NNM] Decoding response body...');
+      
       const utf8Decoder = Utf8Decoder();
       final responseString = utf8Decoder.convert(response.bodyBytes);
-      print('[NNM] Decoded response string: $responseString');
       
       final decodedResponse = json.decode(responseString);
-      print('[NNM] JSON decoded response: $decodedResponse');
       
       if (decodedResponse is Map<String, dynamic>) {
         responseJSON = decodedResponse;
-        print('[NNM] Response is Map<String, dynamic>');
       } else {
         responseJSON = {_Constants.wrapperResponseKey: decodedResponse};
-        print('[NNM] Response wrapped in data key');
       }
-      print('[NNM] Final response JSON: $responseJSON');
     } catch (e) {
-      print('[NNM] JSON decode error: $e');
+      _neoLogger?.logError('[NeoNetworkManager] JSON decode error: $e');
       responseJSON = {};
     }
 
     _logResponse(response);
 
     if (response.statusCode >= 200 && response.statusCode < 300) {
-      print('[NNM] SUCCESS response (${response.statusCode})');
       onRequestSucceed?.call(call.endpoint, call.requestId);
       return NeoResponse.success(responseJSON, statusCode: response.statusCode, responseHeaders: response.headers);
     } else if (response.statusCode == _Constants.responseCodeUnauthorized) {
-      print('[NNM] UNAUTHORIZED response (401)');
       if (call.endpoint == _Constants.endpointGetToken) {
         final error = NeoError.fromJson(responseJSON);
         _neoLogger?.logError("[NeoNetworkManager]: Token service error!");
@@ -457,7 +394,6 @@ class NeoNetworkManager {
         return _retryLastCall(call, response);
       }
     } else {
-      print('[NNM] ERROR response (${response.statusCode})');
       try {
         responseJSON.addAll({'body': response.body});
         final hasErrorCode = responseJSON.containsKey("errorCode");
@@ -469,7 +405,6 @@ class NeoNetworkManager {
         final error = NeoError(responseCode: response.statusCode);
         return _handleErrorResponse(error, call, response);
       } catch (e) {
-        print('[NNM] Error handling exception: $e');
         _neoLogger?.logError(
           "[NeoNetworkManager]: Service call failed! Status code: ${response.statusCode}.Endpoint: ${call.endpoint}",
         );
@@ -664,5 +599,9 @@ class NeoNetworkManager {
         );
       case NeoNetworkManagerLogScale.none:
     }
+  }
+
+  void _customPrint(String message) {
+    // no-op
   }
 }
