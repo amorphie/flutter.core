@@ -10,16 +10,12 @@
  * Any reproduction of this material must contain this notice.
  */
 
-
 import 'package:neo_core/core/analytics/neo_logger.dart';
 import 'package:neo_core/core/network/managers/neo_network_manager.dart';
 import 'package:neo_core/core/network/models/neo_http_call.dart';
 import 'package:neo_core/core/network/models/neo_response.dart';
 import 'package:neo_core/core/network/query_providers/http_query_provider.dart';
 
-/// Client for communicating with vNext backend workflow services
-/// Now uses NeoNetworkManager for unified network handling with authentication,
-/// headers, security, and error handling.
 class VNextWorkflowClient {
   final NeoNetworkManager networkManager;
   final NeoLogger logger;
@@ -40,9 +36,6 @@ class VNextWorkflowClient {
     Map<String, String>? headers,
   }) async {
     logger.logConsole('[VNextWorkflowClient] Starting workflow: $workflowName in domain: $domain${version != null ? " version: $version" : ""}');
-    // Fallback prints for dev where NeoLogger console may be disabled
-    // ignore: avoid_print
-    print('[VNextWorkflowClient] start → workflow=$workflowName, domain=$domain, version=${version ?? '-'}');
     
     final requestBody = {
       'key': key,
@@ -52,8 +45,6 @@ class VNextWorkflowClient {
 
     logger.logConsole('[VNextWorkflowClient] Request body: $requestBody');
     logger.logConsole('[VNextWorkflowClient] Request headers: $headers');
-    // ignore: avoid_print
-    print('[VNextWorkflowClient] body=$requestBody headers=${headers ?? {}}');
 
     final queryParams = <String, dynamic>{};
     if (version != null && version.isNotEmpty) {
@@ -63,8 +54,6 @@ class VNextWorkflowClient {
     logger.logConsole('[VNextWorkflowClient] Calling endpoint: vnext-init-workflow');
     logger.logConsole('[VNextWorkflowClient] Path params: {DOMAIN: $domain, WORKFLOW_NAME: $workflowName}');
     logger.logConsole('[VNextWorkflowClient] Query params: $queryParams');
-    // ignore: avoid_print
-    print('[VNextWorkflowClient] query=$queryParams');
 
     // Resolve final URL for logging
     final resolvedUrl = networkManager.httpClientConfig.getServiceUrlByKey(
@@ -77,8 +66,6 @@ class VNextWorkflowClient {
       useHttps: false,
     );
     logger.logConsole('[VNextWorkflowClient] Resolved URL: $resolvedUrl');
-    // ignore: avoid_print
-    print('[VNextWorkflowClient] url=$resolvedUrl');
 
     final response = await networkManager.call(
       NeoHttpCall(
@@ -95,18 +82,9 @@ class VNextWorkflowClient {
     );
 
     if (response is NeoSuccessResponse) {
-      logger.logConsole('[VNextWorkflowClient] ✅ SUCCESS: ${response.statusCode}');
-      logger.logConsole('[VNextWorkflowClient] Response data: ${response.data}');
-      // ignore: avoid_print
-      print('[VNextWorkflowClient] success code=${response.statusCode}');
+      logger.logConsole('[VNextWorkflowClient] ✅ ${response.statusCode} vnext-init-workflow');
     } else if (response is NeoErrorResponse) {
-      logger.logConsole('[VNextWorkflowClient] ❌ ERROR: ${response.statusCode}');
-      logger.logConsole('[VNextWorkflowClient] Error details: ${response.error}');
-      logger.logConsole('[VNextWorkflowClient] Error description: ${response.error.error.description}');
-      logger.logConsole('[VNextWorkflowClient] Error body: ${response.error.body}');
-      logger.logConsole('[VNextWorkflowClient] Response headers: ${response.headers}');
-      // ignore: avoid_print
-      print('[VNextWorkflowClient] error code=${response.statusCode} body=${response.error.body}');
+      logger.logConsole('[VNextWorkflowClient] ❌ ${response.statusCode} vnext-init-workflow: ${response.error.error.description}');
     }
 
     return response;

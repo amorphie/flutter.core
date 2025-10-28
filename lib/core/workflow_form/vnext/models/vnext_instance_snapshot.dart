@@ -1,8 +1,6 @@
 /*
  * neo_core
- *
- * Minimal vNext instance snapshot for long polling
- */
+ * */
 
 import 'package:equatable/equatable.dart';
 
