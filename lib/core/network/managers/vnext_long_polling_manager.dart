@@ -38,7 +38,6 @@ class VNextLongPollingManager {
     _logger.logConsole('[VNextLongPollingManager] startPolling instance=$instanceId');
     try {
       final pollingConfig = config ?? VNextPollingConfig.defaultConfig();
-
       _logger.logConsole('[VNextLongPollingManager] Starting polling for instance $instanceId with config: $pollingConfig');
       
       await stopPolling(instanceId);
@@ -56,9 +55,7 @@ class VNextLongPollingManager {
         onStart: _handleStart,
       );
 
-      _logger.logConsole('[VNextLongPollingManager] Session created successfully');
       _activeSessions[instanceId] = session;
-      _logger.logConsole('[VNextLongPollingManager] Session added to active sessions, starting polling...');
       await session.start();
       _logger.logConsole('[VNextLongPollingManager] Polling session started successfully');
     } catch (e, stackTrace) {
@@ -171,7 +168,6 @@ class _PollingSession {
   });
 
   Future<void> start() async {
-    logger.logConsole('[VNextLongPollingManager] session.start instance=$instanceId');
     if (_isActive) {
       logger.logConsole('[VNextLongPollingManager] session already active, returning');
       return;
@@ -198,9 +194,7 @@ class _PollingSession {
   }
 
   void _scheduleNextPoll() {
-    logger.logConsole('[VNextLongPollingManager] scheduleNextPoll instance=$instanceId');
     if (!_isActive) {
-      logger.logConsole('[VNextLongPollingManager] session not active, skip schedule');
       return;
     }
     final elapsed = DateTime.now().difference(_startTime!);
@@ -210,22 +204,15 @@ class _PollingSession {
       return;
     }
     
-    logger.logConsole('[VNextLongPollingManager] Scheduling next poll in ${config.interval.inSeconds}s');
     _pollingTimer = Timer(config.interval, () {
       if (_isActive) {
-        logger.logConsole('[VNextLongPollingManager] Timer triggered, executing poll');
         _poll().then((_) => _scheduleNextPoll());
-      } else {
-        logger.logConsole('[VNextLongPollingManager] Timer triggered but session is inactive');
       }
     });
-    logger.logConsole('[VNextLongPollingManager] Timer scheduled');
   }
 
   Future<void> _poll() async {
-    logger.logConsole('[VNextLongPollingManager] poll instance=$instanceId');
     if (!_isActive) {
-      logger.logConsole('[VNextLongPollingManager] session not active, skip poll');
       return;
     }
     final elapsed = DateTime.now().difference(_startTime!);
@@ -235,10 +222,7 @@ class _PollingSession {
       return;
     }
     
-    logger.logConsole('[VNextLongPollingManager] Polling instance $instanceId (elapsed: ${elapsed.inSeconds}s)');
-    
     try {
-      logger.logConsole('[VNextLongPollingManager] request instance=$instanceId domain=$domain workflow=$workflowName');
       final response = await networkManager.call(
         NeoHttpCall(
           endpoint: 'vnext-get-workflow-instance',
@@ -252,25 +236,20 @@ class _PollingSession {
       ).timeout(config.requestTimeout);
 
       if (response.isSuccess) {
-        final data = response.asSuccess.data;
-        final snapshot = _toSnapshot(data);
+        final snapshot = _toSnapshot(response.asSuccess.data);
         if (snapshot != null) {
           onMessage(snapshot);
           // Stop when waiting for user input or workflow finished
           if (_shouldStopPolling(snapshot)) {
             logger.logConsole('[VNextLongPollingManager] Stopping polling due to status: ${snapshot.status}');
             await stop(reason: 'workflow-not-busy');
-          } else {
-            logger.logConsole('[VNextLongPollingManager] Continue polling - status: ${snapshot.status}');
           }
         }
       } else {
         onError(instanceId, 'Poll failed: ${response.asError.error.error.description}');
-        // No max error auto-stop; rely on status-based stop
       }
     } catch (e) {
       onError(instanceId, 'Poll exception: $e');
-      // No max error auto-stop; rely on status-based stop
     }
   }
 

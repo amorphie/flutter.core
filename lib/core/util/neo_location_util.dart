@@ -2,6 +2,7 @@ import 'package:flutter/foundation.dart';
 import 'package:get_it/get_it.dart';
 import 'package:location/location.dart';
 import 'package:neo_core/core/analytics/neo_logger.dart';
+import 'package:neo_core/core/util/extensions/get_it_extensions.dart';
 
 class NeoLocationUtil {
   late final Location _location = Location();
@@ -10,7 +11,7 @@ class NeoLocationUtil {
 
   static LocationData? get cachedLocation => _cachedLocation;
 
-  late final _neoLogger = GetIt.I.get<NeoLogger>();
+  NeoLogger? get _neoLogger => GetIt.I.getIfReady<NeoLogger>();
 
   void cacheLocation(LocationData location) {
     _cachedLocation = location;
@@ -37,7 +38,7 @@ class NeoLocationUtil {
 
       return _location.getLocation();
     } catch (e) {
-      _neoLogger.logError("NeoLocationUtil-getCurrentLocation: $e");
+      _neoLogger?.logError("NeoLocationUtil-getCurrentLocation: $e");
       return null;
     }
   }
@@ -53,7 +54,7 @@ class NeoLocationUtil {
       }
       return permissionStatus;
     } catch (e) {
-      _neoLogger.logError("NeoLocationUtil-checkAndRequestPermission: $e");
+      _neoLogger?.logError("NeoLocationUtil-checkAndRequestPermission: $e");
       return null;
     }
   }
@@ -66,7 +67,7 @@ class NeoLocationUtil {
       final permissionStatus = await _location.hasPermission();
       return permissionStatus == PermissionStatus.granted || permissionStatus == PermissionStatus.grantedLimited;
     } catch (e) {
-      _neoLogger.logError("NeoLocationUtil-hasLocationPermission: $e");
+      _neoLogger?.logError("NeoLocationUtil-hasLocationPermission: $e");
       return false;
     }
   }
