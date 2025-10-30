@@ -70,6 +70,7 @@ class _VNextAccountOpeningTestPageState extends State<VNextAccountOpeningTestPag
   VNextLongPollingManager? _pollingManager;
   StreamSubscription<VNextInstanceSnapshot>? _pollingSubscription;
   StreamSubscription<VNextPollingEvent>? _pollingEventSubscription;
+  bool _isRefreshingFromPolling = false;
 
   @override
   void initState() {
@@ -253,12 +254,14 @@ class _VNextAccountOpeningTestPageState extends State<VNextAccountOpeningTestPag
       logScale: NeoNetworkManagerLogScale.none,
     );
     await _network!.init(enableSslPinning: false);
-    _logger = NeoLogger(
-      neoAdjust: NeoAdjust(secureStorage: _storage!),
-      neoElastic: NeoElastic(neoNetworkManager: _network!, secureStorage: _storage!),
-      httpClientConfig: config,
-    );
+    // Use a console logger for the sample page to ensure logs are visible
+    _logger = _PrintLogger();
     await _logger!.init(enableLogging: true);
+    // Register logger in GetIt so other services can access it
+    if (!GetIt.I.isRegistered<NeoLogger>()) {
+      GetIt.I.registerSingleton<NeoLogger>(_logger!, signalsReady: true);
+      GetIt.I.signalReady(_logger!);
+    }
     _client = VNextWorkflowClient(networkManager: _network!, logger: _logger!);
     _dataService = VNextDataService(client: _client!, logger: _logger!);
     _pollingManager = VNextLongPollingManager(networkManager: _network!, logger: _logger!);
@@ -350,7 +353,7 @@ class _VNextAccountOpeningTestPageState extends State<VNextAccountOpeningTestPag
       logger.logConsole('[VNextSample] Snapshot: instanceId=${snapshot.instanceId}, state=${snapshot.state}, status=${snapshot.status}, viewHref=${snapshot.viewHref}, dataHref=${snapshot.dataHref}, loadData=${snapshot.loadData}');
       
       // Check if we need to start/stop long polling based on status
-      await _handleStatusChange(snapshot.status);
+      await _handleStatusChange(snapshot.status.code);
       
       logger.logConsole('[VNextSample] Loading view via data service...');
       final viewResp = await dataService.loadView(snapshot: snapshot);
@@ -539,18 +542,25 @@ class _VNextAccountOpeningTestPageState extends State<VNextAccountOpeningTestPag
                           const SizedBox(height: 8),
                           Row(
                             children: [
-                              Icon(
-                                _isLongPollingActive ? Icons.sync : Icons.sync_disabled,
-                                color: _isLongPollingActive ? Colors.green : Colors.grey,
-                                size: 16,
-                              ),
+                              // Prefer live snapshot status; fall back to internal flag
+                              Builder(builder: (context) {
+                                final bool isActiveUi = _snapshot?.status.isBusy ?? _isLongPollingActive;
+                                return Icon(
+                                  isActiveUi ? Icons.sync : Icons.sync_disabled,
+                                  color: isActiveUi ? Colors.green : Colors.grey,
+                                  size: 16,
+                                );
+                              }),
                               const SizedBox(width: 4),
-                              Text(
-                                _isLongPollingActive ? 'Long Polling Active' : 'Long Polling Inactive',
-                                style: TextStyle(
-                                  color: _isLongPollingActive ? Colors.green : Colors.grey,
-                                ),
-                              ),
+                              Builder(builder: (context) {
+                                final bool isActiveUi = _snapshot?.status.isBusy ?? _isLongPollingActive;
+                                return Text(
+                                  isActiveUi ? 'Long Polling Active' : 'Long Polling Inactive',
+                                  style: TextStyle(
+                                    color: isActiveUi ? Colors.green : Colors.grey,
+                                  ),
+                                );
+                              }),
                               const SizedBox(width: 16),
                               ElevatedButton(
                                 onPressed: _isLongPollingActive ? _stopLongPolling : null,
@@ -579,7 +589,7 @@ class _VNextAccountOpeningTestPageState extends State<VNextAccountOpeningTestPag
                         'Version': _snapshot!.flowVersion,
                         'ETag': _snapshot!.etag,
                         'Current State': _snapshot!.state,
-                        'Status': _snapshot!.status,
+                        'Status': _snapshot!.status.code,
                         'Tags': _snapshot!.tags.join(', '),
                         'Active Correlations': _snapshot!.activeCorrelations.join(', '),
                       }),
@@ -762,10 +772,12 @@ class _VNextAccountOpeningTestPageState extends State<VNextAccountOpeningTestPag
 
   /// Handle status changes to start/stop long polling as needed
   Future<void> _handleStatusChange(String status) async {
+    _logger?.logConsole('[VNextSample] _handleStatusChange(status=$status, wasActive=$_isLongPollingActive)');
     
     if (status == 'B') {
       // Status 'B' means workflow is busy - start long polling
-      if (_snapshot != null) {
+      if (_snapshot != null && !_isLongPollingActive) {
+        _logger?.logConsole('[VNextSample] starting long polling for ${_snapshot!.instanceId}');
         await _startLongPolling(_snapshot!.instanceId);
         setState(() {
           _isLongPollingActive = true;
@@ -773,6 +785,7 @@ class _VNextAccountOpeningTestPageState extends State<VNextAccountOpeningTestPag
       }
     } else {
       // Status 'A', 'C', 'E', 'S' means workflow is not busy - stop long polling
+      _logger?.logConsole('[VNextSample] stopping long polling due to non-busy status');
       await _stopLongPolling();
       setState(() {
         _isLongPollingActive = false;
@@ -789,27 +802,31 @@ class _VNextAccountOpeningTestPageState extends State<VNextAccountOpeningTestPag
     // Cancel any existing subscription
     await _pollingSubscription?.cancel();
 
-    // Start polling with extended config for testing
-    await _pollingManager!.startPolling(
-      instanceId,
-      domain: _snapshot!.domain,
-      workflowName: _snapshot!.workflowName,
-      config: VNextPollingConfig(
-        interval: const Duration(seconds: 2), // Poll every 2 seconds
-        duration: const Duration(minutes: 5), // Poll for up to 5 minutes
-        requestTimeout: const Duration(seconds: 30),
-      ),
-    );
+    final String targetInstanceId = instanceId;
 
-
-    // Listen to polling updates (workflow data)
+    // Listen to polling updates (workflow data) BEFORE starting, to not miss first message
     _pollingSubscription = _pollingManager!.messageStream.listen(
-      (snapshot) {
-        
+      (snapshot) async {
+        if (snapshot.instanceId != targetInstanceId) {
+          return; // ignore other instances
+        }
+        _logger?.logConsole('[VNextSample] onMessage instance=${snapshot.instanceId} state=${snapshot.state} status=${snapshot.status.code}');
         setState(() {
           _snapshot = snapshot;
           _status = 'Long polling: ${snapshot.status} - ${snapshot.state}';
+          // Make the UI immediately reflect busy/non-busy even before stop events
+          _isLongPollingActive = snapshot.status.isBusy;
         });
+
+        // React to status changes coming from polling
+        _logger?.logConsole('[VNextSample] onMessage -> _handleStatusChange(${snapshot.status.code})');
+        await _handleStatusChange(snapshot.status.code);
+
+        // When workflow becomes renderable (non-busy and has view), refresh the view
+        if (snapshot.isRenderable) {
+          _logger?.logConsole('[VNextSample] onMessage -> reloadForSnapshot(renderable=true)');
+          await _reloadForSnapshot(snapshot);
+        }
       },
       onError: (error) {
         setState(() {
@@ -820,7 +837,11 @@ class _VNextAccountOpeningTestPageState extends State<VNextAccountOpeningTestPag
 
     // Listen to polling events (lifecycle events)
     _pollingEventSubscription = _pollingManager!.eventStream.listen(
-      (event) {
+      (event) async {
+        if (event.instanceId != targetInstanceId) {
+          return; // ignore other instances
+        }
+        _logger?.logConsole('[VNextSample] onEvent type=${event.type} reason=${event.reason}');
         
         switch (event.type) {
           case VNextPollingEventType.started:
@@ -832,6 +853,10 @@ class _VNextAccountOpeningTestPageState extends State<VNextAccountOpeningTestPag
             setState(() {
               _isLongPollingActive = false;
             });
+            // Ensure snapshot reflects the final state after polling stops
+            // (in case the last message was missed due to timing)
+            _logger?.logConsole('[VNextSample] onEvent.stopped -> _refreshInstance');
+            await _refreshInstance();
             break;
           case VNextPollingEventType.error:
             setState(() {
@@ -854,11 +879,54 @@ class _VNextAccountOpeningTestPageState extends State<VNextAccountOpeningTestPag
         });
       },
     );
+
+    // Start polling with extended config for testing AFTER listeners are attached
+    await _pollingManager!.startPolling(
+      instanceId,
+      domain: _snapshot!.domain,
+      workflowName: _snapshot!.workflowName,
+      config: VNextPollingConfig(
+        interval: const Duration(seconds: 2), // Poll every 2 seconds
+        duration: const Duration(minutes: 5), // Poll for up to 5 minutes
+        requestTimeout: const Duration(seconds: 30),
+      ),
+    );
+  }
+
+  Future<void> _reloadForSnapshot(VNextInstanceSnapshot snapshot) async {
+    if (_dataService == null) return;
+    if (_isRefreshingFromPolling) return;
+    _isRefreshingFromPolling = true;
+    try {
+      _logger?.logConsole('[VNextSample] _reloadForSnapshot(state=${snapshot.state}, status=${snapshot.status.code})');
+      final viewResp = await _dataService!.loadView(snapshot: snapshot);
+      if (viewResp.isSuccess) {
+        final body = viewResp.asSuccess.data['body'] as Map<String, dynamic>?;
+        setState(() {
+          _componentJson = body;
+          _status = 'View refreshed (state=${snapshot.state})';
+        });
+        _logger?.logConsole('[VNextSample] _reloadForSnapshot DONE');
+      } else {
+        setState(() {
+          _status = 'View refresh failed: ${viewResp.asError.error.error.description}';
+        });
+        _logger?.logConsole('[VNextSample] _reloadForSnapshot FAILED: ${viewResp.asError.error.error.description}');
+      }
+    } catch (e) {
+      setState(() {
+        _status = 'View refresh error: $e';
+      });
+      _logger?.logConsole('[VNextSample] _reloadForSnapshot ERROR: $e');
+    } finally {
+      _isRefreshingFromPolling = false;
+    }
   }
 
   Future<void> _stopLongPolling() async {
     if (_pollingManager == null || _currentInstanceId == null) return;
 
+    _logger?.logConsole('[VNextSample] _stopLongPolling(instanceId=$_currentInstanceId)');
     await _pollingManager!.stopPolling(_currentInstanceId!);
     await _pollingSubscription?.cancel();
     await _pollingEventSubscription?.cancel();
@@ -933,7 +1001,7 @@ class _VNextAccountOpeningTestPageState extends State<VNextAccountOpeningTestPag
         
         // Handle status change after transition
         if (_snapshot != null) {
-          await _handleStatusChange(_snapshot!.status);
+          await _handleStatusChange(_snapshot!.status.code);
         }
         
         setState(() {
@@ -959,6 +1027,7 @@ class _VNextAccountOpeningTestPageState extends State<VNextAccountOpeningTestPag
     if (_client == null || _currentInstanceId == null) return;
 
     try {
+      _logger?.logConsole('[VNextSample] _refreshInstance(instanceId=$_currentInstanceId)');
       
       final instResp = await _client!.getWorkflowInstance(
         domain: _snapshot!.domain,
@@ -969,10 +1038,13 @@ class _VNextAccountOpeningTestPageState extends State<VNextAccountOpeningTestPag
       if (instResp.isSuccess) {
         _workflowInstanceJson = instResp.asSuccess.data;
         _snapshot = VNextInstanceSnapshot.fromInstanceJson(instResp.asSuccess.data);
+        _logger?.logConsole('[VNextSample] _refreshInstance SUCCESS: state=${_snapshot!.state} status=${_snapshot!.status.code}');
         
       } else {
+        _logger?.logConsole('[VNextSample] _refreshInstance FAILED: ${instResp.asError.error.error.description}');
       }
       } catch (e) {
+      _logger?.logConsole('[VNextSample] _refreshInstance ERROR: $e');
     }
   }
 
@@ -1038,7 +1110,7 @@ class _PrintLogger extends NeoLogger {
   }
 
   @override
-  void logError(String message) {
+  void logError(String message, {Map<String, dynamic>? properties}) {
     // ignore: avoid_print
     print(message);
   }
