@@ -117,25 +117,39 @@ class NeoNetworkManager {
   }
 
   Future<Map<String, String>> _getDefaultHeaders(NeoHttpCall? neoCall) async {
-    return await NeoDynamicHeaders(neoSharedPrefs: neoSharedPrefs, secureStorage: secureStorage).getHeaders()
-      ..addAll(
-        _isMtlsEnabled && (neoCall?.signForMtls ?? false) ? await _mtlsHeaders.getHeaders(neoCall?.body ?? {}) : {},
-      )
-      ..addAll(
-        await NeoConstantHeaders(
-          neoSharedPrefs: neoSharedPrefs,
-          secureStorage: secureStorage,
-          defaultHeaders: defaultHeaders,
-        ).getHeaders(),
-      );
+    
+    final dynamicHeaders = await NeoDynamicHeaders(neoSharedPrefs: neoSharedPrefs, secureStorage: secureStorage).getHeaders();
+    
+    
+    final mtlsHeaders = _isMtlsEnabled && (neoCall?.signForMtls ?? false) ? await _mtlsHeaders.getHeaders(neoCall?.body ?? {}) : {};
+    
+    final constantHeaders = await NeoConstantHeaders(
+      neoSharedPrefs: neoSharedPrefs,
+      secureStorage: secureStorage,
+      defaultHeaders: defaultHeaders,
+    ).getHeaders();
+    
+    final allHeaders = <String, String>{}
+      ..addAll(Map<String, String>.from(dynamicHeaders))
+      ..addAll(Map<String, String>.from(mtlsHeaders))
+      ..addAll(Map<String, String>.from(constantHeaders));
+    
+    return allHeaders;
   }
 
-  Future<Map<String, String>> _getDefaultPostHeaders(NeoHttpCall neoCall) async => <String, String>{}
-    ..addAll(await _getDefaultHeaders(neoCall))
-    ..addAll({
-      NeoNetworkHeaderKey.user: UuidUtil.generateUUID(), // STOPSHIP: Delete it
-      NeoNetworkHeaderKey.behalfOfUser: UuidUtil.generateUUID(), // STOPSHIP: Delete it
-    });
+  Future<Map<String, String>> _getDefaultPostHeaders(NeoHttpCall neoCall) async {
+    
+    final baseHeaders = await _getDefaultHeaders(neoCall);
+    
+    final postHeaders = <String, String>{}
+      ..addAll(baseHeaders)
+      ..addAll({
+        NeoNetworkHeaderKey.user: UuidUtil.generateUUID(), // STOPSHIP: Delete it
+        NeoNetworkHeaderKey.behalfOfUser: UuidUtil.generateUUID(), // STOPSHIP: Delete it
+      });
+    
+    return postHeaders;
+  }
 
   Future<SecurityContext?> get _getSecurityContext async {
     if (sslCertificateFilePaths.isEmpty) {
@@ -153,21 +167,30 @@ class NeoNetworkManager {
   }
 
   Future<NeoResponse> call(NeoHttpCall neoCall) async {
-    if (neoCall.endpoint != _Constants.endpointGetToken) {
+    
+
+    if (neoCall.endpoint != _Constants.endpointGetToken && !neoCall.endpoint.startsWith('vnext-')) {
+      
       await _tokenLock.protect(() async {
         final refreshToken = await _getRefreshToken();
+        
 
         if (refreshToken == null || isRefreshTokenExpired) {
+          
           if (await _isTwoFactorAuthenticated) {
+            
             await _onInvalidTokenError();
             return NeoResponse.error(const NeoError(responseCode: HttpStatus.forbidden), responseHeaders: {});
           } else {
+            
             await getTemporaryTokenForNotLoggedInUser(currentCall: neoCall);
           }
         }
 
         final token = await _getToken();
+        
         if (token == null) {
+          
           await _waitForOngoingTokenRequest();
           await getTemporaryTokenForNotLoggedInUser(currentCall: neoCall);
         } else if (isTokenExpired) {
@@ -175,18 +198,24 @@ class NeoNetworkManager {
           await _refreshTokenIfExpired();
         }
       });
+    } else if (neoCall.endpoint.startsWith('vnext-')) {
+      
     }
 
     if (_isMtlsEnabled) {
+      
       await httpClientConfig.setMtlsStatusForHttpCall(neoCall, _mtlsHelper, secureStorage);
     }
+    
     final fullPath = httpClientConfig.getServiceUrlByKey(
       neoCall.endpoint,
       enableMtls: neoCall.enableMtls,
       parameters: neoCall.pathParameters,
       useHttps: neoCall.useHttps,
     );
+    
     final method = httpClientConfig.getServiceMethodByKey(neoCall.endpoint);
+    
     if (fullPath == null || method == null) {
       return NeoResponse.error(const NeoError(), responseHeaders: {});
     }
@@ -207,11 +236,12 @@ class NeoNetworkManager {
       }
       return response;
     } catch (e) {
+      _neoLogger?.logError('[NeoNetworkManager] Exception during request: $e (${e.runtimeType}). Endpoint: ${neoCall.endpoint}');
       if (e is TimeoutException) {
         _neoLogger?.logError("[NeoNetworkManager]: Service call timeout! Endpoint: ${neoCall.endpoint}");
         return NeoResponse.error(const NeoError(responseCode: HttpStatus.requestTimeout), responseHeaders: {});
       } else if (e is HandshakeException) {
-        _neoLogger?.logConsole("[NeoNetworkManager]: Handshake exception! Endpoint: ${neoCall.endpoint}");
+        _neoLogger?.logError("[NeoNetworkManager]: Handshake exception! Endpoint: ${neoCall.endpoint}");
         return NeoResponse.error(const NeoError(), responseHeaders: {});
       } else {
         _neoLogger?.logError("[NeoNetworkManager]: Service call failed! Endpoint: ${neoCall.endpoint}");
@@ -239,13 +269,23 @@ class NeoNetworkManager {
 
   Future<NeoResponse> _requestPost(String fullPath, NeoHttpCall neoCall) async {
     final fullPathWithQueries = _getFullPathWithQueries(fullPath, neoCall.queryProviders);
+    
+    final defaultHeaders = await _getDefaultPostHeaders(neoCall);
+    
+    final finalHeaders = defaultHeaders..addAll(neoCall.headerParameters);
+    
+    final bodyJson = json.encode(neoCall.body);
+    
     final response = await httpClient!
         .post(
           Uri.parse(fullPathWithQueries),
-          headers: (await _getDefaultPostHeaders(neoCall))..addAll(neoCall.headerParameters),
-          body: json.encode(neoCall.body),
+          headers: finalHeaders,
+          body: bodyJson,
         )
         .timeout(timeoutDuration);
+    
+    _neoLogger?.logConsole('[NeoNetworkManager] POST ${response.request?.url} -> ${response.statusCode}', logLevel: Level.debug);
+    
     return _createResponse(response, neoCall);
   }
 
@@ -286,21 +326,45 @@ class NeoNetworkManager {
   }
 
   String _getFullPathWithQueries(String fullPath, List<HttpQueryProvider> queryProviders) {
+    
+    
     final Map<String, dynamic> queryParameters = queryProviders.fold(
       {},
-      (previousValue, element) => previousValue..addAll(element.queryParameters),
+      (previousValue, element) {
+        
+        return previousValue..addAll(element.queryParameters);
+      },
     );
+    
+    
+    
     if (queryParameters.isEmpty) {
+      
       return fullPath;
     }
 
+    // Convert dynamic values to strings for Uri.replace
+    
+    
+    final Map<String, String> stringQueryParameters = queryParameters.map(
+      (key, value) {
+        
+        return MapEntry(key, value.toString());
+      },
+    );
+    
     final uri = Uri.parse(fullPath);
-    return uri.replace(queryParameters: queryParameters).toString();
+    final finalUrl = uri.replace(queryParameters: stringQueryParameters).toString();
+    
+    return finalUrl;
   }
 
   Future<NeoResponse> _createResponse(http.Response response, NeoHttpCall call) async {
+    
+    
     Map<String, dynamic>? responseJSON;
     try {
+      
       const utf8Decoder = Utf8Decoder();
       final responseString = utf8Decoder.convert(response.bodyBytes);
       var decodedResponse = json.decode(responseString);
@@ -315,7 +379,8 @@ class NeoNetworkManager {
       } else {
         responseJSON = {_Constants.wrapperResponseKey: decodedResponse};
       }
-    } catch (_) {
+    } catch (e) {
+      _neoLogger?.logError('[NeoNetworkManager] JSON decode error: $e');
       responseJSON = {};
     }
 
@@ -539,5 +604,9 @@ class NeoNetworkManager {
         );
       case NeoNetworkManagerLogScale.none:
     }
+  }
+
+  void _customPrint(String message) {
+    // no-op
   }
 }
