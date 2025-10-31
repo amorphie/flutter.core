@@ -2,8 +2,6 @@ import 'dart:async';
 
 import 'package:neo_core/core/analytics/neo_analytics.dart';
 import 'package:neo_core/core/bus/widget_event_bus/neo_core_widget_event_keys.dart';
-import 'package:neo_core/core/environment_variables/neo_environment.dart';
-import 'package:neo_core/core/environment_variables/neo_environment_type.dart';
 import 'package:neo_core/core/managers/dengage_manager/dengage_manager.dart';
 import 'package:neo_core/core/managers/nba_manager/models/neo_nba_content_type.dart';
 import 'package:neo_core/core/managers/nba_manager/models/neo_nba_item.dart';
@@ -61,9 +59,7 @@ class NeoNbaManager {
       return;
     }
 
-    if (NeoEnvironment.current.isOn) {
-      _fetchItemsByPageIdFutures[toPage] = _fetchNbaContentList(fromPage: fromPage, toPage: toPage);
-    }
+    _fetchItemsByPageIdFutures[toPage] = _fetchNbaContentList(fromPage: fromPage, toPage: toPage);
 
     DengageManager.setNavigationWithName(toPage);
     _reportToDataroid(fromPage, toPage);

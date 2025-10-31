@@ -111,23 +111,27 @@ class _NeoCoreFirebaseMessagingState extends State<NeoCoreFirebaseMessaging> {
   }
 
   Future<void> _initNotifications() async {
-    if (Platform.isIOS) {
+    try {
+      if (Platform.isIOS) {
+        unawaited(
+          _getAPNSTokenBasedOnPlatform().then((apnsToken) {
+            if (apnsToken != null) {
+              _onTokenChange(apnsToken, isAPNS: true);
+            }
+          }),
+        );
+      }
       unawaited(
-        _getAPNSTokenBasedOnPlatform().then((apnsToken) {
-          if (apnsToken != null) {
-            _onTokenChange(apnsToken, isAPNS: true);
+        _getTokenBasedOnPlatform().then((firebaseToken) {
+          if (firebaseToken != null) {
+            _onTokenChange(firebaseToken);
           }
         }),
       );
+      NeoCoreFirebaseMessaging.firebaseMessaging.onTokenRefresh.listen(_onTokenChange);
+    } catch (e) {
+      _neoLogger.logError("[NeoCoreMessaging]: Error occurred on init notifications: $e");
     }
-    unawaited(
-      _getTokenBasedOnPlatform().then((firebaseToken) {
-        if (firebaseToken != null) {
-          _onTokenChange(firebaseToken);
-        }
-      }),
-    );
-    NeoCoreFirebaseMessaging.firebaseMessaging.onTokenRefresh.listen(_onTokenChange);
   }
 
   void _onTokenChange(String token, {bool isAPNS = false}) {
@@ -216,11 +220,21 @@ class _NeoCoreFirebaseMessagingState extends State<NeoCoreFirebaseMessaging> {
     if (kIsWeb) {
       return null;
     }
-    return NeoCoreFirebaseMessaging.firebaseMessaging.getToken();
+    try {
+      final token = await NeoCoreFirebaseMessaging.firebaseMessaging.getToken();
+      return token;
+    } catch (e) {
+      return null;
+    }
   }
 
   Future<String?> _getAPNSTokenBasedOnPlatform() async {
-    return NeoCoreFirebaseMessaging.firebaseMessaging.getAPNSToken();
+    try {
+      final token = await NeoCoreFirebaseMessaging.firebaseMessaging.getAPNSToken();
+      return token;
+    } catch (e) {
+      return null;
+    }
   }
 
   void _handleMessage(RemoteMessage? message) {

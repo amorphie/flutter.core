@@ -3,14 +3,14 @@ import 'package:json_annotation/json_annotation.dart';
 @JsonEnum()
 enum NeoNbaItemActionType {
   @JsonValue(0)
-  noAction('noAction'),
+  noAction(0),
   @JsonValue(1)
-  externalLink('externalLink'),
+  externalLink(1),
   @JsonValue(2)
-  deeplink('deeplink'),
+  deeplink(2),
   ;
 
-  final String value;
+  final int value;
 
   const NeoNbaItemActionType(this.value);
 }
