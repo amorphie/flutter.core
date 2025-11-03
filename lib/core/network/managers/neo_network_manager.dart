@@ -20,7 +20,7 @@ import 'package:flutter/services.dart';
 import 'package:get_it/get_it.dart';
 import 'package:http/http.dart' as http;
 import 'package:http/io_client.dart';
-import 'package:jose/jose.dart';
+import 'package:dart_jsonwebtoken/dart_jsonwebtoken.dart';
 import 'package:json_annotation/json_annotation.dart';
 import 'package:logger/logger.dart';
 import 'package:mutex/mutex.dart';
@@ -72,7 +72,6 @@ abstract class _Constants {
   static const String jwtClaimInstallationId = "installation_id";
   static const String jwtClaimRefreshToken = "refresh_token";
   static const String jwtAudience = "BurganIam";
-  static const String jwtAlgorithm = "RS256";
 }
 
 enum NeoNetworkManagerLogScale { none, simplified, all }
@@ -604,24 +603,13 @@ class NeoNetworkManager {
       claims[_Constants.jwtClaimRefreshToken] = await _getRefreshToken();
     }
 
-    // RSA key yükle
-    final keyStore = JsonWebKeyStore();
+    // JWT oluştur ve RSA ile imzala
+    final jwt = JWT(claims);
 
-    final jwk = JsonWebKey.fromPem(serverPrivateKey!);
+    // RSA private key ile imzala
+    final token = jwt.sign(RSAPrivateKey(serverPrivateKey), algorithm: JWTAlgorithm.RS256);
 
-    keyStore.addKey(jwk);
-
-    // JWT oluştur
-
-    final builder = JsonWebSignatureBuilder()
-      ..jsonContent = claims
-      ..addRecipient(jwk, algorithm: _Constants.jwtAlgorithm);
-
-    final jws = builder.build();
-
-    // İmzalı JWT string
-
-    return jws.toCompactSerialization();
+    return token;
   }
 
   Future<String?> _fingerPrintAlgorithm(String jti) async {
