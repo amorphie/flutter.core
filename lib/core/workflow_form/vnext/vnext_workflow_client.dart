@@ -43,29 +43,10 @@ class VNextWorkflowClient {
       'tags': tags,
     };
 
-    logger.logConsole('[VNextWorkflowClient] Request body: $requestBody');
-    logger.logConsole('[VNextWorkflowClient] Request headers: $headers');
-
     final queryParams = <String, dynamic>{};
     if (version != null && version.isNotEmpty) {
       queryParams['version'] = version;
     }
-
-    logger.logConsole('[VNextWorkflowClient] Calling endpoint: vnext-init-workflow');
-    logger.logConsole('[VNextWorkflowClient] Path params: {DOMAIN: $domain, WORKFLOW_NAME: $workflowName}');
-    logger.logConsole('[VNextWorkflowClient] Query params: $queryParams');
-
-    // Resolve final URL for logging
-    final resolvedUrl = networkManager.httpClientConfig.getServiceUrlByKey(
-      'vnext-init-workflow',
-      enableMtls: false,
-      parameters: {
-        'DOMAIN': domain,
-        'WORKFLOW_NAME': workflowName,
-      },
-      useHttps: false,
-    );
-    logger.logConsole('[VNextWorkflowClient] Resolved URL: $resolvedUrl');
 
     final response = await networkManager.call(
       NeoHttpCall(
@@ -82,9 +63,9 @@ class VNextWorkflowClient {
     );
 
     if (response is NeoSuccessResponse) {
-      logger.logConsole('[VNextWorkflowClient] ✅ ${response.statusCode} vnext-init-workflow');
+      logger.logConsole('[VNextWorkflowClient] Init workflow successful, statusCode: ${response.statusCode}');
     } else if (response is NeoErrorResponse) {
-      logger.logConsole('[VNextWorkflowClient] ❌ ${response.statusCode} vnext-init-workflow: ${response.error.error.description}');
+      logger.logError('[VNextWorkflowClient] Init workflow failed, statusCode: ${response.statusCode}, error: ${response.error.error.description}');
     }
 
     return response;
@@ -100,7 +81,27 @@ class VNextWorkflowClient {
     String? version, // Workflow version (e.g., "1.0.0")
     Map<String, String>? headers,
   }) async {
+    logger.logConsole('[VNextWorkflowClient] ===== postTransition CALLED =====');
+    logger.logConsole('[VNextWorkflowClient] Domain: "$domain" (isEmpty: ${domain.isEmpty})');
+    logger.logConsole('[VNextWorkflowClient] WorkflowName: "$workflowName" (isEmpty: ${workflowName.isEmpty})');
+    logger.logConsole('[VNextWorkflowClient] InstanceId: $instanceId');
+    logger.logConsole('[VNextWorkflowClient] TransitionKey: $transitionKey');
     logger.logConsole('[VNextWorkflowClient] Making transition: $transitionKey for instance: $instanceId${version != null ? " version: $version" : ""}');
+    
+    if (domain.isEmpty || workflowName.isEmpty) {
+      logger.logError('[VNextWorkflowClient] ❌ ERROR: Domain or WorkflowName is empty!');
+      logger.logError('[VNextWorkflowClient] Domain: "$domain", WorkflowName: "$workflowName"');
+      return NeoResponse.error(
+        NeoError(
+          responseCode: 400,
+          error: NeoErrorDetail(
+            title: 'Invalid Request',
+            description: 'Domain or WorkflowName is empty. Domain: "$domain", WorkflowName: "$workflowName"',
+          ),
+        ),
+        responseHeaders: {},
+      );
+    }
 
     // TODO(stop-ship): remove temporary UI-key filtering when all callers send clean formData
     final Map<String, dynamic> sanitized = <String, dynamic>{};
@@ -116,23 +117,38 @@ class VNextWorkflowClient {
     if (version != null) {
       queryParams['version'] = version;
     }
+    // Add sync=true for synchronous transitions (backend expects this for immediate response)
+    queryParams['sync'] = true;
 
-    return networkManager.call(
-      NeoHttpCall(
-        endpoint: 'vnext-post-transition',
-        pathParameters: {
-          'DOMAIN': domain,
-          'WORKFLOW_NAME': workflowName,
-          'INSTANCE_ID': instanceId,
-          // Match http_client_config placeholder name
-          'TRANSITION_NAME': transitionKey,
-        },
-        queryProviders: queryParams.isNotEmpty ? [HttpQueryProvider(queryParams)] : [],
-        body: sanitized,
-        headerParameters: headers ?? {},
-        useHttps: false,
-      ),
-    );
+    try {
+      final response = await networkManager.call(
+        NeoHttpCall(
+          endpoint: 'vnext-post-transition',
+          pathParameters: {
+            'DOMAIN': domain,
+            'WORKFLOW_NAME': workflowName,
+            'INSTANCE_ID': instanceId,
+            // Match http_client_config placeholder name
+            'TRANSITION_NAME': transitionKey,
+          },
+          queryProviders: queryParams.isNotEmpty ? [HttpQueryProvider(queryParams)] : [],
+          body: sanitized,
+          headerParameters: headers ?? {},
+          useHttps: false,
+        ),
+      );
+      
+      if (response is NeoSuccessResponse) {
+        logger.logConsole('[VNextWorkflowClient] Transition successful, statusCode: ${response.statusCode}');
+      } else if (response is NeoErrorResponse) {
+        logger.logError('[VNextWorkflowClient] Transition failed, statusCode: ${response.statusCode}, error: ${response.error.error.description}');
+      }
+      return response;
+    } catch (e, stackTrace) {
+      logger.logError('[VNextWorkflowClient] Exception during postTransition: $e');
+      logger.logError('[VNextWorkflowClient] Stack trace: $stackTrace');
+      rethrow;
+    }
   }
 
   /// Get available transitions for a workflow instance
@@ -175,18 +191,31 @@ class VNextWorkflowClient {
   }) async {
     logger.logConsole('[VNextWorkflowClient] Getting workflow instance: $instanceId');
 
-    return networkManager.call(
-      NeoHttpCall(
-        endpoint: 'vnext-get-workflow-instance',
-        pathParameters: {
-          'DOMAIN': domain,
-          'WORKFLOW_NAME': workflowName,
-          'INSTANCE_ID': instanceId,
-        },
-        headerParameters: headers ?? {},
-        useHttps: false,
-      ),
-    );
+    try {
+      final response = await networkManager.call(
+        NeoHttpCall(
+          endpoint: 'vnext-get-workflow-instance',
+          pathParameters: {
+            'DOMAIN': domain,
+            'WORKFLOW_NAME': workflowName,
+            'INSTANCE_ID': instanceId,
+          },
+          headerParameters: headers ?? {},
+          useHttps: false,
+        ),
+      );
+      
+      if (response is NeoSuccessResponse) {
+        logger.logConsole('[VNextWorkflowClient] Get workflow instance successful, statusCode: ${response.statusCode}');
+      } else if (response is NeoErrorResponse) {
+        logger.logError('[VNextWorkflowClient] Get workflow instance failed, statusCode: ${response.statusCode}, error: ${response.error.error.description}');
+      }
+      return response;
+    } catch (e, stackTrace) {
+      logger.logError('[VNextWorkflowClient] Exception during getWorkflowInstance: $e');
+      logger.logError('[VNextWorkflowClient] Stack trace: $stackTrace');
+      rethrow;
+    }
   }
 
   /// List all instances for a specific workflow with enhanced filtering support
@@ -267,19 +296,37 @@ class VNextWorkflowClient {
     required String href,
     Map<String, String>? headers,
   }) async {
+    logger.logConsole('[VNextWorkflowClient] ===== fetchByPath CALLED =====');
+    logger.logConsole('[VNextWorkflowClient] href: $href');
+    logger.logConsole('[VNextWorkflowClient] headers: ${headers?.keys.join(", ") ?? "none"}');
+    
     // Normalize: remove a possible leading slash to match '/{PATH}' template
     final normalized = href.startsWith('/') ? href.substring(1) : href;
+    logger.logConsole('[VNextWorkflowClient] normalized path: $normalized');
     
-    return networkManager.call(
-      NeoHttpCall(
-        endpoint: 'vnext-fetch-by-path',
-        pathParameters: {
-          'PATH': normalized,
-        },
-        headerParameters: headers ?? {},
-        useHttps: false,
-      ),
-    );
+    try {
+      final response = await networkManager.call(
+        NeoHttpCall(
+          endpoint: 'vnext-fetch-by-path',
+          pathParameters: {
+            'PATH': normalized,
+          },
+          headerParameters: headers ?? {},
+          useHttps: false,
+        ),
+      );
+      
+      logger.logConsole('[VNextWorkflowClient] fetchByPath response: isSuccess=${response.isSuccess}');
+      if (response.isError) {
+        logger.logError('[VNextWorkflowClient] fetchByPath error: ${response.asError.error.error.description}');
+      }
+      logger.logConsole('[VNextWorkflowClient] ===== fetchByPath COMPLETE =====');
+      return response;
+    } catch (e, stackTrace) {
+      logger.logError('[VNextWorkflowClient] Exception in fetchByPath: $e');
+      logger.logError('[VNextWorkflowClient] Stack trace: $stackTrace');
+      rethrow;
+    }
   }
 
   /// Get workflow instance history and state transitions

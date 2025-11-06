@@ -20,7 +20,7 @@ class VNextDataService {
       : _client = client,
         _logger = logger;
 
-  /// Load view (and optionally data) based on snapshot hrefs and normalize to { body: ... }
+  /// Load view  based on snapshot hrefs and normalize to { body: ... }
   Future<NeoResponse> loadView({
     required VNextInstanceSnapshot snapshot,
     Map<String, String>? headers,
@@ -58,10 +58,32 @@ class VNextDataService {
       }
 
       _logger.logConsole('[VNextDataService] Fetching view via href: $viewHref');
-      final viewResp = await _client.fetchByPath(href: viewHref, headers: headers);
+      // Add cache-busting headers since same viewHref returns different content based on state
+      final viewHeaders = <String, String>{
+        'Cache-Control': 'no-cache, no-store, must-revalidate',
+        'Pragma': 'no-cache',
+        'Expires': '0',
+        ...?headers,
+      };
+      _logger.logConsole('[VNextDataService] Calling fetchByPath with headers: ${viewHeaders.keys.join(", ")}');
+      
+      NeoResponse viewResp;
+      try {
+        viewResp = await _client.fetchByPath(href: viewHref, headers: viewHeaders);
+        _logger.logConsole('[VNextDataService] fetchByPath completed: isSuccess=${viewResp.isSuccess}');
+      } catch (e, stackTrace) {
+        _logger.logError('[VNextDataService] Exception calling fetchByPath: $e');
+        _logger.logError('[VNextDataService] Stack trace: $stackTrace');
+        return NeoResponse.error(
+          NeoError(error: NeoErrorDetail(description: 'Exception fetching view: $e')),
+          responseHeaders: const {},
+        );
+      }
       
       if (viewResp.isError) {
         _logger.logError('[VNextDataService] View fetch error: ${viewResp.asError.error.error.description}');
+        _logger.logError('[VNextDataService] Error response code: ${viewResp.asError.statusCode}');
+        _logger.logError('[VNextDataService] Error type: ${viewResp.asError.error.errorType}');
         return viewResp;
       }
 
@@ -99,7 +121,6 @@ class VNextDataService {
         return null;
       }
       
-      // New structure: { key: "...", content: "{...}", type: "Json" }
       // where content is a JSON string
       final content = rawView['content'];
       if (content is! String) {
@@ -173,24 +194,32 @@ class VNextDataService {
 
   VNextDataModel? _parseDataModel(Map<String, dynamic> raw, VNextInstanceSnapshot snapshot) {
     try {
-      final data = raw['data'];
-      if (data is! Map<String, dynamic>) {
-        _logger.logError('[VNextDataService] Missing or invalid data root for state=${snapshot.state}, type: ${data.runtimeType}');
+      _logger.logConsole('[VNextDataService] Parsing data model, raw keys: ${raw.keys.join(", ")}');
+      
+      // New format: { "data": { "channel": "mobile" }, "etag": "...", "extensions": {} }
+      // The actual data attributes are in the 'data' key directly
+      final dataAttributes = raw['data'];
+      if (dataAttributes is! Map<String, dynamic>) {
+        _logger.logError('[VNextDataService] Missing or invalid data root for state=${snapshot.state}, type: ${dataAttributes.runtimeType}');
+        _logger.logError('[VNextDataService] Raw data: $raw');
         return null;
       }
       
-      final attrs = data['attributes'];
-      final eTag = data['etag'] ?? data['eTag'];
-      
-      if (attrs is! Map<String, dynamic> || eTag is! String) {
-        _logger.logError('[VNextDataService] Invalid data schema for state=${snapshot.state}, attrs type: ${attrs.runtimeType}, eTag type: ${eTag.runtimeType}');
+      // eTag is at the top level in the new format
+      final eTag = raw['etag'] ?? raw['eTag'];
+      if (eTag is! String || eTag.isEmpty) {
+        _logger.logError('[VNextDataService] Missing or invalid eTag for state=${snapshot.state}, type: ${eTag.runtimeType}');
+        _logger.logError('[VNextDataService] Raw data: $raw');
         return null;
       }
       
-      return VNextDataModel(attributes: attrs, eTag: eTag);
+      _logger.logConsole('[VNextDataService] Data model parsed successfully, eTag=$eTag, attributes keys: ${dataAttributes.keys.join(", ")}');
+      
+      return VNextDataModel(attributes: dataAttributes, eTag: eTag);
     } catch (e, stackTrace) {
       _logger.logError('[VNextDataService] Data parsing error: $e');
       _logger.logError('[VNextDataService] Stack trace: $stackTrace');
+      _logger.logError('[VNextDataService] Raw data: $raw');
       return null;
     }
   }
