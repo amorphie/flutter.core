@@ -269,21 +269,12 @@ class VNextWorkflowClient {
   }) async {
     // Normalize: remove a possible leading slash to match '/{PATH}' template
     final normalized = href.startsWith('/') ? href.substring(1) : href;
-    // Workaround: some servers return 'workflows' segment; expected is 'workflow'
-    // Replace only the segment occurrence, preserve query string as-is
-    // todo: remove after backend fix.
-    final adjusted = normalized.replaceFirst('/workflows/', '/workflow/');
-
-    if (adjusted != normalized) {
-      logger.logConsole('[VNextWorkflowClient] Adjusted href segment workflows->workflow: $normalized -> $adjusted');
-    }
-    logger.logConsole('[VNextWorkflowClient] Fetch by path: $adjusted');
-
+    
     return networkManager.call(
       NeoHttpCall(
         endpoint: 'vnext-fetch-by-path',
         pathParameters: {
-          'PATH': adjusted,
+          'PATH': normalized,
         },
         headerParameters: headers ?? {},
         useHttps: false,

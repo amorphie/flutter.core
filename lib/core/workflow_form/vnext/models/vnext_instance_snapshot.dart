@@ -72,10 +72,9 @@ class VNextInstanceSnapshot extends Equatable {
   });
 
   factory VNextInstanceSnapshot.fromInstanceJson(Map<String, dynamic> json) {
-    final extensions = (json['extensions'] as Map<String, dynamic>?) ?? const {};
-    final view = (extensions['view'] as Map<String, dynamic>?) ?? const {};
-    final dataFn = (extensions['data'] as Map<String, dynamic>?) ?? const {};
-    final transitions = (extensions['transitions'] as List?)
+    final view = (json['view'] as Map<String, dynamic>?) ?? const {};
+    final dataFn = (json['data'] as Map<String, dynamic>?) ?? const {};
+    final transitions = (json['transitions'] as List?)
             ?.whereType<Map>()
             .map((e) => {
                   'name': e['name']?.toString() ?? '',
@@ -83,6 +82,7 @@ class VNextInstanceSnapshot extends Equatable {
                 })
             .toList()
         ?? const <Map<String, String>>[];
+    final extensions = (json['extensions'] as Map<String, dynamic>?) ?? const {};
     final activeCorrelations = (extensions['activeCorrelations'] as List?)
             ?.whereType<String>()
             .toList()
