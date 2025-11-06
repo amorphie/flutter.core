@@ -27,14 +27,19 @@ abstract class NeoNetworkHeaderKey {
   static const deviceModel = "X-Device-Model";
   static const devicePlatform = "X-Device-Platform";
   static const deviceVersion = "X-Device-Version";
+  static const encrypt = "x-encrpt";
+  static const fingerprint = "X-Fingerprint";
   static const googleServiceAvailable = "X-Google-Service-Available";
   static const ifNoneMatch = "If-None-Match";
   static const installationId = "X-Installation-Id";
   static const instanceId = "X-Instance-Id";
   static const jwsSignature = "X-JWS-Signature";
+  static const location = "X-Location";
+  static const locationPermission = "X-Location-P";
   static const requestId = "X-Request-Id";
   static const tokenId = "X-Token-Id";
   static const user = "User";
   static const userAgent = "User-Agent";
+  static const userId = "X-User-Id";
   static const workflowName = "X-Workflow-Name";
 }

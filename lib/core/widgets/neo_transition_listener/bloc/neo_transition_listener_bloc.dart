@@ -50,6 +50,7 @@ class NeoTransitionListenerBloc extends Bloc<NeoTransitionListenerEvent, NeoTran
     with WidgetsBindingObserver {
   final NeoCoreSecureStorage neoCoreSecureStorage;
   late final Function(SignalrTransitionData navigationData) onTransitionEvent;
+  late final Function(NeoSignalRTransition data) onSilentEvent;
   late final Function(EkycEventData ekycData) onEkycEvent;
   late final Function(NeoError error, {required bool displayAsPopup})? onTransitionError;
   late final Future Function({required bool isTwoFactorAuthenticated})? onLoggedInSuccessfully;
@@ -89,6 +90,7 @@ class NeoTransitionListenerBloc extends Bloc<NeoTransitionListenerEvent, NeoTran
 
   Future<void> _onInit(NeoTransitionListenerEventInit event, emit) async {
     onTransitionEvent = event.onTransitionEvent;
+    onSilentEvent = event.onSilentEvent;
     onEkycEvent = event.onEkycEvent;
     onLoggedInSuccessfully = event.onLoggedInSuccessfully;
     onTransitionError = event.onTransitionError;
@@ -137,6 +139,7 @@ class NeoTransitionListenerBloc extends Bloc<NeoTransitionListenerEvent, NeoTran
               GetIt.I.get<NeoWidgetEventBus>().addEvent(
                     NeoWidgetEvent(eventId: NeoPageBloc.dataEventKey, data: event.transition),
                   );
+              onSilentEvent(event.transition);
             } else {
               await _processIncomingTransition(transition: event.transition);
             }
@@ -190,6 +193,7 @@ class NeoTransitionListenerBloc extends Bloc<NeoTransitionListenerEvent, NeoTran
           transitionId: (responseData["transition"] as List?)?.firstOrNull?["transition"] ?? "",
           queryParameters: event.queryParameters,
           useSubNavigator: event.useSubNavigator,
+          useRootNavigator: event.useRootNavigator,
           isInitialPage: true,
         ),
       );
@@ -289,6 +293,7 @@ class NeoTransitionListenerBloc extends Bloc<NeoTransitionListenerEvent, NeoTran
         statusCode: transition.statusCode,
         statusMessage: transition.statusMessage,
         isInitialPage: transition.workflowStateType == NeoSignalRTransitionStateType.start,
+        useRootNavigator: transition.initialData["useRootNavigator"] == true,
       );
       onTransitionEvent(transitionData);
     }

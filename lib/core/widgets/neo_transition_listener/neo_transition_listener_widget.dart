@@ -13,6 +13,7 @@ class NeoTransitionListenerWidget extends StatelessWidget {
   final String signalRServerUrl;
   final String signalRMethodName;
   final Function(SignalrTransitionData navigationData) onTransitionEvent;
+  final Function(NeoSignalRTransition data) onSilentEvent;
   final Function(EkycEventData eventData) onEkycEvent;
   final Future Function({required bool isTwoFactorAuthenticated})? onLoggedInSuccessfully;
   final Function(NeoError error, {required bool displayAsPopup})? onError;
@@ -27,6 +28,7 @@ class NeoTransitionListenerWidget extends StatelessWidget {
     required this.signalRServerUrl,
     required this.signalRMethodName,
     required this.onTransitionEvent,
+    required this.onSilentEvent,
     required this.onEkycEvent,
     required this.onLoadingStatusChanged,
     required this.signalrLongPollingPeriod,
@@ -47,6 +49,7 @@ class NeoTransitionListenerWidget extends StatelessWidget {
             signalRServerUrl: signalRServerUrl,
             signalRMethodName: signalRMethodName,
             onTransitionEvent: onTransitionEvent,
+            onSilentEvent: onSilentEvent,
             onEkycEvent: onEkycEvent,
             onLoggedInSuccessfully: onLoggedInSuccessfully,
             onTransitionError: onError,

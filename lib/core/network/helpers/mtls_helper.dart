@@ -1,4 +1,3 @@
-// ignore_for_file: public_member_api_docs, sort_constructors_first
 import 'dart:convert';
 import 'dart:typed_data';
 
@@ -8,12 +7,9 @@ import 'package:neo_core/core/analytics/neo_logger.dart';
 import 'package:neo_core/core/util/extensions/get_it_extensions.dart';
 
 class MtlsHelper {
-  MtlsHelper();
-
   NeoLogger? get _neoLogger => GetIt.I.getIfReady<NeoLogger>();
 
-  late final _secureEnclavePlugin = SecureEnclave()
-    ..log = (logData) async => _neoLogger?.logCustom(json.encode(logData.toJson()));
+  late final _secureEnclavePlugin = SecureEnclave()..log = (logData) async => _neoLogger?.logCustom(logData.toString());
 
   Future<String?> sign({required String clientKeyTag, required Map? requestBody}) async {
     if (requestBody == null || requestBody.isEmpty) {
@@ -53,5 +49,14 @@ class MtlsHelper {
   Future<String?> getServerPrivateKey({required String clientKeyTag}) async {
     final privateKeyResult = await _secureEnclavePlugin.getServerKey(tag: clientKeyTag);
     return privateKeyResult.value;
+  }
+
+  Future<String?> decrypt({required String clientKeyTag, required Uint8List message}) async {
+    final result = await _secureEnclavePlugin.decrypt(message: message, tag: clientKeyTag);
+    return result.value;
+  }
+
+  Future<ResultModel<String?>> decryptWithAES({required Uint8List encryptedData, required Uint8List aesKey}) {
+    return _secureEnclavePlugin.decryptWithAES(encryptedData: encryptedData, aesKey: aesKey);
   }
 }
