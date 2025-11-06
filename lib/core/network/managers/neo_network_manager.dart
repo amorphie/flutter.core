@@ -15,12 +15,12 @@ import 'dart:convert';
 import 'dart:math';
 
 import 'package:crypto/crypto.dart';
+import 'package:dart_jsonwebtoken/dart_jsonwebtoken.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
 import 'package:get_it/get_it.dart';
 import 'package:http/http.dart' as http;
 import 'package:http/io_client.dart';
-import 'package:dart_jsonwebtoken/dart_jsonwebtoken.dart';
 import 'package:json_annotation/json_annotation.dart';
 import 'package:logger/logger.dart';
 import 'package:mutex/mutex.dart';

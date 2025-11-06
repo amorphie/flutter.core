@@ -13,6 +13,7 @@ import 'package:neo_core/core/widgets/neo_transition_listener/bloc/neo_transitio
 abstract class _Constants {
   static const loginCertificateState = "amorphie-mobile-login-certificate-flow";
   static const loginSendCertificateTransitionName = "amorphie-mobile-login-send-certificate";
+  static const loginSendCertificateMissingDataTransitionName = "amorphie-mobile-login-certificate-missing-data";
 }
 
 class ProcessLoginCertificateSilentEventUseCase {
@@ -22,13 +23,31 @@ class ProcessLoginCertificateSilentEventUseCase {
     if (event.transition.state != _Constants.loginCertificateState) {
       return;
     }
-    final userReference = event.transition.additionalData!["Reference"] as String;
-    final deviceId = await secureStorage.read(NeoCoreParameterKey.secureStorageDeviceId);
-    if (deviceId == null) {
+    final userReference = event.transition.additionalData!["Reference"] as String?;
+
+    if (userReference == null) {
+      _triggerMissingDataTransition(
+        bloc,
+        "[ProcessLoginCertificateSilentEventUseCase][_triggerMissingDataTransition] User reference is null.",
+      );
       return;
     }
+
+    final deviceId = await secureStorage.read(NeoCoreParameterKey.secureStorageDeviceId);
+    if (deviceId == null) {
+      _triggerMissingDataTransition(
+        bloc,
+        "[ProcessLoginCertificateSilentEventUseCase][_triggerMissingDataTransition] Device id is null.",
+      );
+      return;
+    }
+
     final publicKey = await executeIsolated<String?>(_process, IsolateData([userReference, deviceId]));
     if (publicKey == null) {
+      _triggerMissingDataTransition(
+        bloc,
+        "[ProcessLoginCertificateSilentEventUseCase][_triggerMissingDataTransition] Public key is null. $deviceId",
+      );
       return;
     }
 
@@ -40,6 +59,19 @@ class ProcessLoginCertificateSilentEventUseCase {
             "publicKey": publicKey,
             "commonName": "$userReference.burgan.com.tr",
           },
+        },
+      ),
+    );
+  }
+
+  void _triggerMissingDataTransition(NeoTransitionListenerBloc bloc, String errorMessage) {
+    _neoLogger.logError(errorMessage);
+
+    bloc.add(
+      NeoTransitionListenerEventPostTransition(
+        transitionName: _Constants.loginSendCertificateMissingDataTransitionName,
+        body: {
+          "CertificateErrorMessage": errorMessage,
         },
       ),
     );
