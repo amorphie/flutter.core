@@ -44,11 +44,11 @@ class VNextInstanceSnapshot extends Equatable {
   final String flowVersion;
   final String etag;
   final List<String> tags;
-  final String state; // extensions.currentState
-  final String statusCode; // extensions.status (A/B/C/E/...)
-  final String? viewHref; // extensions.view.href
-  final bool loadData; // extensions.view.loadData
-  final String? dataHref; // extensions.data.href
+  final String state; // state (top-level) or extensions.currentState (legacy)
+  final String statusCode; // status (top-level) or extensions.status (legacy) (A/B/C/E/...)
+  final String? viewHref; // view.href (top-level)
+  final bool loadData; // view.loadData (top-level)
+  final String? dataHref; // data.href (top-level)
   final List<Map<String, String>> transitions; // [{name, href}]
   final List<String> activeCorrelations;
   final DateTime timestamp;
@@ -83,14 +83,26 @@ class VNextInstanceSnapshot extends Equatable {
             .toList()
         ?? const <Map<String, String>>[];
     final extensions = (json['extensions'] as Map<String, dynamic>?) ?? const {};
-    final activeCorrelations = (extensions['activeCorrelations'] as List?)
+    
+    // Support new structure (top-level) with fallback to extensions for backward compatibility
+    final activeCorrelations = (json['activeCorrelations'] as List?)
             ?.whereType<String>()
-            .toList()
-        ?? const <String>[];
+            .toList() ??
+        (extensions['activeCorrelations'] as List?)
+            ?.whereType<String>()
+            .toList() ??
+        const <String>[];
+    
     final tags = (json['tags'] as List?)
             ?.whereType<String>()
             .toList()
         ?? const <String>[];
+
+    // Support new structure: state and status at top level, with fallback to extensions
+    final state = (json['state'] as String?) ?? 
+                  (extensions['currentState'] as String?) ?? '';
+    final statusCode = (json['status'] as String?) ?? 
+                       (extensions['status'] as String?) ?? '';
 
     return VNextInstanceSnapshot(
       instanceId: (json['id'] as String?) ?? (json['instanceId'] as String?) ?? '',
@@ -98,10 +110,10 @@ class VNextInstanceSnapshot extends Equatable {
       workflowName: (json['flow'] as String?) ?? '', // FIXED: Extract from 'flow' field
       domain: (json['domain'] as String?) ?? '',
       flowVersion: (json['flowVersion'] as String?) ?? '',
-      etag: (json['etag'] as String?) ?? '',
+      etag: (json['etag'] as String?) ?? (json['eTag'] as String?) ?? '',
       tags: tags,
-      state: (extensions['currentState'] as String?) ?? '',
-      statusCode: (extensions['status'] as String?) ?? '',
+      state: state,
+      statusCode: statusCode,
       viewHref: view['href']?.toString(),
       loadData: (view['loadData'] as bool?) ?? false,
       dataHref: dataFn['href']?.toString(),

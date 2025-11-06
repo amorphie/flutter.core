@@ -41,12 +41,12 @@ class VNextDataService {
         final dataResp = await _client.fetchByPath(href: dataHref, headers: headers);
         if (dataResp.isSuccess) {
           dataPayload = dataResp.asSuccess.data;
-          _logger.logConsole('[VNextDataService] Data fetch success');
+          _logger.logConsole('[VNextDataService] Data fetch successful, keys: ${dataPayload.keys.join(", ")}');
         } else {
           _logger.logError('[VNextDataService] Data fetch error: ${dataResp.asError.error.error.description}');
         }
       } else {
-        _logger.logConsole('[VNextDataService] skipping data fetch (loadData=$loadData, dataHref=$dataHref)');
+        _logger.logConsole('[VNextDataService] Skipping data fetch (loadData=$loadData, dataHref=$dataHref)');
       }
 
       if (viewHref == null || viewHref.isEmpty) {
@@ -65,7 +65,7 @@ class VNextDataService {
         return viewResp;
       }
 
-      _logger.logConsole('[VNextDataService] view fetch success');
+      _logger.logConsole('[VNextDataService] View fetch successful');
 
       final normalized = _normalizeViewResponse(viewResp.asSuccess.data, dataPayload, snapshot);
       if (normalized == null) {
@@ -94,30 +94,33 @@ class VNextDataService {
     _logger.logConsole('[VNextDataService] normalize view response');
     
     try {
-      // Strict schema: { view: { content: { pageName, componentJson }}, type: Json, target: State }
       if (rawView is! Map<String, dynamic>) {
         _logger.logError('[VNextDataService] View response is not a Map for state=${snapshot.state}');
         return null;
       }
       
-      final view = rawView['view'];
-      
-      if (view is! Map<String, dynamic>) {
-        _logger.logError('[VNextDataService] Missing view in response for state=${snapshot.state}');
+      // New structure: { key: "...", content: "{...}", type: "Json" }
+      // where content is a JSON string
+      final content = rawView['content'];
+      if (content is! String) {
+        _logger.logError('[VNextDataService] Content is not a string for state=${snapshot.state}, type: ${content.runtimeType}');
         return null;
       }
       
-      final content = view['content'];
-      
-      if (content is! Map<String, dynamic>) {
-        _logger.logError('[VNextDataService] Missing content in view for state=${snapshot.state}');
+      // Parse the JSON string
+      Map<String, dynamic> contentMap;
+      try {
+        contentMap = jsonDecode(content) as Map<String, dynamic>;
+        _logger.logConsole('[VNextDataService] Parsed content JSON string for state=${snapshot.state}');
+      } catch (e) {
+        _logger.logError('[VNextDataService] Failed to parse content JSON string for state=${snapshot.state}: $e');
         return null;
       }
       
-      final pageName = content['pageName'];
-      final componentJson = content['componentJson'];
+      final pageName = contentMap['pageName'] as String?;
+      final componentJson = contentMap['componentJson'] as Map<String, dynamic>?;
       
-      if (pageName is! String || componentJson is! Map<String, dynamic>) {
+      if (pageName == null || componentJson == null) {
         _logger.logError('[VNextDataService] Invalid view schema: pageName or componentJson missing for state=${snapshot.state}');
         return null;
       }
@@ -125,19 +128,21 @@ class VNextDataService {
       // Optionally parse data model if present
       VNextDataModel? dataModel;
       if (rawData != null) {
+        _logger.logConsole('[VNextDataService] Parsing data model');
         dataModel = _parseDataModel(rawData, snapshot);
         if (dataModel != null) {
-          _logger.logConsole('[VNextDataService] Parsed data model with eTag=${dataModel.eTag} for state=${snapshot.state}');
+          _logger.logConsole('[VNextDataService] Data model parsed successfully, eTag=${dataModel.eTag}, attributes: ${dataModel.attributes.keys.join(", ")}');
         } else {
           _logger.logError('[VNextDataService] Data model parsing failed');
         }
-      } else {
-        _logger.logConsole('[VNextDataService] No raw data to parse');
       }
 
-      // Return normalized renderer payload
-      final result = { 'body': componentJson };
-      _logger.logConsole('[VNextDataService] normalize success');
+      // Return normalized renderer payload with data attributes for formData population
+      final result = <String, dynamic>{
+        'body': componentJson,
+        if (dataModel != null) 'dataAttributes': dataModel.attributes,
+      };
+      _logger.logConsole('[VNextDataService] View normalized successfully, result keys: ${result.keys.join(", ")}');
       return result;
     } catch (e) {
       _logger.logError('[VNextDataService] View normalization error: $e');
@@ -170,18 +175,22 @@ class VNextDataService {
     try {
       final data = raw['data'];
       if (data is! Map<String, dynamic>) {
-        _logger.logError('[VNextDataService] Missing data root for state=${snapshot.state}');
+        _logger.logError('[VNextDataService] Missing or invalid data root for state=${snapshot.state}, type: ${data.runtimeType}');
         return null;
       }
+      
       final attrs = data['attributes'];
-      final eTag = data['etag'];
+      final eTag = data['etag'] ?? data['eTag'];
+      
       if (attrs is! Map<String, dynamic> || eTag is! String) {
-        _logger.logError('[VNextDataService] Invalid data schema (attributes/etag) for state=${snapshot.state}');
+        _logger.logError('[VNextDataService] Invalid data schema for state=${snapshot.state}, attrs type: ${attrs.runtimeType}, eTag type: ${eTag.runtimeType}');
         return null;
       }
+      
       return VNextDataModel(attributes: attrs, eTag: eTag);
-    } catch (e) {
+    } catch (e, stackTrace) {
       _logger.logError('[VNextDataService] Data parsing error: $e');
+      _logger.logError('[VNextDataService] Stack trace: $stackTrace');
       return null;
     }
   }
