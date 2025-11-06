@@ -31,6 +31,7 @@ List<HttpService> getVNextHttpServices(String hostKey) {
       method: HttpMethod.post,
       host: hostKey,
       name: '/{$_pDomain}/workflows/{$_pWorkflowName}/instances',
+      useProblemDetailsFormat: true,
     ),
 
     // PATCH /{DOMAIN}/workflows/{WORKFLOW_NAME}/instances/{INSTANCE_ID}/transitions/{TRANSITION_NAME}
@@ -39,6 +40,7 @@ List<HttpService> getVNextHttpServices(String hostKey) {
       method: HttpMethod.patch,
       host: hostKey,
       name: '/{$_pDomain}/workflows/{$_pWorkflowName}/instances/{$_pInstanceId}/transitions/{$_pTransitionName}',
+      useProblemDetailsFormat: true,
     ),
 
     // GET /{DOMAIN}/workflows/{WORKFLOW_NAME}/instances/{INSTANCE_ID}/transitions
@@ -47,6 +49,7 @@ List<HttpService> getVNextHttpServices(String hostKey) {
       method: HttpMethod.get,
       host: hostKey,
       name: '/{$_pDomain}/workflows/{$_pWorkflowName}/instances/{$_pInstanceId}/transitions',
+      useProblemDetailsFormat: true,
     ),
 
     // GET /{DOMAIN}/workflows/{WORKFLOW_NAME}/instances/{INSTANCE_ID}
@@ -55,6 +58,7 @@ List<HttpService> getVNextHttpServices(String hostKey) {
       method: HttpMethod.get,
       host: hostKey,
       name: '/{$_pDomain}/workflows/{$_pWorkflowName}/instances/{$_pInstanceId}',
+      useProblemDetailsFormat: true,
     ),
 
     // GET /{DOMAIN}/workflows/{WORKFLOW_NAME}/instances
@@ -63,6 +67,7 @@ List<HttpService> getVNextHttpServices(String hostKey) {
       method: HttpMethod.get,
       host: hostKey,
       name: '/{$_pDomain}/workflows/{$_pWorkflowName}/instances',
+      useProblemDetailsFormat: true,
     ),
 
     // GET /{DOMAIN}/workflows/{WORKFLOW_NAME}/instances/{INSTANCE_ID}/history
@@ -71,6 +76,7 @@ List<HttpService> getVNextHttpServices(String hostKey) {
       method: HttpMethod.get,
       host: hostKey,
       name: '/{$_pDomain}/workflows/{$_pWorkflowName}/instances/{$_pInstanceId}/history',
+      useProblemDetailsFormat: true,
     ),
 
     // GET /system/health
@@ -79,6 +85,7 @@ List<HttpService> getVNextHttpServices(String hostKey) {
       method: HttpMethod.get,
       host: hostKey,
       name: '/system/health',
+      useProblemDetailsFormat: true,
     ),
 
     // GET /system/metrics
@@ -87,6 +94,7 @@ List<HttpService> getVNextHttpServices(String hostKey) {
       method: HttpMethod.get,
       host: hostKey,
       name: '/system/metrics',
+      useProblemDetailsFormat: true,
     ),
 
     // GET generic by-path fetcher to support href-based view/data loading
@@ -96,6 +104,7 @@ List<HttpService> getVNextHttpServices(String hostKey) {
       method: HttpMethod.get,
       host: hostKey,
       name: '/{PATH}',
+      useProblemDetailsFormat: true,
     ),
   ];
 }

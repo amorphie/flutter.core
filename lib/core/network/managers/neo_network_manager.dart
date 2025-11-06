@@ -167,8 +167,6 @@ class NeoNetworkManager {
   }
 
   Future<NeoResponse> call(NeoHttpCall neoCall) async {
-    
-
     if (neoCall.endpoint != _Constants.endpointGetToken && !neoCall.endpoint.startsWith('vnext-')) {
       
       await _tokenLock.protect(() async {
@@ -199,7 +197,7 @@ class NeoNetworkManager {
         }
       });
     } else if (neoCall.endpoint.startsWith('vnext-')) {
-      
+      // Skip token check for vNext endpoints
     }
 
     if (_isMtlsEnabled) {
@@ -258,13 +256,32 @@ class NeoNetworkManager {
 
   Future<NeoResponse> _requestGet(String fullPath, NeoHttpCall neoCall) async {
     final fullPathWithQueries = _getFullPathWithQueries(fullPath, neoCall.queryProviders);
-    final response = await httpClient!
-        .get(
-          Uri.parse(fullPathWithQueries),
-          headers: (await _getDefaultHeaders(neoCall))..addAll(neoCall.headerParameters),
-        )
-        .timeout(timeoutDuration);
-    return _createResponse(response, neoCall);
+    
+    try {
+      if (httpClient == null) {
+        return NeoResponse.error(const NeoError(), responseHeaders: {});
+      }
+      
+      final defaultHeaders = await _getDefaultHeaders(neoCall);
+      final finalHeaders = defaultHeaders..addAll(neoCall.headerParameters);
+      
+      final response = await httpClient!
+          .get(
+            Uri.parse(fullPathWithQueries),
+            headers: finalHeaders,
+          )
+          .timeout(timeoutDuration);
+      
+      return _createResponse(response, neoCall);
+    } catch (e, stackTrace) {
+      _neoLogger?.logError('[NeoNetworkManager] Exception in _requestGet: $e');
+      _neoLogger?.logError('[NeoNetworkManager] Stack trace: $stackTrace');
+      
+      if (e is TimeoutException) {
+        return NeoResponse.error(const NeoError(responseCode: HttpStatus.requestTimeout), responseHeaders: {});
+      }
+      rethrow;
+    }
   }
 
   Future<NeoResponse> _requestPost(String fullPath, NeoHttpCall neoCall) async {
@@ -315,14 +332,35 @@ class NeoNetworkManager {
 
   Future<NeoResponse> _requestPatch(String fullPath, NeoHttpCall neoCall) async {
     final fullPathWithQueries = _getFullPathWithQueries(fullPath, neoCall.queryProviders);
-    final response = await httpClient!
-        .patch(
-          Uri.parse(fullPathWithQueries),
-          headers: (await _getDefaultPostHeaders(neoCall))..addAll(neoCall.headerParameters),
-          body: json.encode(neoCall.body),
-        )
-        .timeout(timeoutDuration);
-    return _createResponse(response, neoCall);
+    
+    try {
+      if (httpClient == null) {
+        return NeoResponse.error(const NeoError(), responseHeaders: {});
+      }
+      
+      final defaultHeaders = await _getDefaultPostHeaders(neoCall);
+      final finalHeaders = defaultHeaders..addAll(neoCall.headerParameters);
+      
+      final bodyJson = json.encode(neoCall.body);
+      
+      final response = await httpClient!
+          .patch(
+            Uri.parse(fullPathWithQueries),
+            headers: finalHeaders,
+            body: bodyJson,
+          )
+          .timeout(timeoutDuration);
+      
+      return _createResponse(response, neoCall);
+    } catch (e, stackTrace) {
+      _neoLogger?.logError('[NeoNetworkManager] Exception in _requestPatch: $e');
+      _neoLogger?.logError('[NeoNetworkManager] Stack trace: $stackTrace');
+      
+      if (e is TimeoutException) {
+        return NeoResponse.error(const NeoError(responseCode: HttpStatus.requestTimeout), responseHeaders: {});
+      }
+      rethrow;
+    }
   }
 
   String _getFullPathWithQueries(String fullPath, List<HttpQueryProvider> queryProviders) {
@@ -360,7 +398,6 @@ class NeoNetworkManager {
   }
 
   Future<NeoResponse> _createResponse(http.Response response, NeoHttpCall call) async {
-    
     
     Map<String, dynamic>? responseJSON;
     try {
@@ -405,7 +442,22 @@ class NeoNetworkManager {
         if (!hasErrorCode) {
           responseJSON.addAll({'errorCode': response.statusCode});
         }
-        return _handleErrorResponse(NeoError.fromJson(responseJSON), call, response);
+        
+        // Handle RFC 7807 Problem Details format (used by vNext/Aether): 
+        // { "detail": "...", "title": "...", "status": 500 }
+        // Map to NeoError format based on endpoint configuration
+        if (httpClientConfig.usesProblemDetailsFormat(call.endpoint) && 
+            !responseJSON.containsKey("error")) {
+          final detail = responseJSON["detail"] as String?;
+          final title = responseJSON["title"] as String?;
+          responseJSON["error"] = {
+            "title": title ?? "general_noResponse_title",
+            "description": detail ?? "general_noResponse_text",
+          };
+        }
+        
+        final error = NeoError.fromJson(responseJSON);
+        return _handleErrorResponse(error, call, response);
       } on MissingRequiredKeysException {
         final error = NeoError(responseCode: response.statusCode);
         return _handleErrorResponse(error, call, response);

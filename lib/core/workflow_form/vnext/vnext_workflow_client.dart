@@ -12,6 +12,7 @@
 
 import 'package:neo_core/core/analytics/neo_logger.dart';
 import 'package:neo_core/core/network/managers/neo_network_manager.dart';
+import 'package:neo_core/core/network/models/neo_error.dart';
 import 'package:neo_core/core/network/models/neo_http_call.dart';
 import 'package:neo_core/core/network/models/neo_response.dart';
 import 'package:neo_core/core/network/query_providers/http_query_provider.dart';
