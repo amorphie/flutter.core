@@ -40,6 +40,9 @@ class _VNextAccountOpeningTestPageState extends State<VNextAccountOpeningTestPag
   // Config UI
   final TextEditingController _baseUrlController = TextEditingController(text: 'http://localhost:4201');
   final TextEditingController _domainController = TextEditingController(text: 'core');
+  // Store domain and workflowName separately (backend doesn't return them in snapshot)
+  String _domain = 'core';
+  String _workflowName = 'account-opening';
   // Loaded/normalized data
   Map<String, dynamic>? _componentJson;
   Map<String, dynamic>? _viewDataRaw;
@@ -290,10 +293,12 @@ class _VNextAccountOpeningTestPageState extends State<VNextAccountOpeningTestPag
       final dataService = _dataService!;
 
       // 1) init workflow
+      _domain = 'core';
+      _workflowName = 'account-opening';
       logger.logConsole('[VNextSample] Calling initWorkflow...');
       final initResp = await client.initWorkflow(
-        domain: 'core',
-        workflowName: 'account-opening',
+        domain: _domain,
+        workflowName: _workflowName,
         key: DateTime.now().millisecondsSinceEpoch.toString(),
         attributes: const {'channel': 'mobile'},
         version: '1.0.0',
@@ -329,8 +334,8 @@ class _VNextAccountOpeningTestPageState extends State<VNextAccountOpeningTestPag
       // 2) fetch instance to get extensions for hrefs
       logger.logConsole('[VNextSample] Fetching workflow instance...');
       final instResp = await client.getWorkflowInstance(
-        domain: 'core',
-        workflowName: 'account-opening',
+        domain: _domain,
+        workflowName: _workflowName,
         instanceId: instanceId,
       );
       if (instResp.isSuccess) {
@@ -347,7 +352,15 @@ class _VNextAccountOpeningTestPageState extends State<VNextAccountOpeningTestPag
       }
 
       // 3) Create snapshot and load view via data service
-      final snapshot = VNextInstanceSnapshot.fromInstanceJson(instResp.asSuccess.data);
+      // Inject domain and workflowName into response data before parsing (backend doesn't return them)
+      Map<String, dynamic> instanceData = instResp.asSuccess.data;
+      if (_domain.isNotEmpty) {
+        instanceData = {...instanceData, 'domain': _domain};
+      }
+      if (_workflowName.isNotEmpty) {
+        instanceData = {...instanceData, 'flow': _workflowName};
+      }
+      final snapshot = VNextInstanceSnapshot.fromInstanceJson(instanceData);
       _workflowInstanceJson = instResp.asSuccess.data;
       _snapshot = snapshot;
       logger.logConsole('[VNextSample] Snapshot: instanceId=${snapshot.instanceId}, state=${snapshot.state}, status=${snapshot.status}, viewHref=${snapshot.viewHref}, dataHref=${snapshot.dataHref}, loadData=${snapshot.loadData}');
@@ -884,10 +897,11 @@ class _VNextAccountOpeningTestPageState extends State<VNextAccountOpeningTestPag
     );
 
     // Start polling with extended config for testing AFTER listeners are attached
+    // Use stored domain/workflowName instead of snapshot (backend doesn't return them)
     await _pollingManager!.startPolling(
       instanceId,
-      domain: _snapshot!.domain,
-      workflowName: _snapshot!.workflowName,
+      domain: _domain,
+      workflowName: _workflowName,
       config: VNextPollingConfig(
         interval: const Duration(seconds: 2), // Poll every 2 seconds
         duration: const Duration(minutes: 5), // Poll for up to 5 minutes
@@ -989,9 +1003,10 @@ class _VNextAccountOpeningTestPageState extends State<VNextAccountOpeningTestPag
 
 
       // Execute the transition with properly structured payload
+      // Use stored domain/workflowName instead of snapshot (backend doesn't return them)
       final response = await _client!.postTransition(
-        domain: _snapshot!.domain,
-        workflowName: _snapshot!.workflowName,
+        domain: _domain,
+        workflowName: _workflowName,
         instanceId: _currentInstanceId!,
         transitionKey: transitionName,
         data: payload,
@@ -1032,15 +1047,24 @@ class _VNextAccountOpeningTestPageState extends State<VNextAccountOpeningTestPag
     try {
       _logger?.logConsole('[VNextSample] _refreshInstance(instanceId=$_currentInstanceId)');
       
+      // Use stored domain/workflowName instead of snapshot (backend doesn't return them)
       final instResp = await _client!.getWorkflowInstance(
-        domain: _snapshot!.domain,
-        workflowName: _snapshot!.workflowName,
+        domain: _domain,
+        workflowName: _workflowName,
         instanceId: _currentInstanceId!,
       );
       
       if (instResp.isSuccess) {
         _workflowInstanceJson = instResp.asSuccess.data;
-        _snapshot = VNextInstanceSnapshot.fromInstanceJson(instResp.asSuccess.data);
+        // Inject domain and workflowName into response data before parsing (backend doesn't return them)
+        Map<String, dynamic> instanceData = instResp.asSuccess.data;
+        if (_domain.isNotEmpty) {
+          instanceData = {...instanceData, 'domain': _domain};
+        }
+        if (_workflowName.isNotEmpty) {
+          instanceData = {...instanceData, 'flow': _workflowName};
+        }
+        _snapshot = VNextInstanceSnapshot.fromInstanceJson(instanceData);
         _logger?.logConsole('[VNextSample] _refreshInstance SUCCESS: state=${_snapshot!.state} status=${_snapshot!.status.code}');
         
       } else {
