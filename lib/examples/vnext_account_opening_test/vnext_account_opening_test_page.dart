@@ -873,6 +873,11 @@ class _VNextAccountOpeningTestPageState extends State<VNextAccountOpeningTestPag
             // (in case the last message was missed due to timing)
             _logger?.logConsole('[VNextSample] onEvent.stopped -> _refreshInstance');
             await _refreshInstance();
+            // After refreshing instance, reload view/data if snapshot is renderable
+            if (_snapshot != null && _snapshot!.isRenderable) {
+              _logger?.logConsole('[VNextSample] onEvent.stopped -> reloadForSnapshot(renderable=true)');
+              await _reloadForSnapshot(_snapshot!);
+            }
             break;
           case VNextPollingEventType.error:
             setState(() {
@@ -1020,6 +1025,13 @@ class _VNextAccountOpeningTestPageState extends State<VNextAccountOpeningTestPag
         // Handle status change after transition
         if (_snapshot != null) {
           await _handleStatusChange(_snapshot!.status.code);
+          
+          // After handling status change, reload view/data if snapshot is renderable
+          // (This handles the case where long polling stops immediately after transition)
+          if (_snapshot!.isRenderable) {
+            _logger?.logConsole('[VNextSample] _executeTransition -> reloadForSnapshot(renderable=true)');
+            await _reloadForSnapshot(_snapshot!);
+          }
         }
         
         setState(() {
