@@ -10,6 +10,7 @@ import 'package:neo_core/core/analytics/neo_logger.dart';
 import 'package:neo_core/core/network/models/neo_error.dart';
 import 'package:neo_core/core/network/models/neo_response.dart';
 import 'package:neo_core/core/workflow_form/vnext/models/vnext_instance_snapshot.dart';
+import 'package:neo_core/core/workflow_form/vnext/models/vnext_view_display_mode.dart';
 import 'package:neo_core/core/workflow_form/vnext/vnext_workflow_client.dart';
 
 class VNextDataService {
@@ -158,9 +159,15 @@ class VNextDataService {
         }
       }
 
+      // Extract display mode from view response (at top level, not in content)
+      final displayModeString = rawView['display'] as String?;
+      final displayMode = VNextViewDisplayMode.fromString(displayModeString);
+      _logger.logConsole('[VNextDataService] Display mode: ${displayMode.value} (from: $displayModeString)');
+
       // Return normalized renderer payload with data attributes for formData population
       final result = <String, dynamic>{
         'body': componentJson,
+        'display': displayMode.value,
         if (dataModel != null) 'dataAttributes': dataModel.attributes,
       };
       _logger.logConsole('[VNextDataService] View normalized successfully, result keys: ${result.keys.join(", ")}');
@@ -228,7 +235,12 @@ class VNextDataService {
 class VNextViewModel {
   final Map<String, dynamic> componentJson;
   final String pageName;
-  const VNextViewModel({required this.componentJson, required this.pageName});
+  final VNextViewDisplayMode displayMode;
+  const VNextViewModel({
+    required this.componentJson,
+    required this.pageName,
+    this.displayMode = VNextViewDisplayMode.fullPage,
+  });
 }
 
 class VNextDataModel {
@@ -242,5 +254,12 @@ class VNextRenderBundle {
   final VNextDataModel? data;
   final String state;
   final String instanceId;
-  const VNextRenderBundle({required this.view, required this.data, required this.state, required this.instanceId});
+  final VNextViewDisplayMode displayMode;
+  const VNextRenderBundle({
+    required this.view,
+    required this.data,
+    required this.state,
+    required this.instanceId,
+    this.displayMode = VNextViewDisplayMode.fullPage,
+  });
 }
