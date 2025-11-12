@@ -36,40 +36,86 @@ class VNextWorkflowClient {
     String? version, // Workflow version (e.g., "1.0.0")
     Map<String, String>? headers,
   }) async {
-    logger.logConsole('[VNextWorkflowClient] Starting workflow: $workflowName in domain: $domain${version != null ? " version: $version" : ""}');
+    logger.logConsole('[VNextWorkflowClient] ===== initWorkflow CALLED =====');
+    logger.logConsole('[VNextWorkflowClient] Domain: "$domain" (isEmpty: ${domain.isEmpty})');
+    logger.logConsole('[VNextWorkflowClient] WorkflowName: "$workflowName" (isEmpty: ${workflowName.isEmpty})');
+    logger.logConsole('[VNextWorkflowClient] Key: "$key"');
+    logger.logConsole('[VNextWorkflowClient] Version: ${version ?? "null"}');
+    logger.logConsole('[VNextWorkflowClient] Attributes: $attributes');
+    logger.logConsole('[VNextWorkflowClient] Tags: $tags');
+    logger.logConsole('[VNextWorkflowClient] Headers: ${headers?.keys.join(", ") ?? "none"}');
     
+    // Validate inputs
+    if (domain.isEmpty || workflowName.isEmpty) {
+      logger.logError('[VNextWorkflowClient] ❌ ERROR: Domain or WorkflowName is empty!');
+      logger.logError('[VNextWorkflowClient] Domain: "$domain", WorkflowName: "$workflowName"');
+      return NeoResponse.error(
+        NeoError(
+          responseCode: 400,
+          error: NeoErrorDetail(
+            title: 'Invalid Request',
+            description: 'Domain or WorkflowName is empty. Domain: "$domain", WorkflowName: "$workflowName"',
+          ),
+        ),
+        responseHeaders: {},
+      );
+    }
+    
+    logger.logConsole('[VNextWorkflowClient] Building request body...');
     final requestBody = {
       'key': key,
       'attributes': attributes,
       'tags': tags,
     };
+    logger.logConsole('[VNextWorkflowClient] Request body: $requestBody');
 
+    logger.logConsole('[VNextWorkflowClient] Building query parameters...');
     final queryParams = <String, dynamic>{};
     if (version != null && version.isNotEmpty) {
       queryParams['version'] = version;
+      logger.logConsole('[VNextWorkflowClient] Added version to query params: $version');
     }
+    logger.logConsole('[VNextWorkflowClient] Query params: $queryParams');
 
-    final response = await networkManager.call(
-      NeoHttpCall(
-        endpoint: 'vnext-init-workflow',
-        pathParameters: {
-          'DOMAIN': domain,
-          'WORKFLOW_NAME': workflowName,
-        },
-        queryProviders: [HttpQueryProvider(queryParams)],
-        body: requestBody,
-        headerParameters: headers ?? {},
-        useHttps: false,
-      ),
+    logger.logConsole('[VNextWorkflowClient] Building NeoHttpCall...');
+    final httpCall = NeoHttpCall(
+      endpoint: 'vnext-init-workflow',
+      pathParameters: {
+        'DOMAIN': domain,
+        'WORKFLOW_NAME': workflowName,
+      },
+      queryProviders: queryParams.isNotEmpty ? [HttpQueryProvider(queryParams)] : [],
+      body: requestBody,
+      headerParameters: headers ?? {},
+      useHttps: false,
     );
+    logger.logConsole('[VNextWorkflowClient] NeoHttpCall created: endpoint=${httpCall.endpoint}, pathParams=${httpCall.pathParameters}');
 
-    if (response is NeoSuccessResponse) {
-      logger.logConsole('[VNextWorkflowClient] Init workflow successful, statusCode: ${response.statusCode}');
-    } else if (response is NeoErrorResponse) {
-      logger.logError('[VNextWorkflowClient] Init workflow failed, statusCode: ${response.statusCode}, error: ${response.error.error.description}');
+    logger.logConsole('[VNextWorkflowClient] Calling networkManager.call()...');
+    try {
+      final response = await networkManager.call(httpCall);
+      
+      logger.logConsole('[VNextWorkflowClient] Network call completed: isSuccess=${response.isSuccess}');
+      
+      if (response is NeoSuccessResponse) {
+        logger.logConsole('[VNextWorkflowClient] ✅ Init workflow successful, statusCode: ${response.statusCode}');
+        logger.logConsole('[VNextWorkflowClient] Response data keys: ${response.data.keys.join(", ")}');
+      } else if (response is NeoErrorResponse) {
+        logger.logError('[VNextWorkflowClient] ❌ Init workflow failed, statusCode: ${response.statusCode}');
+        logger.logError('[VNextWorkflowClient] Error title: ${response.error.error.title}');
+        logger.logError('[VNextWorkflowClient] Error description: ${response.error.error.description}');
+        logger.logError('[VNextWorkflowClient] Error body: ${response.error.body}');
+        logger.logError('[VNextWorkflowClient] Error responseCode: ${response.error.responseCode}');
+      }
+      
+      logger.logConsole('[VNextWorkflowClient] ===== initWorkflow COMPLETE =====');
+      return response;
+    } catch (e, stackTrace) {
+      logger.logError('[VNextWorkflowClient] ❌ Exception during initWorkflow: $e');
+      logger.logError('[VNextWorkflowClient] Exception type: ${e.runtimeType}');
+      logger.logError('[VNextWorkflowClient] Stack trace: $stackTrace');
+      rethrow;
     }
-
-    return response;
   }
 
   /// Make a transition on a workflow instance

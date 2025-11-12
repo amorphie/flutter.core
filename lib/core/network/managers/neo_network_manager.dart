@@ -167,7 +167,19 @@ class NeoNetworkManager {
   }
 
   Future<NeoResponse> call(NeoHttpCall neoCall) async {
-    if (neoCall.endpoint != _Constants.endpointGetToken && !neoCall.endpoint.startsWith('vnext-')) {
+    final isVNextEndpoint = neoCall.endpoint.startsWith('vnext-');
+    
+    if (isVNextEndpoint) {
+      _neoLogger?.logConsole('[NeoNetworkManager] ===== vNext endpoint call START =====');
+      _neoLogger?.logConsole('[NeoNetworkManager] Endpoint: ${neoCall.endpoint}');
+      _neoLogger?.logConsole('[NeoNetworkManager] Path parameters: ${neoCall.pathParameters}');
+      _neoLogger?.logConsole('[NeoNetworkManager] Query providers: ${neoCall.queryProviders?.length ?? 0}');
+      _neoLogger?.logConsole('[NeoNetworkManager] Body: ${neoCall.body}');
+      _neoLogger?.logConsole('[NeoNetworkManager] Headers: ${neoCall.headerParameters}');
+      _neoLogger?.logConsole('[NeoNetworkManager] Use HTTPS: ${neoCall.useHttps}');
+    }
+    
+    if (neoCall.endpoint != _Constants.endpointGetToken && !isVNextEndpoint) {
       
       await _tokenLock.protect(() async {
         final refreshToken = await _getRefreshToken();
@@ -196,15 +208,17 @@ class NeoNetworkManager {
           await _refreshTokenIfExpired();
         }
       });
-    } else if (neoCall.endpoint.startsWith('vnext-')) {
+    } else if (isVNextEndpoint) {
       // Skip token check for vNext endpoints
+      _neoLogger?.logConsole('[NeoNetworkManager] Skipping token check for vNext endpoint');
     }
 
     if (_isMtlsEnabled) {
-      
+      _neoLogger?.logConsole('[NeoNetworkManager] mTLS enabled, setting mTLS status...');
       await httpClientConfig.setMtlsStatusForHttpCall(neoCall, _mtlsHelper, secureStorage);
     }
     
+    _neoLogger?.logConsole('[NeoNetworkManager] Building service URL...');
     final fullPath = httpClientConfig.getServiceUrlByKey(
       neoCall.endpoint,
       enableMtls: neoCall.enableMtls,
@@ -212,14 +226,26 @@ class NeoNetworkManager {
       useHttps: neoCall.useHttps,
     );
     
+    _neoLogger?.logConsole('[NeoNetworkManager] Getting service method...');
     final method = httpClientConfig.getServiceMethodByKey(neoCall.endpoint);
     
+    if (isVNextEndpoint) {
+      _neoLogger?.logConsole('[NeoNetworkManager] Full path: ${fullPath ?? "NULL"}');
+      _neoLogger?.logConsole('[NeoNetworkManager] Method: ${method ?? "NULL"}');
+    }
+    
     if (fullPath == null || method == null) {
+      _neoLogger?.logError('[NeoNetworkManager] ❌ Failed to build URL or get method for endpoint: ${neoCall.endpoint}');
+      _neoLogger?.logError('[NeoNetworkManager] fullPath: $fullPath, method: $method');
       return NeoResponse.error(const NeoError(), responseHeaders: {});
     }
 
     NeoResponse response;
     try {
+      if (isVNextEndpoint) {
+        _neoLogger?.logConsole('[NeoNetworkManager] Executing ${method.name} request...');
+      }
+      
       switch (method) {
         case HttpMethod.get:
           response = await _requestGet(fullPath, neoCall);
@@ -232,18 +258,79 @@ class NeoNetworkManager {
         case HttpMethod.patch:
           response = await _requestPatch(fullPath, neoCall);
       }
+      
+      if (isVNextEndpoint) {
+        _neoLogger?.logConsole('[NeoNetworkManager] Request completed: isSuccess=${response.isSuccess}');
+        if (response.isError) {
+          _neoLogger?.logError('[NeoNetworkManager] ❌ Request failed: statusCode=${response.asError.statusCode}');
+          _neoLogger?.logError('[NeoNetworkManager] Error: ${response.asError.error.error.description}');
+        }
+        _neoLogger?.logConsole('[NeoNetworkManager] ===== vNext endpoint call END =====');
+      }
+      
       return response;
     } catch (e) {
-      _neoLogger?.logError('[NeoNetworkManager] Exception during request: $e (${e.runtimeType}). Endpoint: ${neoCall.endpoint}');
+      _neoLogger?.logError('[NeoNetworkManager] ❌ Exception during request: $e (${e.runtimeType}). Endpoint: ${neoCall.endpoint}');
+      if (isVNextEndpoint) {
+        _neoLogger?.logError('[NeoNetworkManager] Exception occurred for vNext endpoint');
+      }
       if (e is TimeoutException) {
         _neoLogger?.logError("[NeoNetworkManager]: Service call timeout! Endpoint: ${neoCall.endpoint}");
-        return NeoResponse.error(const NeoError(responseCode: HttpStatus.requestTimeout), responseHeaders: {});
+        return NeoResponse.error(
+          NeoError(
+            responseCode: HttpStatus.requestTimeout,
+            error: NeoErrorDetail(
+              title: 'Request Timeout',
+              description: 'The request timed out. Please check your network connection and try again.',
+            ),
+          ),
+          responseHeaders: {},
+        );
       } else if (e is HandshakeException) {
         _neoLogger?.logError("[NeoNetworkManager]: Handshake exception! Endpoint: ${neoCall.endpoint}");
-        return NeoResponse.error(const NeoError(), responseHeaders: {});
+        return NeoResponse.error(
+          NeoError(
+            responseCode: HttpStatus.badRequest,
+            error: NeoErrorDetail(
+              title: 'SSL Handshake Failed',
+              description: 'SSL handshake failed. Error: $e',
+            ),
+          ),
+          responseHeaders: {},
+        );
       } else {
+        // Network connectivity errors (SocketException, ClientException, etc.)
+        final errorMessage = e.toString();
         _neoLogger?.logError("[NeoNetworkManager]: Service call failed! Endpoint: ${neoCall.endpoint}");
-        return NeoResponse.error(const NeoError(), responseHeaders: {});
+        _neoLogger?.logError("[NeoNetworkManager]: Error: $errorMessage");
+        
+        // Check if it's a network connectivity issue
+        if (errorMessage.contains('Network is unreachable') || 
+            errorMessage.contains('Connection failed') ||
+            errorMessage.contains('SocketException') ||
+            errorMessage.contains('Failed host lookup')) {
+          return NeoResponse.error(
+            NeoError(
+              responseCode: HttpStatus.badRequest,
+              error: NeoErrorDetail(
+                title: 'Network Connection Failed',
+                description: 'Cannot connect to server. Please check:\n1. Server is running on ${neoCall.endpoint}\n2. Network connectivity\n3. Firewall settings\n\nError: $errorMessage',
+              ),
+            ),
+            responseHeaders: {},
+          );
+        }
+        
+        return NeoResponse.error(
+          NeoError(
+            responseCode: HttpStatus.badRequest,
+            error: NeoErrorDetail(
+              title: 'Request Failed',
+              description: 'Request failed with error: $errorMessage',
+            ),
+          ),
+          responseHeaders: {},
+        );
       }
     }
   }
@@ -285,14 +372,34 @@ class NeoNetworkManager {
   }
 
   Future<NeoResponse> _requestPost(String fullPath, NeoHttpCall neoCall) async {
+    final isVNextEndpoint = neoCall.endpoint.startsWith('vnext-');
+    
+    if (isVNextEndpoint) {
+      _neoLogger?.logConsole('[NeoNetworkManager] _requestPost START for vNext endpoint');
+    }
+    
     final fullPathWithQueries = _getFullPathWithQueries(fullPath, neoCall.queryProviders);
+    
+    if (isVNextEndpoint) {
+      _neoLogger?.logConsole('[NeoNetworkManager] Full URL with queries: $fullPathWithQueries');
+    }
     
     final defaultHeaders = await _getDefaultPostHeaders(neoCall);
     
     final finalHeaders = defaultHeaders..addAll(neoCall.headerParameters);
     
+    if (isVNextEndpoint) {
+      _neoLogger?.logConsole('[NeoNetworkManager] Final headers: ${finalHeaders.keys.join(", ")}');
+    }
+    
     final bodyJson = json.encode(neoCall.body);
     
+    if (isVNextEndpoint) {
+      _neoLogger?.logConsole('[NeoNetworkManager] Request body JSON: $bodyJson');
+      _neoLogger?.logConsole('[NeoNetworkManager] Sending POST request...');
+    }
+    
+    try {
     final response = await httpClient!
         .post(
           Uri.parse(fullPathWithQueries),
@@ -301,9 +408,22 @@ class NeoNetworkManager {
         )
         .timeout(timeoutDuration);
     
+      if (isVNextEndpoint) {
+        _neoLogger?.logConsole('[NeoNetworkManager] POST ${response.request?.url} -> ${response.statusCode}');
+        _neoLogger?.logConsole('[NeoNetworkManager] Response headers: ${response.headers.keys.join(", ")}');
+      } else {
     _neoLogger?.logConsole('[NeoNetworkManager] POST ${response.request?.url} -> ${response.statusCode}', logLevel: Level.debug);
+      }
     
     return _createResponse(response, neoCall);
+    } catch (e, stackTrace) {
+      if (isVNextEndpoint) {
+        _neoLogger?.logError('[NeoNetworkManager] ❌ Exception in _requestPost for vNext endpoint: $e');
+        _neoLogger?.logError('[NeoNetworkManager] Exception type: ${e.runtimeType}');
+        _neoLogger?.logError('[NeoNetworkManager] Stack trace: $stackTrace');
+      }
+      rethrow;
+    }
   }
 
   Future<NeoResponse> _requestDelete(String fullPath, NeoHttpCall neoCall) async {
@@ -398,7 +518,6 @@ class NeoNetworkManager {
   }
 
   Future<NeoResponse> _createResponse(http.Response response, NeoHttpCall call) async {
-    
     Map<String, dynamic>? responseJSON;
     try {
       
@@ -416,8 +535,10 @@ class NeoNetworkManager {
       } else {
         responseJSON = {_Constants.wrapperResponseKey: decodedResponse};
       }
-    } catch (e) {
-      _neoLogger?.logError('[NeoNetworkManager] JSON decode error: $e');
+    } catch (e, stackTrace) {
+      _neoLogger?.logError('[NeoNetworkManager] ❌ JSON decode error: $e');
+      _neoLogger?.logError('[NeoNetworkManager] Stack trace: $stackTrace');
+      _neoLogger?.logError('[NeoNetworkManager] Response body that failed to decode: ${response.body}');
       responseJSON = {};
     }
 
