@@ -3,13 +3,15 @@ import 'dart:typed_data';
 
 import 'package:flutter_shield/secure_enclave.dart';
 import 'package:get_it/get_it.dart';
+import 'package:logger/logger.dart';
 import 'package:neo_core/core/analytics/neo_logger.dart';
 import 'package:neo_core/core/util/extensions/get_it_extensions.dart';
 
 class MtlsHelper {
   NeoLogger? get _neoLogger => GetIt.I.getIfReady<NeoLogger>();
 
-  late final _secureEnclavePlugin = SecureEnclave()..log = (logData) async => _neoLogger?.logCustom(logData.toString());
+  late final _secureEnclavePlugin = SecureEnclave()
+    ..log = (logData) async => _neoLogger?.logCustom(logData.toString(), logLevel: Level.error);
 
   Future<String?> sign({required String clientKeyTag, required Map? requestBody}) async {
     if (requestBody == null || requestBody.isEmpty) {
