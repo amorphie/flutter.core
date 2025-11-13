@@ -143,6 +143,11 @@ class HttpClientConfig {
     return _getRetryCountByHost(service.host) ?? 0;
   }
 
+  bool usesProblemDetailsFormat(String key) {
+    final service = _findServiceByKey(key);
+    return service?.useProblemDetailsFormat ?? false;
+  }
+
   HttpService? _findServiceByKey(String key) {
     return services.firstWhereOrNull((element) => element.key == key);
   }

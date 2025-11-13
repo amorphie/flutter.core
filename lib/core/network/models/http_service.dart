@@ -38,6 +38,9 @@ class HttpService {
   @JsonKey(name: 'sign')
   final bool signForMtls;
 
+  @JsonKey(name: 'useProblemDetailsFormat', defaultValue: false)
+  final bool useProblemDetailsFormat;
+
   const HttpService({
     required this.key,
     required this.method,
@@ -46,6 +49,7 @@ class HttpService {
     this.retryCount,
     this.enableMtls = false,
     this.signForMtls = false,
+    this.useProblemDetailsFormat = false,
   });
 
   factory HttpService.fromJson(Map<String, dynamic> json) => _$HttpServiceFromJson(json);

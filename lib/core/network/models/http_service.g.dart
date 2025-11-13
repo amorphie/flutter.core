@@ -15,6 +15,7 @@ HttpService _$HttpServiceFromJson(Map<String, dynamic> json) => HttpService(
       retryCount: (json['retryCount'] as num?)?.toInt(),
       enableMtls: json['mtls'] as bool? ?? false,
       signForMtls: json['sign'] as bool? ?? false,
+      useProblemDetailsFormat: json['useProblemDetailsFormat'] as bool? ?? false,
     );
 
 const _$HttpMethodEnumMap = {
