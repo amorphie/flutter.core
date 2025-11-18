@@ -56,10 +56,10 @@ void main() {
       
       // Test transitions
       expect(snapshot.transitions.length, equals(2));
-      expect(snapshot.transitions[0]['name'], equals("select-demand-deposit"));
-      expect(snapshot.transitions[0]['href'], equals("/core/workflows/account-opening/instances/019a0bb3-278a-7622-94b2-cae6d9a7522e/transitions/select-demand-deposit"));
-      expect(snapshot.transitions[1]['name'], equals("cancel-account-opening"));
-      expect(snapshot.transitions[1]['href'], equals("/core/workflows/account-opening/instances/019a0bb3-278a-7622-94b2-cae6d9a7522e/transitions/cancel-account-opening"));
+      expect(snapshot.transitions[0].name, equals("select-demand-deposit"));
+      expect(snapshot.transitions[0].href, equals("/core/workflows/account-opening/instances/019a0bb3-278a-7622-94b2-cae6d9a7522e/transitions/select-demand-deposit"));
+      expect(snapshot.transitions[1].name, equals("cancel-account-opening"));
+      expect(snapshot.transitions[1].href, equals("/core/workflows/account-opening/instances/019a0bb3-278a-7622-94b2-cae6d9a7522e/transitions/cancel-account-opening"));
     });
 
     test('should handle missing fields gracefully', () {

@@ -510,13 +510,13 @@ class _VNextAccountOpeningTestPageState extends State<VNextAccountOpeningTestPag
                                 ...(_snapshot!.transitions.map((transition) => Padding(
                                   padding: const EdgeInsets.symmetric(vertical: 4),
                                   child: ElevatedButton(
-                                    onPressed: _loading ? null : () => _executeTransition(transition['name']!, transition['href']!),
+                                    onPressed: _loading ? null : () => _executeTransition(transition.name, transition.href),
                                     style: ElevatedButton.styleFrom(
                                       backgroundColor: Colors.blue,
                                       foregroundColor: Colors.white,
                                       minimumSize: const Size(double.infinity, 40),
                                     ),
-                                    child: Text('${transition['name']}'),
+                                    child: Text(transition.name),
                                   ),
                                 ))),
                               ],
@@ -550,7 +550,7 @@ class _VNextAccountOpeningTestPageState extends State<VNextAccountOpeningTestPag
                               Text('Domain: ${_snapshot!.domain}'),
                               Text('Version: ${_snapshot!.flowVersion}'),
                             if ((_snapshot!.transitions).isNotEmpty)
-                              Text('Available Transitions: ${_snapshot!.transitions.map((t) => t['name']).join(', ')}'),
+                              Text('Available Transitions: ${_snapshot!.transitions.map((t) => t.name).join(', ')}'),
                           ],
                           const SizedBox(height: 8),
                           Row(

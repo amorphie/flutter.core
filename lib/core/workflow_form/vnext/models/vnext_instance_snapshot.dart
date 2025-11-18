@@ -4,6 +4,8 @@
 
 import 'package:equatable/equatable.dart';
 
+import 'vnext_transition.dart';
+
 enum VNextInstanceStatus {
   busy('B'),
   active('A'),
@@ -49,7 +51,7 @@ class VNextInstanceSnapshot extends Equatable {
   final String? viewHref; // view.href (top-level)
   final bool loadData; // view.loadData (top-level)
   final String? dataHref; // data.href (top-level)
-  final List<Map<String, String>> transitions; // [{name, href}]
+  final List<VNextTransition> transitions; // [{name, href}]
   final List<String> activeCorrelations;
   final DateTime timestamp;
 
@@ -76,33 +78,21 @@ class VNextInstanceSnapshot extends Equatable {
     final dataFn = (json['data'] as Map<String, dynamic>?) ?? const {};
     final transitions = (json['transitions'] as List?)
             ?.whereType<Map>()
-            .map((e) => {
-                  'name': e['name']?.toString() ?? '',
-                  'href': e['href']?.toString() ?? '',
-                })
-            .toList()
-        ?? const <Map<String, String>>[];
+            .map((e) => VNextTransition.fromJson(Map<String, dynamic>.from(e)))
+            .toList() ??
+        const <VNextTransition>[];
     final extensions = (json['extensions'] as Map<String, dynamic>?) ?? const {};
-    
+
     // Support new structure (top-level) with fallback to extensions for backward compatibility
-    final activeCorrelations = (json['activeCorrelations'] as List?)
-            ?.whereType<String>()
-            .toList() ??
-        (extensions['activeCorrelations'] as List?)
-            ?.whereType<String>()
-            .toList() ??
+    final activeCorrelations = (json['activeCorrelations'] as List?)?.whereType<String>().toList() ??
+        (extensions['activeCorrelations'] as List?)?.whereType<String>().toList() ??
         const <String>[];
-    
-    final tags = (json['tags'] as List?)
-            ?.whereType<String>()
-            .toList()
-        ?? const <String>[];
+
+    final tags = (json['tags'] as List?)?.whereType<String>().toList() ?? const <String>[];
 
     // Support new structure: state and status at top level, with fallback to extensions
-    final state = (json['state'] as String?) ?? 
-                  (extensions['currentState'] as String?) ?? '';
-    final statusCode = (json['status'] as String?) ?? 
-                       (extensions['status'] as String?) ?? '';
+    final state = (json['state'] as String?) ?? (extensions['currentState'] as String?) ?? '';
+    final statusCode = (json['status'] as String?) ?? (extensions['status'] as String?) ?? '';
 
     return VNextInstanceSnapshot(
       instanceId: (json['id'] as String?) ?? (json['instanceId'] as String?) ?? '',
