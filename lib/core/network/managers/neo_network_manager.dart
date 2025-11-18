@@ -40,7 +40,6 @@ import 'package:neo_core/core/util/extensions/get_it_extensions.dart';
 import 'package:neo_core/core/util/token_util.dart';
 import 'package:neo_core/core/util/uuid_util.dart';
 import 'package:neo_core/neo_core.dart';
-import 'package:sentry_flutter/sentry_flutter.dart';
 import 'package:universal_io/io.dart';
 
 abstract class _Constants {
@@ -132,12 +131,6 @@ class NeoNetworkManager {
 
   int? get tokenExpiresInSeconds => _lastAuthResponse?.expiresInSeconds;
 
-  late final NeoConstantHeaders neoConstantHeaders = NeoConstantHeaders(
-    neoSharedPrefs: neoSharedPrefs,
-    secureStorage: secureStorage,
-    defaultHeaders: defaultHeaders,
-  );
-
   Future<void> init({required bool enableSslPinning}) async {
     _enableSslPinning = enableSslPinning;
     await _initHttpClient();
@@ -219,12 +212,6 @@ class NeoNetworkManager {
       return NeoResponse.error(const NeoError(), responseHeaders: {});
     }
 
-    final span = Sentry.startTransaction(
-      neoCall.endpoint,
-      'http.client',
-      description: 'HTTP $method ${neoCall.endpoint}',
-    );
-
     NeoResponse response;
     try {
       switch (method) {
@@ -239,25 +226,16 @@ class NeoNetworkManager {
         case HttpMethod.patch:
           response = await _requestPatch(fullPath, neoCall);
       }
-      unawaited(
-        span.finish(
-          status:
-              response.isSuccess ? const SpanStatus.ok() : SpanStatus.fromHttpStatusCode(response.asError.statusCode),
-        ),
-      );
       return response;
     } catch (e) {
       if (e is TimeoutException) {
         _neoLogger?.logError("[NeoNetworkManager]: Service call timeout! Endpoint: ${neoCall.endpoint}");
-        unawaited(span.finish(status: const SpanStatus.deadlineExceeded()));
         return NeoResponse.error(const NeoError(responseCode: HttpStatus.requestTimeout), responseHeaders: {});
       } else if (e is HandshakeException) {
         _neoLogger?.logConsole("[NeoNetworkManager]: Handshake exception! Endpoint: ${neoCall.endpoint}");
-        unawaited(span.finish(status: const SpanStatus.internalError()));
         return NeoResponse.error(const NeoError(), responseHeaders: {});
       } else {
         _neoLogger?.logError("[NeoNetworkManager]: Service call failed! Endpoint: ${neoCall.endpoint}");
-        unawaited(span.finish(status: const SpanStatus.internalError()));
         return NeoResponse.error(const NeoError(), responseHeaders: {});
       }
     }
@@ -532,7 +510,7 @@ class NeoNetworkManager {
 
   Future<void> _initHttpClient() async {
     if (kIsWeb) {
-      httpClient = _wrapWithSentryHttpClient(http.Client());
+      httpClient = http.Client();
       return;
     }
 
@@ -546,14 +524,7 @@ class NeoNetworkManager {
       client.badCertificateCallback = (X509Certificate cert, String host, int port) => false;
     }
 
-    httpClient = _wrapWithSentryHttpClient(IOClient(client));
-  }
-
-  SentryHttpClient _wrapWithSentryHttpClient(http.Client client) {
-    return SentryHttpClient(
-      client: client,
-      failedRequestStatusCodes: [SentryStatusCode.range(400, 599)],
-    );
+    httpClient = IOClient(client);
   }
 
   Future<SecurityContext?> _addMtlsCertificateToSecurityContext(SecurityContext? securityContext) async {
