@@ -265,6 +265,48 @@ class VNextWorkflowClient {
     }
   }
 
+  Future<NeoResponse> getTransitionView({
+    required String domain,
+    required String workflowName,
+    required String instanceId,
+    required String transitionId,
+    Map<String, String>? headers,
+  }) async {
+    logger.logConsole('[VNextWorkflowClient] Getting transition view for transition: $transitionId');
+
+    try {
+      final response = await networkManager.call(
+        NeoHttpCall(
+          endpoint: 'vnext-get-transition-view',
+          pathParameters: {
+            'DOMAIN': domain,
+            'WORKFLOW_NAME': workflowName,
+            'INSTANCE_ID': instanceId,
+          },
+          queryProviders: [
+            HttpQueryProvider({'transitionKey': transitionId}),
+          ],
+          headerParameters: headers ?? {},
+          useHttps: false, // TODO STOPSHIP: Delete this flag
+        ),
+      );
+
+      if (response is NeoSuccessResponse) {
+        logger.logConsole('[VNextWorkflowClient] Get transition view successful, statusCode: ${response.statusCode}');
+      } else if (response is NeoErrorResponse) {
+        logger.logError(
+          '[VNextWorkflowClient] Get transition view failed, statusCode: ${response.statusCode}, error: ${response.error.error.description}',
+        );
+      }
+      return response;
+    } catch (e, stackTrace) {
+      logger
+        ..logError('[VNextWorkflowClient] Exception during getTransitionView: $e')
+        ..logError('[VNextWorkflowClient] Stack trace: $stackTrace');
+      rethrow;
+    }
+  }
+
   /// List all instances for a specific workflow with enhanced filtering support
   /// 
   /// Enhanced filtering supports vNext query operators:
