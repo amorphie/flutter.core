@@ -22,6 +22,17 @@ export 'core/util/device_util/device_util.dart';
 export 'core/util/package_util.dart';
 export 'core/widgets/neo_widgets.dart';
 
+// Workflow Engine Routing exports
+export 'core/workflow_form/models/workflow_engine.dart';
+export 'core/workflow_form/models/workflow_config.dart';
+export 'core/workflow_form/workflow_configs.dart';
+export 'core/workflow_form/workflow_router.dart';
+
+// DataManager exports
+export 'core/data_manager/data_manager.dart';
+export 'core/data_manager/data_manager_utils.dart';
+export 'core/data_manager/data_scope.dart';
+
 class NeoCore {
   NeoCore._();
 
