@@ -1,3 +1,5 @@
+// ignore_for_file: cascade_invocations
+
 /*
  * neo_core
  *
@@ -16,15 +18,18 @@ import 'package:neo_core/core/network/models/neo_error.dart';
 import 'package:neo_core/core/network/models/neo_http_call.dart';
 import 'package:neo_core/core/network/models/neo_response.dart';
 import 'package:neo_core/core/network/query_providers/http_query_provider.dart';
+import 'package:neo_core/core/workflow_form/vnext/vnext_error_handler.dart';
 
 class VNextWorkflowClient {
   final NeoNetworkManager networkManager;
   final NeoLogger logger;
+  final VNextErrorHandler? errorHandler;
 
   VNextWorkflowClient({
     required this.networkManager,
     required this.logger,
-  });
+    VNextErrorHandler? errorHandler,
+  }) : errorHandler = errorHandler ?? VNextErrorHandler(logger: logger);
 
   /// Initialize (start) a workflow instance in vNext backend
   Future<NeoResponse> initWorkflow({
@@ -189,6 +194,18 @@ class VNextWorkflowClient {
         logger.logConsole('[VNextWorkflowClient] Transition successful, statusCode: ${response.statusCode}');
       } else if (response is NeoErrorResponse) {
         logger.logError('[VNextWorkflowClient] Transition failed, statusCode: ${response.statusCode}, error: ${response.error.error.description}');
+        logger.logConsole('[VNextWorkflowClient] Error handler available: ${errorHandler != null}');
+        
+        // Process error response to log validation error details for developers
+        // Returns original error unchanged (UI shows standard RFC 7807 message)
+        if (errorHandler != null) {
+          logger.logConsole('[VNextWorkflowClient] Calling errorHandler.processErrorResponse()...');
+          final processedResponse = errorHandler!.processErrorResponse(response);
+          logger.logConsole('[VNextWorkflowClient] Error handler processing complete');
+          return processedResponse;
+        } else {
+          logger.logError('[VNextWorkflowClient] ERROR: errorHandler is null!');
+        }
       }
       return response;
     } catch (e, stackTrace) {
