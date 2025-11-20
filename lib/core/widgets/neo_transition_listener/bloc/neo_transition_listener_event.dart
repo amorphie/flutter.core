@@ -16,6 +16,7 @@ sealed class NeoTransitionListenerEvent extends Equatable {}
 
 class NeoTransitionListenerEventInit extends NeoTransitionListenerEvent {
   final NeoWorkflowManager neoWorkflowManager;
+  final NeoVNextWorkflowManager neoVNextWorkflowManager;
   final String signalRServerUrl;
   final String signalRMethodName;
   final Function(SignalrTransitionData navigationData) onTransitionEvent;
@@ -29,6 +30,7 @@ class NeoTransitionListenerEventInit extends NeoTransitionListenerEvent {
 
   NeoTransitionListenerEventInit({
     required this.neoWorkflowManager,
+    required this.neoVNextWorkflowManager,
     required this.signalRServerUrl,
     required this.signalRMethodName,
     required this.onTransitionEvent,
@@ -58,6 +60,8 @@ class NeoTransitionListenerEventInit extends NeoTransitionListenerEvent {
 
 class NeoTransitionListenerEventInitWorkflow extends NeoTransitionListenerEvent {
   final String workflowName;
+  final String? workflowDomain;
+  final String? workflowVersion;
   final Map<String, dynamic>? queryParameters;
   final Map<String, String>? headerParameters;
   final bool displayLoading;
@@ -69,6 +73,8 @@ class NeoTransitionListenerEventInitWorkflow extends NeoTransitionListenerEvent 
 
   NeoTransitionListenerEventInitWorkflow({
     required this.workflowName,
+    this.workflowDomain,
+    this.workflowVersion,
     this.queryParameters,
     this.headerParameters,
     this.isSubFlow = false,
@@ -79,9 +85,13 @@ class NeoTransitionListenerEventInitWorkflow extends NeoTransitionListenerEvent 
     this.useRootNavigator = false,
   });
 
+  bool get isVNextEvent => workflowDomain != null;
+
   @override
   List<Object?> get props => [
         workflowName,
+        workflowDomain,
+        workflowVersion,
         queryParameters,
         headerParameters,
         isSubFlow,
