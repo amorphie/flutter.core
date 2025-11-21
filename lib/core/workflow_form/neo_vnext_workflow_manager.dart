@@ -1,3 +1,5 @@
+import 'package:neo_core/core/bus/widget_event_bus/neo_core_widget_event_keys.dart';
+import 'package:neo_core/core/navigation/models/signalr_transition_data.dart';
 import 'package:neo_core/core/network/managers/neo_network_manager.dart';
 import 'package:neo_core/core/network/models/neo_http_call.dart';
 import 'package:neo_core/core/network/models/neo_response.dart';
@@ -70,8 +72,20 @@ class NeoVNextWorkflowManager {
           });
           break;
         case VNextInstanceStatus.active:
-          await neoVNextViewManager.fetchViewByHref(href: data["view"]["href"]);
+          final view = await neoVNextViewManager.fetchViewByHref(href: data["view"]["href"]);
           // TODO: Fetch data
+          if (view == null) {
+            // TODO STOPSHIP: Handle error when view or data is null
+          } else {
+            NeoCoreWidgetEventKeys.neoTransitionListenerSendTransitionSuccessEvent.sendEvent(
+              data: SignalrTransitionData(
+                instanceId: instanceId,
+                navigationPath: view.pageId,
+                navigationType: view.displayType.toNavigationType(),
+                viewSource: NeoVNextViewManager.viewSource,
+              ),
+            );
+          }
           break;
 
         case VNextInstanceStatus.passive:

@@ -15,6 +15,7 @@ import 'dart:convert';
 import 'package:neo_core/core/navigation/models/neo_navigation_type.dart';
 
 abstract class _Constant {
+  static const keyInstanceId = "instanceId";
   static const keyNavigationPath = "navigationPath";
   static const keyNavigationType = "navigationType";
   static const keyPageId = "pageId";
@@ -32,6 +33,7 @@ abstract class _Constant {
 }
 
 class SignalrTransitionData {
+  final String? instanceId;
   final String? navigationPath;
   final NeoNavigationType? navigationType;
   final String? pageId;
@@ -47,6 +49,7 @@ class SignalrTransitionData {
   final bool isInitialPage;
 
   SignalrTransitionData({
+    this.instanceId,
     this.transitionId,
     this.navigationPath,
     this.navigationType,
@@ -64,6 +67,7 @@ class SignalrTransitionData {
 
   String encode() {
     return jsonEncode({
+      _Constant.keyInstanceId: instanceId,
       _Constant.keyNavigationPath: navigationPath,
       _Constant.keyNavigationType: navigationType.toString(),
       _Constant.keyPageId: pageId,
@@ -83,6 +87,7 @@ class SignalrTransitionData {
   factory SignalrTransitionData.decode(String jsonString) {
     final Map<String, dynamic> jsonMap = jsonDecode(jsonString);
     return SignalrTransitionData(
+      instanceId: jsonMap[_Constant.keyInstanceId],
       navigationPath: jsonMap[_Constant.keyNavigationPath],
       navigationType: NeoNavigationType.fromJson(jsonMap[_Constant.keyNavigationType]),
       pageId: jsonMap[_Constant.keyPageId],

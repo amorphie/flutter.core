@@ -23,6 +23,7 @@ import 'package:mutex/mutex.dart';
 import 'package:neo_core/core/analytics/neo_logger.dart';
 import 'package:neo_core/core/analytics/neo_logger_type.dart';
 import 'package:neo_core/core/bus/neo_bus.dart';
+import 'package:neo_core/core/bus/widget_event_bus/neo_core_widget_event_keys.dart';
 import 'package:neo_core/core/navigation/models/ekyc_event_data.dart';
 import 'package:neo_core/core/navigation/models/neo_navigation_type.dart';
 import 'package:neo_core/core/navigation/models/signalr_transition_data.dart';
@@ -73,9 +74,11 @@ class NeoTransitionListenerBloc extends Bloc<NeoTransitionListenerEvent, NeoTran
   Timer? longPollingTimer;
   bool hasSignalRConnection = false;
   final Mutex _eventProcessorMutex = Mutex();
+  StreamSubscription? _widgetEventStreamSubscription;
 
   NeoTransitionListenerBloc({required this.neoCoreSecureStorage}) : super(const NeoTransitionListenerState()) {
     WidgetsBinding.instance.addObserver(this);
+    _listenWidgetEventKeys();
 
     on<NeoTransitionListenerEventInit>(_onInit);
     on<NeoTransitionListenerEventInitWorkflow>(
@@ -519,12 +522,23 @@ class NeoTransitionListenerBloc extends Bloc<NeoTransitionListenerEvent, NeoTran
     longPollingTimer?.cancel();
   }
 
+  void _listenWidgetEventKeys() {
+    _widgetEventStreamSubscription = NeoCoreWidgetEventKeys.neoTransitionListenerSendTransitionSuccessEvent.listenEvent(
+      onEventReceived: (NeoWidgetEvent widgetEvent) {
+        if (widgetEvent.data is SignalrTransitionData) {
+          onTransitionEvent(widgetEvent.data! as SignalrTransitionData);
+        }
+      },
+    );
+  }
+
   @override
   Future<void> close() {
     WidgetsBinding.instance.removeObserver(this);
     _postTransitionTimeoutTimer?.cancel();
     signalrConnectionManager.stop();
     _cancelLongPolling();
+    _widgetEventStreamSubscription?.cancel();
     return super.close();
   }
 }
