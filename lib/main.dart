@@ -12,6 +12,8 @@
 
 import 'package:flutter/material.dart';
 import 'package:neo_core/examples/vnext_account_opening_test/vnext_account_opening_test_page.dart';
+import 'package:neo_core/examples/vnext_account_opening_wmp_test/vnext_account_opening_wmp_test_page.dart';
+import 'package:neo_core/examples/vnext_scheduled_payments_test/vnext_scheduled_payments_test_page.dart';
 import 'package:neo_core/neo_core.dart';
 
 Future<void> main() async {
@@ -77,6 +79,20 @@ class MainNavigationPage extends StatelessWidget {
                 );
               },
               color: Colors.green,
+            ),
+            const SizedBox(height: 16),
+            _buildDemoCard(
+              context: context,
+              title: '💳 vNext Scheduled Payments',
+              subtitle: 'Test scheduled-payments workflow',
+              description: 'Start the scheduled-payments workflow and test payment configuration, activation, and management.',
+              onPressed: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (context) => const VNextScheduledPaymentsTestPage()),
+                );
+              },
+              color: Colors.purple,
             ),
           ],
         ),
