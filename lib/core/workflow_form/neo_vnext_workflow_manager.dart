@@ -1,12 +1,14 @@
 import 'package:neo_core/core/network/managers/neo_network_manager.dart';
 import 'package:neo_core/core/network/models/neo_http_call.dart';
 import 'package:neo_core/core/network/models/neo_response.dart';
+import 'package:neo_core/core/workflow_form/neo_vnext_view_manager.dart';
 import 'package:neo_core/core/workflow_form/vnext/models/vnext_instance_snapshot.dart';
 
 class NeoVNextWorkflowManager {
   final NeoNetworkManager neoNetworkManager;
+  final NeoVNextViewManager neoVNextViewManager;
 
-  NeoVNextWorkflowManager(this.neoNetworkManager);
+  NeoVNextWorkflowManager({required this.neoNetworkManager, required this.neoVNextViewManager});
 
   /// Key: instanceId
   /// Value: Workflow Status
@@ -32,7 +34,6 @@ class NeoVNextWorkflowManager {
         useHttps: false, // TODO STOPSHIP: Delete it when APIs are deployed
       ),
     );
-    print('TEST: Response is $response');
     return response;
   }
 
@@ -69,7 +70,9 @@ class NeoVNextWorkflowManager {
           });
           break;
         case VNextInstanceStatus.active:
-        // Check and update state
+          await neoVNextViewManager.fetchViewByHref(href: data["view"]["href"]);
+          // TODO: Fetch data
+          break;
 
         case VNextInstanceStatus.passive:
         // TODO STOPSHIP: Ask what should happen
