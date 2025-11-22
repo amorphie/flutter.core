@@ -4,8 +4,10 @@
  * VNext View Display Mode: Enum for view rendering modes
  */
 
+import 'package:neo_core/core/navigation/models/neo_navigation_type.dart';
+
 /// Display modes for vNext views as defined in the vNext runtime documentation.
-/// 
+///
 /// These modes determine how a view is presented to the user:
 /// - [fullPage]: Full-screen component (default for main workflow screens)
 /// - [popup]: Modal/popup dialog overlaying the current screen
@@ -39,7 +41,7 @@ enum VNextViewDisplayMode {
   inline('inline');
 
   const VNextViewDisplayMode(this.value);
-  
+
   /// The string value as returned from the backend API
   final String value;
 
@@ -49,7 +51,7 @@ enum VNextViewDisplayMode {
     if (value == null || value.isEmpty) {
       return VNextViewDisplayMode.fullPage;
     }
-    
+
     return VNextViewDisplayMode.values.firstWhere(
       (mode) => mode.value == value,
       orElse: () => VNextViewDisplayMode.fullPage,
@@ -58,5 +60,21 @@ enum VNextViewDisplayMode {
 
   /// Converts the enum to its string representation for JSON serialization.
   String toJson() => value;
-}
 
+  NeoNavigationType toNavigationType() {
+    switch (this) {
+      case VNextViewDisplayMode.fullPage:
+        return NeoNavigationType.pushReplacement;
+      case VNextViewDisplayMode.popup:
+        return NeoNavigationType.popup;
+      case VNextViewDisplayMode.bottomSheet:
+        return NeoNavigationType.bottomSheet;
+
+      // TODO: Handle these cases.
+      case VNextViewDisplayMode.topSheet:
+      case VNextViewDisplayMode.drawer:
+      case VNextViewDisplayMode.inline:
+        return NeoNavigationType.pushReplacement;
+    }
+  }
+}

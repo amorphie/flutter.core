@@ -23,6 +23,7 @@ import 'package:mutex/mutex.dart';
 import 'package:neo_core/core/analytics/neo_logger.dart';
 import 'package:neo_core/core/analytics/neo_logger_type.dart';
 import 'package:neo_core/core/bus/neo_bus.dart';
+import 'package:neo_core/core/bus/widget_event_bus/neo_core_widget_event_keys.dart';
 import 'package:neo_core/core/navigation/models/ekyc_event_data.dart';
 import 'package:neo_core/core/navigation/models/neo_navigation_type.dart';
 import 'package:neo_core/core/navigation/models/signalr_transition_data.dart';
@@ -36,6 +37,7 @@ import 'package:neo_core/core/storage/neo_core_secure_storage.dart';
 import 'package:neo_core/core/widgets/neo_page/bloc/neo_page_bloc.dart';
 import 'package:neo_core/core/widgets/neo_transition_listener/bloc/usecases/process_login_certificate_silent_event_use_case.dart';
 import 'package:neo_core/core/widgets/neo_transition_listener/usecases/get_workflow_query_parameters_usecase.dart';
+import 'package:neo_core/core/workflow_form/neo_vnext_workflow_manager.dart';
 import 'package:neo_core/core/workflow_form/neo_workflow_manager.dart';
 import 'package:universal_io/io.dart';
 
@@ -59,6 +61,7 @@ class NeoTransitionListenerBloc extends Bloc<NeoTransitionListenerEvent, NeoTran
   late final SignalrConnectionManager signalrConnectionManager;
   late final List<NeoSignalREvent> _eventList = [];
   late final NeoWorkflowManager neoWorkflowManager;
+  late final NeoVNextWorkflowManager neoVNextWorkflowManager;
   late final NeoLogger _neoLogger = GetIt.I.get();
   late String signalRServerUrl;
   late final String signalRMethodName;
@@ -71,9 +74,11 @@ class NeoTransitionListenerBloc extends Bloc<NeoTransitionListenerEvent, NeoTran
   Timer? longPollingTimer;
   bool hasSignalRConnection = false;
   final Mutex _eventProcessorMutex = Mutex();
+  StreamSubscription? _widgetEventStreamSubscription;
 
   NeoTransitionListenerBloc({required this.neoCoreSecureStorage}) : super(const NeoTransitionListenerState()) {
     WidgetsBinding.instance.addObserver(this);
+    _listenWidgetEventKeys();
 
     on<NeoTransitionListenerEventInit>(_onInit);
     on<NeoTransitionListenerEventInitWorkflow>(
@@ -96,6 +101,7 @@ class NeoTransitionListenerBloc extends Bloc<NeoTransitionListenerEvent, NeoTran
     onTransitionError = event.onTransitionError;
     onLoadingStatusChanged = event.onLoadingStatusChanged;
     neoWorkflowManager = event.neoWorkflowManager;
+    neoVNextWorkflowManager = event.neoVNextWorkflowManager;
     signalRServerUrl = event.signalRServerUrl;
     signalRMethodName = event.signalRMethodName;
     signalrConnectionManager = SignalrConnectionManager();
@@ -163,6 +169,8 @@ class NeoTransitionListenerBloc extends Bloc<NeoTransitionListenerEvent, NeoTran
     }
     final response = await _initWorkflow(
       workflowName: event.workflowName,
+      workflowDomain: event.workflowDomain,
+      workflowVersion: event.workflowVersion,
       queryParameters: event.queryParameters,
       headerParameters: event.headerParameters,
       isSubFlow: event.isSubFlow,
@@ -182,34 +190,54 @@ class NeoTransitionListenerBloc extends Bloc<NeoTransitionListenerEvent, NeoTran
       if (instanceId != null && instanceId is String) {
         neoWorkflowManager.setInstanceId(instanceId, isSubFlow: event.isSubFlow);
       }
-      onTransitionEvent(
-        SignalrTransitionData(
-          navigationPath: responseData["init-page-name"],
-          navigationType:
-              event.navigationType ?? NeoNavigationType.fromJson(responseData["navigation"]) ?? NeoNavigationType.push,
-          pageId: responseData["state"],
-          viewSource: responseData["view-source"],
-          initialData: additionalData is Map ? additionalData.cast() : {"data": additionalData},
-          transitionId: (responseData["transition"] as List?)?.firstOrNull?["transition"] ?? "",
-          queryParameters: event.queryParameters,
-          useSubNavigator: event.useSubNavigator,
-          useRootNavigator: event.useRootNavigator,
-          isInitialPage: true,
-        ),
-      );
+
+      if (!event.isVNextEvent) {
+        onTransitionEvent(
+          SignalrTransitionData(
+            navigationPath: responseData["init-page-name"],
+            navigationType: event.navigationType ??
+                NeoNavigationType.fromJson(responseData["navigation"]) ??
+                NeoNavigationType.push,
+            pageId: responseData["state"],
+            viewSource: responseData["view-source"],
+            initialData: additionalData is Map ? additionalData.cast() : {"data": additionalData},
+            transitionId: (responseData["transition"] as List?)?.firstOrNull?["transition"] ?? "",
+            queryParameters: event.queryParameters,
+            useSubNavigator: event.useSubNavigator,
+            useRootNavigator: event.useRootNavigator,
+            isInitialPage: true,
+          ),
+        );
+      }
     } else {
       _completeWithError(response.asError.error, shouldHideLoading: event.displayLoading, displayAsPopup: true);
     }
   }
 
   Future<void> _onPostTransition(NeoTransitionListenerEventPostTransition event) async {
+    if (await neoVNextWorkflowManager.isVNextWorkflow(event.workflowName ?? "")) {
+      await neoVNextWorkflowManager.postTransitionToWorkflow(
+        transitionName: event.transitionName,
+        workflowName: event.workflowName ?? "",
+        workflowDomain: event.workflowDomain ?? "",
+        version: event.workflowVersion ?? "",
+        body: event.body,
+        headerParameters: event.headerParameters,
+      );
+      return;
+    }
+
     _initPostTransitionTimeoutCompleter(displayLoading: event.displayLoading);
     try {
       if (event.resetInstanceId) {
         neoWorkflowManager.resetInstanceId(isSubFlow: event.isSubFlow);
       }
       if (event.workflowName != null && event.workflowName!.isNotEmpty) {
-        neoWorkflowManager.setWorkflowName(event.workflowName!, isSubFlow: event.isSubFlow);
+        final workflowName = event.workflowName!;
+        if (await neoVNextWorkflowManager.isVNextWorkflow(workflowName)) {
+        } else {
+          neoWorkflowManager.setWorkflowName(workflowName, isSubFlow: event.isSubFlow);
+        }
       }
       if (event.displayLoading) {
         onLoadingStatusChanged(displayLoading: true);
@@ -375,12 +403,20 @@ class NeoTransitionListenerBloc extends Bloc<NeoTransitionListenerEvent, NeoTran
 
   Future<NeoResponse> _initWorkflow({
     required String workflowName,
+    String? workflowDomain,
+    String? workflowVersion,
     Map<String, dynamic>? queryParameters,
     Map<String, String>? headerParameters,
     String? instanceId,
     bool isSubFlow = false,
-  }) {
-    if (instanceId == null) {
+  }) async {
+    if (await neoVNextWorkflowManager.isVNextWorkflow(workflowName)) {
+      return neoVNextWorkflowManager.startWorkflow(
+        workflowName: workflowName,
+        workflowDomain: workflowDomain ?? "",
+        version: workflowVersion ?? "",
+      );
+    } else if (instanceId == null) {
       return neoWorkflowManager.initWorkflow(
         workflowName: workflowName,
         queryParameters: queryParameters,
@@ -488,12 +524,23 @@ class NeoTransitionListenerBloc extends Bloc<NeoTransitionListenerEvent, NeoTran
     longPollingTimer?.cancel();
   }
 
+  void _listenWidgetEventKeys() {
+    _widgetEventStreamSubscription = NeoCoreWidgetEventKeys.neoTransitionListenerSendTransitionSuccessEvent.listenEvent(
+      onEventReceived: (NeoWidgetEvent widgetEvent) {
+        if (widgetEvent.data is SignalrTransitionData) {
+          onTransitionEvent(widgetEvent.data! as SignalrTransitionData);
+        }
+      },
+    );
+  }
+
   @override
   Future<void> close() {
     WidgetsBinding.instance.removeObserver(this);
     _postTransitionTimeoutTimer?.cancel();
     signalrConnectionManager.stop();
     _cancelLongPolling();
+    _widgetEventStreamSubscription?.cancel();
     return super.close();
   }
 }

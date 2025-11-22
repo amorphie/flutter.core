@@ -3,12 +3,14 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:neo_core/core/navigation/models/ekyc_event_data.dart';
 import 'package:neo_core/core/navigation/models/signalr_transition_data.dart';
 import 'package:neo_core/core/widgets/neo_transition_listener/bloc/neo_transition_listener_bloc.dart';
+import 'package:neo_core/core/workflow_form/neo_vnext_workflow_manager.dart';
 import 'package:neo_core/core/workflow_form/neo_workflow_manager.dart';
 import 'package:neo_core/neo_core.dart';
 
 class NeoTransitionListenerWidget extends StatelessWidget {
   final Widget child;
   final NeoWorkflowManager neoWorkflowManager;
+  final NeoVNextWorkflowManager neoVNextWorkflowManager;
   final NeoCoreSecureStorage neoCoreSecureStorage;
   final String signalRServerUrl;
   final String signalRMethodName;
@@ -24,6 +26,7 @@ class NeoTransitionListenerWidget extends StatelessWidget {
   const NeoTransitionListenerWidget({
     required this.child,
     required this.neoWorkflowManager,
+    required this.neoVNextWorkflowManager,
     required this.neoCoreSecureStorage,
     required this.signalRServerUrl,
     required this.signalRMethodName,
@@ -46,6 +49,7 @@ class NeoTransitionListenerWidget extends StatelessWidget {
       )..add(
           NeoTransitionListenerEventInit(
             neoWorkflowManager: neoWorkflowManager,
+            neoVNextWorkflowManager: neoVNextWorkflowManager,
             signalRServerUrl: signalRServerUrl,
             signalRMethodName: signalRMethodName,
             onTransitionEvent: onTransitionEvent,
