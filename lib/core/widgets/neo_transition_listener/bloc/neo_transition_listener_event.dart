@@ -106,6 +106,8 @@ class NeoTransitionListenerEventInitWorkflow extends NeoTransitionListenerEvent 
 class NeoTransitionListenerEventPostTransition extends NeoTransitionListenerEvent {
   final String transitionName;
   final String? workflowName;
+  final String? workflowDomain;
+  final String? workflowVersion;
   final Map<String, dynamic> body;
   final Map<String, String>? headerParameters;
   final bool displayLoading;
@@ -116,6 +118,8 @@ class NeoTransitionListenerEventPostTransition extends NeoTransitionListenerEven
     required this.transitionName,
     required this.body,
     this.workflowName,
+    this.workflowDomain,
+    this.workflowVersion,
     this.headerParameters,
     this.displayLoading = true,
     this.isSubFlow = false,
@@ -126,6 +130,8 @@ class NeoTransitionListenerEventPostTransition extends NeoTransitionListenerEven
   List<Object?> get props => [
         transitionName,
         workflowName,
+        workflowDomain,
+        workflowVersion,
         body,
         headerParameters,
         displayLoading,

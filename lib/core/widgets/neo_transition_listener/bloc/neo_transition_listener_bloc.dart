@@ -191,13 +191,7 @@ class NeoTransitionListenerBloc extends Bloc<NeoTransitionListenerEvent, NeoTran
         neoWorkflowManager.setInstanceId(instanceId, isSubFlow: event.isSubFlow);
       }
 
-      if (event.isVNextEvent) {
-        await neoVNextWorkflowManager.startPolling(
-          workflowName: event.workflowName,
-          workflowDomain: event.workflowDomain ?? "",
-          instanceId: responseData["id"],
-        );
-      } else {
+      if (!event.isVNextEvent) {
         onTransitionEvent(
           SignalrTransitionData(
             navigationPath: responseData["init-page-name"],
@@ -221,13 +215,29 @@ class NeoTransitionListenerBloc extends Bloc<NeoTransitionListenerEvent, NeoTran
   }
 
   Future<void> _onPostTransition(NeoTransitionListenerEventPostTransition event) async {
+    if (await neoVNextWorkflowManager.isVNextWorkflow(event.workflowName ?? "")) {
+      await neoVNextWorkflowManager.postTransitionToWorkflow(
+        transitionName: event.transitionName,
+        workflowName: event.workflowName ?? "",
+        workflowDomain: event.workflowDomain ?? "",
+        version: event.workflowVersion ?? "",
+        body: event.body,
+        headerParameters: event.headerParameters,
+      );
+      return;
+    }
+
     _initPostTransitionTimeoutCompleter(displayLoading: event.displayLoading);
     try {
       if (event.resetInstanceId) {
         neoWorkflowManager.resetInstanceId(isSubFlow: event.isSubFlow);
       }
       if (event.workflowName != null && event.workflowName!.isNotEmpty) {
-        neoWorkflowManager.setWorkflowName(event.workflowName!, isSubFlow: event.isSubFlow);
+        final workflowName = event.workflowName!;
+        if (await neoVNextWorkflowManager.isVNextWorkflow(workflowName)) {
+        } else {
+          neoWorkflowManager.setWorkflowName(workflowName, isSubFlow: event.isSubFlow);
+        }
       }
       if (event.displayLoading) {
         onLoadingStatusChanged(displayLoading: true);
@@ -400,7 +410,7 @@ class NeoTransitionListenerBloc extends Bloc<NeoTransitionListenerEvent, NeoTran
     String? instanceId,
     bool isSubFlow = false,
   }) async {
-    if (await _isVNextWorkflow(workflowName)) {
+    if (await neoVNextWorkflowManager.isVNextWorkflow(workflowName)) {
       return neoVNextWorkflowManager.startWorkflow(
         workflowName: workflowName,
         workflowDomain: workflowDomain ?? "",
@@ -416,14 +426,6 @@ class NeoTransitionListenerBloc extends Bloc<NeoTransitionListenerEvent, NeoTran
     } else {
       return neoWorkflowManager.getAvailableTransitions(instanceId: instanceId);
     }
-  }
-
-  Future<bool> _isVNextWorkflow(String workflowName) async {
-    // TODO STOPSHIP: Get it from config
-    final vNextWorkflowNames = [
-      "account-opening",
-    ];
-    return vNextWorkflowNames.contains(workflowName);
   }
 
   Future<String?> _getAvailableTransitionId(NeoSignalRTransition ongoingTransition) async {
